@@ -1,0 +1,52 @@
+heat_template_version: 2013-05-23
+description: Simple template to create network from VSD managed network
+parameters:
+  vsd_subnet_id:
+    type: string
+    label: VSD Subnet Id
+    description: ID of VSD subnet
+  netpartition_name:
+    type: string
+    label: NetPartition Name
+    description: Name of netpartition
+  private_net_name:
+    type: string
+    description: Name of private network to be created
+  private_net_cidr:
+    type: string
+    description: Private network address (CIDR notation)
+  private_net_dhcp:
+    type: boolean
+    default: True
+    description: Private network DHCP option
+  private_net_pool_start:
+    type: string
+    default: "10.1.1.100"
+    description: Start of private network IP address allocation pool
+  private_net_pool_end:
+    type: string
+    default: "10.1.1.110"
+    description: End of private network IP address allocation pool
+  private_net_gateway:
+    type: string
+    default: "10.1.1.254"
+    description: Private network gateway address
+
+resources:
+  private_net:
+    type: OS::Neutron::Net
+    properties:
+      name: { get_param: private_net_name }
+
+  private_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: private_net }
+      cidr: { get_param: private_net_cidr }
+      # waelj: should not provide gateway_ip in case dhcp is true
+      #gateway_ip: { get_param: private_net_gateway }
+      enable_dhcp: { get_param: private_net_dhcp }
+      allocation_pools:
+        - start: { get_param: private_net_pool_start }
+          end: { get_param: private_net_pool_end }
+      value_specs: { net_partition: { get_param: netpartition_name }, nuagenet: {get_param: vsd_subnet_id} }

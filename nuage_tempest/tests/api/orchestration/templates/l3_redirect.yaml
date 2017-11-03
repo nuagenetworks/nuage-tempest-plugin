@@ -1,0 +1,181 @@
+heat_template_version: 2015-04-30
+description: >
+  Template to illustrate service chaning capabilities of Nuage VSP.
+parameters:
+  image:
+    type: string
+    default: cirros
+  remote_group_id:
+    type: string
+    default: default
+
+resources:
+  router:
+    type: OS::Neutron::Router
+    properties:
+        name: AppRouter
+
+  web_net:
+    type: OS::Neutron::Net
+    properties:
+      name: WebNet
+
+  web_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: web_net }
+      cidr: 10.100.10.0/24
+
+  app_net:
+    type: OS::Neutron::Net
+    properties:
+      name: AppNet
+
+  app_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: app_net }
+      cidr: 10.100.20.0/24
+
+  db_net:
+    type: OS::Neutron::Net
+    properties:
+      name: DbNet
+
+  db_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: db_net }
+      cidr: 10.100.30.0/24
+
+  router_interface_web:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router_id: { get_resource: router }
+      subnet_id: { get_resource: web_subnet }
+
+  router_interface_app:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router_id: { get_resource: router }
+      subnet_id: { get_resource: app_subnet }
+
+  router_interface_db:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router_id: { get_resource: router }
+      subnet_id: { get_resource: db_subnet }
+
+  fw_ext:
+    type: Nuage::Neutron::RedirectTarget
+    depends_on: router_interface_web
+    properties:
+      name: 'FW_EXT'
+      description: 'FW_EXT description'
+      insertion_mode: L3
+      redundancy_enabled: False
+      router_id: {get_resource: router}
+
+  fw_int:
+    type: Nuage::Neutron::RedirectTarget
+    depends_on: router_interface_app
+    properties:
+      name: 'FW_INT'
+      description: 'FW_INT description'
+      insertion_mode: L3
+      redundancy_enabled: False
+      router_id: {get_resource: router}
+
+  lb:
+    type: Nuage::Neutron::RedirectTarget
+    depends_on: router_interface_db
+    properties:
+      name: 'LB'
+      description: 'LB description'
+      insertion_mode: L3
+      redundancy_enabled: True
+      router_id: {get_resource: router}
+
+  app_to_db:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      description: App to Db tier traffic
+      name: app_to_db
+      rules:
+        - remote_ip_prefix: {get_attr: [app_subnet, cidr]}
+
+  redirect_fw:
+    type: Nuage::Neutron::RedirectTargetRule
+    properties:
+      redirect_target_id: {get_resource: fw_ext}
+      protocol: TCP
+      action: REDIRECT
+      priority: 100
+      origin_group_id: default
+      remote_ip_prefix: 0.0.0.0/0
+
+  redirect_lb:
+    type: Nuage::Neutron::RedirectTargetRule
+    properties:
+      redirect_target_id: {get_resource: lb}
+      protocol: TCP
+      port_range_min: 3306
+      port_range_max: 3310
+      action: REDIRECT
+      priority: 150
+      origin_group_id: { get_resource: app_to_db }
+      remote_group_id: { get_param: remote_group_id }
+
+  fw_port_ext:
+    type: OS::Neutron::Port
+    depends_on: router_interface_web
+    properties:
+      network_id: { get_resource: web_net }
+      fixed_ips:
+        - subnet_id: { get_resource: web_subnet }
+      value_specs: { nuage_redirect_targets: { get_resource: fw_ext }}
+
+  fw_port_int:
+    type: OS::Neutron::Port
+    depends_on: router_interface_app
+    properties:
+      network_id: { get_resource: app_net }
+      fixed_ips:
+        - subnet_id: { get_resource: app_subnet }
+      value_specs: { nuage_redirect_targets: { get_resource: fw_int }}
+
+  lb_port:
+    type: OS::Neutron::Port
+    depends_on: router_interface_db
+    properties:
+      network_id: { get_resource: db_net }
+      fixed_ips:
+        - subnet_id: { get_resource: db_subnet }
+      value_specs: { nuage_redirect_targets: { get_resource: lb }}
+
+  lb_vip:
+    type: Nuage::Neutron::RedirectTargetVIP
+    depends_on: router_interface_db
+    properties:
+      subnet_id: { get_resource: db_subnet}
+      redirect_target_id: { get_resource: lb }
+      virtual_ip_address: 10.100.30.252
+
+  fw_server:
+    type: OS::Nova::Server
+    properties:
+      name: FW_SERVER
+      image: { get_param: image }
+      flavor: m1.tiny
+      networks:
+        - port: { get_resource: fw_port_ext }
+        - port: { get_resource: fw_port_int }
+
+  lb_server:
+    type: OS::Nova::Server
+    properties:
+      name: LB_SERVER
+      image: { get_param: image }
+      flavor: m1.tiny
+      networks:
+        - port: { get_resource: lb_port }

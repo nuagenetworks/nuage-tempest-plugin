@@ -1,0 +1,33 @@
+heat_template_version: 2013-05-23
+description: Simple template to create network from VSD managed network
+parameters:
+  vsd_subnet_id:
+    type: string
+    label: VSD Subnet Id
+    description: ID of VSD subnet
+  netpartition_name:
+    type: string
+    default: ''
+    label: Net Partition Name
+    description: Name of net partition
+  private_net_name:
+    type: string
+    description: Name of private network to be created
+  private_net_cidr:
+    type: string
+    description: Private network address (CIDR notation)
+
+resources:
+  private_net:
+    type: OS::Neutron::Net
+    properties:
+      name: { get_param: private_net_name }
+
+  private_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: private_net }
+      cidr: { get_param: private_net_cidr }
+      value_specs: {
+        net_partition: { get_param: netpartition_name },
+        nuagenet: {get_param: vsd_subnet_id} }

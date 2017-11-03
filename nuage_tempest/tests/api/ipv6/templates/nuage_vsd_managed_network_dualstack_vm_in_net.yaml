@@ -1,0 +1,80 @@
+heat_template_version: 2016-04-08
+description: Template to create network from VSD managed network
+parameters:
+  vsd_subnet_id:
+    type: string
+    label: VSD Subnet Id
+    description: ID of VSD subnet
+  netpartition_name:
+    type: string
+    label: NetPartition Name
+    description: Name of netpartition
+  net_name:
+    type: string
+    description: Name of private network to be created
+  cidr4:
+    type: string
+    description: IPv4 network address (CIDR notation)
+  dhcp_managed:
+    type: boolean
+    default: True
+    description: Private network DHCP option
+  gateway4:
+    type: string
+    default: None
+    description: IPv4 network gateway address
+  maskbits4:
+    type: string
+    description: IPv4 net mask bits
+  cidr6:
+    type: string
+    description: IPv6 network address (CIDR notation)
+  gateway6:
+    type: string
+    default: None
+    description: IPv6 network gateway address
+  maskbits6:
+    type: string
+    description: IPv6 net mask bits
+  image:
+    type: string
+    default: cirros
+
+
+
+resources:
+  dualstack_net:
+    type: OS::Neutron::Net
+    properties:
+      name: { get_param: net_name }
+
+  subnet4:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: dualstack_net }
+      cidr: { get_param: cidr4 }
+      enable_dhcp: { get_param: dhcp_managed }
+      value_specs: { net_partition: { get_param: netpartition_name }, nuagenet: {get_param: vsd_subnet_id} }
+
+  subnet6:
+    type: OS::Neutron::Subnet
+    depends_on: [subnet4]
+    properties:
+      network_id: { get_resource: dualstack_net }
+      cidr: { get_param: cidr6 }
+      enable_dhcp: false
+      ip_version: 6
+      value_specs: { net_partition: { get_param: netpartition_name }, nuagenet: {get_param: vsd_subnet_id} }
+
+  instance:
+    type: OS::Nova::Server
+    depends_on: [subnet4, subnet6]
+    properties:
+      flavor: m1.tiny
+      image: { get_param: image }
+      networks:
+      - network: { get_resource: dualstack_net }
+      user_data: |
+        #!/bin/sh
+        echo "Hello, World!"
+      user_data_format: RAW

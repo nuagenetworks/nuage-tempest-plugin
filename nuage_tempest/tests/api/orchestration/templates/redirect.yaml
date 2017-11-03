@@ -1,0 +1,109 @@
+heat_template_version: 2015-04-30
+description: >
+  Template to illustrate service chaning capabilities of Nuage VSP.
+
+resources:
+  l2_net:
+    type: OS::Neutron::Net
+    properties:
+      name: L2Net
+ 
+  l2_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: l2_net }
+      cidr: 10.100.20.0/24
+
+  secgrp:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: secgrp
+
+  rt_l2:
+    type: Nuage::Neutron::RedirectTarget
+    properties:
+      name: 'rt_l2'
+      description: 'rt_l2 description'
+      insertion_mode: VIRTUAL_WIRE
+      redundancy_enabled: False
+      subnet_id: {get_resource: l2_subnet}
+
+  rtr_l2:
+    type: Nuage::Neutron::RedirectTargetRule
+    properties:
+      redirect_target_id: {get_resource: rt_l2}
+      protocol: UDP
+      port_range_min: 2000
+      port_range_max: 2100
+      action: REDIRECT
+      priority: 400
+      origin_group_id: {get_resource: secgrp}
+      remote_ip_prefix: 10.20.30.0/24
+
+  l2_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: l2_net }
+      fixed_ips:
+        - subnet_id: { get_resource: l2_subnet }
+      value_specs: { nuage_redirect_targets: { get_resource: rt_l2 }}
+
+  l3_domain:
+    type: OS::Neutron::Router
+    properties:
+      name: L3Domain
+                                                    
+  l3_net:
+    type: OS::Neutron::Net
+    properties:
+      name: L3Net
+
+  l3_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: l3_net }
+      cidr: 10.100.10.0/24
+
+  router_itf_l3:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router_id: { get_resource: l3_domain }
+      subnet_id: { get_resource: l3_subnet }
+ 
+  rt_l3:
+    type: Nuage::Neutron::RedirectTarget
+    depends_on: router_itf_l3
+    properties:
+      name: 'rt_l3'
+      description: 'rt_l3 description'
+      insertion_mode: L3
+      redundancy_enabled: True
+      router_id: {get_resource: l3_domain}
+
+  rtr_l3:
+    type: Nuage::Neutron::RedirectTargetRule
+    properties:
+      redirect_target_id: {get_resource: rt_l3}
+      protocol: TCP
+      port_range_min: 1000
+      port_range_max: 1100
+      action: REDIRECT
+      priority: 200
+      origin_group_id: {get_resource: secgrp}
+      remote_ip_prefix: 10.20.30.0/24
+
+  vip_l3:
+    type: Nuage::Neutron::RedirectTargetVIP
+    properties:
+      subnet_id: {get_resource: l3_subnet}
+      redirect_target_id: {get_resource: rt_l3}
+      virtual_ip_address: 10.100.10.100
+
+  l3_port:
+    type: OS::Neutron::Port
+    depends_on: router_itf_l3
+    properties:
+      network_id: { get_resource: l3_net }
+      fixed_ips:
+        - subnet_id: { get_resource: l3_subnet }
+      value_specs: { nuage_redirect_targets: { get_resource: rt_l3 }}

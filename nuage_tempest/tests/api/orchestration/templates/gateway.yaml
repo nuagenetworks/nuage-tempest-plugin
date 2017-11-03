@@ -1,0 +1,162 @@
+heat_template_version: 2015-04-30
+parameters:
+  gw_name:
+    type: string
+    default: vrsg
+  gw_port:
+    type: string
+    default: eth1
+ 
+resources:
+  l3_net:
+    type: OS::Neutron::Net
+    properties:
+      name: 'l3net'
+
+  l3_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: l3_net }
+      cidr: '10.20.30.0/24'
+
+  router:
+    type: OS::Neutron::Router
+    properties:
+        name: R1
+
+  router_interface:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router_id: { get_resource: router }
+      subnet_id: { get_resource: l3_subnet }
+
+  l3_port:
+    type: OS::Neutron::Port
+    depends_on: router_interface
+    properties:
+      network_id: { get_resource: l3_net }
+      fixed_ips:
+        - subnet_id: { get_resource: l3_subnet }
+
+  l2_net_dhcp:
+    type: OS::Neutron::Net
+    properties:
+      name: 'l2net_dhcp'
+
+  l2_subnet_dhcp:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: l2_net_dhcp }
+      cidr: '10.20.40.0/24'
+
+  l2_port_dhcp:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: l2_net_dhcp }
+
+  l2_net:
+    type: OS::Neutron::Net
+    properties:
+      name: 'l2net'
+
+  l2_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: l2_net }
+      cidr: '192.168.0.0/24'
+      enable_dhcp: False
+
+  l2_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: l2_net }
+
+  gateway:
+    type: Nuage::Neutron::Gateway
+    properties:
+      name: {get_param: gw_name}
+
+  gateway_port:
+    type: Nuage::Neutron::GatewayPort
+    properties:
+      name: {get_param: gw_port}
+      gateway: { get_resource: gateway }
+
+  vlan1:
+    type: Nuage::Neutron::GatewayPortVlan
+    properties:
+      gatewayport: { get_resource: gateway_port }
+      value: 30
+
+  vlan2:
+   type: Nuage::Neutron::GatewayPortVlan
+   properties:
+     gatewayport: { get_resource: gateway_port }
+     value: 40
+
+  vlan3:
+   type: Nuage::Neutron::GatewayPortVlan
+   properties:
+     gatewayport: { get_resource: gateway_port }
+     value: 50
+
+  vlan4:
+   type: Nuage::Neutron::GatewayPortVlan
+   properties:
+     gatewayport: { get_resource: gateway_port }
+     value: 60
+
+  vlan5:
+   type: Nuage::Neutron::GatewayPortVlan
+   properties:
+     gatewayport: { get_resource: gateway_port }
+     value: 70
+
+  vlan6:
+   type: Nuage::Neutron::GatewayPortVlan
+   properties:
+     gatewayport: { get_resource: gateway_port }
+     value: 80
+
+  l3_host_vport:
+    type: Nuage::Neutron::GatewayVport
+    properties:
+      gatewayvlan: { get_resource: vlan1 }
+      port: { get_resource: l3_port }
+      tenant: {get_attr: [l3_subnet, tenant_id] }
+
+  l3_bridge_port:
+    type: Nuage::Neutron::GatewayVport
+    depends_on: router_interface
+    properties:
+      gatewayvlan: { get_resource: vlan2 }
+      subnet: { get_resource: l3_subnet }
+      tenant: {get_attr: [l3_subnet, tenant_id] }
+
+  l2_dhcp_host_vport:
+    type: Nuage::Neutron::GatewayVport
+    properties:
+      gatewayvlan: { get_resource: vlan3 }
+      port: { get_resource: l2_port_dhcp }
+      tenant: {get_attr: [l2_subnet_dhcp, tenant_id] }
+
+  l2_bridge_vport_dhcp:
+    type: Nuage::Neutron::GatewayVport
+    properties:
+      gatewayvlan: { get_resource: vlan4 }
+      subnet: { get_resource: l2_subnet_dhcp }
+      tenant: {get_attr: [l2_subnet_dhcp, tenant_id] }
+
+  l2_host_vport:
+    type: Nuage::Neutron::GatewayVport
+    properties:
+      gatewayvlan: { get_resource: vlan5 }
+      port: { get_resource: l2_port }
+      tenant: {get_attr: [l2_subnet, tenant_id] }
+
+  l2_bridge_vport:
+    type: Nuage::Neutron::GatewayVport
+    properties:
+      gatewayvlan: { get_resource: vlan6 }
+      subnet: { get_resource: l2_subnet }
+      tenant: {get_attr: [l2_subnet, tenant_id] }

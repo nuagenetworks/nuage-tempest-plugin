@@ -1,0 +1,66 @@
+heat_template_version: 2013-05-23
+
+description: HOT template to deploy security groups.
+
+parameters:
+
+resources:
+  security_group_default:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      description: Security group with default rules
+      name: test-security-group-default-rules
+
+  security_group_default_with_remote_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      description: 'Security group with default rules'
+      name: 'test-security-group-default-remote_group'
+      rules: [
+      {
+        remote_mode: 'remote_group_id'},
+      {
+        protocol: udp,
+        remote_mode: 'remote_group_id'}
+      ]
+
+  security_group_with_rules:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      description: Test group to demonstrate Neutron security group functionality with Heat.
+      name: test-security-group
+      rules: [
+        # ssh from any address, default direction
+        {remote_ip_prefix: 0.0.0.0/0,
+        protocol: tcp,
+        port_range_min: 22,
+        port_range_max: 22},
+
+        # UDP with port range
+        {remote_ip_prefix: 0.0.0.0/0,
+        protocol: udp,
+        port_range_min: 23,
+        port_range_max: 24},
+
+        # UDP egress
+        {remote_ip_prefix: 0.0.0.0/0,
+        protocol: udp,
+        direction: 'egress',
+        port_range_min: 25,
+        port_range_max: 27},
+
+        # TCP egress
+        {remote_ip_prefix: 0.0.0.0/0,
+        direction: 'egress',
+        protocol: tcp,
+        port_range_min: 29,
+        port_range_max: 29},
+
+        # Any egress
+        {remote_ip_prefix: 0.0.0.0/0,
+        direction: 'egress',
+
+        protocol: icmp},
+        {remote_ip_prefix: 0.0.0.0/0,
+
+        protocol: icmp}]

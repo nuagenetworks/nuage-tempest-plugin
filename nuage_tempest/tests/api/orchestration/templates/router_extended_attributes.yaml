@@ -1,0 +1,120 @@
+#heat_template_version: 2013-05-23
+heat_template_version: 2015-04-30
+description: Simple template to create a router with Nuage extended attributes rd, rt
+parameters:
+  netpartition_name:
+    type: string
+    default: ''
+    label: Net Partition Name
+    description: Name of net partition
+  public_net:
+    type: string
+    description: UUID for the public network
+  rd:
+    type: string
+    description: Route Distinguisher
+  rt:
+    type: string
+    description: Route Target
+
+
+resources:
+  router_minimal:
+    type: OS::Neutron::Router
+    properties:
+        name: router_minimal
+#        external_gateway_info:
+#          network: { get_param: public_net }
+#          enable_snat: False
+
+  router_net_partition:
+    type: OS::Neutron::Router
+    properties:
+        name: router_minimal
+        value_specs: {
+          net_partition: { get_param: netpartition_name }
+        }
+
+  router_rd_dt:
+    type: OS::Neutron::Router
+    properties:
+        name: 'router_rd_dt'
+        external_gateway_info:
+          network: { get_param: public_net }
+        value_specs: {
+          rd: { get_param: rd },
+          rt: { get_param: rt }
+        }
+
+#  router_rd_dt:
+#    type: OS::Neutron::Router
+#    properties:
+#        name: 'router_rd_dt'
+#        external_gateway_info:
+#          network: { get_param: public_net }
+#        value_specs: {
+#          rd: { get_param: rd },
+#          rt: { get_param: rt }
+#        }
+#
+
+  router_snat_true:
+    type: OS::Neutron::Router
+    properties:
+        name: 'router_snat_true'
+        external_gateway_info:
+          network: { get_param: public_net }
+          enable_snat: true
+
+
+  router_snat_false:
+    type: OS::Neutron::Router
+    properties:
+        name: 'router_snat_false'
+        external_gateway_info:
+          network: { get_param: public_net }
+          enable_snat: false
+
+  router_tunnel_type_gre:
+    type: OS::Neutron::Router
+    properties:
+        name: 'router_tunnel_type_gre'
+        external_gateway_info:
+          network: { get_param: public_net }
+        value_specs: {
+          tunnel_type: 'GRE'
+          }
+
+  router_tunnel_type_vxlan:
+    type: OS::Neutron::Router
+    properties:
+        name: 'router_tunnel_type_gre'
+        external_gateway_info:
+          network: { get_param: public_net }
+        value_specs: {
+          tunnel_type: 'VXLAN'
+          }
+
+  router_tunnel_type_default:
+    type: OS::Neutron::Router
+    properties:
+        name: 'router_tunnel_type_default'
+        external_gateway_info:
+          network: { get_param: public_net }
+        value_specs: {
+          tunnel_type: 'default'
+          }
+
+#  router_full:
+#    type: OS::Neutron::Router
+#    properties:
+#        name: 'router_full'
+#        external_gateway_info:
+#          network: { get_param: public_net }
+#          enable_snat: True
+#        value_specs: {
+#          net_partition: { get_param: netpartition_name },
+#          rd: { get_param: rd },
+#          rt: { get_param: rt },
+#          tunnel_type: 'VXLAN'
+#          }

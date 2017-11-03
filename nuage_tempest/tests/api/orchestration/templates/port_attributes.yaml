@@ -1,0 +1,154 @@
+heat_template_version: 2013-05-23
+description: Simple template to check vsd managed port attributes
+parameters:
+  netpartition_name:
+    type: string
+    label: NetPartition Name
+    description: Name of netpartition
+  vsd_l2_subnet_id:
+    type: string
+    label: VSD Subnet Id
+    description: ID of VSD subnet
+  l2_net_name:
+    type: string
+    description: Name of private network to be created
+  l2_subnet_name:
+    type: string
+    description: Name of private network to be created
+  l2_net_cidr:
+    type: string
+    description: Private network address (CIDR notation)
+  l2_policy_group_id:
+    type: string
+    label: List of VSD Policy Group Id's
+    description: List VSD policy group ids for port attributes on vsd managed networks
+  l2_fixed_ip_address:
+    type: string
+    description: Port fixed IP address for Allowed Address Pair IPAddress port attributes on vsd managed networks
+  l2_aap_ip_address:
+    type: string
+    description: ALlowed Address Pair IPAddress port attributes on vsd managed networks
+  l2_aap_mac_address:
+    type: string
+    description: ALlowed Address Pair Mac Address port attributes on vsd managed networks
+  vsd_l3_subnet_id:
+    type: string
+    label: VSD Subnet Id
+    description: ID of VSD subnet
+  l3_net_name:
+    type: string
+    description: Name of private network to be created
+  l3_subnet_name:
+    type: string
+    description: Name of private network to be created
+  l3_net_cidr:
+    type: string
+    description: Private network address (CIDR notation)
+  l3_policy_group_id:
+    type: string
+    label: List of VSD Policy Group Id's
+    description: List VSD policy group ids for port attributes on vsd managed networks
+  l3_fixed_ip_address:
+    type: string
+    description: Port fixed IP address for Allowed Address Pair IPAddress port attributes on vsd managed networks
+  l3_subnet_name:
+    type: string
+    description: ALlowed Address Pair IPAddress port attributes on vsd managed networks
+  l3_aap_ip_address:
+    type: string
+    description: ALlowed Address Pair IPAddress port attributes on vsd managed networks
+  l3_aap_mac_address:
+    type: string
+    description: ALlowed Address Pair Mac Address port attributes on vsd managed networks
+  claimed_fip_id:
+    type: string
+    description: ID of the VSD claimed FIP
+  image:
+    type: string
+    default: cirros
+
+resources:
+  l2_net:
+    type: OS::Neutron::Net
+    properties:
+      name: { get_param: l2_net_name }
+
+  l2_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: l2_net }
+      cidr: { get_param: l2_net_cidr }
+      name: { get_param: l2_subnet_name }
+      value_specs: { net_partition: { get_param: netpartition_name }, nuagenet: {get_param: vsd_l2_subnet_id} }
+
+  rt_l2:
+    type: Nuage::Neutron::RedirectTarget
+    properties:
+      name: 'rt_l2'
+      description: 'rt_l2 description'
+      insertion_mode: VIRTUAL_WIRE
+      redundancy_enabled: False
+      subnet_id: {get_resource: l2_subnet}
+
+  l2_port:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_resource: l2_net }
+      allowed_address_pairs: [ { ip_address: { get_param: l2_aap_ip_address }, mac_address: { get_param: l2_aap_mac_address } } ]
+      name: 'l2-heat-port'
+      fixed_ips: [ { ip_address: { get_param: l2_fixed_ip_address }, subnet: { get_resource: l2_subnet } } ]
+      value_specs: { nuage_redirect_targets: { get_resource: rt_l2 }, nuage_policy_groups: [get_param: l2_policy_group_id] }
+#      value_specs: { nuage_redirect_targets: { get_resource: rt_l2 } }
+
+  l2_server:
+    type: OS::Nova::Server
+    properties:
+      name: L2_SERVER
+      image: { get_param: image }
+      flavor: m1.tiny
+      networks:
+        - port: { get_resource: l2_port }
+
+  l3_net:
+    type: OS::Neutron::Net
+    properties:
+      name: { get_param: l3_net_name }
+
+  l3_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: l3_net }
+      cidr: { get_param: l3_net_cidr }
+      name: { get_param: l3_subnet_name }
+      value_specs: { net_partition: { get_param: netpartition_name }, nuagenet: {get_param: vsd_l3_subnet_id} }
+
+  rt_l3:
+    type: Nuage::Neutron::RedirectTarget
+    properties:
+      name: 'rt_l3'
+      description: 'rt_l3 description'
+      insertion_mode: VIRTUAL_WIRE
+      redundancy_enabled: False
+      subnet_id: {get_resource: l3_subnet}
+
+  l3_port:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_resource: l3_net }
+      allowed_address_pairs: [ { ip_address: { get_param: l3_aap_ip_address }, mac_address: { get_param: l3_aap_mac_address } } ]
+      name: 'l3-heat-port'
+      fixed_ips: [ { ip_address: { get_param: l3_fixed_ip_address }, subnet: { get_resource: l3_subnet } } ]
+#      value_specs: { nuage_redirect_targets: { get_resource: rt_l3 }, nuage_policy_groups: [get_param: l3_policy_group_id] }
+      value_specs: { nuage_redirect_targets: { get_resource: rt_l3 },
+                     nuage_floatingip: { id: { get_param: claimed_fip_id } },
+                     nuage_policy_groups: [get_param: l3_policy_group_id] }
+#      value_specs: { nuage_floatingip: { id: { get_param: claimed_fip_id } } }
+
+  l3_server:
+    type: OS::Nova::Server
+    properties:
+      name: L3_SERVER
+      image: { get_param: image }
+      flavor: m1.tiny
+      networks:
+        - port: { get_resource: l3_port }
