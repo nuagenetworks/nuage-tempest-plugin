@@ -210,6 +210,46 @@ class BaremetalTest(network_mixin.NetworkMixin,
                           topology.network['id'],
                           **data)
 
+    def test_create_without_psec(self):
+        topology = self._create_topology()
+        create_data = {
+            'port_security_enabled': False,
+            'binding:vnic_type': 'baremetal',
+            'binding:host_id': 'dummy', 'binding:profile': {
+                "local_link_information": [
+                    {"port_id": self.gw_port['name'],
+                     "switch_info": self.gateway['systemID']}]
+            }}
+        baremetal_port = self.create_port(topology.network['id'],
+                                          **create_data)
+        topology.baremetal_port = baremetal_port
+        self._validate_baremetal_vport(topology)
+        self._validate_vlan(topology, vlan_transparent=False)
+        self._validate_interface(topology)
+        self._validate_policygroup(topology, pg_name='PG_FOR_LESS_SECURITY')
+
+    def test_update_without_psec(self):
+        topology = self._create_topology()
+        create_data = {
+            'security_groups': [],
+            'port_security_enabled': False,
+            'binding:vnic_type': 'baremetal',
+            }
+        baremetal_port = self.create_port(topology.network['id'],
+                                          **create_data)
+        update_data = {
+            'binding:host_id': 'dummy', 'binding:profile': {
+                "local_link_information": [
+                    {"port_id": self.gw_port['name'],
+                     "switch_info": self.gateway['systemID']}]
+            }}
+        baremetal_port = self.update_port(baremetal_port['id'], **update_data)
+        topology.baremetal_port = baremetal_port
+        self._validate_baremetal_vport(topology)
+        self._validate_vlan(topology, vlan_transparent=False)
+        self._validate_interface(topology)
+        self._validate_policygroup(topology, pg_name='PG_FOR_LESS_SECURITY')
+
     def _create_topology(self, with_router=False, with_port=False,
                          vlan_transparent=False):
         router = port = None
@@ -278,7 +318,7 @@ class BaremetalTest(network_mixin.NetworkMixin,
                 topology.vsd_baremetal_interface['IPAddress'],
                 matchers.Equals(neutron_port['fixed_ips'][0]['ip_address']))
 
-    def _validate_policygroup(self, topology):
+    def _validate_policygroup(self, topology, pg_name=None):
         if topology.normal_port is not None:
             expected_pgs = 2  # Expecting software + hardware
         else:
@@ -293,6 +333,9 @@ class BaremetalTest(network_mixin.NetworkMixin,
         else:
             self.fail("Could not find HARDWARE policy group.")
         self.assertThat(vsd_policygroup['type'], matchers.Equals('HARDWARE'))
+        if pg_name:
+            self.assertThat(vsd_policygroup['name'],
+                            matchers.Contains(pg_name))
 
         vsd_pg_vports = self.vsd_client.get_vport(constants.POLICYGROUP,
                                                   vsd_policygroup['ID'])
