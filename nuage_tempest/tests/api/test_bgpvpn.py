@@ -15,10 +15,11 @@
 from oslo_log import log as logging
 import uuid
 
+from tempest.api.network import base
+from tempest.common import utils
 from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions as lib_exc
-from tempest import test
 from tempest.test import decorators
 
 from testtools.matchers import Contains
@@ -30,7 +31,6 @@ from nuage_tempest.lib.mixins.l3 import L3Mixin
 from nuage_tempest.lib.mixins.network import NetworkMixin
 from nuage_tempest.lib.openstackData import openstackData
 from nuage_tempest.lib.test import nuage_test
-from nuage_tempest.lib.topology import Topology
 from nuage_tempest.tests import nuage_ext
 
 LOG = logging.getLogger(__name__)
@@ -44,15 +44,13 @@ class BgpvpnBase(BGPVPNMixin):
     @classmethod
     def skip_checks(cls):
         super(BgpvpnBase, cls).skip_checks()
-        if not test.is_extension_enabled('bgpvpn', 'network'):
+        if not utils.is_extension_enabled('bgpvpn', 'network'):
             msg = "Bgpvpn Extension not enabled."
             raise cls.skipException(msg)
 
     @classmethod
     def resource_setup(cls):
         super(BgpvpnBase, cls).resource_setup()
-        cls.TB = Topology()
-        cls.TB.open_session()
         cls.tenant_id = cls.bgpvpn_client.tenant_id
         cls.admin_tenant_id = cls.bgpvpn_client_admin.tenant_id
         cls.def_net_partition = CONF.nuage.nuage_default_netpartition
@@ -382,22 +380,19 @@ class NetworkAssociationTest(BgpvpnBase, NetworkMixin):
             'dummy', 'dummy')
 
 
-class BgpvpnCliTests(test.BaseTestCase):
+class BgpvpnCliTests(BGPVPNMixin, base.BaseNetworkTest):
 
     @classmethod
     def skip_checks(cls):
         super(BgpvpnCliTests, cls).skip_checks()
-        if not test.is_extension_enabled('bgpvpn', 'network'):
+        if not utils.is_extension_enabled('bgpvpn', 'network'):
             msg = "Bgpvpn Extension not enabled."
             raise cls.skipException(msg)
 
     @classmethod
     def setUpClass(self):
         super(BgpvpnCliTests, self).setUpClass()
-        self.TB = Topology()
-        self.TB.open_session()
         self.def_net_partition = CONF.nuage.nuage_default_netpartition
-        self.os_cli = self.TB.osc_1.cli
         self.os_data = openstackData()
         self.os_data.insert_resource(self.def_net_partition,
                                      parent='CMS')
@@ -410,7 +405,7 @@ class BgpvpnCliTests(test.BaseTestCase):
         params['name'] = name
         params['route_distinguishers'] = rd
         params['route_targets'] = rt
-        bgpvpn = self.os_cli.create_bgpvpn(**params)
+        bgpvpn = self.bgpvpn_client.create_bgpvpn(**params)
         LOG.debug("Verifying BGPVPN")
         self.assertEqual(bgpvpn['name'], params['name'])
         self.assertEqual(bgpvpn['route_distinguishers'],
@@ -437,38 +432,38 @@ class BgpvpnCliTests(test.BaseTestCase):
         self.os_data.insert_resource(name2,
                                      os_data=bgpvpn2,
                                      parent=self.def_net_partition)
-        bgpvpns = self.os_cli.bgpvpn_client.list_bgpvpn()
+        bgpvpns = self.bgpvpn_client.list_bgpvpn()
         for bgpvpn in bgpvpns:
             get_bgpvpn = self.os_data.get_resource(bgpvpn['name']).os_data
             if not get_bgpvpn:
                 raise Exception('Cannot find bgpvpn in list command')
-            show_bgpvpn = self.os_cli.bgpvpn_client.show_bgpvpn(bgpvpn['id'])
+            show_bgpvpn = self.bgpvpn_client.show_bgpvpn(bgpvpn['id'])
             if not show_bgpvpn:
                 raise Exception('Cannot find bgpvpn in show command')
 
     def test_cannot_create_network_assoc(self):
         netname = data_utils.rand_name('network')
-        network = self.os_cli.create_network(network_name=netname)
+        network = self.networks_client.create_network(network_name=netname)
         name1 = data_utils.rand_name('bgpvpn')
         bgpvpn1 = self._create_verifybgpvpn(name1, '350:350', '350:350')
         kwargs = {}
         kwargs['network'] = network['id']
-        self.os_cli.bgpvpn_client.bgpvpn_net_assoc_create(
+        self.bgpvpn_client.bgpvpn_net_assoc_create(
             bgpvpn1['id'], **kwargs)
 
     def test_create_list_router_assoication(self):
         name1 = data_utils.rand_name('bgpvpn')
         bgpvpn1 = self._create_verifybgpvpn(name1, '349:349', '349:349')
         routname = data_utils.rand_name('router')
-        router = self.os_cli.create_router(router_name=routname)
+        router = self.routers_client.create_router(router_name=routname)
         self.os_data.insert_resource(name1,
                                      os_data=bgpvpn1,
                                      parent=self.def_net_partition)
         kwargs = {}
         kwargs['router'] = router['id']
-        self.os_cli.bgpvpn_client.bgpvpn_router_assoc_create(
+        self.bgpvpn_client.bgpvpn_router_assoc_create(
             bgpvpn1['id'], **kwargs)
-        listing = self.os_cli.bgpvpn_client.bgpvpn_router_assoc_list(
+        listing = self.bgpvpn_client.bgpvpn_router_assoc_list(
             bgpvpn1['id'])
         for list in listing:
             self.assertEqual(list['router_id'], router['id'])
@@ -479,4 +474,3 @@ class BgpvpnCliTests(test.BaseTestCase):
     @classmethod
     def tearDownClass(self):
         super(BgpvpnCliTests, self).tearDownClass()
-        self.os_cli.__del__()

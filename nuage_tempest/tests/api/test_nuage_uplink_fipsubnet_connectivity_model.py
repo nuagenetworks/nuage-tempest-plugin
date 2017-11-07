@@ -19,6 +19,7 @@ import uuid
 
 from nuage_tempest.lib.nuage_tempest_test_loader import Release
 from nuage_tempest.lib import service_mgmt
+from nuage_tempest.lib.topology import Topology
 from nuage_tempest.lib.utils import constants as nuage_constants
 from nuage_tempest.services.nuage_client import NuageRestClient
 from nuage_tempest.services.nuage_network_client import NuageNetworkClientJSON
@@ -51,8 +52,9 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
             **cls.os_primary.default_params)
 
         cls.service_manager = service_mgmt.ServiceManager()
-        if not cls.service_manager.is_service_running(
-                nuage_constants.NEUTRON_SERVICE):
+        if (not Topology.is_devstack() and
+                not cls.service_manager.is_service_running(
+                nuage_constants.NEUTRON_SERVICE)):
             cls.service_manager.comment_configuration_attribute(
                 CONF.nuage_sut.nuage_plugin_configuration,
                 nuage_constants.NUAGE_UPLINK_GROUP,
@@ -162,6 +164,9 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
             LOG.exception(exc)
 
     def add_uplink_key_to_plugin_file(self, nuage_uplink):
+        if Topology.is_devstack():
+            self.skipTest('Skipping tests that restart neutron ...')
+
         self.service_manager.stop_service(nuage_constants.NEUTRON_SERVICE)
         # Add the shared zone ID to the plugin.ini file
         self.service_manager.set_configuration_attribute(
@@ -174,6 +179,9 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
             nuage_constants.NEUTRON_SERVICE)
 
     def delete_uplink_key_from_plugin_file(self):
+        if Topology.is_devstack():
+            self.skipTest('Skipping tests that restart neutron ...')
+
         self.service_manager.stop_service(nuage_constants.NEUTRON_SERVICE)
         self.service_manager.comment_configuration_attribute(
             CONF.nuage_sut.nuage_plugin_configuration,

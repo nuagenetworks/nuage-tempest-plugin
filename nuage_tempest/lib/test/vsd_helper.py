@@ -1,13 +1,13 @@
+# Copyright 2017 - Nokia
+# All Rights Reserved.
+
 import importlib
 from oslo_log import log as logging
-
-from nuage_tempest.lib.topology import Topology
 
 from tempest import config
 from tempest.lib.common.utils import data_utils
 
 CONF = config.CONF
-
 LOG = logging.getLogger(__name__)
 
 
@@ -404,7 +404,7 @@ class VsdHelper(object):
             obj = egress_tpl.create_child(entry)[0]
             res.append(obj.stats_id)
 
-        if not allow_ipv4 and Topology.is_devstack():
+        if not allow_ipv4:
             # Add SSH rule for FIP access
             entry = self.vspk.NUEgressACLEntryTemplate(
                 ether_type=self.CONST_ETHER_TYPE_IPV4,

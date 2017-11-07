@@ -109,7 +109,6 @@ class BaseVSDPublicResourcesTest(
             'associatedSharedNetworkResourceID'] = \
             self.vsd_l2_shared_managed[0]['ID']
         return vsd_l2_dom_unmgd_l2_shared_mgd
-        pass
 
     def _given_vsdl2sharedmgdopt3_linkedto_vsdl2domunmgd(self, dhcp_option_3):
         if not self.vsd_l2_shared_managed_opt3:

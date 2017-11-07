@@ -13,16 +13,15 @@
 import logging
 import uuid
 
+from tempest.common import utils
 from tempest import config
 from tempest.lib.common.utils import data_utils
-from tempest import test
 
 import nuage_base
 
 from nuage_tempest.services import nuage_client
 
 CONF = config.CONF
-
 LOG = logging.getLogger(__name__)
 
 
@@ -38,7 +37,7 @@ class NeutronGatewayResourcesTest(nuage_base.NuageBaseOrchestrationTest):
     def resource_setup(cls):
         super(NeutronGatewayResourcesTest, cls).resource_setup()
 
-        if not test.is_extension_enabled('nuage-gateway', 'network'):
+        if not utils.is_extension_enabled('nuage-gateway', 'network'):
             msg = "Nuage extension 'nuage-gateway' not enabled."
             raise cls.skipException(msg)
 

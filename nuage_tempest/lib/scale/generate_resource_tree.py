@@ -1,3 +1,6 @@
+# Copyright 2017 - Nokia
+# All Rights Reserved.
+
 import logging
 from nuage_tempest.lib.openstackData import openstackData
 import pickle

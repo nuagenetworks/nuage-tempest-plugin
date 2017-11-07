@@ -19,5 +19,3 @@ eventlet!=0.18.3,!=0.20.1,<0.21.0,>=0.18.2 # MIT
 pymysql
 vspk
 configparser
--e git+git@github.mv.usa.alcatel.com:pygash/libVSD.git#egg=libVSD
-

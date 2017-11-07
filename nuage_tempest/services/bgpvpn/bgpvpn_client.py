@@ -21,7 +21,6 @@ from tempest import config
 from tempest.lib.common import rest_client
 from tempest.lib import exceptions as lib_exc
 
-
 CONF = config.CONF
 
 

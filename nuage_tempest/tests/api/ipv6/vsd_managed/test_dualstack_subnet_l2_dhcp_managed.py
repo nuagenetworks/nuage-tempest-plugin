@@ -416,8 +416,8 @@ class VSDManagedDualStackSubnetL2DHCPManagedTest(NetworkTestCaseMixin,
             ip_version=6,
             gateway=vsd_l2domain_template['IPv6Gateway'],
             cidr=IPNetwork(vsd_l2domain_template['IPv6Address']),
-            mask_bits=self.prefix_length(
-                IPNetwork(vsd_l2domain_template['IPv6Address'])),
+            mask_bits=IPNetwork(
+                vsd_l2domain_template['IPv6Address']).prefixlen,
             enable_dhcp=False,
             nuagenet=vsd_l2domain['ID'],
             net_partition=self.net_partition)
@@ -576,7 +576,7 @@ class VSDManagedDualStackSubnetL2DHCPManagedTest(NetworkTestCaseMixin,
             network = self.create_network(network_name=net_name)
 
             ipv6_network = IPNetwork(ipv6_cidr)
-            mask_bits = self.prefix_length(ipv6_network)
+            mask_bits = ipv6_network.prefixlen
             ipv6_subnet = self.create_subnet(
                 network,
                 ip_version=6,
@@ -1074,7 +1074,7 @@ class VSDManagedDualStackSubnetL2DHCPManagedTest(NetworkTestCaseMixin,
     #         gateway=self.gateway4,
     #         cidr=self.cidr4,
     #         enable_dhcp=False,
-    #         mask_bits=self.mask_bits,
+    #         mask_bits=self.mask_bits4,
     #         nuagenet=vsd_l2domain['ID'],
     #         net_partition=CONF.nuage.nuage_default_netpartition)
     #
@@ -1083,7 +1083,7 @@ class VSDManagedDualStackSubnetL2DHCPManagedTest(NetworkTestCaseMixin,
     #         ip_version=6,
     #         gateway=self.gateway6,
     #         cidr=self.cidr6,
-    #         mask_bits=self.prefix_length(self.cidr6),
+    #         mask_bits=self.mask_bits6,
     #         enable_dhcp=False,
     #         nuagenet=vsd_l2domain['ID'],
     #         net_partition=CONF.nuage.nuage_default_netpartition)

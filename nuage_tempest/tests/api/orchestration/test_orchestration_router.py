@@ -3,11 +3,10 @@
 
 import logging
 
+from tempest.common import utils
 from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
-from tempest import test
-
 
 from nuage_tempest.lib.test import nuage_test
 
@@ -26,7 +25,7 @@ class OrchestrationRouterTest(nuage_base.NuageBaseOrchestrationTest):
     @classmethod
     def resource_setup(cls):
         super(OrchestrationRouterTest, cls).resource_setup()
-        if not test.is_extension_enabled('router', 'network'):
+        if not utils.is_extension_enabled('router', 'network'):
             msg = "router extension not enabled."
             raise cls.skipException(msg)
 

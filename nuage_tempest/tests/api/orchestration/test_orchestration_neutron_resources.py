@@ -22,7 +22,6 @@ from tempest import test
 from tempest.test import decorators
 
 CONF = config.CONF
-
 LOG = logging.getLogger(__name__)
 
 

@@ -6,17 +6,17 @@ from netaddr import IPNetwork
 from oslo_log import log as logging
 from tempest import config
 
+from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
-from tempest.lib import exceptions
 
 from nuage_tempest.lib.features import NUAGE_FEATURES
 from nuage_tempest.lib.test import nuage_test
 
 from nuage_tempest.services.nuage_network_client import NuageNetworkClientJSON
-from nuage_tempest.tests.api.ipv6.base_nuage_networks import VsdTestCaseMixin
-from nuage_tempest.tests.api.ipv6.base_nuage_networks_cli \
-    import BaseNuageNetworksCLITestCase
-from tempest.lib.common.utils import data_utils
+from nuage_tempest.tests.api.ipv6.base_nuage_networks \
+    import VsdTestCaseMixin
+
+from base_nuage_networks_cli import BaseNuageNetworksCliTestCase
 
 CONF = config.CONF
 LOG = logging.getLogger(__name__)
@@ -26,19 +26,19 @@ VALID_MAC_ADDRESS_2A = 'fa:fa:3e:e8:e8:2a'
 VALID_MAC_ADDRESS_2B = 'fa:fa:3e:e8:e8:2b'
 
 
-class OSManagedDualStackCLITest(
-        BaseNuageNetworksCLITestCase, VsdTestCaseMixin):
+class OSManagedDualStackCliTest(
+        BaseNuageNetworksCliTestCase, VsdTestCaseMixin):
 
     @classmethod
     def skip_checks(cls):
-        super(OSManagedDualStackCLITest, cls).skip_checks()
+        super(OSManagedDualStackCliTest, cls).skip_checks()
         if not NUAGE_FEATURES.os_managed_dualstack_subnets:
             raise cls.skipException(
                 'OS Managed Dual Stack is not supported in this release')
 
     @classmethod
     def setup_clients(cls):
-        super(OSManagedDualStackCLITest, cls).setup_clients()
+        super(OSManagedDualStackCliTest, cls).setup_clients()
         cls.nuage_network_client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
             CONF.network.catalog_type,
@@ -81,29 +81,26 @@ class OSManagedDualStackCLITest(
         # When I delete subnet 4
         self.delete_subnet(subnet4['id'])
         # Then the subnet 4 is no longer there
-        self.assertRaisesRegex(exceptions.SSHExecCommandFailed,
-                               "Unable to find subnet with name or id '{}'"
-                               .format(subnet4['id']),
-                               self.show_subnet,
-                               subnet4['id'])
+        self.assertCommandFailed("Unable to find subnet with name or id '{}'"
+                                 .format(subnet4['id']),
+                                 self.show_subnet,
+                                 subnet4['id'])
 
         # When I delete subnet 6
         self.delete_subnet(subnet6['id'])
         # Then the subnet 6 is no longer there
-        self.assertRaisesRegex(exceptions.SSHExecCommandFailed,
-                               "Unable to find subnet with name or id '{}'"
-                               .format(subnet6['id']),
-                               self.show_subnet,
-                               subnet6['id'])
+        self.assertCommandFailed("Unable to find subnet with name or id '{}'"
+                                 .format(subnet6['id']),
+                                 self.show_subnet,
+                                 subnet6['id'])
 
         # When I delete the network
         self.delete_network(network['id'])
         # Then the network is no longer there
-        self.assertRaisesRegex(exceptions.SSHExecCommandFailed,
-                               "Unable to find network with name or id '{}'"
-                               .format(network['id']),
-                               self.show_network,
-                               network['id'])
+        self.assertCommandFailed("Unable to find network with name or id '{}'"
+                                 .format(network['id']),
+                                 self.show_network,
+                                 network['id'])
 
     @nuage_test.header()
     @decorators.attr(type='smoke')
@@ -138,23 +135,20 @@ class OSManagedDualStackCLITest(
         # When I delete the network
         self.delete_network(network['id'])
         # Then the network is no longer there
-        self.assertRaisesRegex(exceptions.SSHExecCommandFailed,
-                               "Unable to find network with name or id '{}'"
-                               .format(network['id']),
-                               self.show_network,
-                               network['id'])
+        self.assertCommandFailed("Unable to find network with name or id '{}'"
+                                 .format(network['id']),
+                                 self.show_network,
+                                 network['id'])
         # And the subnet 4 is no longer there
-        self.assertRaisesRegex(exceptions.SSHExecCommandFailed,
-                               "Unable to find subnet with name or id '{}'"
-                               .format(subnet4['id']),
-                               self.show_subnet,
-                               subnet4['id'])
+        self.assertCommandFailed("Unable to find subnet with name or id '{}'"
+                                 .format(subnet4['id']),
+                                 self.show_subnet,
+                                 subnet4['id'])
         # And the subnet 6 is no longer there
-        self.assertRaisesRegex(exceptions.SSHExecCommandFailed,
-                               "Unable to find subnet with name or id '{}'"
-                               .format(subnet6['id']),
-                               self.show_subnet,
-                               subnet6['id'])
+        self.assertCommandFailed("Unable to find subnet with name or id '{}'"
+                                 .format(subnet6['id']),
+                                 self.show_subnet,
+                                 subnet6['id'])
 
     @nuage_test.header()
     @decorators.attr(type='smoke')
@@ -178,15 +172,14 @@ class OSManagedDualStackCLITest(
         self.assertEqual(subnet4['id'],
                          show_subnet4['id'], "subnet not found")
 
-        self.assertRaisesRegex(exceptions.SSHExecCommandFailed,
-                               "IP Address {} is not valid"
-                               " or cannot be in reserved address space."
-                               .format(str(cidr6)),
-                               self.create_subnet_with_args,
-                               network['name'], str(cidr6),
-                               "--name ", subnet_name + "-6",
-                               "--ip-version 6",
-                               "--disable-dhcp ")
+        self.assertCommandFailed("IP Address {} is not valid"
+                                 " or cannot be in reserved address space."
+                                 .format(str(cidr6)),
+                                 self.create_subnet_with_args,
+                                 network['name'], str(cidr6),
+                                 "--name ", subnet_name + "-6",
+                                 "--ip-version 6",
+                                 "--disable-dhcp ")
 
     @nuage_test.header()
     @decorators.attr(type='smoke')
@@ -211,11 +204,10 @@ class OSManagedDualStackCLITest(
         self.assertEqual(subnet6['id'],
                          show_subnet6['id'], "subnet not found")
 
-        self.assertRaisesRegex(exceptions.SSHExecCommandFailed,
-                               "IP Address {} is not valid"
-                               " or cannot be in reserved address space."
-                               .format(str(cidr6)),
-                               self.create_subnet_with_args,
-                               network['name'],
-                               str(cidr4),
-                               "--name ", subnet_name)
+        self.assertCommandFailed("IP Address {} is not valid"
+                                 " or cannot be in reserved address space."
+                                 .format(str(cidr6)),
+                                 self.create_subnet_with_args,
+                                 network['name'],
+                                 str(cidr4),
+                                 "--name ", subnet_name)

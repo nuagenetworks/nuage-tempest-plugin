@@ -137,9 +137,7 @@ class ExternalIdForVmTest(
         subnet = self.create_subnet(network, namestart='subnet-')
         self.assertIsNotNone(subnet)  # dummy check to use local variable
 
-        port = self.create_port(
-            namestart='port',
-            network_id=network['id'])
+        port = self.create_port(network['id'])
 
         name = data_utils.rand_name('server-smoke')
         server = self._create_server(name, network, port['id'])
@@ -289,9 +287,7 @@ class ExternalIdForVmTest(
         subnet = self.subnets_client.create_subnet(**subnet_kwargs)
         self.assertIsNotNone(subnet)  # dummy check to use local variable
 
-        port = self.create_port(
-            namestart='port',
-            network_id=network['id'])
+        port = self.create_port(network['id'])
 
         name = data_utils.rand_name('server-smoke')
         server = self._create_server(name, network, port['id'])

@@ -13,10 +13,16 @@ from nuage_tempest.lib.test.nuage_test import NuageBaseTest
 CONF = config.CONF
 
 
-class TestNuagePortUpdate(NuageBaseTest):
+class TestPorts(NuageBaseTest):
     LOG = logging.getLogger(__name__)
 
     @decorators.attr(type='smoke')
+    def test_nuage_port_create(self):
+        network = self.create_network()
+        self.create_subnet(network, cidr=IPNetwork("10.0.0.0/24"),
+                           mask_bits=24)
+        self.create_port(network)
+
     def test_nuage_port_update_fixed_ips_negative(self):
         # Set up resources
         # Base resources

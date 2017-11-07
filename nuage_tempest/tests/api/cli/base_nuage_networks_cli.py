@@ -19,7 +19,7 @@ def mask_to_prefix(mask):
     return sum([bin(int(x)).count('1') for x in mask.split('.')])
 
 
-class BaseNuageNetworksCLITestCase(
+class BaseNuageNetworksCliTestCase(
         remote_cli_base_testcase.RemoteCliBaseTestCase):
 
     ###########################################################################
@@ -96,7 +96,8 @@ class BaseNuageNetworksCLITestCase(
 
         return network, subnet4, subnet6
 
-    def _cli_check_policy_group_in_list(self, pg_id, pg_list):
+    @staticmethod
+    def _cli_check_policy_group_in_list(pg_id, pg_list):
         pg_present = False
         for pg in pg_list:
             if pg['id'] == pg_id:
@@ -132,9 +133,11 @@ class BaseNuageNetworksCLITestCase(
                 port_present = True
         return port_present
 
-    def _cli_check_all_policy_groups_in_show_port(self, pg_id_list, show_port):
+    @staticmethod
+    def _cli_check_all_policy_groups_in_show_port(pg_id_list, show_port):
         groups_present = True
-        pg_id_list = show_port['nuage_policy_groups'].split(",")
+        if show_port:
+            pg_id_list = show_port['nuage_policy_groups'].split(",")
         for pg_id in pg_id_list:
             if pg_id not in pg_id_list:
                 groups_present = False
@@ -151,7 +154,8 @@ class BaseNuageNetworksCLITestCase(
         mac_addres_present = addrpair_mac in show_port['allowed_address_pairs']
         self.assertTrue(ip_address_present and mac_addres_present)
 
-    def cli_check_fip_in_list(self, fip_id, fip_list):
+    @staticmethod
+    def cli_check_fip_in_list(fip_id, fip_list):
         fip_present = False
         for fip in fip_list:
             if fip['id'] == fip_id:

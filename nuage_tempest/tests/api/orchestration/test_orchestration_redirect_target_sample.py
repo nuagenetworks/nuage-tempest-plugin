@@ -12,11 +12,11 @@
 
 import logging
 
+from tempest.common import utils
 from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions as lib_exc
 from tempest.services import orchestration
-from tempest import test
 
 import nuage_base
 
@@ -75,7 +75,7 @@ class NeutronRedirectionTargetsTest(nuage_base.NuageBaseOrchestrationTest):
     def resource_setup(cls):
         super(NeutronRedirectionTargetsTest, cls).resource_setup()
 
-        if not test.is_extension_enabled('nuage-redirect-target', 'network'):
+        if not utils.is_extension_enabled('nuage-redirect-target', 'network'):
             msg = "Nuage extension 'nuage-redirect-target' not enabled."
             raise cls.skipException(msg)
 
@@ -100,7 +100,7 @@ class NeutronRedirectionTargetsTest(nuage_base.NuageBaseOrchestrationTest):
         for resource in resources:
             cls.test_resources[resource['logical_resource_id']] = resource
 
-    def test_created_redirecttarget_resources(self):
+    def test_created_redirect_target_resources(self):
         """Verifies created redirect target resources."""
         resources = [('app_to_db', self.template['resources'][
                       'app_to_db']['type']),

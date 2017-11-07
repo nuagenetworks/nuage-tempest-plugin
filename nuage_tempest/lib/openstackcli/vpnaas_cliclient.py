@@ -27,11 +27,6 @@ class VPNaaSClient(openstack_cliclient.ClientTestBase):
 
     _ip_version = 4
 
-    @classmethod
-    def skip_checks(self):
-        if not CONF.service_available.neutron:
-            raise self.skipException("Neutron support is required")
-
     def __init__(self, osc):
         super(VPNaaSClient, self).__init__(osc)
 

@@ -1,4 +1,4 @@
-# Copyright 2015 Alcatel-Lucent
+# Copyright 2017 Alcatel-Lucent
 # All Rights Reserved.
 
 import copy
@@ -57,8 +57,8 @@ def nuage_skip_because(*args, **kwargs):
                 message = func_kwargs["message"]
 
                 msg = "Skipped because: %s" % message
-                if message.startswith("OPENSTACK_") or \
-                        message.startswith("VSD_"):
+                if (message.startswith("OPENSTACK-") or
+                        message.startswith("VSD-")):
                     uri = "http://mvjira.mv.usa.alcatel.com/browse/" + message
                     msg += "\n"
                     msg += uri
@@ -147,6 +147,14 @@ def class_header(tags=None, since=None, until=None):
     return decorator
 
 
+def base_uri_to_version(base_uri):
+    pattern = re.compile(r'(\d+_\d+)')
+    match = pattern.search(base_uri)
+    version = match.group()
+    version = "v" + str(version)
+    return version
+
+
 class NuageBaseTest(manager.NetworkScenarioTest):
 
     """NuageBaseTest
@@ -166,14 +174,6 @@ class NuageBaseTest(manager.NetworkScenarioTest):
     image_name_to_id_cache = {}
 
     @classmethod
-    def _base_uri_to_version(cls, base_uri):
-        pattern = re.compile(r'(\d+_\d+)')
-        match = pattern.search(base_uri)
-        version = match.group()
-        version = "v" + str(version)
-        return version
-
-    @classmethod
     def setup_credentials(cls):
         super(NuageBaseTest, cls).setup_credentials()
 
@@ -185,7 +185,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
         cls.nuage_vsd_client = NuageRestClient()
 
-        version = cls._base_uri_to_version(CONF.nuage.nuage_base_uri)
+        version = base_uri_to_version(CONF.nuage.nuage_base_uri)
         address = CONF.nuage.nuage_vsd_server
         cls.vsd = vsd_helper.VsdHelper(address, version=version)
 
@@ -210,13 +210,13 @@ class NuageBaseTest(manager.NetworkScenarioTest):
     def setup_network_resources(cls):
         cls.cidr4 = IPNetwork(CONF.network.project_network_cidr)
         cls.mask_bits4 = CONF.network.project_network_mask_bits
-        cls.mask_bits4_unsliced = cls.prefix_length(cls.cidr4)
+        cls.mask_bits4_unsliced = cls.cidr4.prefixlen
         assert cls.mask_bits4 >= cls.mask_bits4_unsliced
         cls.gateway4 = str(IPAddress(cls.cidr4) + 1)
         cls.netmask4 = str(cls.cidr4.netmask)
 
         cls.cidr6 = IPNetwork(CONF.network.project_network_v6_cidr)
-        cls.mask_bits6 = cls.prefix_length(cls.cidr6)
+        cls.mask_bits6 = cls.cidr6.prefixlen
 
         # TODO(Kris) this needs to go out but i need to find out how
         if cls.mask_bits6 < 64:
@@ -240,10 +240,6 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 "Please add motivation for this sleep.".format(seconds))
         else:
             LOG.warning("Sleeping for {}s. {}.".format(seconds, msg))
-
-    @staticmethod
-    def prefix_length(cidr):
-        return cidr._prefixlen
 
     def create_network(self, network_name=None, client=None,
                        cleanup=True, **kwargs):
@@ -274,6 +270,9 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         # The cidr and mask_bits depend on the ip version.
         ip_version = ip_version if ip_version is not None else self._ip_version
         gateway_not_set = gateway == ''
+
+        # fill in cidr and mask_bits if not set -- note that mask_bits is
+        # not optional when cidr is set !  ( ~ upstream method behavior )
         if ip_version == 4:
             cidr = cidr or self.cidr4
             if mask_bits is None:
@@ -641,29 +640,23 @@ class NuageBaseTest(manager.NetworkScenarioTest):
     def router_detach(self, router, subnet):
         self.remove_router_interface(router['id'], subnet['id'])
 
-    def osc_get_database_table_row(self, table_name, row=0,
+    @staticmethod
+    def osc_get_database_table_row(table_name, row=0,
                                    assert_table_size=None):
         db_name = 'neutron'
         db_username = Topology.database_user
         db_password = Topology.database_password
         db_cmd = 'SELECT * FROM ' + table_name
 
-        if Topology.is_devstack():
-            db_connection = pymysql.connect(host='localhost',
-                                            user=db_username,
-                                            passwd=db_password,
-                                            db=db_name)
-            cursor = db_connection.cursor()
-            cursor.execute(db_cmd)
-            db_row_cnt = cursor.rowcount
-            db_row = cursor.fetchone() if row == 0 else cursor.fetchall()[row]
-            db_connection.close()
-        else:
-            output = self.TB.osc_1.cmd(
-                'mysql -u ' + db_username + ' -p' + db_password +
-                ' -D ' + db_name + ' -e \"' + db_cmd + ';\"')
-            db_row_cnt = len(output)
-            db_row = output[row][1].split('\t')
+        db_connection = pymysql.connect(host='localhost',
+                                        user=db_username,
+                                        passwd=db_password,
+                                        db=db_name)
+        cursor = db_connection.cursor()
+        cursor.execute(db_cmd)
+        db_row_cnt = cursor.rowcount
+        db_row = cursor.fetchone() if row == 0 else cursor.fetchall()[row]
+        db_connection.close()
 
         if assert_table_size is not None:
             assert db_row_cnt == assert_table_size

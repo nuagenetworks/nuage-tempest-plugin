@@ -3,10 +3,10 @@
 from oslo_log import log as logging
 
 from tempest.api.network import base
+from tempest.common import utils
 from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
-from tempest import test
 
 from nuage_tempest.lib import features
 from nuage_tempest.lib.nuage_tempest_test_loader import Release
@@ -192,7 +192,7 @@ class NuageExtraDHCPOptionsBase(base.BaseAdminNetworkTest):
     @classmethod
     def skip_checks(cls):
         super(NuageExtraDHCPOptionsBase, cls).skip_checks()
-        if not test.is_extension_enabled('extra_dhcp_opt', 'network'):
+        if not utils.is_extension_enabled('extra_dhcp_opt', 'network'):
             msg = "Extra DHCP Options extension not enabled."
             raise cls.skipException(msg)
 

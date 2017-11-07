@@ -12,8 +12,8 @@ from nuage_tempest.lib.utils import constants
 from nuage_tempest.services.nuage_network_client import NuageNetworkClientJSON
 from nuage_tempest.tests.api.ipv6.base_nuage_networks \
     import VsdTestCaseMixin
-from nuage_tempest.tests.api.ipv6.base_nuage_networks_cli \
-    import BaseNuageNetworksCLITestCase
+
+from base_nuage_networks_cli import BaseNuageNetworksCliTestCase
 
 CONF = config.CONF
 LOG = logging.getLogger(__name__)
@@ -35,12 +35,12 @@ VALID_MAC_ADDRESS = 'fa:fa:3e:e8:e8:c0'
 # PolicyGroups
 ###############################################################################
 ###############################################################################
-class VSDManagedPolicyGroupsCLITest(BaseNuageNetworksCLITestCase,
+class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
                                     VsdTestCaseMixin):
 
     @classmethod
     def setup_clients(cls):
-        super(VSDManagedPolicyGroupsCLITest, cls).setup_clients()
+        super(VSDManagedPolicyGroupsCliTest, cls).setup_clients()
         cls.nuage_network_client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
             CONF.network.catalog_type,
@@ -59,7 +59,8 @@ class VSDManagedPolicyGroupsCLITest(BaseNuageNetworksCLITestCase,
                 break
         return port_found
 
-    def _check_policy_group_in_show_port(self, pg_id, show_port):
+    @staticmethod
+    def _check_policy_group_in_show_port(pg_id, show_port):
         pg_present = False
         for show_pg_id in show_port['port']['nuage_policy_groups']:
             if pg_id == show_pg_id:
@@ -67,7 +68,8 @@ class VSDManagedPolicyGroupsCLITest(BaseNuageNetworksCLITestCase,
                 break
         return pg_present
 
-    def _check_all_policy_groups_in_show_port(self, pg_id_list, show_port):
+    @staticmethod
+    def _check_all_policy_groups_in_show_port(pg_id_list, show_port):
         groups_present = True
         for pg_id in show_port['port']['nuage_policy_groups']:
             if pg_id not in pg_id_list:
@@ -127,7 +129,7 @@ class VSDManagedPolicyGroupsCLITest(BaseNuageNetworksCLITestCase,
             port['id'], policy_group[0]['ID'])
         self.assertTrue(
             port_present,
-            "Port(%s) assiociated to policy group (%s) is not present" %
+            "Port(%s) associated to policy group (%s) is not present" %
             (port['id'], policy_group[0]['ID']))
         # When I disassociate the port from the policy group
         self.cli_disassociate_port_from_policy_group(port['id'])
@@ -136,7 +138,7 @@ class VSDManagedPolicyGroupsCLITest(BaseNuageNetworksCLITestCase,
             port['id'], policy_group[0]['ID'])
         self.assertFalse(
             port_present,
-            "Port(%s) disassiociated to policy group (%s) is still present" %
+            "Port(%s) disassociated to policy group (%s) is still present" %
             (port['id'], policy_group[0]['ID']))
 
     @nuage_test.header()
@@ -214,7 +216,6 @@ class VSDManagedPolicyGroupsCLITest(BaseNuageNetworksCLITestCase,
                     'disassociated port (%s) still present in '
                     'policy group(%s)' %
                     (ports[i]['id'], policy_groups[j][0]['ID']))
-        pass
 
     @nuage_test.header()
     def test_cli_list_l2_policy_groups_subnet_only(self):
@@ -298,7 +299,6 @@ class VSDManagedPolicyGroupsCLITest(BaseNuageNetworksCLITestCase,
             "in this subnet (%s)" %
             (policy_group_x[0]['ID'],
              cli_subnet6_x['id'], cli_subnet6_y['id']))
-        pass
 
     @nuage_test.header()
     def test_cli_list_l3_policy_groups_subnet_only(self):
@@ -560,4 +560,3 @@ class VSDManagedPolicyGroupsCLITest(BaseNuageNetworksCLITestCase,
                                  'disassociated port (%s) still present '
                                  'in policy group(%s)' %
                                  (ports[i]['id'], policy_groups[j][0]['ID']))
-        pass

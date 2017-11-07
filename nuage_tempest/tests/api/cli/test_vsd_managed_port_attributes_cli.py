@@ -18,7 +18,6 @@ from oslo_log import log as logging
 
 from tempest import config
 from tempest.lib.common.utils import data_utils
-from tempest.lib import exceptions
 from tempest.test import decorators
 
 from nuage_tempest.lib.features import NUAGE_FEATURES
@@ -45,13 +44,13 @@ SEVERAL_VSD_CLAIMED_FIPS = 3
 VALID_MAC_ADDRESS = 'fa:fa:3e:e8:e8:c0'
 
 
-class VSDManagedRedirectTargetCLITest(
+class VSDManagedRedirectTargetCliTest(
         remote_cli_base_testcase.RemoteCliBaseTestCase,
         base_vsd_managed_port_attributes.BaseVSDManagedPortAttributes):
 
     @classmethod
     def resource_setup(cls):
-        super(VSDManagedRedirectTargetCLITest, cls).resource_setup()
+        super(VSDManagedRedirectTargetCliTest, cls).resource_setup()
         # cls.iacl_template = ''
         # cls.eacl_templace = ''
 
@@ -507,8 +506,7 @@ class VSDManagedRedirectTargetCLITest(
         # I expect this to fail
         msg = "Bad request: A Nuage redirect target with name '" + name + \
               "' already exists"
-        self.assertRaisesRegex(
-            exceptions.SSHExecCommandFailed,
+        self.assertCommandFailed(
             msg,
             self._cli_create_nuage_redirect_target_in_l2_subnet,
             cli_subnet,
@@ -548,8 +546,7 @@ class VSDManagedRedirectTargetCLITest(
                 msg = "update_port_postcommit failed"
             else:
                 msg = "update_port_precommit failed"
-        self.assertRaisesRegex(
-            exceptions.SSHExecCommandFailed,
+        self.assertCommandFailed(
             msg,
             self._cli_associate_rt_port,
             rtport_2,
@@ -565,16 +562,14 @@ class VSDManagedRedirectTargetCLITest(
         # And I have created a redirection-target in the VSD-L2-Managed-Subnet
         # parameters for nuage redirection target
         msg = 'Nuage API'
-        self.assertRaisesRegex(
-            exceptions.SSHExecCommandFailed,
+        self.assertCommandFailed(
             msg,
             self._cli_create_redirect_target_with_args,
             "--insertion-mode VIRTUAL_WIRE --redundancy-enabled True --subnet",
             cli_subnet['name'],
             'cli-nuage-rt-l2-red-enabled-neg'
         )
-        self.assertRaisesRegex(
-            exceptions.SSHExecCommandFailed,
+        self.assertCommandFailed(
             msg,
             self._cli_create_redirect_target_with_args,
             "--insertion-mode VIRTUAL_WIRE --redundancy-enabled true --subnet",
@@ -590,8 +585,7 @@ class VSDManagedRedirectTargetCLITest(
         cli_network, cli_subnet = self._cli_create_os_l2_vsd_managed_subnet(
             vsd_l2_subnet)
         msg = 'Nuage API'
-        self.assertRaisesRegex(
-            exceptions.SSHExecCommandFailed,
+        self.assertCommandFailed(
             msg,
             self._cli_create_redirect_target_with_args,
             "--insertion-mode L3  --redundancy-enabled False --subnet",
@@ -609,8 +603,7 @@ class VSDManagedRedirectTargetCLITest(
 
         # I expect a badRequest
         msg = "argument --insertion-mode: invalid choice:"
-        self.assertRaisesRegex(
-            exceptions.SSHExecCommandFailed,
+        self.assertCommandFailed(
             msg,
             self._cli_create_redirect_target_with_args,
             "--insertion-mode L2  --redundancy-enabled False --subnet",
@@ -648,8 +641,7 @@ class VSDManagedRedirectTargetCLITest(
             else:
                 msg = "update_port_precommit failed"
 
-        self.assertRaisesRegex(
-            exceptions.SSHExecCommandFailed,
+        self.assertCommandFailed(
             msg,
             self._cli_associate_multiple_rt_port,
             rtport,
@@ -669,8 +661,6 @@ class VSDManagedPolicyGroupsCLITest(
     @classmethod
     def resource_setup(cls):
         super(VSDManagedPolicyGroupsCLITest, cls).resource_setup()
-        # cls.iacl_template = ''
-        # cls.eacl_templace = ''
 
     @nuage_test.header()
     def test_cli_l2_associate_port_to_policygroup(self):
@@ -841,7 +831,6 @@ class VSDManagedPolicyGroupsCLITest(
                          "in this subnet (%s)" %
                          (policy_group_x[0]['ID'],
                           cli_subnet_x['id'], cli_subnet_y['id']))
-        pass
 
     @nuage_test.header()
     def test_cli_list_l3_policy_groups_subnet_only(self):
@@ -1029,8 +1018,6 @@ class VSDManagedAllowedAddresPairsCLITest(
     @classmethod
     def resource_setup(cls):
         super(VSDManagedAllowedAddresPairsCLITest, cls).resource_setup()
-        # cls.iacl_template = ''
-        # cls.eacl_templace = ''
 
     @nuage_test.header()
     def test_cli_create_address_pair_l2domain_no_mac(self):
@@ -1129,7 +1116,6 @@ class VSDManagedAllowedAddresPairsCLITest(
         # self.assertEmpty(show_port['port']['allowed_address_pairs'],
         #                  "Removed allowed-address-pair stil present in " \
         #                  "port (%s)" % addrpair_port['id'])
-        pass
 
     @nuage_test.header()
     def test_cli_create_address_pair_l3_subnet_no_mac(self):
@@ -1177,7 +1163,6 @@ class VSDManagedAllowedAddresPairsCLITest(
         # self.assertEmpty(show_port['port']['allowed_address_pairs'],
         #                  "Removed allowed-address-pair stil present in " \
         #                  "port (%s)" % addrpair_port['id'])
-        pass
 
     @nuage_test.header()
     def test_cli_create_address_pair_l3domain_with_mac(self):
@@ -1226,7 +1211,6 @@ class VSDManagedAllowedAddresPairsCLITest(
         # self.assertEmpty(show_port['port']['allowed_address_pairs'],
         #                  "Removed allowed-address-pair stil present in " \
         #                  "port (%s)" % addrpair_port['id'])
-        pass
 
         #######################################################################
         #######################################################################
@@ -1239,14 +1223,6 @@ class VSDManagedAssociateFIPCLITest(
         remote_cli_base_testcase.RemoteCliBaseTestCase,
         base_vsd_managed_port_attributes.BaseVSDManagedPortAttributes):
 
-    # @classmethod
-    # def setup_clients(cls):
-    #     cls.TB = Topology()
-    #     cls.TB.open_session()
-    #     cls._osc = cls.TB.osc_1
-    #
-    #     super(VSDManagedAssociateFIPCLITest, cls).setup_clients()
-    #
     @classmethod
     def resource_setup(cls):
         super(VSDManagedAssociateFIPCLITest, cls).resource_setup()
@@ -1255,15 +1231,6 @@ class VSDManagedAssociateFIPCLITest(
     @classmethod
     def resource_cleanup(cls):
         super(VSDManagedAssociateFIPCLITest, cls).resource_cleanup()
-        # super(base_vsd_managed_port_attributes.BaseVSDManagedPortAttributes,
-        #     cls).resource_cleanup()
-        # cleanup the OpenStack managed objects first
-        # super(base_vsd_managed_port_attributes.BaseVSDManagedPortAttributes,
-        #     cls).resource_cleanup()
-    #
-    #     for vsd_fip_pool in cls.vsd_fip_pool:
-    #         cls.nuage_vsd_client.delete_vsd_fpolicygroup(
-    #             vsd_policy_group[0]['id'])
 
     @nuage_test.header()
     def test_cli_create_list_associate_vsd_floatingip(self):
@@ -1586,7 +1553,6 @@ class VSDManagedAssociateFIPCLITest(
         # When I try to associate the same claimed flaoting IP to another port
         port_2 = self.create_port(cli_network)
         # I expect a failure
-        expected_exception = exceptions.SSHExecCommandFailed
         msg = 'Bad request: Floating IP %s is already in use' % \
               claimed_fip[0]['address']
         if NUAGE_FEATURES.ml2_limited_exceptions:
@@ -1595,8 +1561,7 @@ class VSDManagedAssociateFIPCLITest(
             else:
                 msg = "update_port_precommit failed"
 
-        self.assertRaisesRegex(
-            expected_exception,
+        self.assertCommandFailed(
             msg,
             self.cli_associate_fip_to_port,
             claimed_fip[0]['ID'],

@@ -1,3 +1,5 @@
+# Copyright 2017 - Nokia
+# All Rights Reserved.
 
 import testtools
 

@@ -5,19 +5,18 @@ from netaddr import IPNetwork
 
 from tempest import config
 from tempest.lib.common.utils import data_utils
-from tempest.lib import exceptions
-
-import base_nuage_fip_underlay
 
 from nuage_tempest.lib.nuage_tempest_test_loader import Release
 from nuage_tempest.lib.remote_cli import remote_cli_base_testcase
 from nuage_tempest.lib.test import nuage_test
+from nuage_tempest.tests.api.floating_ip.base_nuage_fip_underlay \
+    import NuageFipUnderlayBase
 
 CONF = config.CONF
 
 
 class TestNuageFipUnderlayCli(remote_cli_base_testcase.RemoteCliBaseTestCase,
-                              base_nuage_fip_underlay.NuageFipUnderlayBase):
+                              NuageFipUnderlayBase):
     """TestNuageFipUnderlayCli
 
     FIP to Underlay tests using Neutron CLI client.
@@ -77,11 +76,10 @@ class TestNuageFipUnderlayCli(remote_cli_base_testcase.RemoteCliBaseTestCase,
         int_subnet = self.create_subnet_with_args(int_network['name'],
                                                   "100.99.98.0/24",
                                                   "--name ", int_subnet_name)
-        self.assertRaisesRegex(exceptions.SSHExecCommandFailed,
-                               exp_message,
-                               self.update_subnet_with_args,
-                               int_subnet['id'],
-                               "--underlay=True")
+        self.assertCommandFailed(exp_message,
+                                 self.update_subnet_with_args,
+                                 int_subnet['id'],
+                                 "--underlay=True")
 
     @nuage_test.header()
     def test_cli_create_external_subnet_with_underlay_invalid_values_neg(self):
@@ -107,13 +105,12 @@ class TestNuageFipUnderlayCli(remote_cli_base_testcase.RemoteCliBaseTestCase,
         exp_message = "error: argument --underlay: invalid choice: u'(.*)"
         for underlay in invalid_underlay_values:
             underlay_str = "--underlay=" + str(underlay)
-            self.assertRaisesRegex(exceptions.SSHExecCommandFailed,
-                                   exp_message,
-                                   self.create_subnet_with_args,
-                                   ext_network['name'],
-                                   "98.99.99.0/24",
-                                   "--name ", ext_subnet_name,
-                                   underlay_str)
+            self.assertCommandFailed(exp_message,
+                                     self.create_subnet_with_args,
+                                     ext_network['name'],
+                                     "98.99.99.0/24",
+                                     "--name ", ext_subnet_name,
+                                     underlay_str)
         pass
 
     @nuage_test.header()
@@ -138,13 +135,12 @@ class TestNuageFipUnderlayCli(remote_cli_base_testcase.RemoteCliBaseTestCase,
         for invalid_underlay in underlay_invalid_syntax:
             exp_message = "Unrecognized attribute"
             underlay_str = "--" + invalid_underlay + "=True"
-            self.assertRaisesRegex(exceptions.SSHExecCommandFailed,
-                                   exp_message,
-                                   self.create_subnet_with_args,
-                                   ext_network['name'],
-                                   "97.99.99.0/24",
-                                   "--name ", ext_subnet_name,
-                                   underlay_str)
+            self.assertCommandFailed(exp_message,
+                                     self.create_subnet_with_args,
+                                     ext_network['name'],
+                                     "97.99.99.0/24",
+                                     "--name ", ext_subnet_name,
+                                     underlay_str)
 
     @nuage_test.header()
     def test_cli_create_external_fip_subnet_with_vsd_managed_subnet_neg(self):
@@ -186,17 +182,16 @@ class TestNuageFipUnderlayCli(remote_cli_base_testcase.RemoteCliBaseTestCase,
                           "external network"
 
         self.LOG.info("exp_message = " + exp_message)
-        self.assertRaisesRegex(exceptions.SSHExecCommandFailed,
-                               exp_message,
-                               self.create_subnet_with_args,
-                               self.network['name'],
-                               str(cidr.cidr),
-                               '--name subnet-VSD-managed '
-                               '--net-partition',
-                               CONF.nuage.nuage_default_netpartition,
-                               '--nuagenet',
-                               vsd_l2domain[0][u'ID'],
-                               '--underlay=True')
+        self.assertCommandFailed(exp_message,
+                                 self.create_subnet_with_args,
+                                 self.network['name'],
+                                 str(cidr.cidr),
+                                 '--name subnet-VSD-managed '
+                                 '--net-partition',
+                                 CONF.nuage.nuage_default_netpartition,
+                                 '--nuagenet',
+                                 vsd_l2domain[0][u'ID'],
+                                 '--underlay=True')
         # Delete the VSD manged subnet
         self.nuage_vsd_client.delete_l2domain(vsd_l2domain[0]['ID'])
         self.nuage_vsd_client.delete_l2domaintemplate(
@@ -220,9 +215,8 @@ class TestNuageFipUnderlayCli(remote_cli_base_testcase.RemoteCliBaseTestCase,
                           "for internal subnets"
             self.LOG.info("exp_message = " + exp_message)
             underlay_str = "--underlay=" + str(underlay)
-            self.assertRaisesRegex(exceptions.SSHExecCommandFailed,
-                                   exp_message,
-                                   self.create_subnet_with_args,
-                                   int_network['name'],
-                                   '99.98.97.0/24',
-                                   underlay_str)
+            self.assertCommandFailed(exp_message,
+                                     self.create_subnet_with_args,
+                                     int_network['name'],
+                                     '99.98.97.0/24',
+                                     underlay_str)

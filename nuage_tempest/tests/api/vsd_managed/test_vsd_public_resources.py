@@ -21,6 +21,7 @@ from tempest.test import decorators
 
 from nuage_tempest.lib.test import nuage_test
 from nuage_tempest.lib.test import tags
+from nuage_tempest.lib.topology import Topology
 from nuage_tempest.tests.api.vsd_managed import base_vsd_managed_networks
 from nuage_tempest.tests.api.vsd_managed \
     import base_vsd_public_resources
@@ -55,6 +56,13 @@ class VSDPublicResourcesTest(
     @classmethod
     def resource_setup(cls):
         super(VSDPublicResourcesTest, cls).resource_setup()
+
+    @classmethod
+    # As i understand all these tests were written for monolithic plugin
+    def skip_checks(cls):
+        super(VSDPublicResourcesTest, cls).skip_checks()
+        if Topology.is_ml2:
+            raise cls.skipException('Skipping monolithic tests for ml2')
 
     @nuage_test.header()
     def test_vsd_l2_shared_unmgd_l2_unmgd_without_gateway_ip(self):
@@ -1251,6 +1259,13 @@ class VSDPublicResourcesTest(
 
 class VSDPublicResourcesSharedNetworksTest(
         base_vsd_public_resources.BaseVSDPublicResourcesTest):
+
+    @classmethod
+    # As i understand all these tests were written for monolithic plugin
+    def skip_checks(cls):
+        super(VSDPublicResourcesSharedNetworksTest, cls).skip_checks()
+        if Topology.is_ml2:
+            raise cls.skipException('Skipping monolithic tests for ml2')
 
     @classmethod
     def resource_setup(cls):

@@ -92,10 +92,6 @@ class VsdTestCaseMixin(test.BaseTestCase):
         cls.nuage_vsd_client.update_l2domain(
             domain_id, update_params=update_params)
 
-    @staticmethod
-    def prefix_length(cidr):
-        return cidr._prefixlen
-
     def create_vsd_l2domain_template(self, name=None, ip_type=None,
                                      dhcp_managed=None,
                                      cidr4=None, cidr6=None, **kwargs):
@@ -176,7 +172,7 @@ class VsdTestCaseMixin(test.BaseTestCase):
                 self.assertThat(l2domain_template,
                                 ContainsDict({'IPType': Equals("DUALSTACK")}))
             else:
-                raise NotImplementedError
+                self.fail('Invalid ip_type')
 
             if cidr4:
                 self.assertThat(l2domain_template,
@@ -398,7 +394,7 @@ class VsdTestCaseMixin(test.BaseTestCase):
         for key, value in kwargs.iteritems():
             if isinstance(value, dict):
                 # compare dict
-                raise NotImplementedError
+                self.fail('Compare with dict is not implemented')
             if isinstance(value, list):
                 # self.assertThat(port, ContainsDict({key: Equals(value)}))
                 self.assertItemsEqual(port[key], value)
@@ -422,7 +418,7 @@ class VsdTestCaseMixin(test.BaseTestCase):
         for key, value in kwargs.iteritems():
             if isinstance(value, dict):
                 # compare dict
-                raise NotImplementedError
+                self.fail('Compare with dict is not implemented')
             if isinstance(value, list):
                 # self.assertThat(port, ContainsDict({key: Equals(value)}))
                 self.assertItemsEqual(port[key], value)

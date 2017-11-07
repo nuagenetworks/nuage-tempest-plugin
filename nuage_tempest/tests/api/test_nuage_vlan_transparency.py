@@ -1,3 +1,6 @@
+# Copyright 2017 - Nokia
+# All Rights Reserved.
+
 from oslo_log import log as logging
 import testtools
 
@@ -38,7 +41,7 @@ class VlanTransparent(NuageBaseTest):
     def resource_setup(cls):
         super(VlanTransparent, cls).resource_setup()
 
-    @testtools.skipIf(Topology.is_devstack(),
+    @testtools.skipIf(not Topology.access_to_l2_supported(),
                       'Access to vm\'s in l2 networks is unsupported.')
     def test_l2_transparent_network(self):
         kwargs = {

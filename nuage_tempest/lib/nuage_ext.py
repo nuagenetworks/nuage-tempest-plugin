@@ -13,17 +13,14 @@ def skip_checks(fn):
     def wrapped(*args, **kwargs):
         if not CONF.nuagext.nuage_components:
             LOG.info("Nuage Components not provided for verification")
-            return
         else:
             try:
                 return fn(*args, **kwargs)
-            except ImportError as ex:
-                if re.search('test_', ex.message):
+            except ImportError as e:
+                if re.search('test_', str(e)):
                     LOG.info("Nuage Module not present for this tag")
-                    return
                 else:
-                    raise ex
-            return
+                    raise
     return wrapped
 
 

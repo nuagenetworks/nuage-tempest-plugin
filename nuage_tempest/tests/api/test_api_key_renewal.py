@@ -51,8 +51,6 @@ class APIKeyRenewal(NuageBaseTest):
 
         cls.sys_conf = sys_conf[0]
         cls.conf_id = cls.sys_conf['ID']
-        cls.TB = Topology()
-        cls.TB.open_session()
 
     @classmethod
     def resource_setup(cls):
@@ -83,7 +81,8 @@ class APIKeyRenewal(NuageBaseTest):
         current_api_key = self._get_current_api_key_from_neutron()
         self.assertIsNotNone(current_api_key)
 
-    @testtools.skipIf(Topology.is_devstack(), 'Skipped on devstack setup')
+    @testtools.skipIf(not Topology.neutron_restart_supported(),
+                      'Skipping tests that restart neutron')
     @decorators.attr(type='slow')
     def test_api_key_is_renewed_after_11_mins(self):
         self._set_api_key_renewal_interval(60)

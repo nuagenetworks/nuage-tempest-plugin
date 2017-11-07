@@ -1,12 +1,13 @@
+# Copyright 2017 - Nokia
+# All Rights Reserved.
+
 from oslo_log import log as logging
 import time
 
 from tempest.api.compute import base as serv_base
 from tempest import config
-from tempest import test
 
 from nuage_tempest.lib import test_base
-from nuage_tempest.lib.topology import Topology
 from nuage_tempest.tests.api import test_vpnaas
 
 LOG = logging.getLogger(__name__)
@@ -15,20 +16,6 @@ CONF = config.CONF
 
 class VPNaaSScenarioTest(test_vpnaas.VPNaaSBase,
                          serv_base.BaseV2ComputeTest):
-
-    @classmethod
-    @test.requires_ext(extension="vpnaas", service="network")
-    def resource_setup(self):
-        super(VPNaaSScenarioTest, self).resource_setup()
-        self.TB = Topology()
-        self.TB.open_session()
-        self.os_handle = self.TB.osc_1.api
-        self.vsd_handle = self.TB.vsd_1
-
-    @classmethod
-    def resource_cleanup(cls):
-        cls.os_data_struct.delete_resource(cls.def_net_partition)
-        super(VPNaaSScenarioTest, cls).resource_cleanup()
 
     def _create_resources(self):
         """_create_resources
@@ -165,12 +152,10 @@ class VPNaaSScenarioTest(test_vpnaas.VPNaaSBase,
                 router['router']['id'], **routernogwkwargs)
 
             # VM Booting
-            ovs = self.TB.vrs_2.cmd('hostname')
             vmname = 'VM-' + str(i)
             vmkwargs = {'name': vmname, 'flavorRef': '1',
                         'imageRef': CONF.compute.image_ref,
-                        'networks': [{'uuid': network['network']['id']}],
-                        'availability_zone': 'nova:' + ovs[0][0]}
+                        'networks': [{'uuid': network['network']['id']}]}
             vm = self.os_handle.servers_client.create_server(**vmkwargs)
             # Adding VM to the os_data_struct tree
             self.os_data_struct.insert_resource(
@@ -195,7 +180,7 @@ class VPNaaSScenarioTest(test_vpnaas.VPNaaSBase,
             self.addCleanup(self.os_handle.vpnservice_client.delete_vpnservice,
                             vpnservice['id'])
 
-    def _createikepolicy_ipsecpolicy(self):
+    def _create_ikepolicy_ipsecpolicy(self):
         # Creating IKEPolicy
         ikepolicyname = 'IKEPolicy'
         ikepolicy = (
@@ -246,7 +231,7 @@ class VPNaaSScenarioTest(test_vpnaas.VPNaaSBase,
             delete_ipsecsiteconnection, ipsecsiteconnection['id'])
         return ipsecsiteconnection
 
-    def _calclulate_vm_port(self, vm):
+    def _calculate_vm_port(self, vm):
         vmuuid = vm['server']['id']
         src = 'source admin_rc;'
         novacmd = 'nova show ' + vmuuid + \
@@ -259,13 +244,13 @@ class VPNaaSScenarioTest(test_vpnaas.VPNaaSBase,
 
     def _get_vm_handle(self, vm, username='cirros',
                        password='cubswin:)'):
-        vm_port = self._calclulate_vm_port(vm)
+        vm_port = self._calculate_vm_port(vm)
         vm_handle = self.TB.vrs_2.ssh.open_vm_console(
             vm_port, username, password=password)
         return vm_handle
 
-    def _check_vm_ping(self, cmd, fromvmhandle, tovm,
-                       tonetwork, negative='False'):
+    @staticmethod
+    def _check_vm_ping(cmd, fromvmhandle, tovm, tonetwork, negative='False'):
         to_vm_ip = tovm['server']['addresses'][tonetwork][0]['addr']
         ping_out = fromvmhandle.send(cmd + to_vm_ip)
         expected_out1 = '0% packet loss'
@@ -307,7 +292,7 @@ class VPNaaSScenarioTest(test_vpnaas.VPNaaSBase,
         vpn1 = self.os_data_struct.get_resource('VPN-0').os_data
         vpn2 = self.os_data_struct.get_resource('VPN-1').os_data
 
-        ikepolicy, ipsecpolicy = self._createikepolicy_ipsecpolicy()
+        ikepolicy, ipsecpolicy = self._create_ikepolicy_ipsecpolicy()
 
         # Creating the IPSecSiteConnection1
         self._create_ipsecsiteconnection(

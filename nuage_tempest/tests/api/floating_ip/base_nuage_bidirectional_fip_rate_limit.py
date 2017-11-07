@@ -4,9 +4,9 @@
 from oslo_log import log as logging
 
 from tempest.api.network import base
+from tempest.common import utils
 from tempest import config
 from tempest.lib.common.utils import data_utils
-from tempest import test
 
 from nuage_tempest.lib.utils import constants
 from nuage_tempest.services import nuage_client
@@ -50,11 +50,11 @@ class NuageBidirectionalFipRateLimitBase(base.BaseNetworkTest):
     @classmethod
     def resource_setup(cls):
         super(NuageBidirectionalFipRateLimitBase, cls).resource_setup()
-        if not test.is_extension_enabled('router', 'network'):
+        if not utils.is_extension_enabled('router', 'network'):
             msg = "router extension not enabled."
             raise cls.skipException(msg)
 
-        if not test.is_extension_enabled('nuage-floatingip', 'network'):
+        if not utils.is_extension_enabled('nuage-floatingip', 'network'):
             msg = "Extension nuage_floatingip not enabled."
             raise cls.skipException(msg)
 

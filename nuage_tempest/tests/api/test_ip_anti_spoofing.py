@@ -13,7 +13,6 @@ from tempest.test import decorators
 
 from nuage_tempest.lib.openstackData import openstackData
 from nuage_tempest.lib.test import nuage_test
-from nuage_tempest.lib.topology import Topology
 from nuage_tempest.services.nuage_client import NuageRestClient
 from nuage_tempest.tests import nuage_ext
 
@@ -31,8 +30,6 @@ class IpAntiSpoofingTestBase(base.BaseNetworkTest):
     @classmethod
     def resource_setup(cls):
         super(IpAntiSpoofingTestBase, cls).resource_setup()
-        cls.TB = Topology()
-        cls.TB.open_session()
         cls.def_net_partition = CONF.nuage.nuage_default_netpartition
         cls.os_data = openstackData()
         cls.os_data.insert_resource(cls.def_net_partition, parent='CMS',
@@ -116,7 +113,6 @@ class IpAntiSpoofingTestBase(base.BaseNetworkTest):
         l2domain = self._create_subnet(network, name=l2domain_name)
         self.os_data.insert_resource(l2domain_name, netpart, os_data=l2domain)
         self.addCleanup(self.subnets_client.delete_subnet, l2domain['id'])
-        # Populate the data dict required for port creation
         kwargs = {'name': port_name, 'network_id': network['id']}
         if allowed_address_pairs:
             kwargs.update({'allowed_address_pairs': allowed_address_pairs})
@@ -651,7 +647,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
     def test_anti_spoofing_for_params_0_0_0_0_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, different ip, different subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '20.20.0.0/24'
         allowed_address_pairs = [{'ip_address': ip_address}]
         network, l2domain, port = self._create_network_port_l2resources(
@@ -671,7 +667,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
     def test_anti_spoofing_for_params_0_0_0_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, different ip, same subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '30.30.30.0/24'
         allowed_address_pairs = [{'ip_address': ip_address}]
         network, l2domain, port = self._create_network_port_l2resources(
@@ -690,7 +686,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
     def test_anti_spoofing_for_params_0_0_1_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, same ip, same subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '30.30.30.0/24'
         allowed_address_pairs = [{'ip_address': ip_address}]
         network, l2domain, port = self._create_network_port_l2resources(
@@ -709,7 +705,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
     def test_anti_spoofing_for_params_0_1_0_0_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # different mac, different ip, different subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '20.20.0.0/24'
         mac_address = 'fe:a0:36:4b:c8:70'
         allowed_address_pairs = [{'ip_address': ip_address,
@@ -732,7 +728,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
     def test_anti_spoofing_for_params_0_1_0_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # different mac, different ip, same subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '30.30.30.0/24'
         mac_address = 'fe:a0:36:4b:c8:70'
         allowed_address_pairs = [{'ip_address': ip_address,
@@ -755,7 +751,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
     def test_anti_spoofing_for_params_0_1_1_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # different mac, same ip, same subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '30.30.30.0/24'
         mac_address = 'fe:a0:36:4b:c8:70'
         allowed_address_pairs = [{'ip_address': ip_address,
@@ -778,7 +774,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
     def test_anti_spoofing_for_params_1_0_0_0_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # same mac, different ip, different subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '20.20.20.100'
         allowed_address_pairs = [{'ip_address': ip_address}]
         network, l2domain, port = self._create_network_port_l2resources(
@@ -797,7 +793,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
     def test_anti_spoofing_for_params_1_0_0_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # same mac, same ip, different subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '30.30.30.100'
         allowed_address_pairs = [{'ip_address': ip_address}]
         network, l2domain, port = self._create_network_port_l2resources(
@@ -816,7 +812,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
     def test_anti_spoofing_for_params_1_0_1_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, same ip, same subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         network, l2domain, port = self._create_network_port_l2resources(
             ntw_security='True', port_security='True',
             l2domain_name='l2dom29-1',
@@ -840,7 +836,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
     def test_anti_spoofing_for_params_1_1_0_0_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # same mac, different ip, different subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '20.20.20.100'
         mac_address = 'fe:a0:36:4b:c8:70'
         allowed_address_pairs = [{'ip_address': ip_address,
@@ -863,7 +859,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
     def test_anti_spoofing_for_params_1_1_0_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # different ip, different ip,  different subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '30.30.30.100'
         mac_address = 'fe:a0:36:4b:c8:70'
         allowed_address_pairs = [{'ip_address': ip_address,
@@ -886,7 +882,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
     def test_anti_spoofing_for_params_1_1_1_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # different mac, same ip, same subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         network, l2domain, port = self._create_network_port_l2resources(
             ntw_security='True', port_security='True',
             l2domain_name='l2dom32-1',
@@ -910,7 +906,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
     def test_anti_spoofing_for_params_0_0_0_0_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, different ip, different subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '20.20.0.0/24'
         allowed_address_pairs = [{'ip_address': ip_address}]
         network, router, subnet, port = self._create_network_port_l3resources(
@@ -932,7 +928,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
     def test_anti_spoofing_for_params_0_0_0_1_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, different ip, same subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '30.30.30.0/24'
         allowed_address_pairs = [{'ip_address': ip_address}]
         network, router, subnet, port = self._create_network_port_l3resources(
@@ -953,7 +949,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
     def test_anti_spoofing_for_params_0_0_1_1_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, same ip, same subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '30.30.30.0/24'
         allowed_address_pairs = [{'ip_address': ip_address}]
         network, router, subnet, port = self._create_network_port_l3resources(
@@ -974,7 +970,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
     def test_anti_spoofing_for_params_0_1_0_0_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # different mac, different ip, different subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '20.20.0.0/24'
         mac_address = 'fe:a0:36:4b:c8:70'
         allowed_address_pairs = [{'ip_address': ip_address,
@@ -999,7 +995,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
     def test_anti_spoofing_for_params_0_1_0_1_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # different mac, different ip, same subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '30.30.30.0/24'
         mac_address = 'fe:a0:36:4b:c8:70'
         allowed_address_pairs = [{'ip_address': ip_address,
@@ -1024,7 +1020,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
     def test_anti_spoofing_for_params_0_1_1_1_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # different mac, same ip, same subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '30.30.30.0/24'
         mac_address = 'fe:a0:36:4b:c8:70'
         allowed_address_pairs = [{'ip_address': ip_address,
@@ -1049,7 +1045,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
     def test_anti_spoofing_for_params_1_0_0_0_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # same mac, different ip, different subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '20.20.20.100'
         allowed_address_pairs = [{'ip_address': ip_address}]
         network, router, subnet, port = self._create_network_port_l3resources(
@@ -1070,7 +1066,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
     def test_anti_spoofing_for_params_1_0_0_1_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # same mac, same ip, different subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '30.30.30.100'
         allowed_address_pairs = [{'ip_address': ip_address}]
         network, router, subnet, port = self._create_network_port_l3resources(
@@ -1091,7 +1087,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
     def test_anti_spoofing_for_params_1_0_1_1_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, same ip, same subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         network, router, subnet, port = self._create_network_port_l3resources(
             ntw_security='True',
             port_security='True',
@@ -1117,7 +1113,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
     def test_anti_spoofing_for_params_1_1_0_0_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # same mac, different ip, different subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '20.20.20.100'
         mac_address = 'fe:a0:36:4b:c8:70'
         allowed_address_pairs = [{'ip_address': ip_address,
@@ -1142,7 +1138,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
     def test_anti_spoofing_for_params_1_1_0_1_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # different ip, different ip,  different subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '30.30.30.100'
         mac_address = 'fe:a0:36:4b:c8:70'
         allowed_address_pairs = [{'ip_address': ip_address,
@@ -1167,7 +1163,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
     def test_anti_spoofing_for_params_1_1_1_1_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # different mac, same ip, same subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         network, router, subnet, port = self._create_network_port_l3resources(
             ntw_security='True',
             port_security='True',
@@ -1193,7 +1189,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
     def test_anti_spoofing_for_params_1_1_1_1_vsd_managed_l2domain(self):
         # IP Anti Spoofing tests for vsd managed port having vip parameters:
         # full cidr(/32 IP), different mac, same ip, same subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         network, subnet, port = self._create_vsd_managed_l2resources(
             ntw_security='True',
             port_security='True',
@@ -1218,7 +1214,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
     def test_anti_spoofing_for_params_1_1_1_1_vsd_managed_l3domain(self):
         # IP Anti Spoofing tests for vsd managed port having vip parameters:
         # full cidr(/32 IP), different mac, same ip, same subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         network, subnet, port = self._create_vsd_managed_l3resources(
             ntw_security='True',
             port_security='True',
@@ -1244,7 +1240,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
     def test_anti_spoofing_for_params_1_0_0_1_vsd_managed_l3domain(self):
         # IP Anti Spoofing tests for vsd managed subnet port with
         # vip parameters having full cidr(/32 IP), same mac, same ip,
-        # different subnet in comparsion with the corresponding
+        # different subnet in comparison with the corresponding
         # port parameters
         ip_address = '40.40.40.100'
         allowed_address_pairs = [{'ip_address': ip_address}]
@@ -1267,7 +1263,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         # IP Anti Spoofing tests for vsd managed subnet port with
         # vip parameters having full cidr(/32 IP),
         # same mac, different ip, different subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '20.20.20.100'
         allowed_address_pairs = [{'ip_address': ip_address}]
         network, subnet, port = self._create_vsd_managed_l3resources(
@@ -1286,6 +1282,13 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
 
 
 class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
+
+    @classmethod
+    def skip_checks(cls):
+        # TODO(Kris) NEEDS MORE WORK
+        raise cls.skipException(
+            'TODO(KRIS) : IpAntiSpoofingCliTests need more work.')
+
     @classmethod
     def resource_setup(cls):
         super(IpAntiSpoofingCliTests, cls).resource_setup()
@@ -1293,7 +1296,6 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         cls.os_data = openstackData()
         cls.os_data.insert_resource(cls.def_net_partition,
                                     parent='CMS')
-        cls.os = cls.TB.osc_1.cli
 
     @classmethod
     def setup_clients(cls):
@@ -1304,47 +1306,34 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         cls.os_data.delete_resource(cls.def_net_partition)
         super(IpAntiSpoofingCliTests, cls).resource_cleanup()
 
-    def _create_ntw_with_sec_disabled(self, ntw_name):
-        kwargs = {'port_security_enabled': 'false'}
-        network = self.os.create_network(ntw_name, **kwargs)
-        self.addCleanup(self.os.delete_network, network['id'])
-        return network
-
     def _create_and_verify_ntw_port_with_sec_value(self, ntw_name, port_name,
                                                    ntw_security=None,
                                                    port_security=None):
         if ntw_security is None:
-            network = self.os.create_network(ntw_name)
-            ntw_security = 'True'
+            network = self.create_network(ntw_name)
+            ntw_security = True
         else:
             kwargs = {'port_security_enabled': ntw_security}
-            network = self.os.create_network(ntw_name, **kwargs)
-        self.addCleanup(self.os.delete_network, network['id'])
+            network = self.create_network(ntw_name, **kwargs)
         self.assertEqual(network['name'], ntw_name)
         self.assertEqual(network['port_security_enabled'], ntw_security)
-
+        port_kwargs = {'name': port_name}
         if port_security is None:
-            port = self.os.create_port(network, port_name)
+            port = self.create_port(network, **port_kwargs)
             port_security = ntw_security
         else:
-            kwargs = {'port_security_enabled': port_security}
-            port = self.os.create_port(network, port_name, **kwargs)
-        self.addCleanup(self.os.delete_port, port['id'])
+            port_kwargs.update({'port_security_enabled': port_security})
+            port = self.create_port(network, **port_kwargs)
         self.assertEqual(port['port_security_enabled'], port_security)
         self.assertEqual(port['name'], port_name)
         return port
 
     def _create_l2resources(self, ntw_name, sub_name, port_name,
                             addr_pr=None, cidr='50.50.50.0/24', mac=None):
-        network = self.os.create_network(ntw_name)
-        self.addCleanup(self.os.delete_network, network['id'])
+        network = self.create_network(ntw_name)
         cidr = IPNetwork(cidr)
-        mask_bits = 24
-        kwargs = {'name': sub_name,
-                  'cidr': cidr,
-                  'mask_bits': mask_bits}
-        subnet = self.os.create_subnet(network, **kwargs)
-        self.addCleanup(self.os.delete_subnet, subnet['id'])
+        subnet = self.create_subnet(network, cidr=cidr,
+                                    mask_bits=cidr.prefixlen)
         self.os_data.insert_resource(sub_name, self.def_net_partition,
                                      os_data=subnet)
         if mac:
@@ -1353,44 +1342,33 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         if addr_pr:
             kwargs = {'allowed_address_pairs': addr_pr,
                       'name': port_name}
-            port = self.os.create_port(network, **kwargs)
         else:
-            port = self.os.create_port(network)
-        self.addCleanup(self.os.delete_port, port['id'])
+            kwargs = {'name': port_name}
+        port = self.create_port(network, **kwargs)
         self.os_data.insert_resource(port_name, sub_name, os_data=port)
         self.addCleanup(self.os_data.delete_resource, sub_name)
         return subnet, port
 
     def _create_l3resources(self, ntw_name, router_name, sub_name, port_name,
                             addr_pr=None, cidr='50.50.50.0/24', mac=None):
-        router = self.os.create_router(router_name)
-        self.addCleanup(self.os.delete_router, router['id'])
+        router = self.create_router(router_name)
         self.os_data.insert_resource(router_name, self.def_net_partition,
                                      os_data=router)
-        network = self.os.create_network(ntw_name)
-        self.addCleanup(self.os.delete_network, network['id'])
+        network = self.create_network(ntw_name)
         cidr = IPNetwork(cidr)
-        mask_bits = 24
-
         if mac:
             raise NotImplemented
 
-        kwargs = {'name': sub_name,
-                  'cidr': cidr,
-                  'mask_bits': mask_bits}
-        subnet = self.os.create_subnet(network, **kwargs)
-        self.addCleanup(self.os.delete_subnet, subnet['id'])
+        kwargs = {'name': sub_name}
+        subnet = self.create_subnet(network, cidr=cidr, mask_bits=24, **kwargs)
         self.os_data.insert_resource(sub_name, router_name, os_data=subnet)
-        self.os.create_router_interface(router['id'], subnet['id'])
-        self.addCleanup(self.os.remove_router_interface,
-                        router['id'], subnet['id'])
+        self.create_router_interface(router['id'], subnet['id'])
         if addr_pr:
             kwargs = {'allowed_address_pairs': addr_pr,
                       'name': port_name}
-            port = self.os.create_port(network, **kwargs)
+            port = self.create_port(network, **kwargs)
         else:
-            port = self.os.create_port(network)
-        self.addCleanup(self.os.delete_port, port['id'])
+            port = self.create_port(network)
         self.os_data.insert_resource(port_name, sub_name, os_data=port)
         self.addCleanup(self.os_data.delete_resource, sub_name)
         return router, subnet, port
@@ -1398,18 +1376,19 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
     @nuage_test.header()
     def test_create_show_update_delete_ntw_with_sec_disabled(self):
         ntw_name = data_utils.rand_name('network-')
-        network = self._create_ntw_with_sec_disabled(ntw_name)
+        kwargs = {'port_security_enabled': 'False'}
+        network = self.create_network(ntw_name, **kwargs)
         self.assertEqual(network['port_security_enabled'], 'False')
         self.assertEqual(network['name'], ntw_name)
         # check the net-show to verify the port_security option
-        ntw_show = self.os.show_network(network['id'])
+        ntw_show = self.networks_client.show_network(network['id'])
         self.assertEqual(ntw_show['port_security_enabled'], 'False')
         self.assertEqual(ntw_show['name'], ntw_name)
 
         # update the network to enable port security
         kwargs = {'port_security_enabled': 'True'}
-        self.os.update_network(network['id'], **kwargs)
-        ntw_show = self.os.show_network(network['id'])
+        self.networks_client.update_network(network['id'], **kwargs)
+        ntw_show = self.networks_client.show_network(network['id'])
         self.assertEqual(ntw_show['port_security_enabled'], 'True')
 
     @nuage_test.header()
@@ -1418,17 +1397,17 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         port_name = data_utils.rand_name('port-')
         port = self._create_and_verify_ntw_port_with_sec_value(
             ntw_name, port_name,
-            port_security='False')
+            port_security=False)
 
         # Check the port-shows the right port-security value
-        port_show = self.os.show_port(port['id'])
+        port_show = self.ports_client.show_port(port['id'])
         self.assertEqual(port_show['port_security_enabled'], 'False')
         self.assertEqual(port_show['name'], port_name)
 
         # Update the port to enable port security
         kwargs = {'port_security_enabled': 'True'}
-        self.os.update_port(port, **kwargs)
-        port_show = self.os.show_port(port['id'])
+        self.ports_client.update_port(port, **kwargs)
+        port_show = self.ports_client.show_port(port['id'])
         self.assertEqual(port_show['port_security_enabled'], 'True')
 
     @nuage_test.header()
@@ -1437,7 +1416,7 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         port_name = data_utils.rand_name('port-')
         port = self._create_and_verify_ntw_port_with_sec_value(
             ntw_name, port_name,
-            ntw_security='False')
+            ntw_security=False)
         self.assertIsNotNone(port)
 
     @nuage_test.header()
@@ -1446,8 +1425,8 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         port_name = data_utils.rand_name('port-')
         port = self._create_and_verify_ntw_port_with_sec_value(
             ntw_name, port_name,
-            ntw_security='False',
-            port_security='False')
+            ntw_security=False,
+            port_security=False)
         self.assertIsNotNone(port)
 
     @nuage_test.header()
@@ -1456,16 +1435,16 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         port_name = data_utils.rand_name('port-')
         port = self._create_and_verify_ntw_port_with_sec_value(
             ntw_name, port_name,
-            ntw_security='False',
-            port_security='True')
+            ntw_security=False,
+            port_security=True)
         self.assertIsNotNone(port)
 
     @nuage_test.header()
     def test_anti_spoofing_for_params_0_0_0_0_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, different ip, different subnet in
-        # comparsion with the corresponding port parameters
-        allowed_addr_pair = 'type=dict list=true ip_address=30.30.30.0/24'
+        # comparison with the corresponding port parameters
+        allowed_addr_pair = [{'ip_address': '30.30.30.0/24'}]
         ntw_name = 'network70-1'
         sub_name = 'subnet70-1'
         port_name = 'port70-1'
@@ -1479,8 +1458,8 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
     def test_anti_spoofing_for_params_0_0_0_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, different ip, same subnet in
-        # comparsion with the corresponding port parameters
-        allowed_addr_pair = 'type=dict list=true ip_address=50.50.50.0/24'
+        # comparison with the corresponding port parameters
+        allowed_addr_pair = [{'ip_address': '50.50.50.0/24'}]
         ntw_name = 'network71-1'
         sub_name = 'subnet71-1'
         port_name = 'port71-1'
@@ -1494,9 +1473,9 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
     def test_anti_spoofing_for_params_0_0_1_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, same ip, same subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         # ip_address = '30.30.30.0/24'
-        allowed_addr_pair = 'type=dict list=true ip_address=50.50.50.0/24'
+        allowed_addr_pair = [{'ip_address': '50.50.50.0/24'}]
         ntw_name = 'network72-1'
         sub_name = 'subnet72-1'
         port_name = 'port72-1'
@@ -1510,11 +1489,11 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
     def test_anti_spoofing_for_params_0_1_0_0_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # different mac, different ip, different subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '20.20.0.0/24'
         mac_address = 'fe:a0:36:4b:c8:70'
-        allowed_addr_pair = 'type=dict list=true ip_address=' \
-                            + ip_address + ',mac_address=' + mac_address
+        allowed_addr_pair = [{'ip_address': ip_address,
+                              'mac_address': mac_address}]
         ntw_name = 'network73-1'
         sub_name = 'subnet73-1'
         port_name = 'port73-1'
@@ -1528,11 +1507,11 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
     def test_anti_spoofing_for_params_0_1_0_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # different mac, different ip, same subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '50.50.50.0/24'
         mac_address = 'fe:a0:36:4b:c8:70'
-        allowed_addr_pair = 'type=dict list=true ip_address=' \
-                            + ip_address + ',mac_address=' + mac_address
+        allowed_addr_pair = [{'ip_address': ip_address,
+                              'mac_address': mac_address}]
         ntw_name = 'network74-1'
         sub_name = 'subnet74-1'
         port_name = 'port74-1'
@@ -1546,11 +1525,11 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
     def test_anti_spoofing_for_params_0_1_1_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # different mac, same ip, same subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '50.50.50.0/24'
         mac_address = 'fe:a0:36:4b:c8:70'
-        allowed_addr_pair = 'type=dict list=true ip_address=' \
-                            + ip_address + ',mac_address=' + mac_address
+        allowed_addr_pair = [{'ip_address': ip_address,
+                              'mac_address': mac_address}]
         ntw_name = 'network75-1'
         sub_name = 'subnet75-1'
         port_name = 'port75-1'
@@ -1564,9 +1543,9 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
     def test_anti_spoofing_for_params_1_0_0_0_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # same mac, different ip, different subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '20.20.20.100'
-        allowed_addr_pair = 'type=dict list=true ip_address=' + ip_address
+        allowed_addr_pair = [{'ip_address': ip_address}]
         ntw_name = 'network76-1'
         sub_name = 'subnet76-1'
         port_name = 'port76-1'
@@ -1580,9 +1559,9 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
     def test_anti_spoofing_for_params_1_0_0_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # same mac, same ip, different subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '50.50.50.100'
-        allowed_addr_pair = 'type=dict list=true ip_address=' + ip_address
+        allowed_addr_pair = [{'ip_address': ip_address}]
         ntw_name = 'network77-1'
         sub_name = 'subnet77-1'
         port_name = 'port77-1'
@@ -1596,7 +1575,7 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
     def test_anti_spoofing_for_params_1_0_1_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, same ip, same subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ntw_name = 'network78-1'
         sub_name = 'subnet78-1'
         port_name = 'port78-1'
@@ -1605,10 +1584,10 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         ip_address = port['fixed_ips'][0]['ip_address']
 
         mac_address = port['mac_address']
-        allowed_addr_pair = 'type=dict list=true ip_address=' \
-                            + ip_address + ',mac_address=' + mac_address
+        allowed_addr_pair = {'ip_address': ip_address,
+                             'mac_address': mac_address}
         kwargs = {'allowed_address_pairs': allowed_addr_pair}
-        port = self.os.update_port(port, **kwargs)
+        port = self.ports_client.update_port(port, **kwargs)
         self.assertIsNone(port)
         tag_name = 'verify_vip_and_anti_spoofing'
         nuage_ext.nuage_extension.nuage_components(
@@ -1618,11 +1597,11 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
     def test_anti_spoofing_for_params_1_1_0_0_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # same mac, different ip, different subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '20.20.20.100'
         mac_address = 'fe:a0:36:4b:c8:70'
-        allowed_addr_pair = 'type=dict list=true ip_address=' \
-                            + ip_address + ',mac_address=' + mac_address
+        allowed_addr_pair = [{'ip_address': ip_address,
+                              'mac_address': mac_address}]
         ntw_name = 'network79-1'
         sub_name = 'subnet79-1'
         port_name = 'port79-1'
@@ -1636,11 +1615,11 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
     def test_anti_spoofing_for_params_1_1_0_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # different ip, different ip,  different subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '50.50.50.100'
         mac_address = 'fe:a0:36:4b:c8:70'
-        allowed_addr_pair = 'type=dict list=true ip_address=' \
-                            + ip_address + ',mac_address=' + mac_address
+        allowed_addr_pair = [{'ip_address': ip_address,
+                              'mac_address': mac_address}]
         ntw_name = 'network80-1'
         sub_name = 'subnet80-1'
         port_name = 'port80-1'
@@ -1654,7 +1633,7 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
     def test_anti_spoofing_for_params_1_1_1_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # different mac, same ip, same subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ntw_name = 'network81-1'
         sub_name = 'subnet81-1'
         port_name = 'port81-1'
@@ -1662,10 +1641,10 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
             ntw_name, sub_name, port_name)
         ip_address = port['fixed_ips'][0]['ip_address']
         mac_address = 'fe:a0:36:4b:c8:70'
-        allowed_addr_pair = 'type=dict list=true ip_address=' \
-                            + ip_address + ',mac_address=' + mac_address
+        allowed_addr_pair = [{'ip_address': ip_address,
+                              'mac_address': mac_address}]
         kwargs = {'allowed_address_pairs': allowed_addr_pair}
-        port = self.os.update_port(port, **kwargs)
+        port = self.ports_client.update_port(port, **kwargs)
         self.assertIsNone(port)
         tag_name = 'verify_vip_and_anti_spoofing'
         nuage_ext.nuage_extension.nuage_components(
@@ -1675,9 +1654,9 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
     def test_anti_spoofing_for_params_0_0_0_0_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, different ip, different subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '20.20.0.0/24'
-        allowed_addr_pair = 'type=dict list=true ip_address=' + ip_address
+        allowed_addr_pair = [{'ip_address': ip_address}]
         ntw_name = 'network82-1'
         router_name = 'router82-1'
         sub_name = 'subnet82-1'
@@ -1692,9 +1671,9 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
     def test_anti_spoofing_for_params_0_0_0_1_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, different ip, same subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '50.50.50.0/24'
-        allowed_addr_pair = 'type=dict list=true ip_address=' + ip_address
+        allowed_addr_pair = [{'ip_address': ip_address}]
         ntw_name = 'network83-1'
         router_name = 'router83-1'
         sub_name = 'subnet83-1'
@@ -1709,9 +1688,9 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
     def test_anti_spoofing_for_params_0_0_1_1_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, same ip, same subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '50.50.50.0/24'
-        allowed_addr_pair = 'type=dict list=true ip_address=' + ip_address
+        allowed_addr_pair = [{'ip_address': ip_address}]
         ntw_name = 'network84-1'
         router_name = 'router84-1'
         sub_name = 'subnet84-1'
@@ -1726,11 +1705,11 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
     def test_anti_spoofing_for_params_0_1_0_0_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # different mac, different ip, different subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '20.20.0.0/24'
         mac_address = 'fe:a0:36:4b:c8:70'
-        allowed_addr_pair = 'type=dict list=true ip_address=' \
-                            + ip_address + ',mac_address=' + mac_address
+        allowed_addr_pair = [{'ip_address': ip_address,
+                              'mac_address': mac_address}]
         ntw_name = 'network85-1'
         router_name = 'router85-1'
         sub_name = 'subnet85-1'
@@ -1745,11 +1724,11 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
     def test_anti_spoofing_for_params_0_1_0_1_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # different mac, different ip, same subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '50.50.50.0/24'
         mac_address = 'fe:a0:36:4b:c8:70'
-        allowed_addr_pair = 'type=dict list=true ip_address=' \
-                            + ip_address + ',mac_address=' + mac_address
+        allowed_addr_pair = [{'ip_address': ip_address,
+                              'mac_address': mac_address}]
         ntw_name = 'network86-1'
         router_name = 'router86-1'
         sub_name = 'subnet86-1'
@@ -1763,11 +1742,11 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
     def test_anti_spoofing_for_params_0_1_1_1_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # different mac, same ip, same subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '50.50.50.0/24'
         mac_address = 'fe:a0:36:4b:c8:70'
-        allowed_addr_pair = 'type=dict list=true ip_address=' \
-                            + ip_address + ',mac_address=' + mac_address
+        allowed_addr_pair = [{'ip_address': ip_address,
+                             'mac_address': mac_address}]
         ntw_name = 'network87-1'
         router_name = 'router87-1'
         sub_name = 'subnet87-1'
@@ -1782,9 +1761,9 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
     def test_anti_spoofing_for_params_1_0_0_0_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # same mac, different ip, different subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '20.20.20.100'
-        allowed_addr_pair = 'type=dict list=true ip_address=' + ip_address
+        allowed_addr_pair = [{'ip_address': ip_address}]
         ntw_name = 'network88-1'
         router_name = 'router88-1'
         sub_name = 'subnet88-1'
@@ -1798,9 +1777,9 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
     def test_anti_spoofing_for_params_1_0_0_1_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # same mac, same ip, different subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '50.50.50.100'
-        allowed_addr_pair = 'type=dict list=true ip_address=' + ip_address
+        allowed_addr_pair = [{'ip_address': ip_address}]
         ntw_name = 'network89-1'
         router_name = 'router89-1'
         sub_name = 'subnet89-1'
@@ -1815,7 +1794,7 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
     def test_anti_spoofing_for_params_1_0_1_1_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, same ip, same subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ntw_name = 'network90-1'
         router_name = 'router90-1'
         sub_name = 'subnet90-1'
@@ -1824,10 +1803,10 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
                                                         sub_name, port_name)
         ip_address = port['fixed_ips'][0]['ip_address']
         mac_address = port['mac_address']
-        allowed_addr_pair = 'type=dict list=true ip_address=' \
-                            + ip_address + ',mac_address=' + mac_address
+        allowed_addr_pair = [{'ip_address': ip_address,
+                              'mac_address': mac_address}]
         kwargs = {'allowed_address_pairs': allowed_addr_pair}
-        port = self.os.update_port(port, **kwargs)
+        port = self.ports_client.update_port(port, **kwargs)
         self.assertIsNone(port)
         tag_name = 'verify_vip_and_anti_spoofing'
         nuage_ext.nuage_extension.nuage_components(
@@ -1837,11 +1816,11 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
     def test_anti_spoofing_for_params_1_1_0_0_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # same mac, different ip, different subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '20.20.20.100'
         mac_address = 'fe:a0:36:4b:c8:70'
-        allowed_addr_pair = 'type=dict list=true ip_address=' \
-                            + ip_address + ',mac_address=' + mac_address
+        allowed_addr_pair = [{'ip_address': ip_address,
+                              'mac_address': mac_address}]
         ntw_name = 'network91-1'
         router_name = 'router91-1'
         sub_name = 'subnet91-1'
@@ -1855,11 +1834,11 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
     def test_anti_spoofing_for_params_1_1_0_1_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # different ip, different ip,  different subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ip_address = '50.50.50.100'
         mac_address = 'fe:a0:36:4b:c8:70'
-        allowed_addr_pair = 'type=dict list=true ip_address=' \
-                            + ip_address + ',mac_address=' + mac_address
+        allowed_addr_pair = [{'ip_address': ip_address,
+                              'mac_address': mac_address}]
         ntw_name = 'network92-1'
         router_name = 'router92-1'
         sub_name = 'subnet92-1'
@@ -1874,7 +1853,7 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
     def test_anti_spoofing_for_params_1_1_1_1_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # different mac, same ip, same subnet in
-        # comparsion with the corresponding port parameters
+        # comparison with the corresponding port parameters
         ntw_name = 'network93-1'
         router_name = 'router93-1'
         sub_name = 'subnet93-1'
@@ -1883,10 +1862,10 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
                                                         sub_name, port_name)
         ip_address = port['fixed_ips'][0]['ip_address']
         mac_address = 'fe:a0:36:4b:c8:70'
-        allowed_addr_pair = 'type=dict list=true ip_address=' \
-                            + ip_address + ',mac_address=' + mac_address
+        allowed_addr_pair = [{'ip_address': ip_address,
+                              'mac_address': mac_address}]
         kwargs = {'allowed_address_pairs': allowed_addr_pair}
-        port = self.os.update_port(port, **kwargs)
+        port = self.ports_client.update_port(port, **kwargs)
         self.assertIsNone(port)
         tag_name = 'verify_vip_and_anti_spoofing'
         nuage_ext.nuage_extension.nuage_components(

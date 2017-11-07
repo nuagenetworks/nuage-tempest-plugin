@@ -21,10 +21,10 @@ from nuage_tempest.lib.utils import constants as n_constants
 from nuage_tempest.services.nuage_client import NuageRestClient
 
 from tempest.api.network import base
+from tempest.common import utils
 from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
-from tempest import test
 from tempest.test import decorators
 
 CONF = config.CONF
@@ -44,7 +44,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
     @classmethod
     def resource_setup(cls):
         super(AllowedAddressPairTest, cls).resource_setup()
-        if not test.is_extension_enabled('allowed-address-pairs', 'network'):
+        if not utils.is_extension_enabled('allowed-address-pairs', 'network'):
             msg = "Allowed Address Pairs extension not enabled."
             raise cls.skipException(msg)
 

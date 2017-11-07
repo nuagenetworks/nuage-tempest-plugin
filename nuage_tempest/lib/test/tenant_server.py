@@ -1,3 +1,6 @@
+# Copyright 2017 - Nokia
+# All Rights Reserved.
+
 import re
 
 from netaddr import IPNetwork
@@ -51,7 +54,12 @@ class TelnetConsole(Console):
         if self.session:
             return self.session
         else:
-            from libduts import ssh
+            LOG.error('libduts dependency has been removed from package!!')
+            assert False
+
+            # TODO(QA TEAM) : to be replaced
+            # from libduts import ssh
+            ssh = None
 
             self.session = ssh.ExpectTelnetSession(
                 address=self.telnet_host,
@@ -112,7 +120,8 @@ class FipAccessConsole(RemoteClient, Console):
             # TODO(Kris) - pass on interface ...
             # today, fail explicitly so we don't loose time investigating
             if interface is not None:
-                self.fail('TODO(Kris): ping to interface not yet supported.')
+                LOG.error('TODO(Kris): ping to interface not yet supported.')
+                assert False
 
             return self.ping_host(destination, cnt)
         except lib_exc.SSHExecCommandFailed:
@@ -142,14 +151,16 @@ class TenantServer(object):
             'prompt': '\$'
         },
         'advanced': {
-            # TODO(KRIS) - set up NOC with working image for dot1q support
-            # At this stage on NOC yielding "advanced" to cirros image as
-            # there is no better alternative - this is to be changed.
-            'image_name': 'cirros-0.3.5-x86_64-disk' if Topology.is_devstack()
-            else 'alpine',
-            'username': 'cirros' if Topology.is_devstack() else 'root',
-            'password': 'cubswin:)'if Topology.is_devstack() else 'tigris',
-            'prompt': '\$' if Topology.is_devstack() else '~#'
+            'alpine',
+            'root',
+            'tigris',
+            '~#'
+        } if Topology.use_alpine_for_advanced_image() else {
+            # TODO(KRIS) - needs custom cirros image
+            'image_name': 'cirros-0.3.5-x86_64-disk',
+            'username': 'cirros',
+            'password': 'cubswin:)',
+            'prompt': '\$'
         }
     }
 
@@ -187,7 +198,7 @@ class TenantServer(object):
                 self.username, self.password, host, port, self.prompt)
         else:
             # FIP BASED SSH ACCESS
-            self.vm_console = None  # delayed initialization
+            self.vm_console = None  # delayed initialization, see associateFip
 
     def close_console(self):
         if self.vm_console:

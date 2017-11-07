@@ -13,21 +13,19 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from __future__ import print_function
-
 from netaddr import IPNetwork
 from oslo_log import log as logging
 import re
 
-from nuage_tempest.lib import service_mgmt
-from nuage_tempest.lib.utils import constants
-
 from tempest.api.network import base
+from tempest.common import utils
 from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
-from tempest import test
 
+from nuage_tempest.lib import service_mgmt
+from nuage_tempest.lib.topology import Topology
+from nuage_tempest.lib.utils import constants
 from nuage_tempest.services import nuage_client
 
 CONF = config.CONF
@@ -57,7 +55,7 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
     @classmethod
     def skip_checks(cls):
         super(NuagePatUnderlayBase, cls).skip_checks()
-        if not test.is_extension_enabled('router', 'network'):
+        if not utils.is_extension_enabled('router', 'network'):
             msg = "router extension not enabled."
             raise cls.skipException(msg)
 
@@ -78,6 +76,9 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
 
     @classmethod
     def needs_ini_nuage_pat(cls, pat_value):
+        if Topology.is_devstack():
+            raise cls.skipException('Skipping tests that restart neutron ...')
+
         # check and set (if different) the nuage_pat setting in the .ini file
         cls.service_manager.must_have_configuration_attribute(
             CONF.nuage_sut.nuage_plugin_configuration,
@@ -87,11 +88,21 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
 
     @classmethod
     def read_nuage_pat_value_ini(cls):
+        # TODO(Kris) FIXME.....................................................
+        if Topology.is_devstack():
+            return constants.NUAGE_PAT_DEFAULTDISABLED
+        # TODO(Kris) FIXME.....................................................
+
         pat_from_ini = cls.service_manager.get_configuration_attribute(
             CONF.nuage_sut.nuage_plugin_configuration,
             constants.NUAGE_PAT_GROUP, constants.NUAGE_PAT
         )
         return pat_from_ini
+
+    # TODO(Kris) this shd not be duplicated - class inheritance to be fixed
+    def assertCommandFailed(self, message, fun, *args, **kwds):
+        self.assertRaisesRegex(exceptions.CommandFailed, message,
+                               fun, *args, **kwds)
 
     # Taken from test_external_network_extensions.py,trying to avoid issues
     # with the cli client
@@ -104,8 +115,8 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
             self.admin_networks_client.delete_network, network['id'])
         return network
 
-    def _verify_create_router_without_external_gateway(self):
-        """_verify_create_router_without_external_gateway
+    def _verify_create_router_without_ext_gw(self):
+        """_verify_create_router_without_ext_gw
 
            Create router without external gateway,
            nuage_pat = self.nuage_pat_ini
@@ -128,8 +139,8 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
             nuage_domain[0]['PATEnabled'],
             constants.NUAGE_PAT_VSD_DISABLED)
 
-    def _verify_create_router_with_external_gw_without_snat(self):
-        """_verify_create_router_with_external_gw_without_snat
+    def _verify_create_router_with_ext_gw_without_snat(self):
+        """_verify_create_router_with_ext_gw_without_snat
 
         Create router with external gateway, without specifying enable_snat
 
@@ -179,8 +190,8 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
             nuage_domain[0]['PATEnabled'],
             expected_vsd_pat)
 
-    def _verify_create_router_without_external_gateway_with_snat_neg(self):
-        """_verify_create_router_without_external_gateway_with_snat_neg
+    def _verify_create_router_without_ext_gw_with_snat_neg(self):
+        """_verify_create_router_without_ext_gw_with_snat_neg
 
         Create router without external gateway, but specify enable_snat
         (True/False)
@@ -195,16 +206,16 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
             external_gateway_info = {
                 'enable_snat': enable_snat}
             # Create the router: must fail
-            kvargs = {
+            kwargs = {
                 'name': name,
                 'external_gateway_info': external_gateway_info
             }
             self.assertRaises(exceptions.BadRequest,
                               self.admin_routers_client.create_router,
-                              **kvargs)
+                              **kwargs)
 
-    def _verify_create_router_with_external_gateway_with_snat(self):
-        """_verify_create_router_with_external_gateway_with_snat
+    def _verify_create_router_with_ext_gw_with_snat(self):
+        """_verify_create_router_with_ext_gw_with_snat
 
         Create router with external gateway and specifying enable_snat
         explicitly
@@ -246,7 +257,7 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
                 constants.NUAGE_PAT_VSD_ENABLED if enable_snat else
                 constants.NUAGE_PAT_VSD_DISABLED)
 
-    def _verify_update_router_with_gateway_with_snat(self):
+    def _verify_update_router_with_gw_with_snat(self):
         """_verify_update_router_with_gateway_with_snat
 
         Update router with external gateway: change enable_snat value
@@ -268,12 +279,12 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
             self.addCleanup(self.admin_client.delete_router,
                             create_body['router']['id'])
             # Update this router with the opposite value of enable_snat
-            updated_external_gateway_info = {
+            updated_ext_gw_info = {
                 'network_id': ext_network['id'],
                 'enable_snat': False if enable_snat else True}
             self.admin_client.update_router_with_snat_gw_info(
                 create_body['router']['id'],
-                external_gateway_info=updated_external_gateway_info)
+                external_gateway_info=updated_ext_gw_info)
             self._verify_router_gateway(
                 create_body['router']['id'],
                 {'network_id': ext_network['id'],
@@ -288,8 +299,8 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
                 constants.NUAGE_PAT_VSD_DISABLED if enable_snat else
                 constants.NUAGE_PAT_VSD_ENABLED)
 
-    def _verify_update_router_with_external_gateway_with_snat(self):
-        """_verify_update_router_with_external_gateway_with_snat
+    def _verify_update_router_with_ext_gw_with_snat(self):
+        """_verify_update_router_with_ext_gw_with_snat
 
         Update router with external gateway: change enable_snat value
 
@@ -328,15 +339,15 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
                 constants.NUAGE_PAT_VSD_ENABLED if enable_snat else
                 constants.NUAGE_PAT_VSD_DISABLED)
             # Now update hte enable_snat value
-            updated_external_gateway_info = {
+            updated_ext_gw_info = {
                 'network_id': ext_network['id'],
                 'enable_snat': False if enable_snat else True}
             updated_body = self.admin_routers_client.update_router(
                 create_body['router']['id'],
-                external_gateway_info=updated_external_gateway_info)
+                external_gateway_info=updated_ext_gw_info)
             self._verify_router_gateway(
                 updated_body['router']['id'],
-                exp_ext_gw_info=updated_external_gateway_info)
+                exp_ext_gw_info=updated_ext_gw_info)
             nuage_domain = self.nuage_vsd_client.get_l3domain(
                 filters='externalID',
                 filter_value=self.nuage_vsd_client.get_vsd_external_id(
@@ -346,8 +357,8 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
                 constants.NUAGE_PAT_VSD_DISABLED if enable_snat else
                 constants.NUAGE_PAT_VSD_ENABLED)
 
-    def _verify_show_router_without_external_gw(self):
-        """_verify_show_router_without_external_gw
+    def _verify_show_router_without_ext_gw(self):
+        """_verify_show_router_without_ext_gw
 
         Show router without external gateway
 
@@ -367,8 +378,8 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
             create_body['router']['id'])
         self.assertIsNone(show_body['router']['external_gateway_info'])
 
-    def _verify_show_router_with_external_gateway_with_snat(self):
-        """_verify_show_router_with_external_gateway_with_snat
+    def _verify_show_router_with_ext_gw_with_snat(self):
+        """_verify_show_router_with_ext_gw_with_snat
 
         Show router with external gateway and enable_snat
 
@@ -398,7 +409,7 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
                 show_body['router']['external_gateway_info']['enable_snat'],
                 enable_snat)
 
-    def _verify_list_router_with_gateway_with_snat(self):
+    def _verify_list_router_with_gw_with_snat(self):
         """_verify_list_router_with_gateway_with_snat
 
         List routers with external gateway and enable_snat
@@ -471,8 +482,8 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
         for k, v in exp_ext_gw_info.iteritems():
             self.assertEqual(v, actual_ext_gw_info[k])
 
-    def _cli_create_router_without_external_gateway_neg(self):
-        """_cli_create_router_without_external_gateway_neg
+    def _cli_create_router_without_ext_gw_neg(self):
+        """_cli_create_router_without_ext_gw_neg
 
         Create a router without external gateway via neutron cli
 
@@ -487,8 +498,8 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
                          "PAT 2 underlay: external_gateway_info section is "
                          "not empty, while it must be")
 
-    def _cli_create_router_without_external_gateway_with_snat_neg(self):
-        """_cli_create_router_without_external_gateway_with_snat_neg
+    def _cli_create_router_without_ext_gw_with_snat_neg(self):
+        """_cli_create_router_without_ext_gw_with_snat_neg
 
         Via CLI, Create router without external gateway, but specify
         enable_snat (True/False)
@@ -505,13 +516,12 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
             # When I create a router and specify external_gateway-info
             # enable_snat, without a network
             # I expect this to fail
-            self.assertRaisesRegex(exceptions.SSHExecCommandFailed,
-                                   self.PAT_NEEDS_EXT_NETWORK,
-                                   self.create_router_with_args, name,
-                                   external_gateway_info_cli)
+            self.assertCommandFailed(self.PAT_NEEDS_EXT_NETWORK,
+                                     self.create_router_with_args, name,
+                                     external_gateway_info_cli)
 
-    def _cli_create_router_with_external_gateway_without_snat(self):
-        """_cli_create_router_with_external_gateway_without_snat
+    def _cli_create_router_with_ext_gw_without_snat(self):
+        """_cli_create_router_with_ext_gw_without_snat
 
         Create PAT router with external gateway without SNAT
 
@@ -524,11 +534,10 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
                                             str(self.nuage_pat_ini))
         router_name = data_utils.rand_name(
             'pat-router-' + str(self.nuage_pat_ini))
-        self.network = self.create_network_with_args(
+        network = self.create_network_with_args(
             network_name, ' --router:external')
         external_gateway_info_cli = \
-            '--external_gateway_info type=dict network_id=' + \
-            self.network['id']
+            '--external_gateway_info type=dict network_id=' + network['id']
         self.router = self.create_router_with_args(
             router_name, external_gateway_info_cli)
         # When I create a router with an external network and do not specify
@@ -544,7 +553,7 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
         # according the nuage_pat .ini settings
         self.assertIn(compare_snat_str.lower(),
                       self.router['external_gateway_info'])
-        # And I the PATEnabled flag on the VSD set accordingly
+        # And I expect the PATEnabled flag on the VSD to be set accordingly
         nuage_domain = self.nuage_vsd_client.get_l3domain(
             filters='externalID',
             filter_value=self.nuage_vsd_client.get_vsd_external_id(
@@ -553,8 +562,8 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
             nuage_domain[0]['PATEnabled'],
             vsd_flag)
 
-    def _cli_verify_create_router_with_external_gateway_with_snat(self):
-        """_cli_verify_create_router_with_external_gateway_with_snat
+    def _cli_verify_create_router_with_ext_gw_with_snat(self):
+        """_cli_verify_create_router_with_ext_gw_with_snat
 
         Create router with external gateway and specifying enable_snat
         explicitly
@@ -571,15 +580,13 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
         for enable_snat in enable_snat_states:
             router_name = data_utils.rand_name(
                 'pat-router-' + str(self.nuage_pat_ini))
-            self.network = self.create_network_with_args(
+            network = self.create_network_with_args(
                 network_name, ' --router:external')
             external_gateway_info_cli = \
                 '--external_gateway_info type=dict network_id=' + \
-                self.network['id'] + ',enable_snat=' + str(enable_snat)
+                network['id'] + ',enable_snat=' + str(enable_snat)
             self.router = self.create_router_with_args(
                 router_name, external_gateway_info_cli)
-            print('self.router.external_gateway_info = %s' %
-                  self.router['external_gateway_info'])
             compare_snat_str = '"enable_snat": ' + str(enable_snat)
             self.assertIn(
                 compare_snat_str.lower(), self.router['external_gateway_info'])
@@ -592,8 +599,8 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
                 constants.NUAGE_PAT_VSD_ENABLED if enable_snat else
                 constants.NUAGE_PAT_VSD_DISABLED)
 
-    def _cli_update_router_with_external_gateway_with_snat(self):
-        """_cli_update_router_with_external_gateway_with_snat
+    def _cli_update_router_with_ext_gw_with_snat(self):
+        """_cli_update_router_with_ext_gw_with_snat
 
         Update router with external gateway: change enable_snat value
 
@@ -605,13 +612,13 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
         for enable_snat in enable_snat_states:
             network_name = data_utils.rand_name(
                 'ext-pat-network-' + str(self.nuage_pat_ini))
-            self.network = self.create_network_with_args(
+            network = self.create_network_with_args(
                 network_name, ' --router:external')
             router_name = data_utils.rand_name(
                 'pat-update-router-' + str(self.nuage_pat_ini))
             external_gateway_info_cli = \
                 '--external_gateway_info type=dict network_id=' + \
-                self.network['id'] + ',enable_snat=' + str(enable_snat)
+                network['id'] + ',enable_snat=' + str(enable_snat)
             self.router = self.create_router_with_args(
                 router_name, external_gateway_info_cli)
             compare_snat_str = '"enable_snat": ' + str(enable_snat)
@@ -627,11 +634,11 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
                 constants.NUAGE_PAT_VSD_DISABLED)
             # Now update
             new_enable_snat = False if enable_snat else True
-            new_external_gateway_info_cli = \
+            new_ext_gw_info_cli = \
                 '--external_gateway_info type=dict network_id=' + \
-                self.network['id'] + ',enable_snat=' + str(new_enable_snat)
+                network['id'] + ',enable_snat=' + str(new_enable_snat)
             self.update_router_with_args(
-                self.router['id'], new_external_gateway_info_cli)
+                self.router['id'], new_ext_gw_info_cli)
             compare_snat_str = '"enable_snat": ' + str(new_enable_snat)
             show_router = self.show_router(self.router['id'])
             self.assertIn(
@@ -645,8 +652,8 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
                 constants.NUAGE_PAT_VSD_ENABLED if new_enable_snat else
                 constants.NUAGE_PAT_VSD_DISABLED)
 
-    def _cli_show_router_without_external_gw(self):
-        """_cli_show_router_without_external_gw
+    def _cli_show_router_without_ext_gw(self):
+        """_cli_show_router_without_ext_gw
 
         Show router without external gateway via neutron cli
 
@@ -664,8 +671,8 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
         # self.addCleanup(self.delete_router, show_router['id'])
         pass
 
-    def _cli_show_router_with_external_gw_without_snat(self):
-        """_cli_show_router_with_external_gw_without_snat
+    def _cli_show_router_with_ext_gw_without_snat(self):
+        """_cli_show_router_with_ext_gw_without_snat
 
         Show a router with external gateway created without specifying
         enable_snat
@@ -677,11 +684,10 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
             'ext-pat-network-' + str(self.nuage_pat_ini))
         router_name = data_utils.rand_name(
             'pat-router-' + str(self.nuage_pat_ini))
-        self.network = self.create_network_with_args(
+        network = self.create_network_with_args(
             network_name, ' --router:external')
         external_gateway_info_cli = \
-            '--external_gateway_info type=dict network_id=' + \
-            self.network['id']
+            '--external_gateway_info type=dict network_id=' + network['id']
         self.router = self.create_router_with_args(
             router_name, external_gateway_info_cli)
         show_router = self.show_router(self.router['id'])
@@ -696,8 +702,8 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
             compare_snat_str.lower(), show_router['external_gateway_info'])
         pass
 
-    def _cli_show_router_with_external_gw_with_snat(self):
-        """_cli_show_router_with_external_gw_with_snat
+    def _cli_show_router_with_ext_gw_with_snat(self):
+        """_cli_show_router_with_ext_gw_with_snat
 
         Show a router with external gateway and enable_snat via vli
 
@@ -708,13 +714,13 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
         for enable_snat in enable_snat_states:
             network_name = data_utils.rand_name(
                 'ext-pat-network-' + str(self.nuage_pat_ini))
-            self.network = self.create_network_with_args(
+            network = self.create_network_with_args(
                 network_name, ' --router:external')
             router_name = data_utils.rand_name(
                 'pat-router-' + str(self.nuage_pat_ini))
             external_gateway_info_cli = \
                 '--external_gateway_info type=dict network_id=' + \
-                self.network['id'] + ',enable_snat=' + str(enable_snat)
+                network['id'] + ',enable_snat=' + str(enable_snat)
             self.router = self.create_router_with_args(
                 router_name, external_gateway_info_cli)
             compare_snat_str = '"enable_snat": ' + str(enable_snat)
@@ -722,7 +728,7 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
             self.assertIn(
                 compare_snat_str.lower(), show_router['external_gateway_info'])
 
-    def _cli_list_router_without_gateway(self):
+    def _cli_list_router_without_gw(self):
         """_cli_list_router_without_gateway
 
         List routers without external gateway via cli
@@ -747,7 +753,7 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
                         "PAT NOK: external_gateway_info is not null")
         pass
 
-    def _cli_list_router_with_gateway_with_snat(self):
+    def _cli_list_router_with_gw_with_snat(self):
         """_cli_list_router_with_gateway_with_snat
 
         List routers with external gateway with and without and enable_snat
@@ -820,7 +826,7 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
                         expected_vsd_pat)
         pass
 
-    def _cli_add_subnet_to_existing_external_gateway_with_snat(self):
+    def _cli_add_subnet_to_existing_ext_gw_with_snat(self):
         enable_snat_states = [False, True]
         cidr = IPNetwork('21.11.10.0/24')
         # Avoid overlap of subnets when running the whole class
@@ -832,13 +838,13 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
         for enable_snat in enable_snat_states:
             network_name = data_utils.rand_name(
                 'existing-ext-pat-network-' + str(self.nuage_pat_ini))
-            self.network = self.create_network_with_args(
+            network = self.create_network_with_args(
                 network_name, ' --router:external')
             router_name = data_utils.rand_name(
                 'existing-pat-router-' + str(self.nuage_pat_ini))
             external_gateway_info_cli = \
                 '--external_gateway_info type=dict network_id=' + \
-                self.network['id'] + ',enable_snat=' + str(enable_snat)
+                network['id'] + ',enable_snat=' + str(enable_snat)
             self.router = self.create_router_with_args(
                 router_name, external_gateway_info_cli)
             compare_snat_str = '"enable_snat": ' + str(enable_snat)
@@ -851,8 +857,7 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
             cidr = cidr.next(1)
         pass
 
-    def _cli_add_subnet_to_other_tenant_existing_external_gateway_with_snat(
-            self):
+    def _cli_add_subnet_to_other_tenant_existing_ext_gw_with_snat(self):
         enable_snat_states = [False, True]
         cidr_net = IPNetwork('99.99.0.0/24')
         for enable_snat in enable_snat_states:
@@ -861,13 +866,13 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
             self._as_admin()
             network_name = data_utils.rand_name(
                 'existing-ext-pat-network-' + str(self.nuage_pat_ini))
-            self.network = self.create_network_with_args(
+            network = self.create_network_with_args(
                 network_name, ' --router:external')
             router_name = data_utils.rand_name(
                 'existing-pat-router-' + str(self.nuage_pat_ini))
             external_gateway_info_cli = \
                 '--external_gateway_info type=dict network_id=' + \
-                self.network['id'] + ',enable_snat=' + str(enable_snat)
+                network['id'] + ',enable_snat=' + str(enable_snat)
             self.router = self.create_router_with_args(
                 router_name, external_gateway_info_cli)
             compare_snat_str = '"enable_snat": ' + str(enable_snat)
@@ -877,26 +882,18 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
             # external network: must fail
             self._as_tenant()
             subnet_name = data_utils.rand_name('os-subnet-to-existing-ext-gw')
-            # Todo: make sure that the demo user is not an admin member in the
-            # demo project
             # Now run as "demo" user (non-admin) of demo project
             # convert the cidr_net into a string
             cidr = cidr_net.__str__()
-            # Note: (.*) is a wild card for reg expressions in python;
-            # in this case for the tenant_id in the response
-            exp_message = "Tenant (.*) not allowed to create subnet " \
-                          "on this network"
-            # exp_message =
-            # "The request you have made requires authentication."
-            self.assertRaisesRegex(exceptions.SSHExecCommandFailed,
-                                   exp_message,
-                                   self.create_subnet_with_args, network_name,
-                                   cidr, "--name ", subnet_name)
+            self.assertCommandFailed('The resource could not be found',
+                                     self.create_subnet_with_args,
+                                     network_name,
+                                     cidr, "--name ", subnet_name)
             # increase cidr_net to next /24 subnet
             cidr_net = cidr_net.next(1)
 
-    def _cli_tenant_create_router_with_external_gateway(self):
-        """_cli_tenant_create_router_with_external_gateway
+    def _cli_tenant_create_router_with_ext_gw(self):
+        """_cli_tenant_create_router_with_ext_gw
 
         Try to Create router with external gateway as non-admin
 
@@ -918,7 +915,6 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
                 '--external_gateway_info type=dict network_id=' + \
                 self.ext_net_id + ',enable_snat=' + str(enable_snat)
             self.LOG.info("exp_message contains : " + exp_message)
-            self.assertRaisesRegex(
-                exceptions.SSHExecCommandFailed,
+            self.assertCommandFailed(
                 exp_message,
                 self.create_router_with_args, name, external_gateway_info_cli)

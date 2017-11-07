@@ -117,7 +117,7 @@ class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
                                    'FFalse', 'fFalse']
         subnet_name = data_utils.rand_name('subnet-invalid-underlay-value')
         for underlay in invalid_underlay_values:
-            kvargs = {
+            kwargs = {
                 'network_id': ext_network['id'],
                 'cidr': '135.99.99.0/24',
                 'ip_version': self._ip_version,
@@ -126,7 +126,7 @@ class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
             }
             self.assertRaises(exceptions.BadRequest,
                               self.admin_subnets_client.create_subnet,
-                              **kvargs)
+                              **kwargs)
         pass
 
     @nuage_test.header()
@@ -143,7 +143,7 @@ class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
         for underlay in underlay_states:
             subnet_name = data_utils.rand_name(
                 'internal-fip-subnet-with-underlay-neg')
-            kvargs = {
+            kwargs = {
                 'network_id': int_network['id'],
                 'cidr': '135.66.66.0/24',
                 'ip_version': self._ip_version,
@@ -152,7 +152,7 @@ class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
             }
             self.assertRaises(exceptions.BadRequest,
                               self.admin_subnets_client.create_subnet,
-                              **kvargs)
+                              **kwargs)
         pass
 
     @nuage_test.header()
@@ -174,14 +174,14 @@ class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
             name=subnet_name)
         subnet = create_body['subnet']
         new_name = subnet_name + '-updated'
-        kvargs = {
+        kwargs = {
             'name': new_name,
             'underlay': True
         }
         self.assertRaises(exceptions.BadRequest,
                           self.admin_subnets_client.update_subnet,
                           subnet['id'],
-                          **kvargs)
+                          **kwargs)
         self.admin_subnets_client.delete_subnet(subnet['id'])
         pass
 
@@ -201,7 +201,7 @@ class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
                                    '***']
         subnet_name = data_utils.rand_name('subnet-invalid-underlay-syntax')
         for underlay in underlay_invalid_syntax:
-            kvargs = {
+            kwargs = {
                 'network_id': ext_network['id'],
                 'cidr': '135.99.99.0/24',
                 'ip_version': self._ip_version,
@@ -210,7 +210,7 @@ class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
             }
             self.assertRaises(exceptions.BadRequest,
                               self.admin_subnets_client.create_subnet,
-                              **kvargs)
+                              **kwargs)
 
     @nuage_test.header()
     @decorators.attr(type=['negative'])

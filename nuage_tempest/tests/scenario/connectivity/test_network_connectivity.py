@@ -16,7 +16,7 @@ class Ipv4ConnectivityTest(NuageBaseTest):
 
     LOG = logging.getLogger(__name__)
 
-    @testtools.skipIf(Topology.is_devstack(),
+    @testtools.skipIf(not Topology.access_to_l2_supported(),
                       'Access to vm\'s in l2 networks is unsupported.')
     def test_icmp_connectivity_os_managed_l2_domain(self):
         # Provision OpenStack network resources
@@ -64,9 +64,8 @@ class Ipv4ConnectivityTest(NuageBaseTest):
         # Test IPv4 connectivity between peer servers
         self.assert_ping(server1, server2, network)
 
-    @decorators.attr(type='smoke')
-    @testtools.skipIf(Topology.is_devstack(),
-                      'Test is duplicate.')  # in dev ci,this test == above one
+    @testtools.skipIf(not Topology.telnet_console_access_to_vm_enabled(),
+                      'Test is duplicate.')  # as then this test == above one
     def test_icmp_connectivity_os_managed_l3_domain_using_fip(self):
         # This is same test as above but also on testbed enforces use of FIP
         # Provision OpenStack network resources
@@ -157,6 +156,8 @@ class Ipv4ConnectivityTest(NuageBaseTest):
         self.assert_ping(server12, server1, network1)
         self.assert_ping(server12, server2, network2)
 
+    @testtools.skipIf(not Topology.access_to_l2_supported(),
+                      'Access to vm\'s in l2 networks is unsupported.')
     def test_icmp_connectivity_vsd_managed_l2_domain(self):
         # Provision VSD managed network resources
         l2domain_template = self.vsd.create_l2domain_template(

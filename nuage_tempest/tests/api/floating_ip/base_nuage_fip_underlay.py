@@ -18,15 +18,16 @@ from oslo_log import log as logging
 import re
 
 from tempest.api.network import base
+from tempest.common import utils
 from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
-from tempest import test
 
 from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
 
 from nuage_tempest.lib import service_mgmt
+from nuage_tempest.lib.topology import Topology
 from nuage_tempest.lib.utils import constants as nuage_constants
 from nuage_tempest.services import nuage_client
 
@@ -35,8 +36,6 @@ CONF = config.CONF
 
 class NuageFipUnderlayBase(base.BaseAdminNetworkTest,):
     LOG = logging.getLogger(__name__)
-    # user order of tests as in this file to avoid unnecessary neutron restart
-    #   unittest.TestLoader.sortTestMethodsUsing(None)
 
     @classmethod
     def setup_clients(cls):
@@ -44,16 +43,20 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest,):
         cls.nuage_vsd_client = nuage_client.NuageRestClient()
 
     @classmethod
-    def resource_setup(cls):
-        super(NuageFipUnderlayBase, cls).resource_setup()
-        if not test.is_extension_enabled('router', 'network'):
+    def skip_checks(cls):
+        super(NuageFipUnderlayBase, cls).skip_checks()
+        if not utils.is_extension_enabled('router', 'network'):
             msg = "router extension not enabled."
             raise cls.skipException(msg)
 
         if not CONF.service_available.neutron:
-            msg = "Skipping allexternalID Neutron cli tests because it is " \
+            msg = "Skipping all externalID Neutron cli tests because it is " \
                   "not available"
             raise cls.skipException(msg)
+
+    @classmethod
+    def resource_setup(cls):
+        super(NuageFipUnderlayBase, cls).resource_setup()
 
         cls.ext_net_id = CONF.network.public_network_id
         cls.service_manager = service_mgmt.ServiceManager()
@@ -63,12 +66,16 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest,):
             nuage_fip_underlay_ini = None
         cls.nuage_fip_underlay_ini = nuage_fip_underlay_ini
 
-        if not cls.service_manager.is_service_running(
-                nuage_constants.NEUTRON_SERVICE):
+        if (not Topology.is_devstack() and
+                not cls.service_manager.is_service_running(
+                    nuage_constants.NEUTRON_SERVICE)):
             cls.service_manager.start_service(nuage_constants.NEUTRON_SERVICE)
 
     @classmethod
     def needs_ini_nuage_fip_underlay(cls, underlay_value):
+        if Topology.is_devstack():
+            raise cls.skipException('Skipping tests that restart neutron ...')
+
         # underlay_value is supposed to be True/False/None, but can be
         # different (add exception case)
         cls.service_manager.must_have_configuration_attribute(
@@ -79,12 +86,18 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest,):
 
     @classmethod
     def read_nuage_fip_underlay_value_ini(cls):
-        fip_underlay_from_ini = \
-            cls.service_manager.get_configuration_attribute(
-                CONF.nuage_sut.nuage_plugin_configuration,
-                nuage_constants.NUAGE_FIP_UNDERLAY_GROUP,
-                nuage_constants.NUAGE_FIP_UNDERLAY)
-        return fip_underlay_from_ini
+        # TODO(Kris) FIXME.....................................................
+        if Topology.is_devstack():
+            return True
+        # TODO(Kris) ..........................................................
+
+        else:
+            fip_underlay_from_ini = \
+                cls.service_manager.get_configuration_attribute(
+                    CONF.nuage_sut.nuage_plugin_configuration,
+                    nuage_constants.NUAGE_FIP_UNDERLAY_GROUP,
+                    nuage_constants.NUAGE_FIP_UNDERLAY)
+            return fip_underlay_from_ini
 
     # Taken from test_external_network_extensions.py,trying to avoid issues
     # with the cli client
@@ -209,7 +222,6 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest,):
                              "FIP NOK: show response does not include"
                              "underlay section while it must: OPENSTACK-672")
             self.admin_subnets_client.delete_subnet(subnet['id'])
-            pass
 
     def _verify_update_external_subnet_with_underlay_neg(self):
         ext_network = self._create_network(external=True)
@@ -234,17 +246,16 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest,):
                 subnet_id, name=new_name)
             self.assertEqual(update_body['subnet']['name'], new_name)
             new_underlay = False if underlay else True
-            kvargs = {
+            kwargs = {
                 'name': new_name,
                 'underlay': new_underlay
             }
             self.assertRaises(exceptions.BadRequest,
                               self.admin_subnets_client.update_subnet,
                               subnet_id,
-                              **kvargs)
+                              **kwargs)
             self.admin_subnets_client.delete_subnet(subnet_id)
             cidr = cidr.next(1)
-        pass
 
     def _verify_list_external_subnets_underlay(self):
         """_verify_list_external_subnets_underlay
@@ -317,65 +328,6 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest,):
             self.assertEqual(subnet_found, True, "FIP NOK: created fip subnet "
                                                  "is not in the subnet list")
             cidr = cidr.next(1)
-
-    def _verify_create_external_subnet_with_underlay_scale(self, tunnel_type,
-                                                           maximum):
-        """_verify_create_external_subnet_with_underlay_scale
-
-        Create/Delete "maximum" external fip subnets for the given tunnel_type
-        (GRE/VXLAN)
-
-        All external fip subnets should get created, have the right attributes
-        on VSD and get deleted afterwards
-        GRE: 32
-        VXLAN: 400
-        """
-        # Todo: list the already existing ext subnets, and then go to the max.
-        # If there are already a few existing external networks,
-        # we'll hit the ceiling before reaching max (QED)
-        cidr = IPNetwork('99.99.0.0/24')
-        for count in range(maximum - 2):
-            ext_network = self._create_network(external=True)
-            subnet_name = data_utils.rand_name(
-                'external-fipsubnet-with-underlay-scale-' + str(maximum) +
-                '-nbr' + str(count))
-            # increase cidr_net to next /24 subnet
-            cidr = cidr.next(1)
-            body = self.admin_subnets_client.create_subnet(
-                network_id=ext_network['id'],
-                cidr=str(cidr.cidr),
-                ip_version=self._ip_version,
-                name=subnet_name, underlay=True)
-            subnet = body['subnet']
-            # Response should include the same underlay status
-            self.assertEqual(subnet['underlay'], True)
-            # check underlay in VSD
-            nuage_fippool = self.nuage_vsd_client.get_sharedresource(
-                filters='externalID',
-                filter_value=self.nuage_vsd_client.get_vsd_external_id(
-                    subnet['id']))
-            self.assertEqual(nuage_fippool[0]['underlay'], True)
-            # self.admin_client.delete_subnet(subnet['id'])
-            # nuage_fippool = self.nuage_vsd_client.get_sharedresource(
-            #      filters='externalID', filter_value=subnet['id'])
-            # self.assertEqual(nuage_fippool, '')
-            # increase cidr to next /24 subnet
-            cidr = cidr.next(1)
-
-        # We reached the maximum of 32, check whether 33 fails
-        ext_network = self._create_network(external=True)
-        subnet_name = data_utils.rand_name(
-            'external-subnet-scale100-with-underlay-beyond32')
-        kvargs = {
-            'network_id': ext_network['id'],
-            'cidr': str(cidr.cidr),
-            'ip_version': self._ip_version,
-            'name': subnet_name,
-            'underlay': True
-        }
-        self.assertRaises(exceptions.ServerFault,
-                          self.admin_subnets_client.create_subnet,
-                          **kvargs)
 
     #
     # CLI methods
@@ -456,7 +408,6 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest,):
             # Remove it from the cleanup list, as we deleted it ourselves
             # already to check change in VSD
             self.subnets.remove(subnet)
-        pass
 
     def _cli_show_external_subnet_without_underlay(self):
         """_cli_show_external_subnet_without_underlay
@@ -482,7 +433,6 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest,):
         check_str = str(default_underlay)\
             if default_underlay is not None else "False"
         self.assertIn(check_str.lower(), str(show_subnet['underlay']).lower())
-        pass
 
     def _cli_show_external_subnet_with_underlay(self):
         """_cli_show_external_subnet_with_underlay
@@ -521,7 +471,6 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest,):
             self.assertIn(str(underlay).lower(),
                           str(show_subnet['underlay']).lower())
             cidr_net = cidr_net.next(1)
-        pass
 
     def _cli_update_external_subnet_with_underlay_neg(self):
         underlay_states = [False, True]
@@ -553,7 +502,7 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest,):
 
             new_underlay_str = "--underlay=" + str(False if underlay else True)
             exp_message = "Cannot update read-only attribute underlay"
-            self.assertRaisesRegex(exceptions.SSHExecCommandFailed,
+            self.assertRaisesRegex(exceptions.CommandFailed,
                                    exp_message,
                                    self.update_subnet_with_args,
                                    subnet['id'], new_underlay_str)

@@ -4,9 +4,9 @@
 import logging
 from netaddr import IPAddress
 
+from tempest.common import utils
 from tempest import config
 from tempest.lib.common.utils import data_utils
-from tempest import test
 
 import nuage_base
 
@@ -17,7 +17,6 @@ from nuage_tempest.tests.api.vsd_managed \
     import base_vsd_managed_port_attributes
 
 CONF = config.CONF
-
 LOG = logging.getLogger(__name__)
 
 VALID_MAC_ADDRESS = 'fa:fa:3e:e8:e8:c0'
@@ -39,7 +38,7 @@ class HeatVsdManagedPortAttributesTest(
         super(HeatVsdManagedPortAttributesTest, cls).resource_setup()
         super(nuage_base.NuageBaseOrchestrationTest, cls).resource_setup()
 
-        if not test.is_extension_enabled('nuage-redirect-target', 'network'):
+        if not utils.is_extension_enabled('nuage-redirect-target', 'network'):
             msg = "Nuage extension 'nuage-redirect-target' not enabled."
             raise cls.skipException(msg)
 

@@ -4,8 +4,9 @@
 from oslo_log import log as logging
 import re
 
+from tempest.common import utils
 from tempest import config
-from tempest import test
+from tempest.lib import decorators
 
 from nuage_tempest.lib.nuage_tempest_test_loader import Release
 from nuage_tempest.lib.remote_cli import remote_cli_base_testcase
@@ -35,7 +36,7 @@ class TestNuageNeutronCli(remote_cli_base_testcase.RemoteCliBaseTestCase):
             raise cls.skipException(msg)
         super(TestNuageNeutronCli, cls).resource_setup()
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @nuage_test.header()
     def test_neutron_debug_net_list(self):
         response = self.cli.neutron('net-list', flags='-v')
@@ -43,7 +44,7 @@ class TestNuageNeutronCli(remote_cli_base_testcase.RemoteCliBaseTestCase):
         LOG.debug("List with %d items", items.__len__())
         self.assertNotEmpty(items)
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @nuage_test.header()
     def test_neutron_quiet_net_list(self):
         response = self.cli.neutron('net-list', flags='--quiet')
@@ -68,11 +69,11 @@ class TestNuageNeutronCli(remote_cli_base_testcase.RemoteCliBaseTestCase):
 
         wanted_commands = {'nuage-netpartition-create'}
 
-        if test.is_extension_enabled('net-partition', 'network'):
+        if utils.is_extension_enabled('net-partition', 'network'):
             wanted_commands = wanted_commands.union(self._crud_command_list(
                 'nuage-netpartition', update=False))
 
-        if test.is_extension_enabled('appdesigner', 'network'):
+        if utils.is_extension_enabled('appdesigner', 'network'):
             wanted_commands = wanted_commands.union(self._crud_command_list(
                 'nuage-appdport'))
             wanted_commands = wanted_commands.union(self._crud_command_list(
@@ -86,7 +87,7 @@ class TestNuageNeutronCli(remote_cli_base_testcase.RemoteCliBaseTestCase):
             wanted_commands = wanted_commands.union(self._crud_command_list(
                 'nuage-flow'))
 
-        if test.is_extension_enabled('nuage-redirect-target', 'network'):
+        if utils.is_extension_enabled('nuage-redirect-target', 'network'):
             wanted_commands.add('nuage-redirect-target-vip-create')
             wanted_commands = wanted_commands.union(self._crud_command_list(
                 'nuage-redirect-target', update=False))
@@ -103,7 +104,7 @@ class TestNuageNeutronCli(remote_cli_base_testcase.RemoteCliBaseTestCase):
             wanted_commands = wanted_commands.union(self._crud_command_list(
                 'nuage-external-security-group-rule', update=False))
 
-        if test.is_extension_enabled('nuage-gateway', 'network'):
+        if utils.is_extension_enabled('nuage-gateway', 'network'):
             wanted_commands.add('nuage-gateway-list')
             wanted_commands.add('nuage-gateway-show')
             wanted_commands.add('nuage-gateway-port-list')
@@ -119,7 +120,8 @@ class TestNuageNeutronCli(remote_cli_base_testcase.RemoteCliBaseTestCase):
 
         self.assertFalse(wanted_commands - commands)
 
-    def _crud_command_list(self, resource, update=True):
+    @staticmethod
+    def _crud_command_list(resource, update=True):
         crud_commands = {'create', 'delete', 'list', 'show'}
         if update:
             crud_commands.add('update')

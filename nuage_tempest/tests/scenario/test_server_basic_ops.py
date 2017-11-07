@@ -1,3 +1,5 @@
+# Copyright 2017 - Nokia
+# All Rights Reserved.
 
 from tempest.scenario import test_server_basic_ops
 from tempest import test

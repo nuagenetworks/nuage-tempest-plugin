@@ -20,11 +20,11 @@ import testtools
 from nuage_tempest.lib.features import NUAGE_FEATURES
 from tempest.api.network import test_ports as tempest_test_ports
 from tempest.common import custom_matchers
+from tempest.common import utils
 from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions
-from tempest import test
 
 CONF = config.CONF
 
@@ -216,7 +216,7 @@ class NuagePortsIpV6Test(tempest_test_ports.PortsIpV6TestJSON):
             self.assertIn(security_group, port_show['security_groups'])
 
     @testtools.skipUnless(
-        test.is_extension_enabled('security-group', 'network'),
+        utils.is_extension_enabled('security-group', 'network'),
         'security-group extension not enabled.')
     def test_update_port_with_security_group_and_extra_attributes(self):
         self.assertRaisesRegex(
@@ -227,7 +227,7 @@ class NuagePortsIpV6Test(tempest_test_ports.PortsIpV6TestJSON):
             [data_utils.rand_name('secgroup')])
 
     @testtools.skipUnless(
-        test.is_extension_enabled('security-group', 'network'),
+        utils.is_extension_enabled('security-group', 'network'),
         'security-group extension not enabled.')
     def test_update_port_with_two_security_groups_and_extra_attributes(self):
         self.assertRaisesRegex(
@@ -240,7 +240,7 @@ class NuagePortsIpV6Test(tempest_test_ports.PortsIpV6TestJSON):
 
     @decorators.attr(type='smoke')
     @testtools.skipUnless(
-        test.is_extension_enabled('security-group', 'network'),
+        utils.is_extension_enabled('security-group', 'network'),
         'security-group extension not enabled.')
     def test_create_port_with_no_securitygroups(self):
         network = self.create_network()

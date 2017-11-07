@@ -28,18 +28,10 @@ class NuageDomainTunnelTypeNegativeTest(
         super(NuageDomainTunnelTypeNegativeTest, cls).resource_setup()
 
     def _do_test_invalid_value(self, invalid_value):
+        reported_value = invalid_value if invalid_value != '' else 'None'
         self.assertRaisesRegex(exceptions.BadRequest,
                                "Invalid input for tunnel_type. "
-                               "Reason: '%s' is not in" % invalid_value,
-                               self._do_create_router_with_domain_tunnel_type,
-                               invalid_value)
-
-    def _do_test_no_value(self, invalid_value):
-        self.assertRaisesRegex(exceptions.BadRequest,
-                               "Invalid input for tunnel_type. "
-                               "Reason: 'None' is not in "
-                               "\['VXLAN', 'vxlan', 'GRE', 'gre', "
-                               "'DEFAULT', 'default'\].",
+                               "Reason: %s is not in" % reported_value,
                                self._do_create_router_with_domain_tunnel_type,
                                invalid_value)
 
@@ -51,7 +43,7 @@ class NuageDomainTunnelTypeNegativeTest(
     @decorators.attr(type=['negative'])
     @nuage_test.header()
     def test_create_with_no_value(self):
-        self._do_test_no_value("")
+        self._do_test_invalid_value("")
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()

@@ -15,13 +15,19 @@
 
 import logging
 import os
+import shlex
+import six
+import subprocess
 import urlparse
 
 import output_parser as cli_output_parser
 
 from tempest import config
 from tempest.lib.common import ssh
+from tempest.lib import exceptions
 from tempest import test
+
+from nuage_tempest.lib.topology import Topology
 
 CONF = config.CONF
 LOG = logging.getLogger(__name__)
@@ -29,6 +35,14 @@ LOG = logging.getLogger(__name__)
 
 def execute(cmd, action, flags='', params='', fail_ok=False,
             merge_stderr=False):
+    if Topology.is_devstack():
+        return execute_locally(cmd, action, flags, params, fail_ok,
+                               merge_stderr, cli_dir='')
+    else:
+        return execute_ssh(cmd, action, flags, params)
+
+
+def execute_ssh(cmd, action, flags='', params=''):
     """Executes specified command for the given action."""
     LOG.info("Executing CLI: '%s %s %s'", cmd, action, params)
     LOG.debug("using flags: '%s'", flags)
@@ -57,6 +71,59 @@ def execute(cmd, action, flags='', params='', fail_ok=False,
     LOG.debug("Response: \n'%s'", response)
 
     return response
+
+
+# TODO(Kris) Refactor me - this for now is copy of execute() method from
+# TODO(Kris) tempest/tempest/lib/cli/base.py
+# ------------------------- don't change me ----------------------------
+def execute_locally(cmd, action, flags='', params='', fail_ok=False,
+                    merge_stderr=False, cli_dir='/usr/bin', prefix=''):
+    """Executes specified command for the given action.
+
+    :param cmd: command to be executed
+    :type cmd: string
+    :param action: string of the cli command to run
+    :type action: string
+    :param flags: any optional cli flags to use
+    :type flags: string
+    :param params: string of any optional positional args to use
+    :type params: string
+    :param fail_ok: boolean if True an exception is not raised when the
+                    cli return code is non-zero
+    :type fail_ok: boolean
+    :param merge_stderr: boolean if True the stderr buffer is merged into
+                         stdout
+    :type merge_stderr: boolean
+    :param cli_dir: The path where the cmd can be executed
+    :type cli_dir: string
+    :param prefix: prefix to insert before command
+    :type prefix: string
+    :param postfix: postfix to insert before command - KRIS ADDED
+    :type postfix: string
+    """
+    cmd = ' '.join([prefix, os.path.join(cli_dir, cmd),
+                    flags, action, params])
+    cmd = cmd.strip()
+    LOG.info("running: '%s'", cmd)
+    if six.PY2:
+        cmd = cmd.encode('utf-8')
+    cmd = shlex.split(cmd)
+    result = ''
+    result_err = ''
+    stdout = subprocess.PIPE
+    stderr = subprocess.STDOUT if merge_stderr else subprocess.PIPE
+    proc = subprocess.Popen(cmd, stdout=stdout, stderr=stderr)
+    result, result_err = proc.communicate()
+    if not fail_ok and proc.returncode != 0:
+        raise exceptions.CommandFailed(proc.returncode,
+                                       cmd,
+                                       result,
+                                       result_err)
+    if six.PY2:
+        return result
+    else:
+        return os.fsdecode(result)
+# ------------------------- don't change me ----------------------------
 
 
 class CLIClient(object):

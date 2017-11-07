@@ -12,15 +12,14 @@
 
 import logging
 
+from tempest.common import utils
 from tempest import config
 from tempest.lib.common.utils import data_utils
-from tempest import test
 from tempest.test import decorators
 
 import nuage_base
 
 CONF = config.CONF
-
 LOG = logging.getLogger(__name__)
 
 
@@ -37,7 +36,7 @@ class NeutronRedirectionTargetsTest(nuage_base.NuageBaseOrchestrationTest):
         # temp sanity check
         assert hasattr(cls, 'stacks')
 
-        if not test.is_extension_enabled('nuage-redirect-target', 'network'):
+        if not utils.is_extension_enabled('nuage-redirect-target', 'network'):
             msg = "Nuage extension 'nuage-redirect-target' not enabled."
             raise cls.skipException(msg)
 
@@ -59,7 +58,7 @@ class NeutronRedirectionTargetsTest(nuage_base.NuageBaseOrchestrationTest):
             cls.test_resources[resource['logical_resource_id']] = resource
 
     @decorators.attr(type='smoke')
-    def test_created_redirecttarget_resources(self):
+    def test_created_redirect_target_resources(self):
         """Verifies created redirect target resources."""
         resources = [('secgrp', self.template['resources'][
                       'secgrp']['type']),

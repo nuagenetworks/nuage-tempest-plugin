@@ -38,12 +38,8 @@ class IpAntiSpoofingTestScenario(antispoof.IpAntiSpoofingTestBase,
         self.assertEqual(network['port_security_enabled'], True)
         self.assertEqual(port['port_security_enabled'], False)
         ntw = {'uuid': network['id'], 'port': port['id']}
-        # Get the first available VRS hostname to spawn VM
-        ovs = self.TB.vrs_1.cmd('hostname')
-        kwargs = {'availability_zone': 'nova:' + ovs[0][0]}
         vm = self.create_server(name='scn-port1-vm-1', networks=[ntw],
-                                wait_until='ACTIVE',
-                                **kwargs)
+                                wait_until='ACTIVE')
         self.os_data.insert_resource(vm['name'], 'scn-port1-1', os_data=vm)
         self.assertEqual(port['fixed_ips'][0]['ip_address'],
                          vm['addresses'][network['name']][0]['addr'])
@@ -70,11 +66,8 @@ class IpAntiSpoofingTestScenario(antispoof.IpAntiSpoofingTestBase,
         self.assertEqual(network['port_security_enabled'], True)
         self.assertEqual(port['port_security_enabled'], False)
         ntw = {'uuid': network['id'], 'port': port['id']}
-        # Get the first available VRS hostname to spawn VM
-        ovs = self.TB.vrs_1.cmd('hostname')
-        kwargs = {'availability_zone': 'nova:' + ovs[0][0]}
         vm = self.create_server(name='scn-port11-vm-1', networks=[ntw],
-                                wait_until='ACTIVE', **kwargs)
+                                wait_until='ACTIVE')
         self.os_data.insert_resource(vm['name'], 'scn-port11-1', os_data=vm)
         self.assertEqual(port['fixed_ips'][0]['ip_address'],
                          vm['addresses'][network['name']][0]['addr'])
@@ -106,11 +99,8 @@ class IpAntiSpoofingTestScenario(antispoof.IpAntiSpoofingTestBase,
         self.assertEqual(port['allowed_address_pairs'][0]['ip_address'],
                          allowed_address_pairs[0]['ip_address'])
         ntw = {'uuid': network['id'], 'port': port['id']}
-        # Get the first available VRS hostname to spawn VM
-        ovs = self.TB.vrs_1.cmd('hostname')
-        kwargs = {'availability_zone': 'nova:' + ovs[0][0]}
         vm = self.create_server(name='scn-port12-vm-1', networks=[ntw],
-                                wait_until='ACTIVE', **kwargs)
+                                wait_until='ACTIVE')
         self.os_data.insert_resource(vm['name'], 'scn-port12-1', os_data=vm)
         self.assertEqual(port['fixed_ips'][0]['ip_address'],
                          vm['addresses'][network['name']][0]['addr'])

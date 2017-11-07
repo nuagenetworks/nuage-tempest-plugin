@@ -20,6 +20,7 @@ import re
 import time
 
 from tempest.api.network import base
+from tempest.common import utils
 from tempest import config
 from tempest import exceptions
 from tempest.lib.common.utils import data_utils
@@ -94,7 +95,7 @@ class TestNetworkBasicOps(
                    'public_network_id must be defined.')
             raise cls.skipException(msg)
         for ext in ['router', 'security-group']:
-            if not test.is_extension_enabled(ext, 'network'):
+            if not utils.is_extension_enabled(ext, 'network'):
                 msg = "%s extension not enabled." % ext
                 raise cls.skipException(msg)
 
@@ -109,10 +110,10 @@ class TestNetworkBasicOps(
         self.keypairs = {}
         self.servers = []
 
-    def _setup_network_and_servers(self, **kvargs):
-        boot_with_port = kvargs.pop('boot_with_port', False)
+    def _setup_network_and_servers(self, **kwargs):
+        boot_with_port = kwargs.pop('boot_with_port', False)
         self.security_group = self._create_security_group()
-        self.network, self.subnet, self.router = self.create_networks(**kvargs)
+        self.network, self.subnet, self.router = self.create_networks(**kwargs)
         self.check_networks()
 
         self.port_id = None
@@ -127,12 +128,12 @@ class TestNetworkBasicOps(
                 {'opt_value': EXTRA_DHCP_OPT_DOMAIN_SEARCH,
                  'opt_name': 'domain-search'}
                 ]
-            port_kvargs = {
+            port_kwargs = {
                 'extra_dhcp_opts': extra_dhcp_opts,
                 'security_groups': [self.security_group['id']]
             }
             self.port_id = self._create_port(
-                self.network['id'], **port_kvargs)['id']
+                self.network['id'], **port_kwargs)['id']
 
         name = data_utils.rand_name('server-smoke')
         server = self._create_server(name, self.network, self.port_id)
@@ -442,8 +443,8 @@ class TestNetworkBasicOps(
         """
         # Use a port, on which we add :
         #  extra dhcp options (done)
-        kvargs = {'boot_with_port': True}
-        self._setup_network_and_servers(**kvargs)
+        kwargs = {'boot_with_port': True}
+        self._setup_network_and_servers(**kwargs)
         time.sleep(5)  # giving time for servers to come up - TODO(check this)
         self._check_public_connectivity(
             should_connect=True, should_check_floating_ip_status=False)

@@ -554,5 +554,5 @@ class TestSecGroupTestNuageL3Domain(SecGroupTestNuageBase):
 #     _project_network_cidr = CONF.network.project_network_v6_cidr
 #
 #     # TODO(KRIS) THIS NEEDS TO GO OUT BUT NEED TO FIGURE OUT HOW
-#     if IPNetwork(CONF.network.project_network_v6_cidr)._prefixlen < 64:
+#     if IPNetwork(CONF.network.project_network_v6_cidr).prefixlen < 64:
 #         _project_network_cidr = IPNetwork('cafe:babe::/64')

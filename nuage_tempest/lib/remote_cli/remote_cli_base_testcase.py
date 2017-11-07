@@ -14,6 +14,7 @@ import ssh_cli
 from tempest import config
 from tempest.lib.common import cred_client
 from tempest.lib.common.utils import data_utils
+from tempest.lib import exceptions
 
 CONF = config.CONF
 LOG = logging.getLogger(__name__)
@@ -176,6 +177,10 @@ class RemoteCliBaseTestCase(ssh_cli.ClientTestBase):
             password='tigris',
             creds_client=cls.creds_client)
         cls.me = Role.tenant
+
+    def assertCommandFailed(self, message, fun, *args, **kwds):
+        self.assertRaisesRegex(exceptions.CommandFailed, message,
+                               fun, *args, **kwds)
 
     def _get_clients(self):
         if self.me == Role.admin:
@@ -562,17 +567,6 @@ class RemoteCliBaseTestCase(ssh_cli.ClientTestBase):
                                                         subnet_id)
 
         cls._delete_router(router['id'])
-
-    def assertTableStruct(self, items, field_names):
-        """Verify that all items has keys listed in field_names."""
-        for item in items:
-            for field in field_names:
-                self.assertIn(field, item)
-
-    def assertFirstLineStartsWith(self, lines, beginning):
-        self.assertTrue(lines[0].startswith(beginning),
-                        msg=('Beginning of first line has invalid content: %s'
-                             % lines[:3]))
 
     @classmethod
     def _delete_network(cls, network_id):

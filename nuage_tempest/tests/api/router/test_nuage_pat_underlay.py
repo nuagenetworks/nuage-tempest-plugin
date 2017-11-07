@@ -39,35 +39,35 @@ class TestNuagePatUnderlay(base_nuage_pat_underlay.NuagePatUnderlayBase):
 
     @nuage_test.header()
     def test_create_router_without_external_gateway_pat(self):
-        self._verify_create_router_without_external_gateway()
+        self._verify_create_router_without_ext_gw()
 
     @nuage_test.header()
     def test_create_router_with_external_gateway_without_snat(self):
-        self._verify_create_router_with_external_gw_without_snat()
+        self._verify_create_router_with_ext_gw_without_snat()
 
     @nuage_test.header()
     def test_create_router_without_external_gateway_with_snat_neg(self):
-        self._verify_create_router_without_external_gateway_with_snat_neg()
+        self._verify_create_router_without_ext_gw_with_snat_neg()
 
     @nuage_test.header()
     def test_create_router_with_external_gateway_with_snat(self):
-        self._verify_create_router_with_external_gateway_with_snat()
+        self._verify_create_router_with_ext_gw_with_snat()
 
     @nuage_test.header()
     def test_update_router_with_external_gateway_with_snat(self):
-        self._verify_update_router_with_external_gateway_with_snat()
+        self._verify_update_router_with_ext_gw_with_snat()
 
     @nuage_test.header()
     def test_show_router_without_external_gateway(self):
-        self._verify_show_router_without_external_gw()
+        self._verify_show_router_without_ext_gw()
 
     @nuage_test.header()
     def test_show_router_with_external_gateway_with_snat(self):
-        self._verify_show_router_with_external_gateway_with_snat()
+        self._verify_show_router_with_ext_gw_with_snat()
 
     @nuage_test.header()
     def test_list_router_with_external_gateway_with_snat(self):
-        self._verify_list_router_with_gateway_with_snat()
+        self._verify_list_router_with_gw_with_snat()
 
     @nuage_test.header()
     def test_create_router_with_snat_invalid_neg(self):
@@ -88,13 +88,13 @@ class TestNuagePatUnderlay(base_nuage_pat_underlay.NuagePatUnderlayBase):
             external_gateway_info = {
                 'enable_snat': enable_snat}
             # Create the router: must fail
-            kvargs = {
+            kwargs = {
                 'name': name,
                 'external_gateway_info': external_gateway_info
             }
             self.assertRaises(exceptions.BadRequest,
                               self.admin_routers_client.create_router,
-                              **kvargs)
+                              **kwargs)
 
     @nuage_test.header()
     def test_create_router_with_snat_invalid_syntax_neg(self):
@@ -112,14 +112,14 @@ class TestNuagePatUnderlay(base_nuage_pat_underlay.NuagePatUnderlayBase):
         for enable_snat_syntax_err in enable_snat_typos:
             external_gateway_info = {
                 enable_snat_syntax_err: 'True'}
-            kvargs = {
+            kwargs = {
                 'name': name,
                 'external_gateway_info': external_gateway_info
             }
             # Try to create the router: must fail
             self.assertRaises(exceptions.BadRequest,
                               self.admin_routers_client.create_router,
-                              **kvargs)
+                              **kwargs)
 
     @nuage_test.header()
     def test_create_router_with_gateway_with_non_existing_ext_network_neg(
@@ -138,13 +138,13 @@ class TestNuagePatUnderlay(base_nuage_pat_underlay.NuagePatUnderlayBase):
         external_gateway_info = {
             'network_id': bad_network_id,
             'enable_snat': True}
-        kvargs = {
+        kwargs = {
             'name': name,
             'external_gateway_info': external_gateway_info
         }
         self.assertRaises(exceptions.NotFound,
                           self.admin_routers_client.create_router,
-                          **kvargs)
+                          **kwargs)
 
     @nuage_test.header()
     def test_create_router_with_external_gw_with_vsd_managed_subnet_neg(self):
@@ -183,7 +183,7 @@ class TestNuagePatUnderlay(base_nuage_pat_underlay.NuagePatUnderlayBase):
         # VSD managed subnet
         # Must fail as VSD managed subnets cannot be linked to an ext network
         subnet_name = data_utils.rand_name('external-vsd-fip-subnet-neg')
-        kvargs = {
+        kwargs = {
             'network_id': ext_network['id'],
             'cidr': str(cidr),
             'ip_version': self._ip_version,
@@ -193,7 +193,7 @@ class TestNuagePatUnderlay(base_nuage_pat_underlay.NuagePatUnderlayBase):
         }
         self.assertRaises(exceptions.BadRequest,
                           self.admin_subnets_client.create_subnet,
-                          **kvargs)
+                          **kwargs)
         self.nuage_vsd_client.delete_l2domain(
             vsd_l2domain[0]['ID'])
         self.nuage_vsd_client.delete_l2domaintemplate(
@@ -214,13 +214,13 @@ class TestNuagePatUnderlay(base_nuage_pat_underlay.NuagePatUnderlayBase):
         external_gateway_info = {
             'network_id': int_network['id'],
             'enable_snat': True}
-        kvargs = {
+        kwargs = {
             'name': name,
             'external_gateway_info': external_gateway_info
         }
         self.assertRaises(exceptions.BadRequest,
                           self.admin_routers_client.create_router,
-                          **kvargs)
+                          **kwargs)
 
     @nuage_test.header()
     def test_add_subnet_to_existing_pat_router_neg(self):

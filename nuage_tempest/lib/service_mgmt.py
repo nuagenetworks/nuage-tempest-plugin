@@ -161,7 +161,7 @@ class ServiceManager(object):
                       config_group + ' ' + config_key
                 response = self.execute(cmd)
                 response = response.rstrip('\n')
-            except exceptions.SSHExecCommandFailed as e:
+            except Exception as e:
                 LOG.debug("Exception %s", e)
                 response = ""
 
