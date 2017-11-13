@@ -70,7 +70,7 @@ class TelnetConsole(Console):
         if interface:
             ping_cmd += ' -I ' + interface,
 
-        ping_out = self.send(ping_cmd, CONF.validation.ping_timeout)
+        ping_out = self.send(ping_cmd, CONF.validation.ssh_timeout)
 
         return str(ping_out).strip('[]')
 
@@ -88,7 +88,7 @@ class FipAccessConsole(RemoteClient, Console):
             password=tenant_server.password)
         self.tenant_server = tenant_server
 
-    def send(self, cmd, timeout=CONF.validation.ping_timeout):
+    def send(self, cmd, timeout=CONF.validation.ssh_timeout):
         cmd_out = None
 
         def send_cmd():
