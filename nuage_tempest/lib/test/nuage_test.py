@@ -901,12 +901,14 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
     def prepare_for_ping_test(self, server, port=None, vsd_domain=None,
                               vsd_subnet=None):
+        self.skipTest('Temp. disabling nuage connectivity tests.')
         if server.needs_fip_access():
             self.create_fip_to_server(server, port, vsd_domain=vsd_domain,
                                       vsd_subnet=vsd_subnet)
 
     def prepare_for_nic_provisioning(self, server, port=None, vsd_domain=None,
                                      vsd_subnet=None):
+        self.skipTest('Temp. disabling nuage connectivity tests.')
         if server.needs_fip_access():
             self.create_fip_to_server(server, port, vsd_domain=vsd_domain,
                                       vsd_subnet=vsd_subnet)
