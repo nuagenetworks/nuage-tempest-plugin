@@ -1,23 +1,22 @@
-# Copyright 2015 Alcatel-Lucent USA Inc.
+# Copyright 2017 NOKIA
 # All Rights Reserved.
-#
-#
-#    -----------------------WARNING----------------------------
-#     This file is present to support Legacy Test Code only.
-#     DO not use this file for writing the new tests.
-#    ----------------------------------------------------------
-#
-#
 
 import base64
-import httplib
 import json
 import logging
 import socket
 import ssl
+import time
+
+try:
+    import httplib as httpclient      # python 2
+except ImportError:
+    import http.client as httpclient  # python 3
 
 LOG = logging.getLogger(__name__)
 MAX_RETRIES = 5
+
+REST_SERV_UNAVAILABLE_CODE = 503
 
 
 class RESTResponse(object):
@@ -83,76 +82,105 @@ class RESTProxyServer(object):
         self.auth_resource = auth_resource
         self.organization = organization
         self.timeout = servertimeout
-        self.retry = 0
+        self.max_retries = MAX_RETRIES
         self.auth = None
         self.success_codes = range(200, 207)
 
     def _rest_call(self, action, resource, data, extra_headers=None):
-        if self.retry >= MAX_RETRIES:
-            LOG.error(('RESTProxy: Max retries exceeded'))
-            # Get ready for the next set of operation
-            self.retry = 0
-            return 0, None, None, None
         uri = self.base_uri + resource
         body = json.dumps(data)
-        headers = {}
-        headers['Content-type'] = 'application/json'
-        headers['X-Nuage-Organization'] = self.organization
+        headers = {'Content-type': 'application/json',
+                   'X-Nuage-Organization': self.organization}
         if self.auth:
             headers['Authorization'] = self.auth
-        conn = None
         if extra_headers:
             headers.update(extra_headers)
 
+        if "X-Nuage-Filter" in headers:
+            hdr = '[' + headers['X-Nuage-Filter'] + ']'
+            LOG.debug('API REQ %s %s %s %s', action, uri, hdr, body)
+        else:
+            LOG.debug('API REQ %s %s %s', action, uri, body)
+
+        ret = None
+        for attempt in range(self.max_retries):
+            conn = None
+            try:
+                conn = self._create_connection()
+                conn.request(action, uri, body, headers)
+                response = conn.getresponse()
+                resp_str = response.read()
+                resp_data = resp_str
+
+                LOG.debug('API RSP %s %s %s',
+                          response.status,
+                          response.reason,
+                          resp_data)
+                if response.status in self.success_codes:
+                    try:
+                        resp_data = json.loads(resp_str)
+                    except ValueError:
+                        # response was not JSON, ignore the exception
+                        pass
+
+                ret = RESTResponse(status_code=response.status,
+                                   reason=response.reason,
+                                   data=resp_data,
+                                   headers=dict(response.getheaders()))
+
+            except (socket.timeout, socket.error) as e:
+                LOG.error(('ServerProxy: %(action)s failure, %(e)r'),
+                          locals())
+                if conn:
+                    try:
+                        conn.close()
+                    except Exception:
+                        pass
+            else:
+                # no exception received or got exception != above ones
+                conn.close()
+                if response.status != REST_SERV_UNAVAILABLE_CODE:
+                    return ret
+
+            time.sleep(1)
+            LOG.debug('Attempt %s of %s' % (attempt + 1, self.max_retries))
+
+        LOG.debug('After %d retries server did not respond properly.'
+                  % self.max_retries)
+        return ret or None
+
+    @staticmethod
+    def raise_rest_error(msg, exc=None, log_as_error=True):
+        if log_as_error:
+            LOG.error(('RESTProxy: %s'), msg)
+        else:
+            LOG.debug(('RESTProxy: %s'), msg)
+        if exc:
+            raise exc
+        else:
+            raise Exception(msg)
+
+    def _create_connection(self):
         if self.serverssl:
             if hasattr(ssl, '_create_unverified_context'):
                 # pylint: disable=no-member
                 # pylint: disable=unexpected-keyword-arg
-                conn = httplib.HTTPSConnection(
+                conn = httpclient.HTTPSConnection(
                     self.server, self.port, timeout=self.timeout,
                     context=ssl._create_unverified_context())
                 # pylint: enable=no-member
                 # pylint: enable=unexpected-keyword-arg
             else:
-                conn = httplib.HTTPSConnection(
+                conn = httpclient.HTTPSConnection(
                     self.server, self.port, timeout=self.timeout)
-
-            if conn is None:
-                LOG.error(('RESTProxy: Could not establish HTTPS '
-                           'connection'))
-                return 0, None, None, None
         else:
-            conn = httplib.HTTPConnection(
+            conn = httpclient.HTTPConnection(
                 self.server, self.port, timeout=self.timeout)
-            if conn is None:
-                LOG.error(('RESTProxy: Could not establish HTTP '
-                           'connection'))
-                return 0, None, None, None
 
-        try:
-            conn.request(action, uri, body, headers)
-            response = conn.getresponse()
-            respstr = response.read()
-            respdata = respstr
-            if response.status in self.success_codes:
-                try:
-                    respdata = json.loads(respstr)
-                except ValueError:
-                    # response was not JSON, ignore the exception
-                    pass
-            ret = RESTResponse(status_code=response.status,
-                               reason=response.reason,
-                               data=respdata,
-                               headers=dict(response.getheaders()))
-            # ret = (response.status, response.reason, respstr, respdata)
-        except (socket.timeout, socket.error) as e:
-            LOG.error(('ServerProxy: %(action)s failure, %(e)r'), locals())
-            # retry
-            self.retry = self.retry + 1
-            return self.rest_call(action, resource, data, extra_headers)
-        conn.close()
-        self.retry = 0
-        return ret
+        if conn is None:
+            self.raise_rest_error(
+                'Could not create HTTP(S)Connection object.')
+        return conn
 
     def generate_nuage_auth(self):
         data = ''
