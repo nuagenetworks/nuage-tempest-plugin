@@ -2,19 +2,23 @@
 # All Rights Reserved.
 
 from oslo_log import log as logging
+import testtools
 
 import time
 
 from nuage_tempest.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest.lib.topology import Topology
 
 
-class DualStackConnectivityTest(NuageBaseTest):
+class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
 
     LOG = logging.getLogger(__name__)
 
     ###########################################################################
     # Typical cases - DualStack
     ###########################################################################
+    @testtools.skipIf(not Topology.access_to_l2_supported(),
+                      'Access to vm\'s in l2 networks is unsupported.')
     def test_icmp_connectivity_vsd_managed_dualstack_l2_domain(self):
         # Provision VSD managed network resources
         l2domain_template = self.vsd.create_l2domain_template(
@@ -46,6 +50,10 @@ class DualStackConnectivityTest(NuageBaseTest):
         server2 = self.create_tenant_server(tenant_networks=[network])
 
         # Test IPv4 connectivity between peer servers
+
+        # -- In dev CI this will make this test skip itself as there is no --
+        # -- console access --
+
         self.assert_ping(server1, server2, network)
 
         # Define IPv6 interface in the guest VM's
@@ -91,6 +99,8 @@ class DualStackConnectivityTest(NuageBaseTest):
         self.assert_ping6(server1, server2, network, should_pass=True)
         pass
 
+    @testtools.skipIf(not Topology.run_connectivity_tests(),
+                      'Connectivity tests are disabled.')
     def test_icmp_connectivity_vsd_managed_dualstack_l3_domain(self):
         # Provision VSD managed network
         vsd_l3domain_template = self.vsd.create_l3domain_template()

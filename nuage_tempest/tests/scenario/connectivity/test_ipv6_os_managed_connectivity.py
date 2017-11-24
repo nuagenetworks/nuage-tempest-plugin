@@ -2,23 +2,22 @@
 # All Rights Reserved.
 
 from oslo_log import log as logging
+import testtools
 
 from nuage_tempest.lib.features import NUAGE_FEATURES
-from nuage_tempest.lib.test import nuage_test
 from nuage_tempest.lib.test.nuage_test import NuageBaseTest
-from nuage_tempest.lib.test import tags
+from nuage_tempest.lib.topology import Topology
 
 from tempest.lib import decorators
 
 
-@nuage_test.class_header(tags=[tags.ML2])
-class OsManagedDualStackConnectivityTest(NuageBaseTest):
+class Ipv6ConnectivityTest(NuageBaseTest):
 
     LOG = logging.getLogger(__name__)
 
     @classmethod
     def skip_checks(cls):
-        super(OsManagedDualStackConnectivityTest, cls).skip_checks()
+        super(Ipv6ConnectivityTest, cls).skip_checks()
         if not NUAGE_FEATURES.os_managed_dualstack_subnets:
             raise cls.skipException(
                 'OS Managed Dual Stack is not supported in this release')
@@ -26,6 +25,8 @@ class OsManagedDualStackConnectivityTest(NuageBaseTest):
     ###########################################################################
     # Typical cases - DualStack
     ###########################################################################
+    @testtools.skipIf(not Topology.access_to_l2_supported(),
+                      'Access to vm\'s in l2 networks is unsupported.')
     def test_icmp_connectivity_os_managed_dualstack_l2_domain(self):
         # Provision OpenStack network
         network = self.create_network()
@@ -67,6 +68,8 @@ class OsManagedDualStackConnectivityTest(NuageBaseTest):
         self.assert_ping6(server1, server2, network)
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(not Topology.run_connectivity_tests(),
+                      'Connectivity tests are disabled.')
     def test_icmp_connectivity_os_managed_dualstack_l3_domain(self):
         # Provision OpenStack network
         network = self.create_network()

@@ -15,14 +15,14 @@ CONF = config.CONF
 LOG = logging.getLogger(__name__)
 
 
-class VlanTransparent(NuageBaseTest):
+class VlanTransparentConnectivityTest(NuageBaseTest):
     _interface = 'json'
 
     image_profile = 'advanced'
 
     @classmethod
     def setup_clients(cls):
-        super(VlanTransparent, cls).setup_clients()
+        super(VlanTransparentConnectivityTest, cls).setup_clients()
         cls.nuage_vsd_client = NuageRestClient()
         cls.client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
@@ -35,11 +35,11 @@ class VlanTransparent(NuageBaseTest):
 
     def setUp(self):
         self.addCleanup(self.resource_cleanup)
-        super(VlanTransparent, self).setUp()
+        super(VlanTransparentConnectivityTest, self).setUp()
 
     @classmethod
     def resource_setup(cls):
-        super(VlanTransparent, cls).resource_setup()
+        super(VlanTransparentConnectivityTest, cls).resource_setup()
 
     @testtools.skipIf(not Topology.access_to_l2_supported(),
                       'Access to vm\'s in l2 networks is unsupported.')
@@ -69,8 +69,11 @@ class VlanTransparent(NuageBaseTest):
 
         vm1.bring_down_interface('eth0')
         vm2.bring_down_interface('eth0')
+
         self.assert_ping(vm1, vm2, l2network, interface='eth0.10')
 
+    @testtools.skipIf(not Topology.run_connectivity_tests(),
+                      'Connectivity tests are disabled.')
     def test_l3_transparent_network(self):
         kwargs = {
             'vlan_transparent': 'true'

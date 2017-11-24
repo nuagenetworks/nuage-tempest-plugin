@@ -1,5 +1,4 @@
 # Copyright 2015 Alcatel-Lucent
-import testtools
 
 from tempest import config
 from tempest.lib.common.utils import data_utils
@@ -696,21 +695,6 @@ class NuageExtraDHCPOptionsNegativeTest(
                               self._update_port_with_dhcp_opts,
                               our_nuage_port[0]['id'],
                               extra_dhcp_opts)
-
-    @testtools.skipIf(NUAGE_FEATURES.os_managed_dualstack_subnets,
-                      'OS Managed Dual Stack supported in this release, '
-                      'ipv6 DHCP allowed')
-    @nuage_test.header()
-    def test_nuage_create_port_with_dhcp_opts_ipv6_neg(self):
-        network_id = self.osmgd_l2_network['id']
-        extra_dhcp_opts = [
-            {'opt_value': '255.255.255.0', 'opt_name': 'netmask',
-             'ip_version': '6'}
-        ]
-        self.assertRaises(exceptions.BadRequest,
-                          self._create_port_with_dhcp_opts,
-                          network_id,
-                          extra_dhcp_opts)
 
     @nuage_test.header()
     def test_nuage_create_port_with_dhcp_opts_multiple_times_neg(

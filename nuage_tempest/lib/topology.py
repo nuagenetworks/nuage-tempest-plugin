@@ -39,6 +39,11 @@ class Topology(object):
                 CONF.nuage_sut.sut_deployment.lower() == 'devstack')
 
     @staticmethod
+    def run_connectivity_tests():
+        # temporary exclusion of connectivity tests if api workers > 1
+        return Topology.api_workers == 1
+
+    @staticmethod
     def enable_snat_default_is_enabled():
         # on devstack enable_snat defaults to True
         return Topology.is_devstack()

@@ -40,6 +40,8 @@ class Ipv4ConnectivityTest(NuageBaseTest):
         self.assert_ping(server1, server2, network)
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(not Topology.run_connectivity_tests(),
+                      'Connectivity tests are disabled.')
     def test_icmp_connectivity_os_managed_l3_domain(self):
         # Provision OpenStack network resources
         router = self.create_test_router()
@@ -92,6 +94,8 @@ class Ipv4ConnectivityTest(NuageBaseTest):
         # Test IPv4 connectivity between peer servers
         self.assert_ping(server1, server2, network)
 
+    @testtools.skipIf(not Topology.run_connectivity_tests(),
+                      'Connectivity tests are disabled.')
     def test_icmp_connectivity_os_managed_l3_domain_neg(self):
         # Provision OpenStack network resources
         router = self.create_test_router()
@@ -116,6 +120,8 @@ class Ipv4ConnectivityTest(NuageBaseTest):
         self.assert_ping(server1, server2, network, should_pass=False)
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(not Topology.run_connectivity_tests(),
+                      'Connectivity tests are disabled.')
     def test_icmp_connectivity_os_managed_l3_domain_dual_nic(self):
         # Provision OpenStack network resources
         router = self.create_test_router()
@@ -183,6 +189,8 @@ class Ipv4ConnectivityTest(NuageBaseTest):
         # Test IPv4 connectivity between peer servers
         self.assert_ping(server1, server2, network)
 
+    @testtools.skipIf(not Topology.run_connectivity_tests(),
+                      'Connectivity tests are disabled.')
     def test_icmp_connectivity_vsd_managed_l3_domain(self):
         # Provision VSD managed network resources
         vsd_l3domain_template = self.vsd.create_l3domain_template()
