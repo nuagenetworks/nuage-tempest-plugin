@@ -29,9 +29,7 @@ from testtools.matchers import Not
 from nuage_tempest_plugin.lib.mixins.bgpvpn import BGPVPNMixin
 from nuage_tempest_plugin.lib.mixins.l3 import L3Mixin
 from nuage_tempest_plugin.lib.mixins.network import NetworkMixin
-from nuage_tempest_plugin.lib.openstackData import openstackData
 from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.tests import nuage_ext
 
 LOG = logging.getLogger(__name__)
 CONF = config.CONF
@@ -54,9 +52,6 @@ class BgpvpnBase(BGPVPNMixin):
         cls.tenant_id = cls.bgpvpn_client.tenant_id
         cls.admin_tenant_id = cls.bgpvpn_client_admin.tenant_id
         cls.def_net_partition = CONF.nuage.nuage_default_netpartition
-        cls.os_data = openstackData()
-        cls.os_data.insert_resource(cls.def_net_partition,
-                                    parent='CMS')
 
     @classmethod
     def resource_cleanup(cls):
@@ -154,10 +149,10 @@ class RouterAssociationTest(BgpvpnBase, L3Mixin):
             self.os_data.insert_resource('os-router-ra-1',
                                          os_data=router,
                                          parent=self.def_net_partition)
-            tag_name = 'verify_l3domain_rt_rd'
-            nuage_ext.nuage_extension.nuage_components(
-                nuage_ext._generate_tag(tag_name, self.__class__.__name__),
-                self)
+            # tag_name = 'verify_l3domain_rt_rd'
+            # nuage_ext.nuage_extension.nuage_components(
+            #     nuage_ext._generate_tag(tag_name, self.__class__.__name__),
+            #     self)
 
     def test_router_association_create_list(self):
         with self.bgpvpn(tenant_id=self.tenant_id,
@@ -177,10 +172,10 @@ class RouterAssociationTest(BgpvpnBase, L3Mixin):
             self.os_data.insert_resource('os-router-ra-2',
                                          os_data=router,
                                          parent=self.def_net_partition)
-            tag_name = 'verify_l3domain_rt_rd'
-            nuage_ext.nuage_extension.nuage_components(
-                nuage_ext._generate_tag(tag_name, self.__class__.__name__),
-                self)
+            # tag_name = 'verify_l3domain_rt_rd'
+            # nuage_ext.nuage_extension.nuage_components(
+            #     nuage_ext._generate_tag(tag_name, self.__class__.__name__),
+            #     self)
 
     def test_router_association_missing_rd(self):
         with self.bgpvpn(tenant_id=self.tenant_id,
@@ -303,10 +298,10 @@ class RouterAssociationTest(BgpvpnBase, L3Mixin):
             self.os_data.insert_resource('os-router-ra-3',
                                          os_data=router,
                                          parent=self.def_net_partition)
-            tag_name = 'verify_l3domain_rt_rd'
-            nuage_ext.nuage_extension.nuage_components(
-                nuage_ext._generate_tag(tag_name, self.__class__.__name__),
-                self)
+            # tag_name = 'verify_l3domain_rt_rd'
+            # nuage_ext.nuage_extension.nuage_components(
+            #     nuage_ext._generate_tag(tag_name, self.__class__.__name__),
+            #     self)
             self.bgpvpn_client_admin.update_bgpvpn(
                 bgpvpn['id'],
                 route_distinguishers=['879:879'],
@@ -314,10 +309,10 @@ class RouterAssociationTest(BgpvpnBase, L3Mixin):
             router = self.routers_client.show_router(router['id'])['router']
             self.os_data.update_resource('os-router-ra-3',
                                          os_data=router)
-            tag_name = 'verify_l3domain_rt_rd'
-            nuage_ext.nuage_extension.nuage_components(
-                nuage_ext._generate_tag(tag_name, self.__class__.__name__),
-                self)
+            # tag_name = 'verify_l3domain_rt_rd'
+            # nuage_ext.nuage_extension.nuage_components(
+            #     nuage_ext._generate_tag(tag_name, self.__class__.__name__),
+            #     self)
 
     def test_create_two_router_association_same_rt_rd(self):
         with self.bgpvpn(tenant_id=self.tenant_id,
@@ -382,23 +377,14 @@ class NetworkAssociationTest(BgpvpnBase, NetworkMixin):
 
 class BgpvpnCliTests(BGPVPNMixin, base.BaseNetworkTest):
 
+    def_net_partition = CONF.nuage.nuage_default_netpartition
+
     @classmethod
     def skip_checks(cls):
         super(BgpvpnCliTests, cls).skip_checks()
         if not utils.is_extension_enabled('bgpvpn', 'network'):
             msg = "Bgpvpn Extension not enabled."
             raise cls.skipException(msg)
-
-    @classmethod
-    def setUpClass(self):
-        super(BgpvpnCliTests, self).setUpClass()
-        self.def_net_partition = CONF.nuage.nuage_default_netpartition
-        self.os_data = openstackData()
-        self.os_data.insert_resource(self.def_net_partition,
-                                     parent='CMS')
-
-    def setUp(self):
-        super(BgpvpnCliTests, self).setUp()
 
     def _create_verifybgpvpn(self, name, rt, rd):
         params = {}

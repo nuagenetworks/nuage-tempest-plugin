@@ -7,7 +7,7 @@ from tempest.lib import exceptions
 import base_nuage_extra_dhcp_options
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
-from nuage_tempest_plugin.lib.nuage_tempest_test_loader import Release
+from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.utils import constants as constants
 

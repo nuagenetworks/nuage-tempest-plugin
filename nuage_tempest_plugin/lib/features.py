@@ -16,7 +16,7 @@
 from oslo_log import log as logging
 from tempest import config
 
-from nuage_tempest_plugin.lib.nuage_tempest_test_loader import Release
+from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.topology import Topology
 
 CONF = config.CONF
@@ -36,20 +36,20 @@ class NuageFeatures(object):
 
     def _set_features(self):
         if self.current_release.major_release == "3.2":
-            self.bidrectional_fip_rate_limit = \
+            self.bidirectional_fip_rate_limit = \
                 self.current_release >= Release('3.2R10')
 
         elif self.current_release.major_release == "4.0":
             self.full_external_id_support = \
                 self.current_release >= Release('4.0R5')
-            self.bidrectional_fip_rate_limit = \
+            self.bidirectional_fip_rate_limit = \
                 self.current_release >= Release('4.0R6')
             self.vsd_managed_dualstack_subnets = \
                 self.current_release == Release('4.0VZ')
 
         else:
             self.full_external_id_support = True
-            self.bidrectional_fip_rate_limit = True
+            self.bidirectional_fip_rate_limit = True
             self.ml2_limited_exceptions = False
             self.full_os_networking = True
             self.vsd_managed_dualstack_subnets = Topology.is_ml2
@@ -62,8 +62,8 @@ class NuageFeatures(object):
         LOG.info("FEATURES:")
         LOG.info("full_external_id_support         : {}".
                  format(self.full_external_id_support))
-        LOG.info("bidrectional_fip_rate_limit      : {}".
-                 format(self.bidrectional_fip_rate_limit))
+        LOG.info("bidirectional_fip_rate_limit     : {}".
+                 format(self.bidirectional_fip_rate_limit))
         LOG.info("ml2_limited_exceptions           : {}".
                  format(self.ml2_limited_exceptions))
         LOG.info("full_os_networking               : {}".
@@ -78,10 +78,10 @@ class NuageFeatures(object):
     def __init__(self):
         """Initialize a feature set"""
         super(NuageFeatures, self).__init__()
-        self.current_release = Release(CONF.nuage_sut.release)
+        self.current_release = Release(Topology.nuage_release)
 
         self.full_external_id_support = False
-        self.bidrectional_fip_rate_limit = False
+        self.bidirectional_fip_rate_limit = False
         self.ml2_limited_exceptions = Topology.is_ml2
         self.full_os_networking = not Topology.is_ml2
         self.vsd_managed_dualstack_subnets = False

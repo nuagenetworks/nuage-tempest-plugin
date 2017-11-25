@@ -16,10 +16,10 @@ from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
 from tempest.api.network import base
+from tempest.common import utils
 from tempest import config
 from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions as lib_exc
-from tempest import test
 
 CONF = config.CONF
 
@@ -111,7 +111,7 @@ class TrunkTestJSON(TrunkTestJSONBase):
         self.client.delete_trunk(trunk_id)
         self.assertRaises(lib_exc.NotFound, self._show_trunk, trunk_id)
 
-    @test.requires_ext(extension="project-id", service="network")
+    @utils.requires_ext(extension="project-id", service="network")
     def test_show_trunk_has_project_id(self):
         trunk = self._create_trunk_with_network_and_parent(None)
         body = self._show_trunk(trunk['trunk']['id'])

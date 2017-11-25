@@ -7,7 +7,6 @@ import time
 from tempest.api.compute import base as serv_base
 from tempest import config
 
-from nuage_tempest_plugin.lib import test_base
 from nuage_tempest_plugin.tests.api import test_vpnaas
 
 LOG = logging.getLogger(__name__)
@@ -33,10 +32,6 @@ class VPNaaSScenarioTest(test_vpnaas.VPNaaSBase,
                 self.os_handle.admin_networks_client.create_network(
                     **fipkwargs)
             )
-            # Adding the FIP Network to the os_data_struct tree
-            self.os_data_struct.insert_resource(
-                fipnetname, os_data=fipnetwork,
-                user_data=fipkwargs, parent='CMS')
             # Adding the FIP Network to cleanup
             self.addCleanup(
                 self.os_handle.admin_networks_client.delete_network,
@@ -54,15 +49,12 @@ class VPNaaSScenarioTest(test_vpnaas.VPNaaSBase,
 
             # Creating the FIP Subnet
             if i == 0:
-                fipsubnet = (
-                    self.os_handle.admin_subnets_client.create_subnet(
-                        **fipsubkwargs)
-                )
-                fip_ext_id = (
-                    test_base.get_external_id(fipsubnet['subnet']['id'])
-                )
+                fipsubnet = self.os_handle.admin_subnets_client.create_subnet(
+                    **fipsubkwargs)
+                fip_ext_id = self.vsd_handle.external_id(
+                    fipsubnet['subnet']['id'])
                 fip_vsd = self.vsd_handle.get_shared_network_resource(
-                    filter=test_base.get_filter_str('externalID', fip_ext_id))
+                    by_fip_subnet_id=fip_ext_id)
                 fip_vsd_parent_id = fip_vsd.parent_id
             else:
                 fipsubkwargs['nuage_uplink'] = fip_vsd_parent_id
@@ -70,10 +62,6 @@ class VPNaaSScenarioTest(test_vpnaas.VPNaaSBase,
                     self.os_handle.admin_subnets_client.create_subnet(
                         **fipsubkwargs)
                 )
-            # Adding the FIP Subnet to the os_data_struct tree
-            self.os_data_struct.insert_resource(
-                fipsubname, os_data=fipsubnet,
-                user_data=fipsubkwargs, parent=fipnetname)
             # Adding the FIP Subnet to cleanup
             self.addCleanup(self.os_handle.admin_subnets_client.delete_subnet,
                             fipsubnet['subnet']['id'])
@@ -84,10 +72,6 @@ class VPNaaSScenarioTest(test_vpnaas.VPNaaSBase,
             router = (
                 self.os_handle.routers_client.create_router(routername)
             )
-            # Adding the Router to the os_data_struct tree
-            self.os_data_struct.insert_resource(
-                routername, os_data=router,
-                user_data={'name': routername}, parent=self.def_net_partition)
             # Adding the Router to cleanup
             self.addCleanup(self.os_handle.routers_client.delete_router,
                             router['router']['id'])
@@ -98,10 +82,6 @@ class VPNaaSScenarioTest(test_vpnaas.VPNaaSBase,
             network = (
                 self.os_handle.networks_client.create_network(**netkwargs)
             )
-            # Adding the Network to the os_data_struct tree
-            self.os_data_struct.insert_resource(
-                netname, os_data=network,
-                user_data=netkwargs, parent=routername)
             # Adding the Network to cleanup
             self.addCleanup(self.os_handle.networks_client.delete_network,
                             network['network']['id'])
@@ -119,10 +99,6 @@ class VPNaaSScenarioTest(test_vpnaas.VPNaaSBase,
             subnet = (
                 self.os_handle.subnets_client.create_subnet(**subkwargs)
             )
-            # Adding the Subnet to the os_data_struct tree
-            self.os_data_struct.insert_resource(
-                subname, os_data=subnet,
-                user_data=subkwargs, parent=netname)
             # Adding the Subnet to cleanup
             self.addCleanup(self.os_handle.subnets_client.delete_subnet,
                             subnet['subnet']['id'])
@@ -156,11 +132,8 @@ class VPNaaSScenarioTest(test_vpnaas.VPNaaSBase,
             vmkwargs = {'name': vmname, 'flavorRef': '1',
                         'imageRef': CONF.compute.image_ref,
                         'networks': [{'uuid': network['network']['id']}]}
-            vm = self.os_handle.servers_client.create_server(**vmkwargs)
-            # Adding VM to the os_data_struct tree
-            self.os_data_struct.insert_resource(
-                vmname, os_data=vm,
-                user_data=vmkwargs, parent=subname)
+            self.os_handle.servers_client.create_server(**vmkwargs)
+
             # VM to cleanup in the End will be added at the end
 
             # create VPN-Service
@@ -172,10 +145,6 @@ class VPNaaSScenarioTest(test_vpnaas.VPNaaSBase,
                 self.os_handle.vpnservice_client.create_vpnservice(
                     **vpnkwargs)
             )
-            # Adding the VPNService to the os_data_struct tree
-            self.os_data_struct.insert_resource(
-                vpnname, os_data=vpnservice,
-                user_data=vpnkwargs, parent=routername)
             # Adding the VPNService to cleanup
             self.addCleanup(self.os_handle.vpnservice_client.delete_vpnservice,
                             vpnservice['id'])
@@ -186,7 +155,6 @@ class VPNaaSScenarioTest(test_vpnaas.VPNaaSBase,
         ikepolicy = (
             self.os_handle.ikepolicy_client.create_ikepolicy(ikepolicyname)
         )
-        # will not add the ikepolicy to os_data_struct tree
         # Adding the IKEPolicy to cleanup
         self.addCleanup(
             self.os_handle.ikepolicy_client.delete_ikepolicy,
@@ -198,7 +166,6 @@ class VPNaaSScenarioTest(test_vpnaas.VPNaaSBase,
             self.os_handle.ipsecpolicy_client.create_ipsecpolicy(
                 ipsecpolicyname)
         )
-        # will not add the ipsecpolicy to os_data_struct tree
         # Adding the IPSecPolicy to cleanup
         self.addCleanup(
             self.os_handle.ipsecpolicy_client.delete_ipsecpolicy,
@@ -218,13 +185,6 @@ class VPNaaSScenarioTest(test_vpnaas.VPNaaSBase,
                 vpn2['external_v4_ip'], vpn2['external_v4_ip'],
                 subnet2['subnet']['cidr'], 'secret', **ipnkwargs
             )
-        # Adding the IpSecSiteConnection to the os_data_struct tree
-        self.os_data_struct.insert_resource(
-            name, user_data={'vpn1': vpn1['id'],
-                             'vpn2': vpn2['id'],
-                             'remotecidr': subnet2['subnet']['cidr'],
-                             'secret': 'secret', 'name': 'name'},
-            os_data=ipsecsiteconnection, parent=vpntag)
         # Adding the IpSecSiteConnection to cleanup
         self.addCleanup(
             self.os_handle.ipsecsiteconnection_client.
@@ -259,22 +219,22 @@ class VPNaaSScenarioTest(test_vpnaas.VPNaaSBase,
         out2_result = any(expected_out2 in out for out in ping_out)
         if negative == 'True':
             if out1_result or out2_result:
-                LOG.debug((ping_out))
-                LOG.error(('This ping should have failed'))
+                LOG.debug(ping_out)
+                LOG.error('This ping should have failed')
             else:
-                LOG.info(('Ping Failed as expected'))
+                LOG.info('Ping Failed as expected')
         else:
             if out1_result and out2_result:
-                LOG.info(('Ping Passed as expected'))
+                LOG.info('Ping Passed as expected')
             elif out2_result and not out1_result:
-                LOG.warning((ping_out))
-                LOG.warning(('ping not 100% successful'))
+                LOG.warning(ping_out)
+                LOG.warning('ping not 100% successful')
             elif out1_result and not out2_result:
-                LOG.warning((ping_out))
-                LOG.warning(('ping not 64 bytes as expected'))
+                LOG.warning(ping_out)
+                LOG.warning('ping not 64 bytes as expected')
             else:
-                LOG.debug((ping_out))
-                LOG.error(('Ping Failed'))
+                LOG.debug(ping_out)
+                LOG.error('Ping Failed')
 
     def test_vpnaas_end_to_end(self):
         """test_vpnaas_end_to_end
@@ -284,13 +244,14 @@ class VPNaaSScenarioTest(test_vpnaas.VPNaaSBase,
         """
         self._create_resources()
 
-        subnet1 = self.os_data_struct.get_resource('subnet-0').os_data
-        subnet2 = self.os_data_struct.get_resource('subnet-1').os_data
-        network2 = self.os_data_struct.get_resource('network-1').os_data
-        VM1 = self.os_data_struct.get_resource('VM-0').os_data
-        VM2 = self.os_data_struct.get_resource('VM-1').os_data
-        vpn1 = self.os_data_struct.get_resource('VPN-0').os_data
-        vpn2 = self.os_data_struct.get_resource('VPN-1').os_data
+        # TODO(TEAM) FIXME ONCE WE PICK UP VPNAAS AGAIN ...
+        subnet1 = None  # self.os_data_struct.get_resource('subnet-0').os_data
+        subnet2 = None  # self.os_data_struct.get_resource('subnet-1').os_data
+        network2 = None  # self.os_data_struct.get_resource('network-1').os_...
+        VM1 = None  # self.os_data_struct.get_resource('VM-0').os_data
+        VM2 = None  # self.os_data_struct.get_resource('VM-1').os_data
+        vpn1 = None  # self.os_data_struct.get_resource('VPN-0').os_data
+        vpn2 = None  # self.os_data_struct.get_resource('VPN-1').os_data
 
         ikepolicy, ipsecpolicy = self._create_ikepolicy_ipsecpolicy()
 

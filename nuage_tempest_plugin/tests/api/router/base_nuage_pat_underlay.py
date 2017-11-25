@@ -23,7 +23,7 @@ from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
-from nuage_tempest_plugin.lib.nuage_tempest_test_loader import Release
+from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib import service_mgmt
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
@@ -35,6 +35,8 @@ CONF = config.CONF
 class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
     service_manager = None
     _interface = 'json'
+
+    ext_net_id = CONF.network.public_network_id
 
     LOG = logging.getLogger(__name__)
     PAT_NEEDS_EXT_NETWORK = "Invalid input for external_gateway_info. " \
@@ -68,7 +70,6 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
     def resource_setup(cls):
         super(NuagePatUnderlayBase, cls).resource_setup()
 
-        cls.ext_net_id = CONF.network.public_network_id
         # Fetch current nuage_pat value of of the plugin.ini file
         nuage_pat_ini = cls.read_nuage_pat_value_ini()
         if nuage_pat_ini == '':
@@ -77,20 +78,25 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
 
     @classmethod
     def needs_ini_nuage_pat(cls, pat_value):
-        if Topology.is_devstack():
-            raise cls.skipException('Skipping tests that restart neutron ...')
+        if not cls.pat_value_matches(
+                pat_value, cls.read_nuage_pat_value_ini()):
 
-        # check and set (if different) the nuage_pat setting in the .ini file
-        cls.service_manager.must_have_configuration_attribute(
-            CONF.nuage_sut.nuage_plugin_configuration,
-            constants.NUAGE_PAT_GROUP, constants.NUAGE_PAT, pat_value)
-        # Store value
+            if Topology.neutron_restart_supported():
+                # set the nuage_pat setting in the .ini file
+                cls.service_manager.must_have_configuration_attribute(
+                    CONF.nuage_sut.nuage_plugin_configuration,
+                    constants.NUAGE_PAT_GROUP, constants.NUAGE_PAT, pat_value)
+
+            else:
+                raise cls.skipException(
+                    'Skipping tests that restart neutron ...')
+
         cls.nuage_pat_ini = pat_value
 
     @classmethod
     def read_nuage_pat_value_ini(cls):
         # TODO(Kris) FIXME.....................................................
-        if Topology.is_devstack():
+        if Topology.assume_pat_to_underlay_as_disabled_by_default():
             return constants.NUAGE_PAT_DEFAULTDISABLED
         # TODO(Kris) FIXME.....................................................
 
@@ -100,9 +106,18 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
         )
         return pat_from_ini
 
-    # TODO(Kris) this shd not be duplicated - class inheritance to be fixed
+    @staticmethod
+    def pat_value_matches(a, b):
+        if a is None and b is None:
+            return True
+        if a is None and b == constants.NUAGE_PAT_DEFAULTDISABLED:
+            return True
+        if b is None and a == constants.NUAGE_PAT_DEFAULTDISABLED:
+            return True
+        return False
+
     def assertCommandFailed(self, message, fun, *args, **kwds):
-        if Topology.is_devstack():
+        if Topology.use_local_cli_client():
             self.assertRaisesRegex(exceptions.CommandFailed, message,
                                    fun, *args, **kwds)
         else:

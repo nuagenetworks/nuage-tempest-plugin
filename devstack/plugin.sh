@@ -82,7 +82,6 @@ function configure_tempest_nuage {
     iniset $TEMPEST_CONFIG nuagext nuage_components vsd
 
     iniset $TEMPEST_CONFIG nuage_sut openstack_version ${NUAGE_OPENSTACK_RELEASE}
-    iniset $TEMPEST_CONFIG nuage_sut sut_deployment devstack
     iniset $TEMPEST_CONFIG nuage_sut release ${NUAGE_VSP_RELEASE}
     iniset $TEMPEST_CONFIG nuage_sut nuage_plugin_mode ${NUAGE_PLUGIN_MODE}
     iniset $TEMPEST_CONFIG nuage_sut controller_user ${NUAGE_CONTROLLER_USER}

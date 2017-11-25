@@ -28,8 +28,8 @@ class L3Mixin(base.BaseMixin):
             cls.routers_client = cls.os_primary.routers_client
             cls.floating_ips_client = cls.os_primary.floating_ips_client
         if cls.has_admin:
-            cls.routers_client_admin = cls.os_adm.routers_client
-            cls.floating_ips_client_admin = cls.os_adm.floating_ips_client
+            cls.routers_client_admin = cls.os_admin.routers_client
+            cls.floating_ips_client_admin = cls.os_admin.floating_ips_client
 
     # ---------- Routers ----------
 

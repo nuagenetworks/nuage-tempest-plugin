@@ -100,7 +100,8 @@ class APIKeyRenewal(NuageBaseTest):
         api_key_after_10_mins = self._get_current_api_key_from_neutron()
         self.assertNotEqual(current_api_key, api_key_after_10_mins)
 
-    @testtools.skipIf(Topology.is_devstack(), 'Skipped on devstack setup')
+    @testtools.skipIf(not Topology.neutron_restart_supported(),
+                      'Skipping tests that restart neutron')
     @decorators.attr(type='slow')
     def test_api_key_renewed_after_401(self):
         """test_api_key_renewed_after_401

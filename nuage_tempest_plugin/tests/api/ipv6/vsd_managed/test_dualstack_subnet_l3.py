@@ -12,7 +12,7 @@ from tempest.lib import exceptions as tempest_exceptions
 from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
 
-from nuage_tempest_plugin.lib.nuage_tempest_test_loader import Release
+from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.test import tags
 from nuage_tempest_plugin.lib.utils import exceptions as nuage_exceptions

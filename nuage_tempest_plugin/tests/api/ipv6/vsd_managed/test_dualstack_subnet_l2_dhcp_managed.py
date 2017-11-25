@@ -12,7 +12,7 @@ from tempest.lib import exceptions as tempest_exceptions
 from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
 
-from nuage_tempest_plugin.lib.nuage_tempest_test_loader import Release
+from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.test import tags
 from nuage_tempest_plugin.lib.utils import constants as nuage_constants
@@ -609,7 +609,7 @@ class VSDManagedDualStackSubnetL2DHCPManagedTest(NetworkTestCaseMixin,
                               nuage_floatingip=None)
             self._verify_vport_in_l2_domain(port, vsd_l2domain)
 
-    @nuage_test.nuage_skip_because(bug='VSD-18509')
+    @nuage_test.skip_because(bug='VSD-18509')
     @decorators.attr(type='smoke')
     def test_create_vsd_l2domain_template_dualstack_valid_failing_at_vsd(self):
         valid_ipv6 = [

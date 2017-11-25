@@ -19,7 +19,8 @@ from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
-from nuage_tempest_plugin.lib.nuage_tempest_test_loader import Release
+from nuage_tempest_plugin.lib.release import Release
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as constants
 from nuage_tempest_plugin.services import nuage_client
 from nuage_tempest_plugin.services.nuage_network_client \
@@ -28,8 +29,7 @@ from nuage_tempest_plugin.tests.api import test_security_groups_nuage
 
 CONF = config.CONF
 external_id_release = Release(constants.EXTERNALID_RELEASE)
-conf_release = CONF.nuage_sut.release
-current_release = Release(conf_release)
+current_release = Release(Topology.nuage_release)
 LOG = logging.getLogger(__name__)
 
 

@@ -97,7 +97,7 @@ class TestNuageFipUnderlayConfigCliDefaultTrue(
     @classmethod
     def resource_setup(cls):
         super(TestNuageFipUnderlayConfigCliDefaultTrue, cls).resource_setup()
-        cls.needs_ini_nuage_fip_underlay(True)
+        cls.needs_ini_nuage_fip_underlay(True)  # this will actually be @ devci
 
     @nuage_test.header()
     def test_cli_create_delete_external_subnet_without_underlay_default_true(

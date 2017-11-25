@@ -11,6 +11,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 import contextlib
 
 from tempest.common.utils import data_utils
@@ -28,8 +29,8 @@ class SGMixin(base.BaseMixin):
             cls.sg_client = cls.os_primary.security_groups_client
             cls.sg_rules_client = cls.os_primary.security_group_rules_client
         if cls.has_admin:
-            cls.sg_client_admin = cls.os_adm.security_groups_client
-            cls.sg_rules_client = cls.os_adm.security_group_rules_client
+            cls.sg_client_admin = cls.os_admin.security_groups_client
+            cls.sg_rules_client = cls.os_admin.security_group_rules_client
 
     # ---------- SG ----------
     def sg_client(self, as_admin=False):

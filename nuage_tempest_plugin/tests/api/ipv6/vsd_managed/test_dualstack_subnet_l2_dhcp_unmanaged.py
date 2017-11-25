@@ -8,7 +8,7 @@ from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions as tempest_exceptions
 
-from nuage_tempest_plugin.lib.nuage_tempest_test_loader import Release
+from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.test import tags
 

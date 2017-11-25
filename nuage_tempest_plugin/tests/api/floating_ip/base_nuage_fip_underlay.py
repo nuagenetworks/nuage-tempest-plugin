@@ -66,28 +66,31 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest,):
             nuage_fip_underlay_ini = None
         cls.nuage_fip_underlay_ini = nuage_fip_underlay_ini
 
-        if (not Topology.is_devstack() and
+        if (Topology.neutron_restart_supported() and
                 not cls.service_manager.is_service_running(
                     nuage_constants.NEUTRON_SERVICE)):
             cls.service_manager.start_service(nuage_constants.NEUTRON_SERVICE)
 
     @classmethod
     def needs_ini_nuage_fip_underlay(cls, underlay_value):
-        if Topology.is_devstack():
-            raise cls.skipException('Skipping tests that restart neutron ...')
+        if underlay_value != cls.read_nuage_fip_underlay_value_ini():
+            if not Topology.neutron_restart_supported():
+                raise cls.skipException(
+                    'Skipping tests that restart neutron ...')
 
-        # underlay_value is supposed to be True/False/None, but can be
-        # different (add exception case)
-        cls.service_manager.must_have_configuration_attribute(
-            CONF.nuage_sut.nuage_plugin_configuration,
-            nuage_constants.NUAGE_FIP_UNDERLAY_GROUP,
-            nuage_constants.NUAGE_FIP_UNDERLAY, underlay_value)
+            # underlay_value is supposed to be True/False/None, but can be
+            # different (add exception case)
+            cls.service_manager.must_have_configuration_attribute(
+                CONF.nuage_sut.nuage_plugin_configuration,
+                nuage_constants.NUAGE_FIP_UNDERLAY_GROUP,
+                nuage_constants.NUAGE_FIP_UNDERLAY, underlay_value)
+
         cls.nuage_fip_underlay_ini = underlay_value
 
     @classmethod
     def read_nuage_fip_underlay_value_ini(cls):
         # TODO(Kris) FIXME.....................................................
-        if Topology.is_devstack():
+        if Topology.assume_fip_to_underlay_as_enabled_by_default():
             return True
         # TODO(Kris) ..........................................................
 

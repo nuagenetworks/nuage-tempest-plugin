@@ -17,9 +17,13 @@ from oslo_config import cfg
 
 from nuage_tempest_plugin.lib.utils import constants
 
+
+nuage_vsd_group = cfg.OptGroup(name='nuage',
+                               title='Nuage VSD config options')
+
 NuageVsdGroup = [
     cfg.StrOpt('nuage_vsd_server',
-               default="vsd.example.com",
+               default="localhost:8443",
                help="Nuage vsd server"),
     cfg.StrOpt('nuage_default_netpartition',
                default="OpenStackDefaultNetPartition",
@@ -44,30 +48,6 @@ NuageVsdGroup = [
                      'identifies this OpenStack instance'))
 ]
 
-nuage_vsd_group = cfg.OptGroup(name='nuage',
-                               title='Nuage VSD config options')
-
-nuage_tempest_group = cfg.OptGroup(name='nuagext',
-                                   title='Nuage Tempest config options')
-
-NuageTempestGroup = [
-    cfg.ListOpt('nuage_components',
-                default=['vsd'],
-                help="VSD/VSC/VRS"),
-    cfg.StrOpt('nuage_ext_mode',
-               default='api',
-               help="api/scenario"),
-    cfg.StrOpt('topologyfile',
-               default='',
-               help="Full path of topology file"),
-    cfg.StrOpt('exec_server_user',
-               default='',
-               help="User name of execution server"),
-    cfg.StrOpt('exec_server',
-               default='',
-               help="Host name of execution server")
-]
-
 nuage_sut_group = cfg.OptGroup(name='nuage_sut',
                                title='Nuage SUT config options')
 
@@ -76,16 +56,16 @@ NuageSutGroup = [
                default='/etc/neutron/plugins/nuage/plugin.ini',
                help="Full path for the Nuage plugin configuration file."),
     cfg.StrOpt('openstack_version',
-               default='kilo',
+               default='newton',
                choices=['kilo', 'liberty', 'mitaka', 'newton', 'ocata', 'pike',
                         'queens', 'master'],
                help="The mode for controlling services on controller node."),
     cfg.StrOpt('nuage_plugin_mode',
-               default='monolithic',
+               default='ml2',
                choices=['monolithic', 'ml2'],
                help="The mode for controlling services on controller node."),
     cfg.StrOpt('sut_deployment',
-               default='distro',
+               default='devstack',
                choices=['distro', 'devstack'],
                help="The type of SUT deployment."),
     cfg.StrOpt('nuage_baremetal_driver',
@@ -99,7 +79,7 @@ NuageSutGroup = [
                help="The segmentation ID which the baremetal mechanism "
                     "driver will use."),
     cfg.StrOpt('release',
-               default='0.0',
+               default='5.2',
                help="The release of the sut. "
                     "Valid examples: 3.2R1, 4.0, 4.0r2"),
     cfg.StrOpt('controller_service_management_mode',
@@ -116,12 +96,12 @@ NuageSutGroup = [
                default='root',
                help="The neutron DB username."),
     cfg.StrOpt('database_password',
-               default='tigris',
+               default='admin',
                help="The neutron DB password."),
-    cfg.StrOpt('console_access_to_vm',
-               default='False',
-               help='Whether console access to vm is enabled in topology.'),
-    cfg.StrOpt('api_workers',
-               default='1',
+    cfg.BoolOpt('console_access_to_vm',
+                default=False,
+                help='Whether console access to vm is enabled in topology.'),
+    cfg.IntOpt('api_workers',
+               default=1,
                help='Number of neutron api workers deployed.')
 ]

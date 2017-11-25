@@ -18,7 +18,6 @@ import nuage_base
 from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
-from tempest import test
 from tempest.test import decorators
 
 CONF = config.CONF
@@ -117,7 +116,6 @@ class OrchestrationNeutronResourcesTest(nuage_base.NuageBaseOrchestrationTest):
             self.assertEqual('CREATE_COMPLETE', resource['resource_status'])
 
     @decorators.idempotent_id('c572b915-edb1-4e90-b196-c7199a6848c0')
-    @test.services('network')
     def test_created_network(self):
         """Verifies created network."""
         network_id = self.test_resources.get('Network')['physical_resource_id']
@@ -129,7 +127,6 @@ class OrchestrationNeutronResourcesTest(nuage_base.NuageBaseOrchestrationTest):
             'Network']['properties']['name'], network['name'])
 
     @decorators.idempotent_id('e8f84b96-f9d7-4684-ad5f-340203e9f2c2')
-    @test.services('network')
     def test_created_subnet(self):
         """Verifies created subnet."""
         subnet_id = self.test_resources.get('Subnet')['physical_resource_id']
@@ -147,7 +144,6 @@ class OrchestrationNeutronResourcesTest(nuage_base.NuageBaseOrchestrationTest):
         self.assertEqual(str(self.subnet_cidr), subnet['cidr'])
 
     @decorators.idempotent_id('96af4c7f-5069-44bc-bdcf-c0390f8a67d1')
-    @test.services('network')
     def test_created_router(self):
         """Verifies created router."""
         router_id = self.test_resources.get('Router')['physical_resource_id']
@@ -160,7 +156,6 @@ class OrchestrationNeutronResourcesTest(nuage_base.NuageBaseOrchestrationTest):
         self.assertEqual(True, router['admin_state_up'])
 
     @decorators.idempotent_id('89f605bd-153e-43ee-a0ed-9919b63423c5')
-    @test.services('network')
     def test_created_router_interface(self):
         """Verifies created router interface."""
         router_id = self.test_resources.get('Router')['physical_resource_id']
@@ -183,7 +178,6 @@ class OrchestrationNeutronResourcesTest(nuage_base.NuageBaseOrchestrationTest):
                          router_interface_ip)
 
     @decorators.idempotent_id('75d85316-4ac2-4c0e-a1a9-edd2148fc10e')
-    @test.services('compute', 'network')
     def test_created_server(self):
         """Verifies created sever."""
         server_id = self.test_resources.get('Server')['physical_resource_id']

@@ -16,14 +16,15 @@
 from oslo_log import log as logging
 
 from tempest.api.network import base
+from tempest.common import utils
 from tempest import config
 from tempest.lib.common.utils import data_utils
-from tempest import test
 
 from external_id import ExternalId
 
-from nuage_tempest_plugin.lib.nuage_tempest_test_loader import Release
+from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.lib.utils import exceptions as n_exceptions
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
@@ -95,7 +96,7 @@ class ExternalIdForVpnServiceTest(VPNMixin, base.BaseNetworkTest):
     def setUpClass(cls):
         super(ExternalIdForVpnServiceTest, cls).setUpClass()
         external_id_release = Release('4.0R5')
-        current_release = Release(CONF.nuage_sut.release)
+        current_release = Release(Topology.nuage_release)
         cls.test_upgrade = external_id_release > current_release
 
     @classmethod
@@ -104,7 +105,7 @@ class ExternalIdForVpnServiceTest(VPNMixin, base.BaseNetworkTest):
         cls.nuage_vsd_client = NuageRestClient()
 
     @nuage_test.header()
-    @test.requires_ext(extension='vpnaas', service='network')
+    @utils.requires_ext(extension='vpnaas', service='network')
     def test_vpn_service_floating_ips(self):
         """test_vpn_service_floating_ips
 

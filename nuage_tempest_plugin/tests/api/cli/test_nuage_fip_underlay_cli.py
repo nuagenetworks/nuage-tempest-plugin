@@ -6,7 +6,7 @@ from netaddr import IPNetwork
 from tempest import config
 from tempest.lib.common.utils import data_utils
 
-from nuage_tempest_plugin.lib.nuage_tempest_test_loader import Release
+from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.remote_cli import remote_cli_base_testcase
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.tests.api.floating_ip.base_nuage_fip_underlay \

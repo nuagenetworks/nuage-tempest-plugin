@@ -7,7 +7,6 @@ import inspect
 import os.path
 from oslo_utils import excutils
 import pymysql
-import re
 import testtools
 import yaml
 
@@ -15,18 +14,6 @@ from netaddr import IPAddress
 from netaddr import IPNetwork
 from netaddr import IPRange
 from oslo_log import log as oslo_logging
-
-from testtools.matchers import ContainsDict
-from testtools.matchers import Equals
-
-from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
-from nuage_tempest_plugin.lib.test import tags as test_tags
-from nuage_tempest_plugin.lib.test.tenant_server import TenantServer
-from nuage_tempest_plugin.lib.test import vsd_helper
-from nuage_tempest_plugin.lib.topology import Topology
-
-from nuage_tempest_plugin.lib.utils import constants as nuage_constants
-from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
 from tempest.common import waiters
 from tempest import config
@@ -36,34 +23,35 @@ from tempest.lib import exceptions as lib_exc
 from tempest.scenario import manager
 from tempest.services import orchestration
 
+from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
+from nuage_tempest_plugin.lib.test import tags as test_tags
+from nuage_tempest_plugin.lib.test.tenant_server import TenantServer
+from nuage_tempest_plugin.lib.test import vsd_helper
+from nuage_tempest_plugin.lib.topology import Topology
+
 CONF = config.CONF
 LOG = oslo_logging.getLogger(__name__)
 
 
-# noinspection PyUnusedLocal
-def nuage_skip_because(*args, **kwargs):
+def skip_because(*args, **kwargs):
     """A decorator useful to skip tests hitting known bugs
 
     @param bug: bug number causing the test to skip
     @param condition: optional condition to be True for the skip to have place
-    @param interface: skip the test if it is the same as self._interface
     """
     def decorator(f):
-        # noinspection PyUnusedLocal
         @functools.wraps(f)
         def wrapper(self, *func_args, **func_kwargs):
-            msg = "UNDEFINED"
-            if "message" in func_kwargs:
-                message = func_kwargs["message"]
-
-                msg = "Skipped because: %s" % message
-                if (message.startswith("OPENSTACK-") or
-                        message.startswith("VSD-")):
-                    uri = "http://mvjira.mv.usa.alcatel.com/browse/" + message
-                    msg += "\n"
-                    msg += uri
-
-            raise testtools.TestCase.skipException(msg)
+            skip = False
+            if "condition" in kwargs:
+                if kwargs["condition"] is True:
+                    skip = True
+            else:
+                skip = True
+            if "bug" in kwargs and skip is True:
+                msg = "Skipped until Bug: %s is resolved." % kwargs["bug"]
+                raise testtools.TestCase.skipException(msg)
+            return f(self, *func_args, **func_kwargs)
         return wrapper
     return decorator
 
@@ -83,7 +71,7 @@ def header(tags=None, since=None, until=None):
         def wrapper(self, *func_args, **func_kwargs):
 
             if f.func_code.co_name != 'wrapper':
-                LOG.info("TEST CASE STARTED: {}".format(f.func_code.co_name))
+                LOG.info('TEST CASE STARTED: {}'.format(f.func_code.co_name))
 
                 # Dump the message + the name of this function to the log.
                 LOG.info("in {}:{}".format(
@@ -94,7 +82,7 @@ def header(tags=None, since=None, until=None):
             result = f(self, *func_args, **func_kwargs)
 
             if f.func_code.co_name != 'wrapper':
-                LOG.info("TEST CASE COMPLETED: {}".format(f.func_code.co_name))
+                LOG.info('TEST CASE COMPLETED: {}'.format(f.func_code.co_name))
             return result
 
         _add_tags_to_method(tags, wrapper)
@@ -147,14 +135,6 @@ def class_header(tags=None, since=None, until=None):
     return decorator
 
 
-def base_uri_to_version(base_uri):
-    pattern = re.compile(r'(\d+_\d+)')
-    match = pattern.search(base_uri)
-    version = match.group()
-    version = "v" + str(version)
-    return version
-
-
 class NuageBaseTest(manager.NetworkScenarioTest):
 
     """NuageBaseTest
@@ -167,10 +147,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
     _ip_version = 4
 
     credentials = ['primary', 'admin']
-
     default_netpartition_name = CONF.nuage.nuage_default_netpartition
-    default_enterprise = None  # the default enterprise
-
     image_name_to_id_cache = {}
 
     @classmethod
@@ -182,12 +159,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         super(NuageBaseTest, cls).setup_clients()
         cls.manager = cls.get_client_manager()
         cls.admin_manager = cls.get_client_manager(credential_type='admin')
-
-        cls.nuage_vsd_client = NuageRestClient()
-
-        version = base_uri_to_version(CONF.nuage.nuage_base_uri)
-        address = CONF.nuage.nuage_vsd_server
-        cls.vsd = vsd_helper.VsdHelper(address, version=version)
+        cls.vsd = vsd_helper.VsdHelper()
 
     @classmethod
     def resource_setup(cls):
@@ -259,7 +231,9 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
     def create_subnet(self, network, subnet_name=None, gateway='', cidr=None,
                       mask_bits=None,
-                      ip_version=None, client=None, cleanup=True, **kwargs):
+                      ip_version=None, client=None, cleanup=True,
+                      no_net_partition=False,
+                      **kwargs):
         """Wrapper utility that returns a test subnet."""
         # allow tests to use admin client
         if not client:
@@ -294,6 +268,9 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             else:
                 gateway_ip = gateway
             try:
+                if not no_net_partition and 'net_partition' not in kwargs:
+                    kwargs['net_partition'] = self.default_netpartition_name
+
                 body = client.subnets_client.create_subnet(
                     name=subnet_name,
                     network_id=network['id'],
@@ -400,7 +377,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                                                **kwargs)
         return body['port']
 
-    def _verify_port(self, port, subnet4=None, subnet6=None, **kwargs):
+    def _verify_port(self, port, subnet4=None, subnet6=None):
         has_ipv4_ip = False
         has_ipv6_ip = False
 
@@ -432,73 +409,18 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
         self.assertIsNotNone(port['mac_address'])
 
-        # verify all other kwargs as attributes (key,value) pairs
-        for key, value in kwargs.iteritems():
-            if isinstance(value, dict):
-                # compare dict
-                # replaced throwing NotImplementedError as that makes
-                # the class abstract
-                self.fail('isinstance(value, dict) not implemented')
-            if isinstance(value, list):
-                # self.assertThat(port, ContainsDict({key: Equals(value)}))
-                self.assertItemsEqual(port[key], value)
-            else:
-                self.assertThat(port, ContainsDict({key: Equals(value)}))
+    def _verify_vport_in_l2_domain(self, port, vsd_l2domain):
+        vport = self.vsd.get_vport(l2domain=vsd_l2domain,
+                                   by_port_id=port['id'])
+        self.assertEqual(port['id'], vport.name)
 
-    def _verify_vport_in_l2_domain(self, port, vsd_l2domain, **kwargs):
-        nuage_vports = self.nuage_vsd_client.get_vport(
-            nuage_constants.L2_DOMAIN,
-            vsd_l2domain.id,
-            filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(
-            len(nuage_vports), 1,
-            "Must find one VPort matching port: %s" % port['name'])
-        nuage_vport = nuage_vports[0]
-        self.assertThat(nuage_vport,
-                        ContainsDict({'name': Equals(port['id'])}))
-
-        # verify all other kwargs as attributes (key,value) pairs
-        for key, value in kwargs.iteritems():
-            if isinstance(value, dict):
-                # compare dict
-                # replaced throwing NotImplementedError as that makes
-                # the class abstract
-                self.fail('isinstance(value, dict) not implemented')
-            if isinstance(value, list):
-                # self.assertThat(port, ContainsDict({key: Equals(value)}))
-                self.assertItemsEqual(port[key], value)
-            else:
-                self.assertThat(port, ContainsDict({key: Equals(value)}))
-
-    def _verify_vport_in_l3_subnet(self, port, vsd_l3_subnet, **kwargs):
-        nuage_vports = self.nuage_vsd_client.get_vport(
-            nuage_constants.SUBNETWORK,
-            vsd_l3_subnet.id,
-            filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(
-            len(nuage_vports), 1,
-            "Must find one VPort matching port: %s" % port['name'])
-        nuage_vport = nuage_vports[0]
-        self.assertThat(nuage_vport,
-                        ContainsDict({'name': Equals(port['id'])}))
-
-        # verify all other kwargs as attributes (key,value) pairs
-        for key, value in kwargs.iteritems():
-            if isinstance(value, dict):
-                # compare dict
-                # replaced throwing NotImplementedError as that makes
-                # the class abstract
-                self.fail('isinstance(value, dict) not implemented')
-            if isinstance(value, list):
-                # self.assertThat(port, ContainsDict({key: Equals(value)}))
-                self.assertItemsEqual(port[key], value)
-            else:
-                self.assertThat(port, ContainsDict({key: Equals(value)}))
+    def _verify_vport_in_l3_subnet(self, port, vsd_l3_subnet):
+        vport = self.vsd.get_vport(subnet=vsd_l3_subnet,
+                                   by_port_id=port['id'])
+        self.assertEqual(port['id'], vport.name)
 
     def create_test_router(self):
-        if Topology.telnet_console_access_to_vm_enabled():
+        if Topology.access_to_l2_supported():
             return self.create_router()  # can be an isolated router
         else:
             return self.create_public_router()  # needs FIP access
@@ -511,7 +433,9 @@ class NuageBaseTest(manager.NetworkScenarioTest):
     def create_router(self, router_name=None, admin_state_up=True,
                       external_network_id=None, enable_snat=None,
                       client=None, cleanup=True,
-                      delay_cleanup_for_nuage_bug=False, **kwargs):
+                      delay_cleanup_for_nuage_bug=False,
+                      no_net_partition=False,
+                      **kwargs):
         """Wrapper utility that creates a router."""
         ext_gw_info = {}
         router_name = router_name or data_utils.rand_name('test-router-')
@@ -521,6 +445,8 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             ext_gw_info['network_id'] = external_network_id
         if enable_snat is not None:
             ext_gw_info['enable_snat'] = enable_snat
+        if not no_net_partition and 'net_partition' not in kwargs:
+            kwargs['net_partition'] = self.default_netpartition_name
         body = client.routers_client.create_router(
             name=router_name, external_gateway_info=ext_gw_info,
             admin_state_up=admin_state_up, **kwargs)
@@ -580,21 +506,16 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             port_id, ip4 = self._get_server_port_id_and_ip4(server)
 
         floatingip_subnet_id = self.osc_list_networks(
-            id=external_network_id)[0]['subnets'][0]
-        filter = self.vsd.get_external_id_filter(
-            floatingip_subnet_id
-        )
+            id=external_network_id)[0]['subnets'][0]['id']
         shared_network_resource_id = self.vsd.get_shared_network_resource(
-            filter=filter
-        ).id
+            by_fip_subnet_id=floatingip_subnet_id).id
         # Create floating ip
         floating_ip = self.vsd.create_floating_ip(
             vsd_domain,
             shared_network_resource_id=shared_network_resource_id)
         self.addCleanup(floating_ip.delete)
         # Associate floating ip
-        filter = self.vsd.get_external_id_filter(port_id)
-        vport = self.vsd.get_vport(vsd_subnet, filter=filter)
+        vport = self.vsd.get_vport(subnet=vsd_subnet, by_port_id=port_id)
         vport.associated_floating_ip_id = floating_ip.id
         vport.save()
 
@@ -610,7 +531,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         if not client:
             client = self.manager
         body = client.floating_ips_client.update_floatingip(
-            floatingip["id"], **kwargs)
+            floatingip['id'], **kwargs)
         fip = body['floatingip']
         return fip
 
@@ -715,11 +636,15 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         if not client:
             client = self.manager
         images = client.image_client_v2.list_images()
-        for i in images['images']:
-            if image_name == i['name']:
-                self.image_name_to_id_cache[image_name] = i['id']
-                return i['id']
-        return None
+        image_id = None
+        for image in images['images']:
+            # add them all
+            self.image_name_to_id_cache[image['name']] = image['id']
+
+            if image_name == image['name']:
+                image_id = image['id']
+
+        return image_id
 
     def osc_server_add_interface(self, server, port, client=None):
         if not client:

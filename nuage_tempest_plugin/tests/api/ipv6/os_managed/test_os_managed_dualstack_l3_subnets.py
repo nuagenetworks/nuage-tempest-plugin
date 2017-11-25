@@ -56,9 +56,7 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
         self.assertIsNotNone(ipv4_subnet)
 
         # Then a VSD L2 domain is created with type IPv4
-        vsd_l2_domain = self.vsd.get_l2domain(
-            vspk_filter='externalID == "{}"'.format(
-                ExternalId(ipv4_subnet['id']).at_cms_id()))
+        vsd_l2_domain = self.vsd.get_l2domain(by_subnet_id=ipv4_subnet['id'])
         self.assertIsNotNone(vsd_l2_domain)
         self.assertEqual("IPV4", vsd_l2_domain.ip_type)
 
@@ -74,18 +72,14 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
         router = self.create_router()
         self.assertIsNotNone(router)
 
-        vsd_l3_domain = self.vsd.get_l3domain(
-            vspk_filter='externalID == "{}"'.format(
-                ExternalId(router['id']).at_cms_id()))
+        vsd_l3_domain = self.vsd.get_l3domain(by_router_id=router['id'])
         self.assertIsNotNone(vsd_l3_domain)
 
         self.router_attach(router, ipv4_subnet)
 
         vsd_l3_domain.fetch()
         vsd_l3_subnet = self.vsd.get_subnet_from_domain(
-            domain=vsd_l3_domain,
-            filter='externalID == "{}"'.format(
-                ExternalId(ipv4_subnet['id']).at_cms_id()))
+            domain=vsd_l3_domain, by_subnet_id=ipv4_subnet['id'])
 
         port = self.create_port(network)
         self._verify_port(port, subnet4=ipv4_subnet, subnet6=None),

@@ -56,9 +56,9 @@ class NuageSfc(NuageBaseTest):
     @classmethod
     def skip_checks(cls):
         super(NuageSfc, cls).skip_checks()
-        if Topology.is_devstack():
-            # TODO(TEAM) FIX THIS
-            raise cls.skipException('Nuage-sfc to be set up. Skipping tests.')
+        if not Topology.support_sfc():
+            raise cls.skipException('Nuage-sfc not supported in current setup.'
+                                    ' Skipping tests.')
 
     def _create_server(self, ports, name='vm', cleanup=True):
         return self.create_tenant_server(ports=ports,

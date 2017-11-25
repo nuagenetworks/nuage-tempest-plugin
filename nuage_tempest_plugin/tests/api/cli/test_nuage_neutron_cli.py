@@ -8,13 +8,14 @@ from tempest.common import utils
 from tempest import config
 from tempest.lib import decorators
 
-from nuage_tempest_plugin.lib.nuage_tempest_test_loader import Release
+from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.remote_cli import remote_cli_base_testcase
 from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
 
 CONF = config.CONF
-
 LOG = logging.getLogger(__name__)
+current_release = Release(Topology.nuage_release)
 
 
 class TestNuageNeutronCli(remote_cli_base_testcase.RemoteCliBaseTestCase):
@@ -94,7 +95,7 @@ class TestNuageNeutronCli(remote_cli_base_testcase.RemoteCliBaseTestCase):
             wanted_commands = wanted_commands.union(self._crud_command_list(
                 'nuage-redirect-target-rule', update=False))
 
-        if Release('4.0') <= Release(CONF.nuage_sut.release):
+        if Release('4.0') <= current_release:
             wanted_commands.add('nuage-policy-group-list')
             wanted_commands.add('nuage-policy-group-show')
             wanted_commands.add('nuage-floatingip-list')

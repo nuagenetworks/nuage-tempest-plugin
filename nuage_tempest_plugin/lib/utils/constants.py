@@ -96,7 +96,7 @@ TIER = 'tiers'
 FLOW = 'flows'
 SERVICE = 'applicationservices'
 
-# GATEWAYPERSONALITY
+# Gateway personality
 PERSONALITY_LIST = ['VRSG', 'VSG']
 
 # Vport type

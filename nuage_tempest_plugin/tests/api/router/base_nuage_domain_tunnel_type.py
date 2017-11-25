@@ -5,6 +5,7 @@ from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest import test
 
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services import nuage_client
 
@@ -13,6 +14,17 @@ CONF = config.CONF
 
 class NuageDomainTunnelTypeBase(test.BaseTestCase):
     _interface = 'json'
+
+    @classmethod
+    def skip_checks(cls):
+        super(NuageDomainTunnelTypeBase, cls).skip_checks()
+        if Topology.single_worker_run():
+            # problem with multiple workers is that these tests are modifying
+            # VSD system settings like DOMAIN TUNNEL TYPE which may break
+            # other tests - therefore skipping for multiple workers
+            msg = ('Test requires neutron to be set up with '
+                   'single api worker.')
+            raise cls.skipException(msg)
 
     @classmethod
     def setup_clients(cls):

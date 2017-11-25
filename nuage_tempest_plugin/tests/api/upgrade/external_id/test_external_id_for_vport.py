@@ -21,8 +21,9 @@ from tempest import config
 from tempest.lib.common.utils import data_utils
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
-from nuage_tempest_plugin.lib.nuage_tempest_test_loader import Release
+from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.lib.utils import exceptions as n_exceptions
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
@@ -265,7 +266,7 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
     def setUpClass(cls):
         super(ExternalIdForVPortTest, cls).setUpClass()
         external_id_release = Release('4.0R4')
-        current_release = Release(CONF.nuage_sut.release)
+        current_release = Release(Topology.nuage_release)
         cls.test_upgrade = external_id_release > current_release
 
     @classmethod
@@ -273,7 +274,7 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
         super(ExternalIdForVPortTest, cls).setup_clients()
         cls.nuage_vsd_client = NuageRestClient()
 
-    @testtools.skipUnless(Release('4.0R4') <= Release(CONF.nuage_sut.release),
+    @testtools.skipUnless(Release('4.0R4') <= Release(Topology.nuage_release),
                           'No upgrade testing on vport')
     @nuage_test.header()
     def test_port_dhcp_options_matches_to_port(self):

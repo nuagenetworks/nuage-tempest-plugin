@@ -9,7 +9,7 @@ from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
 from nuage_tempest_plugin.lib import features
-from nuage_tempest_plugin.lib.nuage_tempest_test_loader import Release
+from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.utils import constants as constants
 from nuage_tempest_plugin.services import nuage_client
 from nuage_tempest_plugin.services.nuage_network_client \

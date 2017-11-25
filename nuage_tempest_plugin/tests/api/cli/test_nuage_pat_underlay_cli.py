@@ -4,9 +4,9 @@
 from netaddr import IPNetwork
 from oslo_log import log as logging
 
+from tempest.common import utils
 from tempest import config
 from tempest.lib.common.utils import data_utils
-from tempest import test
 
 from nuage_tempest_plugin.tests.api.router.base_nuage_pat_underlay \
     import NuagePatUnderlayBase
@@ -106,7 +106,7 @@ class TestNuagePatUnderlayCli(remote_cli_base_testcase.RemoteCliBaseTestCase,
             self.assertCommandFailed(exp_message, self.create_router_with_args,
                                      name, external_gw_info_cli)
 
-    @test.requires_ext(extension='ext-gw-mode', service='network')
+    @utils.requires_ext(extension='ext-gw-mode', service='network')
     @nuage_test.header()
     def test_cli_create_router_with_gw_with_non_existing_ext_network_neg(self):
         """test_cli_create_router_with_gw_with_non_existing_ext_network_neg
@@ -132,7 +132,7 @@ class TestNuagePatUnderlayCli(remote_cli_base_testcase.RemoteCliBaseTestCase,
         self.assertCommandFailed(exp_message, self.create_router_with_args,
                                  name, external_gw_info_cli)
 
-    @test.requires_ext(extension='ext-gw-mode', service='network')
+    @utils.requires_ext(extension='ext-gw-mode', service='network')
     @nuage_test.header()
     def test_cli_create_router_with_ext_gw_with_vsd_managed_subnet_neg(self):
         """test_cli_create_router_with_ext_gw_with_vsd_managed_subnet_neg

@@ -79,7 +79,6 @@ class NuageFipRateLimitBase(base.BaseNetworkTest):
             nuage_fip_rate=rate_limit)
 
         created_floating_ip = body['floatingip']
-        cls.floating_ips.append(created_floating_ip)
 
         return created_floating_ip
 

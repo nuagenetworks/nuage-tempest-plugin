@@ -25,8 +25,9 @@ from external_id import ExternalId
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 
-from nuage_tempest_plugin.lib.nuage_tempest_test_loader import Release
+from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.lib.utils import exceptions as n_exceptions
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
@@ -118,7 +119,7 @@ class ExternalIdForNetworkMacroTest(base.BaseAdminNetworkTest):
             if subnet['network_id'] == network['id']:
                 self.subnets.remove(subnet)
 
-    @testtools.skipUnless(Release('4.0R5') <= Release(CONF.nuage_sut.release),
+    @testtools.skipUnless(Release('4.0R5') <= Release(Topology.nuage_release),
                           'No upgrade testing on network macro')
     @nuage_test.header()
     def test_network_macro_matches_to_enterprise(self):

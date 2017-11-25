@@ -35,7 +35,7 @@ LOG = logging.getLogger(__name__)
 
 def execute(cmd, action, flags='', params='', fail_ok=False,
             merge_stderr=False):
-    if Topology.is_devstack():
+    if Topology.use_local_cli_client():
         return execute_locally(cmd, action, flags, params, fail_ok,
                                merge_stderr, cli_dir='')
     else:

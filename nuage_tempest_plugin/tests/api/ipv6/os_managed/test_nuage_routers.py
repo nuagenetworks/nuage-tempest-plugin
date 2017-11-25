@@ -18,10 +18,10 @@ import netaddr
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 
 from tempest.api.network import test_routers as tempest_test_routers
+from tempest.common import utils
 from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
-from tempest import test
 
 CONF = config.CONF
 
@@ -101,7 +101,7 @@ class NuageRoutersIpV6Test(tempest_test_routers.RoutersIpV6Test):
         self.assertEqual(show_port_body['port']['device_id'],
                          router['id'])
 
-    @test.requires_ext(extension='extraroute', service='network')
+    @utils.requires_ext(extension='extraroute', service='network')
     # OPENSTACK-1887
     def test_update_delete_extra_route(self):
         # Create different cidr for each subnet to avoid cidr duplicate

@@ -22,9 +22,10 @@ from tempest.lib import exceptions
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
-from nuage_tempest_plugin.lib.nuage_tempest_test_loader import Release
+from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.test import tags
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 
 from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
@@ -53,8 +54,7 @@ SEVERAL_VSD_CLAIMED_FIPS = 3
 VALID_MAC_ADDRESS = 'fa:fa:3e:e8:e8:c0'
 
 external_id_release = Release(constants.EXTERNALID_RELEASE)
-conf_release = CONF.nuage_sut.release
-current_release = Release(conf_release)
+current_release = Release(Topology.nuage_release)
 
 
 @nuage_test.class_header(tags=tags.VSD_MANAGED)
@@ -562,7 +562,7 @@ class VSDManagedRedirectTargetTest(
                 msg = "update_port_precommit failed"
         else:
             # VSD-14419 - VSD throws wrong error
-            if Release(CONF.nuage_sut.release) < Release('4.0R5'):
+            if current_release < Release('4.0R5'):
                 expected_exception = exceptions.ServerFault
                 LOG.warning("VSD-14419: throws wrong http error code: "
                             "ServerFault iso BadRequest")

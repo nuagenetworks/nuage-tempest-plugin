@@ -5,7 +5,6 @@ from tempest import config
 from tempest.scenario import manager
 
 from nuage_tempest_plugin.tests.api import test_ip_anti_spoofing as antispoof
-from nuage_tempest_plugin.tests import nuage_ext
 
 CONF = config.CONF
 
@@ -17,9 +16,8 @@ class IpAntiSpoofingTestScenario(antispoof.IpAntiSpoofingTestBase,
     @classmethod
     def skip_checks(cls):
         super(IpAntiSpoofingTestScenario, cls).skip_checks()
-        if 'vrs' not in CONF.nuagext.nuage_components:
-            raise cls.skipException("vrs configuration tempest.conf section "
-                                    "[nuageext] nuage_components is required")
+        raise cls.skipException('Skipping as needs VRS whitebox tests, '
+                                'which is work in progress - TODO(Kris)')
 
     @classmethod
     def resource_setup(cls):
@@ -32,7 +30,7 @@ class IpAntiSpoofingTestScenario(antispoof.IpAntiSpoofingTestBase,
         False at port level only.
         """
         network, l2domain, port = self._create_network_port_l2resources(
-            ntw_security='True', port_security='False',
+            ntw_security=True, port_security=False,
             l2domain_name='scn-l2dom1-1',
             port_name='scn-port1-1')
         self.assertEqual(network['port_security_enabled'], True)
@@ -40,16 +38,15 @@ class IpAntiSpoofingTestScenario(antispoof.IpAntiSpoofingTestBase,
         ntw = {'uuid': network['id'], 'port': port['id']}
         vm = self.create_server(name='scn-port1-vm-1', networks=[ntw],
                                 wait_until='ACTIVE')
-        self.os_data.insert_resource(vm['name'], 'scn-port1-1', os_data=vm)
         self.assertEqual(port['fixed_ips'][0]['ip_address'],
                          vm['addresses'][network['name']][0]['addr'])
         self.assertEqual(
             port['mac_address'],
             vm['addresses'][network['name']][0]['OS-EXT-IPS-MAC:mac_addr'])
         self.assertEqual(vm['status'], 'ACTIVE')
-        tag_name = 'verify_vm_in_sec_disabled_port_l2domain'
-        nuage_ext.nuage_extension.nuage_components(
-            nuage_ext._generate_tag(tag_name, self.__class__.__name__), self)
+        # tag_name = 'verify_vm_in_sec_disabled_port_l2domain'
+        # nuage_ext.nuage_extension.nuage_components(
+        #     nuage_ext._generate_tag(tag_name, self.__class__.__name__), self)
 
     def test_vm_in_sec_disabled_port_l3domain(self):
         """test_vm_in_sec_disabled_port_l3domain
@@ -58,8 +55,8 @@ class IpAntiSpoofingTestScenario(antispoof.IpAntiSpoofingTestBase,
         to False at port level only.
         """
         network, router, subnet, port = self._create_network_port_l3resources(
-            ntw_security='True',
-            port_security='False',
+            ntw_security=True,
+            port_security=False,
             router_name='scn-router11-1',
             subnet_name='scn-subnet11-1',
             port_name='scn-port11-1')
@@ -68,16 +65,15 @@ class IpAntiSpoofingTestScenario(antispoof.IpAntiSpoofingTestBase,
         ntw = {'uuid': network['id'], 'port': port['id']}
         vm = self.create_server(name='scn-port11-vm-1', networks=[ntw],
                                 wait_until='ACTIVE')
-        self.os_data.insert_resource(vm['name'], 'scn-port11-1', os_data=vm)
         self.assertEqual(port['fixed_ips'][0]['ip_address'],
                          vm['addresses'][network['name']][0]['addr'])
         self.assertEqual(
             port['mac_address'],
             vm['addresses'][network['name']][0]['OS-EXT-IPS-MAC:mac_addr'])
         self.assertEqual(vm['status'], 'ACTIVE')
-        tag_name = 'verify_vm_in_sec_disabled_port_l3domain'
-        nuage_ext.nuage_extension.nuage_components(
-            nuage_ext._generate_tag(tag_name, self.__class__.__name__), self)
+        # tag_name = 'verify_vm_in_sec_disabled_port_l3domain'
+        # nuage_ext.nuage_extension.nuage_components(
+        #     nuage_ext._generate_tag(tag_name, self.__class__.__name__), self)
 
     def test_vm_with_port_parameters_1_0_0_1_l3domain(self):
         """test_vm_with_port_parameters_1_0_0_1_l3domain
@@ -89,8 +85,8 @@ class IpAntiSpoofingTestScenario(antispoof.IpAntiSpoofingTestBase,
         ip_address = '30.30.30.100'
         allowed_address_pairs = [{'ip_address': ip_address}]
         network, router, subnet, port = self._create_network_port_l3resources(
-            ntw_security='True',
-            port_security='True',
+            ntw_security=True,
+            port_security=True,
             router_name='scn-router12-1',
             subnet_name='scn-subnet12-1',
             port_name='scn-port12-1',
@@ -101,7 +97,6 @@ class IpAntiSpoofingTestScenario(antispoof.IpAntiSpoofingTestBase,
         ntw = {'uuid': network['id'], 'port': port['id']}
         vm = self.create_server(name='scn-port12-vm-1', networks=[ntw],
                                 wait_until='ACTIVE')
-        self.os_data.insert_resource(vm['name'], 'scn-port12-1', os_data=vm)
         self.assertEqual(port['fixed_ips'][0]['ip_address'],
                          vm['addresses'][network['name']][0]['addr'])
         self.assertEqual(
@@ -109,6 +104,6 @@ class IpAntiSpoofingTestScenario(antispoof.IpAntiSpoofingTestBase,
             vm['addresses'][network['name']][0]['OS-EXT-IPS-MAC:mac_addr'])
         self.assertEqual(vm['status'], 'ACTIVE')
         time.sleep(30)
-        tag_name = 'verify_vm_vip_and_anit_spoof_l3domain'
-        nuage_ext.nuage_extension.nuage_components(
-            nuage_ext._generate_tag(tag_name, self.__class__.__name__), self)
+        # tag_name = 'verify_vm_vip_and_anit_spoof_l3domain'
+        # nuage_ext.nuage_extension.nuage_components(
+        #     nuage_ext._generate_tag(tag_name, self.__class__.__name__), self)

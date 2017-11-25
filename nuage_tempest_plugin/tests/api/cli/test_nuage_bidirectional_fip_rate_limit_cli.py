@@ -2,18 +2,16 @@
 # All Rights Reserved.
 
 import json
-from oslo_log import log as logging
 
-from tempest.common import utils
 from tempest import config
 from tempest.test import decorators
 
-from nuage_tempest_plugin.lib.remote_cli import remote_cli_base_testcase
 from nuage_tempest_plugin.lib import service_mgmt
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
-import nuage_tempest_plugin.services.nuage_client as nuage_client
+
+from base_nuage_fip_rate_limit_cli import BaseNuageFipRateLimit
 
 CONF = config.CONF
 
@@ -29,67 +27,60 @@ MSG_INVALID_INPUT_FOR_OPERATION = "Invalid input for operation: " \
                                   "the configured default value.."
 
 
-def openstack_to_vsd(value):
-    """openstack_to_vsd
-
-    Converts an OpenStack value to the associated VSD value.
-     :param value: the OpenStack value
-     :type value: integer
-     """
-    if value is None:
-        return None
-    elif str(value) == constants.UNLIMITED:
-        return "INFINITY"
-    else:
-        return str(value)
-
-
-class TestNuageBidiFRLCliWODefault(
-        remote_cli_base_testcase.RemoteCliBaseTestCase):
+class TestNuageBidiFRLCliWODefault(BaseNuageFipRateLimit):
 
     """FipRateLimit tests using Neutron CLI client.
 
     """
-    LOG = logging.getLogger(__name__)
-    configured_default_fip_rate = None
-    expected_default_fip_rate = constants.UNLIMITED
 
     @classmethod
-    def skip_checks(cls):
-        super(TestNuageBidiFRLCliWODefault, cls).skip_checks()
-        if not CONF.service_available.neutron:
-            msg = 'Skipping all Neutron cli tests because it is not available'
-            raise cls.skipException(msg)
+    def read_nuage_fip_rate_limit_configs(cls):
+        # TODO(Kris) FIXME.....................................................
+        if Topology.assume_default_fip_rate_limits():
+            return None, None
+        # TODO(Kris) FIXME.....................................................
 
-        if not utils.is_extension_enabled('nuage-floatingip', 'network'):
-            msg = 'Extension nuage_floatingip not enabled.'
-            raise cls.skipException(msg)
-
-        if Topology.is_devstack():
-            msg = 'Skipping tests that restart neutron ...'
-            raise cls.skipException(msg)
-
-    @classmethod
-    def setup_clients(cls):
-        super(TestNuageBidiFRLCliWODefault, cls).setup_clients()
-        cls.nuage_vsd_client = nuage_client.NuageRestClient()
-
-        cls.service_manager = service_mgmt.ServiceManager()
-        cls.service_manager.must_have_configuration_attribute(
+        fip_eg_rate_limit = cls.service_manager.get_configuration_attribute(
             CONF.nuage_sut.nuage_plugin_configuration,
             constants.FIP_RATE_GROUP,
-            constants.BIDIRECTIONAL_FIP_RATE_DEFAULT_EGRESS,
-            cls.configured_default_fip_rate)
-        cls.service_manager.must_have_configuration_attribute(
+            constants.BIDIRECTIONAL_FIP_RATE_DEFAULT_EGRESS
+        )
+        fip_ig_rate_limit = cls.service_manager.get_configuration_attribute(
             CONF.nuage_sut.nuage_plugin_configuration,
             constants.FIP_RATE_GROUP,
-            constants.BIDIRECTIONAL_FIP_RATE_DEFAULT_INGRESS,
-            cls.configured_default_fip_rate)
+            constants.BIDIRECTIONAL_FIP_RATE_DEFAULT_INGRESS
+        )
+        return fip_eg_rate_limit, fip_ig_rate_limit
 
     @classmethod
-    def resource_setup(cls):
-        super(TestNuageBidiFRLCliWODefault, cls).resource_setup()
-        cls.ext_net_id = CONF.network.public_network_id
+    def nuage_fip_rate_limit_configs_needs_update(cls):
+        fip_eg_rate_limit, fip_ig_rate_limit = \
+            cls.read_nuage_fip_rate_limit_configs()
+        return (not cls.fip_rate_config_value_matches(
+            cls.configured_default_fip_rate, fip_eg_rate_limit) or
+            not cls.fip_rate_config_value_matches(
+                cls.configured_default_fip_rate, fip_ig_rate_limit))
+
+    @classmethod
+    def assure_nuage_fip_rate_limit_configs(cls):
+        if cls.nuage_fip_rate_limit_configs_needs_update():
+
+            if Topology.neutron_restart_supported():
+                cls.service_manager = service_mgmt.ServiceManager()
+                cls.service_manager.must_have_configuration_attribute(
+                    CONF.nuage_sut.nuage_plugin_configuration,
+                    constants.FIP_RATE_GROUP,
+                    constants.BIDIRECTIONAL_FIP_RATE_DEFAULT_EGRESS,
+                    cls.configured_default_fip_rate)
+                cls.service_manager.must_have_configuration_attribute(
+                    CONF.nuage_sut.nuage_plugin_configuration,
+                    constants.FIP_RATE_GROUP,
+                    constants.BIDIRECTIONAL_FIP_RATE_DEFAULT_INGRESS,
+                    cls.configured_default_fip_rate)
+
+            else:
+                msg = 'Skipping tests that restart neutron ...'
+                raise cls.skipException(msg)
 
     def _verify_fip_openstack(self, port, created_floating_ip,
                               ingress_rate_limit=None, egress_rate_limit=None):
@@ -121,10 +112,6 @@ class TestNuageBidiFRLCliWODefault(
 
     def _verify_fip_vsd(self, subnet, port, created_floating_ip,
                         ingress_rate_limit=None, egress_rate_limit=None):
-        ingress_rate_limit = \
-            str(ingress_rate_limit) if ingress_rate_limit else None
-        egress_rate_limit = \
-            str(egress_rate_limit) if egress_rate_limit else None
 
         # verifying on Domain level that the floating ip is added
         external_id = self.nuage_vsd_client.get_vsd_external_id(
@@ -168,26 +155,18 @@ class TestNuageBidiFRLCliWODefault(
         self.LOG.info("OpenStack Ingress FIP Rate limit %s",
                       qos[0]['EgressFIPPeakInformationRate'])
         if ingress_rate_limit is not None:
-            self.assertEqual(
-                float(ingress_rate_limit),
-                self._convert_mbps_to_kbps(
+            self.assertEqualFiprate(
+                ingress_rate_limit,
+                self.convert_mbps_to_kbps(
                     qos[0]['EgressFIPPeakInformationRate']))
         if egress_rate_limit is not None:
-            self.assertEqual(
-                float(egress_rate_limit),
-                self._convert_mbps_to_kbps(
+            self.assertEqualFiprate(
+                egress_rate_limit,
+                self.convert_mbps_to_kbps(
                     qos[0]['FIPPeakInformationRate']))
 
         self.assertEqual(self.nuage_vsd_client.get_vsd_external_id(
             created_floating_ip['id']), qos[0]['externalID'])
-
-    @staticmethod
-    def _get_attr(dictionary, key):
-        return dictionary[key]
-
-    @staticmethod
-    def _convert_mbps_to_kbps(value):
-        return float(value) * 1000
 
     def _update_fip_rate_limit(self, subnet, port, floatingip_id,
                                ingress_rate_limit=None,
@@ -213,8 +192,7 @@ class TestNuageBidiFRLCliWODefault(
 
         # Then I got a valid VSD FIP with the default rate limit
         self._verify_fip_vsd(subnet, port, updated_floating_ip,
-                             openstack_to_vsd(ingress_rate_limit),
-                             openstack_to_vsd(egress_rate_limit))
+                             ingress_rate_limit, egress_rate_limit)
 
     @nuage_test.header()
     def test_create_fip_without_rate_limit(self):
@@ -241,9 +219,9 @@ class TestNuageBidiFRLCliWODefault(
                                    self.expected_default_fip_rate)
 
         # Then I got a valid VSD FIP with the default rate limit
-        self._verify_fip_vsd(subnet, port, created_floating_ip,
-                             openstack_to_vsd(self.expected_default_fip_rate),
-                             openstack_to_vsd(self.expected_default_fip_rate))
+        self._verify_fip_vsd(
+            subnet, port, created_floating_ip,
+            self.expected_default_fip_rate, self.expected_default_fip_rate)
 
     @nuage_test.header()
     def test_create_update_fip_with_rate_limit_normal_value_ingress(self):
@@ -285,7 +263,7 @@ class TestNuageBidiFRLCliWODefault(
 
         # Then I got a valid VSD FIP with the default rate limit
         self._verify_fip_vsd(subnet, port, created_floating_ip,
-                             ingress_rate_limit=openstack_to_vsd(rate_limit))
+                             ingress_rate_limit=rate_limit)
 
         # Update value
         updated_rate_limit = 4500
@@ -333,7 +311,7 @@ class TestNuageBidiFRLCliWODefault(
 
         # Then I got a valid VSD FIP with the default rate limit
         self._verify_fip_vsd(subnet, port, created_floating_ip,
-                             egress_rate_limit=openstack_to_vsd(rate_limit))
+                             egress_rate_limit=rate_limit)
 
         # Update value
         updated_rate_limit = 4500
@@ -376,8 +354,7 @@ class TestNuageBidiFRLCliWDef(TestNuageBidiFRLCliWODefault):
 
         # Then I got a valid VSD FIP with the default rate limit
         self._verify_fip_vsd(subnet, port, created_floating_ip,
-                             openstack_to_vsd(rate_limit),
-                             openstack_to_vsd(rate_limit))
+                             rate_limit, rate_limit)
 
     @nuage_test.header()
     def test_create_fip_with_default_rate_limit_unlimited(self):
@@ -404,9 +381,8 @@ class TestNuageBidiFRLCliWDef(TestNuageBidiFRLCliWODefault):
                                    rate_limit)
 
         # Then I got a valid VSD FIP with the default rate limit
-        self._verify_fip_vsd(subnet, port, created_floating_ip,
-                             openstack_to_vsd(rate_limit),
-                             openstack_to_vsd(rate_limit))
+        self._verify_fip_vsd(
+            subnet, port, created_floating_ip, rate_limit, rate_limit)
 
     @nuage_test.header()
     def test_create_update_fip_rate_limit_with_keyword_default(self):
@@ -432,9 +408,9 @@ class TestNuageBidiFRLCliWDef(TestNuageBidiFRLCliWODefault):
                                    self.expected_default_fip_rate)
 
         # Then I got a valid VSD FIP with the default rate limit
-        self._verify_fip_vsd(subnet, port, created_floating_ip,
-                             openstack_to_vsd(self.expected_default_fip_rate),
-                             openstack_to_vsd(self.expected_default_fip_rate))
+        self._verify_fip_vsd(
+            subnet, port, created_floating_ip,
+            self.expected_default_fip_rate, self.expected_default_fip_rate)
 
         # # Update to non-default value
         # ################################
@@ -464,9 +440,9 @@ class TestNuageBidiFRLCliWDef(TestNuageBidiFRLCliWODefault):
                                    self.expected_default_fip_rate)
 
         # Then I got a valid VSD FIP with the default rate limit
-        self._verify_fip_vsd(subnet, port, updated_floating_ip,
-                             openstack_to_vsd(self.expected_default_fip_rate),
-                             openstack_to_vsd(self.expected_default_fip_rate))
+        self._verify_fip_vsd(
+            subnet, port, updated_floating_ip,
+            self.expected_default_fip_rate, self.expected_default_fip_rate)
 
     @nuage_test.header()
     @decorators.attr(type=['negative'])

@@ -181,7 +181,7 @@ class RemoteCliBaseTestCase(ssh_cli.ClientTestBase):
         cls.me = Role.tenant
 
     def assertCommandFailed(self, message, fun, *args, **kwds):
-        if Topology.is_devstack():
+        if Topology.use_local_cli_client():
             self.assertRaisesRegex(exceptions.CommandFailed, message,
                                    fun, *args, **kwds)
         else:

@@ -19,13 +19,14 @@ import uuid
 
 from tempest.api.network.admin import test_routers as admin_test_routers
 from tempest.api.network import test_routers
+from tempest.common import utils
 from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
-from tempest import test
 from tempest.test import decorators
 
-from nuage_tempest_plugin.lib.nuage_tempest_test_loader import Release
+from nuage_tempest_plugin.lib.release import Release
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.services.nuage_network_client \
@@ -35,8 +36,7 @@ from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
 
 CONF = config.CONF
 external_id_release = Release(n_constants.EXTERNALID_RELEASE)
-conf_release = CONF.nuage_sut.release
-current_release = Release(conf_release)
+current_release = Release(Topology.nuage_release)
 NUAGE_PAT_ENABLED = 'ENABLED'
 NUAGE_PAT_DISABLED = 'DISABLED'
 
@@ -254,7 +254,7 @@ class RoutersTestNuage(test_routers.RoutersTest):
             n_constants.DOMAIN, nuage_domain[0]['ID'])
         self.assertEqual(nuage_domain_subnet[0][u'name'], subnet['id'])
 
-    @test.requires_ext(extension='extraroute', service='network')
+    @utils.requires_ext(extension='extraroute', service='network')
     @decorators.attr(type='smoke')
     def test_update_extra_route(self):
         self.network = self.create_network()
@@ -298,7 +298,7 @@ class RoutersTestNuage(test_routers.RoutersTest):
         self.assertEqual(
             nuage_static_route[0][u'nextHopIp'], next_hop, "wrong nexthop")
 
-        if Release(CONF.nuage_sut.release) >= Release('4.0R5'):
+        if Release(Topology.nuage_release) >= Release('4.0R5'):
             self.assertEqual(nuage_static_route[0]['externalID'],
                              ExternalId(self.router['id']).at_cms_id())
 
@@ -575,7 +575,7 @@ class RoutersTestNuage(test_routers.RoutersTest):
     # TODO(TEAM) Overruling from upstream test class is not good practice
     # This particular below test fails upstream - temp. overrule as for now
     def test_create_router_set_gateway_with_fixed_ip(self):
-        pass
+        self.skipTest('Skipping test as not Nuage supported.')
 
 
 class RoutersAdminTestNuage(admin_test_routers.RoutersAdminTest):
@@ -585,7 +585,7 @@ class RoutersAdminTestNuage(admin_test_routers.RoutersAdminTest):
         super(RoutersAdminTestNuage, cls).setup_clients()
         cls.nuage_vsd_client = NuageRestClient()
 
-    @test.requires_ext(extension='ext-gw-mode', service='network')
+    @utils.requires_ext(extension='ext-gw-mode', service='network')
     @decorators.attr(type='smoke')
     def test_create_router_with_default_snat_value(self):
         (super(RoutersAdminTestNuage, self).
@@ -594,7 +594,7 @@ class RoutersAdminTestNuage(admin_test_routers.RoutersAdminTest):
             filters='externalID', filter_value=self.routers[-1]['id'])
         self.assertEqual(nuage_domain[0]['PATEnabled'], NUAGE_PAT_DISABLED)
 
-    @test.requires_ext(extension='ext-gw-mode', service='network')
+    @utils.requires_ext(extension='ext-gw-mode', service='network')
     @decorators.attr(type='smoke')
     def test_update_router_set_gateway_with_snat_explicit(self):
         super(RoutersAdminTestNuage,
@@ -603,7 +603,7 @@ class RoutersAdminTestNuage(admin_test_routers.RoutersAdminTest):
             filters='externalID', filter_value=self.routers[-1]['id'])
         self.assertEqual(nuage_domain[0]['PATEnabled'], NUAGE_PAT_ENABLED)
 
-    @test.requires_ext(extension='ext-gw-mode', service='network')
+    @utils.requires_ext(extension='ext-gw-mode', service='network')
     @decorators.attr(type='smoke')
     def test_update_router_set_gateway_without_snat(self):
         super(RoutersAdminTestNuage,
@@ -612,7 +612,7 @@ class RoutersAdminTestNuage(admin_test_routers.RoutersAdminTest):
             filters='externalID', filter_value=self.routers[-1]['id'])
         self.assertEqual(nuage_domain[0]['PATEnabled'], NUAGE_PAT_DISABLED)
 
-    @test.requires_ext(extension='ext-gw-mode', service='network')
+    @utils.requires_ext(extension='ext-gw-mode', service='network')
     @decorators.attr(type='smoke')
     def test_update_router_reset_gateway_without_snat(self):
         router = self._create_router(
@@ -635,7 +635,7 @@ class RoutersAdminTestNuage(admin_test_routers.RoutersAdminTest):
             filters='externalID', filter_value=router['id'])
         self.assertEqual(nuage_domain[0]['PATEnabled'], NUAGE_PAT_DISABLED)
 
-    @test.requires_ext(extension='ext-gw-mode', service='network')
+    @utils.requires_ext(extension='ext-gw-mode', service='network')
     @decorators.attr(type='smoke')
     def test_create_router_with_snat_explicit(self):
         name = data_utils.rand_name('snat-router')

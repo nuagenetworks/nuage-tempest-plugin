@@ -20,24 +20,24 @@ from tempest.lib import exceptions
 
 import testtools
 
-from nuage_tempest_plugin.lib.nuage_tempest_test_loader import Release
+from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
 
 import upgrade_external_id_with_cms_id as upgrade_script
 
 CONF = config.CONF
 LOG = logging.getLogger(__name__)
 
+current_release = Release(Topology.nuage_release)
+
 
 class UpgradeScriptTest(testtools.TestCase):
 
     @nuage_test.header()
-    @testtools.skipUnless(Release(CONF.nuage_sut.release) < Release('4.0R5'),
-                          'No upgrade testing on release %s' %
-                          CONF.nuage_sut.release)
+    @testtools.skipUnless(current_release < Release('4.0R5'),
+                          'No upgrade testing on release %s' % current_release)
     def test_upgrade_script_external_id(self):
-        conf_release = CONF.nuage_sut.release
-        current_release = Release(conf_release)
 
         LOG.debug("Release %s", current_release)
 

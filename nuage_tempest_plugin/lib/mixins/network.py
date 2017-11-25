@@ -11,6 +11,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 import contextlib
 import netaddr
 
@@ -30,9 +31,9 @@ class NetworkMixin(base.BaseMixin):
             cls.subnets_client = cls.os_primary.subnets_client
             cls.ports_client = cls.os_primary.ports_client
         if cls.has_admin:
-            cls.networks_client_admin = cls.os_adm.networks_client
-            cls.subnets_client_admin = cls.os_adm.subnets_client
-            cls.ports_client_admin = cls.os_adm.ports_client
+            cls.networks_client_admin = cls.os_admin.networks_client
+            cls.subnets_client_admin = cls.os_admin.subnets_client
+            cls.ports_client_admin = cls.os_admin.ports_client
 
     # ---------- Networks ----------
 

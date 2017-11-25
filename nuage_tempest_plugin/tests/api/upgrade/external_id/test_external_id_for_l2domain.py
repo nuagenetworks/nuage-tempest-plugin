@@ -19,8 +19,9 @@ from tempest.api.network import base
 from tempest import config
 from tempest.lib.common.utils import data_utils
 
-from nuage_tempest_plugin.lib.nuage_tempest_test_loader import Release
+from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.lib.utils import exceptions as n_exceptions
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
@@ -317,11 +318,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
     def skip_checks(cls):
         super(ExternalIdForL2domainTest, cls).skip_checks()
 
-        current_release = Release(CONF.nuage_sut.release)
-        # if current_release < Release('4.0'):
-        #     raise cls.skipException("No external-id testing on release %s"
-        #               % current_release)
-
+        current_release = Release(Topology.nuage_release)
         external_id_release = Release('4.0R5')
         cls.test_upgrade = external_id_release > current_release
 
@@ -410,8 +407,6 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
         return netpartition
 
     @nuage_test.header()
-    # @testtools.skipIf(Release(CONF.nuage_sut.release) < Release('4.0'),
-    #    "No external-id testing on this release")
     def test_neutron_isolated_subnet_in_netpartition(self):
         # Create a dedicated netpartition
         netpartition_a = self._create_netpartition()
@@ -477,8 +472,6 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
             with_external_id=ExternalId(subnet_a1['tenant_id']).at_openstack())
         vsd_l2domain_b1.has_user(
             with_external_id=ExternalId(subnet_a1['tenant_id']).at_openstack())
-
-        pass
 
 
 class ExternalIdForL2domainAdminTest(ExternalIdForL2domainTest):
