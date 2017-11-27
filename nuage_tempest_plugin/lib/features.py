@@ -56,6 +56,8 @@ class NuageFeatures(object):
             self.os_managed_dualstack_subnets = (
                 self.current_release >= Release('5.1') and
                 self.ipv6_enabled)
+            self.project_name_in_user_group_description = (
+                self.current_release >= Release('5.1'))
             self.vsd_shared_infrastructure = True
 
     def _log_features(self):
