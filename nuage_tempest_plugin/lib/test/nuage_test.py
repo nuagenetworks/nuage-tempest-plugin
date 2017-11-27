@@ -433,6 +433,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
     def create_router(self, router_name=None, admin_state_up=True,
                       external_network_id=None, enable_snat=None,
+                      external_gateway_info_on=True,
                       client=None, cleanup=True,
                       retry_on_router_delete=False,
                       no_net_partition=False,
@@ -442,15 +443,20 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         router_name = router_name or data_utils.rand_name('test-router-')
         if not client:
             client = self.manager
-        if external_network_id:
-            ext_gw_info['network_id'] = external_network_id
-        if enable_snat is not None:
-            ext_gw_info['enable_snat'] = enable_snat
         if not no_net_partition and 'net_partition' not in kwargs:
             kwargs['net_partition'] = self.default_netpartition_name
-        body = client.routers_client.create_router(
-            name=router_name, external_gateway_info=ext_gw_info,
-            admin_state_up=admin_state_up, **kwargs)
+        if external_gateway_info_on:
+            if external_network_id:
+                ext_gw_info['network_id'] = external_network_id
+            if enable_snat is not None:
+                ext_gw_info['enable_snat'] = enable_snat
+            body = client.routers_client.create_router(
+                name=router_name, external_gateway_info=ext_gw_info,
+                admin_state_up=admin_state_up, **kwargs)
+        else:
+            body = client.routers_client.create_router(
+                name=router_name, admin_state_up=admin_state_up, **kwargs)
+
         router = body['router']
         if cleanup:
             self.addCleanup(self.delete_router, router, client,
@@ -478,6 +484,25 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                     self.sleep(msg='Give time for VSD-21337')
 
         client.routers_client.delete_router(router['id'])
+
+    def update_router(self, router,
+                      external_network_id=None, enable_snat=None, client=None,
+                      external_gateway_info_on=True, **kwargs):
+        if not client:
+            client = self.manager
+        if external_gateway_info_on:
+            ext_gw_info = {}
+            if external_network_id:
+                ext_gw_info['network_id'] = external_network_id
+            if enable_snat is not None:
+                ext_gw_info['enable_snat'] = enable_snat
+            body = client.routers_client.update_router(
+                router["id"], external_gateway_info=ext_gw_info, **kwargs)
+        else:
+            body = client.routers_client.update_router(
+                router["id"], **kwargs)
+        router = body["router"]
+        return router
 
     def create_floatingip(self, external_network_id=None,
                           client=None, cleanup=True):

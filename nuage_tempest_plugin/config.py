@@ -103,5 +103,9 @@ NuageSutGroup = [
                 help='Whether console access to vm is enabled in topology.'),
     cfg.IntOpt('api_workers',
                default=1,
-               help='Number of neutron api workers deployed.')
+               help='Number of neutron api workers deployed.'),
+    cfg.StrOpt('nuage_pat_legacy',
+               default='enabled',
+               choices=['enabled', 'disabled'],
+               help="Nuage_pat legacy mode enabled or disabled."),
 ]

@@ -78,3 +78,7 @@ class Topology(object):
     @staticmethod
     def support_sfc():
         return not Topology.is_devstack()  # TODO(Kris) make True in dev ci
+
+    @staticmethod
+    def new_route_to_underlay_model_enabled():
+        return CONF.nuage_sut.nuage_pat_legacy.lower() == 'disabled'

@@ -15,6 +15,7 @@
 
 import netaddr
 from random import randint
+import testtools
 import time
 import uuid
 
@@ -703,6 +704,10 @@ class NuageRoutersAdminTest(base.BaseAdminNetworkTest):
     # End of copy from upstream
 
     @utils.requires_ext(extension='ext-gw-mode', service='network')
+    @testtools.skipIf(Topology.new_route_to_underlay_model_enabled(),
+                      'Skipping test as new route-to-UL model is enabled')
+    @testtools.skipIf(NUAGE_FEATURES.current_release >= Release('5.2.2'),
+                      'Skipping test as relying on OS-911 bug')
     @decorators.attr(type='smoke')
     def test_create_router_with_default_snat_value(self):
         # Start of copy from upstream
@@ -719,6 +724,8 @@ class NuageRoutersAdminTest(base.BaseAdminNetworkTest):
         self.assertEqual(nuage_domain[0]['PATEnabled'], NUAGE_PAT_DISABLED)
 
     @utils.requires_ext(extension='ext-gw-mode', service='network')
+    @testtools.skipIf(Topology.new_route_to_underlay_model_enabled(),
+                      'Skipping test as new route-to-UL model is enabled')
     @decorators.attr(type='smoke')
     def test_update_router_set_gateway_with_snat_explicit(self):
         # Start of copy from upstream
@@ -788,7 +795,10 @@ class NuageRoutersAdminTest(base.BaseAdminNetworkTest):
     def test_create_router_with_snat_explicit(self):
         name = data_utils.rand_name('snat-router')
         # Create a router enabling snat attributes
-        enable_snat_states = [False, True]
+        if Topology.new_route_to_underlay_model_enabled():
+            enable_snat_states = [False]
+        else:
+            enable_snat_states = [False, True]
         for enable_snat in enable_snat_states:
             external_gateway_info = {
                 'network_id': CONF.network.public_network_id,

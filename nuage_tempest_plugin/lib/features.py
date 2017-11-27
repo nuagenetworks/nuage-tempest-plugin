@@ -55,6 +55,7 @@ class NuageFeatures(object):
             self.vsd_shared_infrastructure = True
             self.stateless_securitygroups = self._from('5.2.2')
             self.multi_linked_vsdmgd_subnets = self._from('5.2.2')
+            self.route_to_underlay = self.current_release >= Release('5.2.2')
 
     def _from(self, release):
         return self.current_release >= Release(release)
@@ -79,6 +80,8 @@ class NuageFeatures(object):
                  format(self.stateless_securitygroups))
         LOG.info("multi_linked_vsdmgd_subnets      : {}".
                  format(self.multi_linked_vsdmgd_subnets))
+        LOG.info("route_to_underlay                : {}".
+                 format(self.route_to_underlay))
 
     def __init__(self):
         super(NuageFeatures, self).__init__()
@@ -96,6 +99,7 @@ class NuageFeatures(object):
         self.vsd_shared_infrastructure = False
         self.ipv6_enabled = CONF.network_feature_enabled.ipv6
         self.stateless_securitygroups = False
+        self.route_to_underlay = False
         self.multi_linked_vsdmgd_subnets = False
 
         self._set_features()

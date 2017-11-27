@@ -23,6 +23,7 @@ from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
+from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib import service_mgmt
 from nuage_tempest_plugin.lib.topology import Topology
@@ -64,6 +65,11 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
 
         if not CONF.service_available.neutron:
             msg = "Skipping all Neutron cli tests because it is not available"
+            raise cls.skipException(msg)
+
+        if Topology.new_route_to_underlay_model_enabled():
+            msg = "Skipping all legacy underlay tests since new model " \
+                  "is enabled."
             raise cls.skipException(msg)
 
     @classmethod
@@ -179,8 +185,12 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
         else:
             # OPENSTACK-981: mismatch between OS and VSD; OK for PLM in dev ?
             # This is an Schwarzenegger solution: I'll be back
-            pat_value = True
-            expected_vsd_pat = constants.NUAGE_PAT_VSD_DISABLED
+            if NUAGE_FEATURES.current_release >= Release('5.2.2'):
+                pat_value = False
+                expected_vsd_pat = constants.NUAGE_PAT_VSD_DISABLED
+            else:
+                pat_value = True
+                expected_vsd_pat = constants.NUAGE_PAT_VSD_DISABLED
         ext_network = self._create_ext_network()
         external_gateway_info = {
             'network_id': ext_network['id']}
@@ -567,8 +577,12 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
             vsd_flag = constants.NUAGE_PAT_VSD_ENABLED
         else:
             # OPENSTACK-981: mismatch between OS and VSD
-            compare_snat_str = '"enable_snat": true'
-            vsd_flag = constants.NUAGE_PAT_VSD_DISABLED
+            if NUAGE_FEATURES.current_release >= Release('5.2.2'):
+                compare_snat_str = '"enable_snat": false'
+                vsd_flag = constants.NUAGE_PAT_VSD_DISABLED
+            else:
+                compare_snat_str = '"enable_snat": true'
+                vsd_flag = constants.NUAGE_PAT_VSD_DISABLED
         # I expect the router to be created and the enable snat value
         # according the nuage_pat .ini settings
         self.assertIn(compare_snat_str.lower(),
@@ -832,11 +846,17 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
                             compare_snat_str = '"enable_snat": true'
                             expected_vsd_pat = constants.NUAGE_PAT_VSD_ENABLED
                         else:
-                            compare_snat_str = '"enable_snat": true'
-                            expected_vsd_pat = constants.NUAGE_PAT_VSD_DISABLED
-                    self.assertIn(
-                        compare_snat_str.lower(),
-                        router['external_gateway_info'])
+                            if NUAGE_FEATURES.current_release >= Release(
+                                    '5.2.2'):
+                                compare_snat_str = '"enable_snat": false'
+                                expected_vsd_pat = (
+                                    constants.NUAGE_PAT_VSD_DISABLED)
+                            else:
+                                compare_snat_str = '"enable_snat": true'
+                                expected_vsd_pat = (
+                                    constants.NUAGE_PAT_VSD_DISABLED)
+                    self.assertIn(compare_snat_str.lower(),
+                                  self.router['external_gateway_info'])
                     nuage_domain = self.nuage_vsd_client.get_l3domain(
                         filters='externalID',
                         filter_value=self.nuage_vsd_client.get_vsd_external_id(

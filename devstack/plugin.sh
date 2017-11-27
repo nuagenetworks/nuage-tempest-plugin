@@ -91,6 +91,7 @@ function configure_tempest_nuage {
     iniset $TEMPEST_CONFIG nuage_sut nuage_plugin_configuration /${NUAGE_PLUGIN_CONFIGURATION}
     iniset $TEMPEST_CONFIG nuage_sut controller_service_management_mode $NUAGE_CONTROLLER_NODE
     iniset $TEMPEST_CONFIG nuage_sut api_workers $API_WORKERS  # from devstack itself
+    iniset $TEMPEST_CONFIG nuage_sut nuage_pat_legacy $NUAGE_PAT_LEGACY
 }
 
 if [[ "$1" == "stack" ]]; then
