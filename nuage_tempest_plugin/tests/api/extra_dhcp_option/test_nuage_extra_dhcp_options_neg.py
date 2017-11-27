@@ -1,9 +1,13 @@
-# Copyright 2015 Alcatel-Lucent
+# Copyright 2017 NOKIA
+
+import testtools
 
 from tempest.lib.common.utils import data_utils
+from tempest.lib import decorators
 from tempest.lib import exceptions
 
-from . import base_nuage_extra_dhcp_options
+from nuage_tempest_plugin.tests.api.extra_dhcp_option import \
+    base_nuage_extra_dhcp_options
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test import nuage_test
@@ -660,7 +664,6 @@ class NuageExtraDHCPOptionsNegativeTest(
         extra_dhcp_opts = [
             {'opt_value': '12.22.32.42', 'opt_name': 'router'}
         ]
-        # TODO(TEAM) - THIS FAILS WITH ML2 - THIS IS A BUG? IS IT TRACKED?
         self.assertRaises(exceptions.BadRequest,
                           self._create_port_with_dhcp_opts,
                           ext_network['id'],
@@ -724,6 +727,7 @@ class NuageExtraDHCPOptionsNegativeTest(
                               network_id,
                               extra_dhcp_opts)
 
+    @decorators.attr(type='smoke')
     @nuage_test.header()
     def test_nuage_update_port_with_dhcp_opts_multiple_times_neg(self):
         # When specifying the the same option multiple times, it should fail
@@ -746,6 +750,7 @@ class NuageExtraDHCPOptionsNegativeTest(
                               self.os_l2_port['id'],
                               extra_dhcp_opts)
 
+    @decorators.attr(type='smoke')
     @nuage_test.header()
     def test_nuage_create_port_with_dhcp_opts_more_than_16_neg(self):
         # When specifying the the same option multiple times, it should fail
@@ -784,3 +789,31 @@ class NuageExtraDHCPOptionsNegativeTest(
         self.assertRaises(exceptions.NotFound,
                           self.ports_client.show_port,
                           bad_port_id)
+
+    @testtools.skipIf(Topology.before_openstack('queens'),
+                      'Unsupported pre queens')
+    @nuage_test.header()
+    def test_nuage_create_port_with_dhcp_opts_wrong_numerical_option(self):
+        # Try to create a port with bad extra dhcp options values
+        # Try to update an existing port with these bad DHCP option values
+        network_id = self.osmgd_l2_network['id']
+        bad_values = ['1', '2']
+        self._assert_create_update_port_with_bad_dhcp_opts_neg(
+            network_id, bad_values, '0')
+
+    @testtools.skipIf(Topology.before_openstack('queens'),
+                      'Unsupported pre queens')
+    @nuage_test.header()
+    def test_nuage_create_port_with_dhcp_opts_mixed_numerical_option(self):
+        extra_dhcp_opts = [
+            {'opt_value': 'nuage.net', 'opt_name': 'hostname'}]
+        self._update_port_with_dhcp_opts(
+            self.os_l2_port['id'],
+            extra_dhcp_opts
+        )
+        extra_dhcp_opts = [
+            {'opt_value': 'nuage.net', 'opt_name': '12'}]
+        self.assertRaises(exceptions.BadRequest,
+                          self._update_port_with_dhcp_opts,
+                          self.os_l2_port['id'],
+                          extra_dhcp_opts)
