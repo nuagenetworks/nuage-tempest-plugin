@@ -47,7 +47,7 @@ class TestPorts(NuageBaseTest):
         # Create port
         fixed_ips = [
             {
-                "ip_address": "10.0.0.2",
+                "ip_address": "10.0.0.3",
                 "subnet_id": subnet["id"]
             }
         ]
@@ -57,19 +57,45 @@ class TestPorts(NuageBaseTest):
         # update within subnet should succeed
         fixed_ips = [
             {
-                "ip_address": "10.0.0.3",
+                "ip_address": "10.0.0.4",
                 "subnet_id": subnet["id"]
             }
+
         ]
         port = self.update_port(port=port, fixed_ips=fixed_ips)
         self.assertIsNotNone(port, "Unable to update port")
-        self.assertEqual(port["fixed_ips"][0]["ip_address"], "10.0.0.3",
+        self.assertEqual(port["fixed_ips"][0]["ip_address"], "10.0.0.4",
                          message="The port did not update properly.")
+
+        # update within subnet with 2 ips should fail
+        fixed_ips = [
+            {
+                "ip_address": "10.0.0.5",
+                "subnet_id": subnet["id"]
+            },
+            {
+                "ip_address": "10.0.0.6",
+                "subnet_id": subnet["id"]
+            }
+
+        ]
+        try:
+            self.update_port(port=port, fixed_ips=fixed_ips)
+            self.fail("Exception expected when updating to"
+                      " a different subnet!")
+        except exceptions.BadRequest as e:
+            if "It is not allowed to add more than one ip" in e._error_string:
+                pass
+            else:
+                # Differentiate between VSD failure and update failure
+                self.LOG.debug(e._error_string)
+                self.fail("A different NuageBadRequest exception"
+                          " was expected for this operation.")
 
         # Update to subnet2 should fail
         fixed_ips = [
             {
-                "ip_address": "20.0.0.2",
+                "ip_address": "20.0.0.3",
                 "subnet_id": subnet2["id"]
             }
         ]

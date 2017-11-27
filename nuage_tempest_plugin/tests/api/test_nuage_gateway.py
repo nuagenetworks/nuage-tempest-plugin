@@ -623,10 +623,10 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         for nuage_eacl_entry in nuage_eacl_entrytemplate:
             if nuage_eacl_entry['locationID'] == default_pg[pg_num]['ID']:
                 self.assertEqual(
-                    nuage_eacl_entrytemplate[0]['networkType'],
+                    nuage_eacl_entry['networkType'],
                     'ENDPOINT_DOMAIN')
                 self.assertEqual(
-                    nuage_eacl_entrytemplate[0]['locationType'],
+                    nuage_eacl_entry['locationType'],
                     'POLICYGROUP')
                 vport_tp_pg_mapping = True
 
@@ -729,10 +729,10 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
                                     ContainsDict({'externalID': Equals(None)}))
 
                 self.assertEqual(
-                    nuage_eacl_entrytemplate[0]['networkType'],
+                    nuage_eacl_entry['networkType'],
                     'ENDPOINT_DOMAIN')
                 self.assertEqual(
-                    nuage_eacl_entrytemplate[0]['locationType'],
+                    nuage_eacl_entry['locationType'],
                     'POLICYGROUP')
                 vport_tp_pg_mapping = True
 
@@ -785,10 +785,10 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
                                     ContainsDict({'externalID': Equals(None)}))
 
                 self.assertEqual(
-                    nuage_iacl_entrytemplate[0]['networkType'],
+                    nuage_iacl_entry['networkType'],
                     'ENDPOINT_DOMAIN')
                 self.assertEqual(
-                    nuage_iacl_entrytemplate[0]['locationType'],
+                    nuage_iacl_entry['locationType'],
                     'POLICYGROUP')
                 vport_tp_pg_mapping = True
 
@@ -847,10 +847,10 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         for nuage_eacl_entry in nuage_eacl_entrytemplate:
             if nuage_eacl_entry['locationID'] == default_pg[pg_num]['ID']:
                 self.assertEqual(
-                    nuage_eacl_entrytemplate[0]['networkType'],
+                    nuage_eacl_entry['networkType'],
                     'ENDPOINT_DOMAIN')
                 self.assertEqual(
-                    nuage_eacl_entrytemplate[0]['locationType'],
+                    nuage_eacl_entry['locationType'],
                     'POLICYGROUP')
                 vport_tp_pg_mapping = True
 
@@ -904,10 +904,10 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         for nuage_eacl_entry in nuage_eacl_entrytemplate:
             if nuage_eacl_entry['locationID'] == default_pg[0]['ID']:
                 self.assertEqual(
-                    nuage_eacl_entrytemplate[0]['networkType'],
+                    nuage_eacl_entry['networkType'],
                     'ENDPOINT_DOMAIN')
                 self.assertEqual(
-                    nuage_eacl_entrytemplate[0]['locationType'],
+                    nuage_eacl_entry['locationType'],
                     'POLICYGROUP')
                 vport_tp_pg_mapping = True
 
