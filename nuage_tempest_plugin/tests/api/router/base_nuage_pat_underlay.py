@@ -23,6 +23,7 @@ from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
+from nuage_tempest_plugin.lib.nuage_tempest_test_loader import Release
 from nuage_tempest_plugin.lib import service_mgmt
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
@@ -101,8 +102,12 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
 
     # TODO(Kris) this shd not be duplicated - class inheritance to be fixed
     def assertCommandFailed(self, message, fun, *args, **kwds):
-        self.assertRaisesRegex(exceptions.CommandFailed, message,
-                               fun, *args, **kwds)
+        if Topology.is_devstack():
+            self.assertRaisesRegex(exceptions.CommandFailed, message,
+                                   fun, *args, **kwds)
+        else:
+            self.assertRaisesRegex(exceptions.SSHExecCommandFailed, message,
+                                   fun, *args, **kwds)
 
     # Taken from test_external_network_extensions.py,trying to avoid issues
     # with the cli client
@@ -885,7 +890,12 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
             # Now run as "demo" user (non-admin) of demo project
             # convert the cidr_net into a string
             cidr = cidr_net.__str__()
-            self.assertCommandFailed('The resource could not be found',
+            if Release(Topology.openstack_version) >= Release('pike'):
+                msg = "Tenant (.*) not allowed to create " \
+                      "subnet on this network"
+            else:
+                msg = 'The resource could not be found'
+            self.assertCommandFailed(msg,
                                      self.create_subnet_with_args,
                                      network_name,
                                      cidr, "--name ", subnet_name)

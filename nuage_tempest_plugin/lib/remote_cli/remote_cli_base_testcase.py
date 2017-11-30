@@ -16,6 +16,8 @@ from tempest.lib.common import cred_client
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
+from nuage_tempest_plugin.lib.topology import Topology
+
 CONF = config.CONF
 LOG = logging.getLogger(__name__)
 
@@ -179,8 +181,12 @@ class RemoteCliBaseTestCase(ssh_cli.ClientTestBase):
         cls.me = Role.tenant
 
     def assertCommandFailed(self, message, fun, *args, **kwds):
-        self.assertRaisesRegex(exceptions.CommandFailed, message,
-                               fun, *args, **kwds)
+        if Topology.is_devstack():
+            self.assertRaisesRegex(exceptions.CommandFailed, message,
+                                   fun, *args, **kwds)
+        else:
+            self.assertRaisesRegex(exceptions.SSHExecCommandFailed, message,
+                                   fun, *args, **kwds)
 
     def _get_clients(self):
         if self.me == Role.admin:
