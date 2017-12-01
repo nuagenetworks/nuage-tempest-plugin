@@ -449,3 +449,22 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
                              qos[0]['EgressFIPPeakInformationRate'])
         else:
             self.assertEqual('INFINITY', qos[0]['FIPPeakInformationRate'])
+
+    @decorators.attr(type='smoke')
+    def test_delete_associated_port_fip_cleanup(self):
+        port = self.create_port(self.network)
+        fip = self.floating_ips_client.create_floatingip(
+            floating_network_id=self.ext_net_id,
+            port_id=port['id'])['floatingip']
+        self.ports_client.delete_port(port['id'])
+        self.floating_ips_client.delete_floatingip(fip['id'])
+
+        vsd_l3domain = self.nuage_vsd_client.get_l3domain(
+            filters='externalID',
+            filter_value=fip['router_id'])
+        vsd_fips = self.nuage_vsd_client.get_floatingip(
+            constants.DOMAIN, vsd_l3domain[0]['ID'])
+        for vsd_fip in vsd_fips:
+            if vsd_fip['address'] == fip['floating_ip_address']:
+                self.fail("No cleanup happened. Floatingip still exists on "
+                          "VSD and not in Neutron.")
