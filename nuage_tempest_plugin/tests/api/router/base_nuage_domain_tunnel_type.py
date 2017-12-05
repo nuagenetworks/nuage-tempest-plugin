@@ -5,8 +5,6 @@ from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest import test
 
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services import nuage_client
 
 CONF = config.CONF
@@ -16,53 +14,11 @@ class NuageDomainTunnelTypeBase(test.BaseTestCase):
     _interface = 'json'
 
     @classmethod
-    def skip_checks(cls):
-        super(NuageDomainTunnelTypeBase, cls).skip_checks()
-        if Topology.single_worker_run():
-            # problem with multiple workers is that these tests are modifying
-            # VSD system settings like DOMAIN TUNNEL TYPE which may break
-            # other tests - therefore skipping for multiple workers
-            msg = ('Test requires neutron to be set up with '
-                   'single api worker.')
-            raise cls.skipException(msg)
-
-    @classmethod
     def setup_clients(cls):
         super(NuageDomainTunnelTypeBase, cls).setup_clients()
         cls.os_admin = cls.get_client_manager(credential_type='admin')
         cls.client = cls.os_admin.networks_client
         cls.nuage_vsd_client = nuage_client.NuageRestClient()
-
-    @classmethod
-    def resource_setup(cls):
-        super(NuageDomainTunnelTypeBase, cls).resource_setup()
-
-        system_configurations = cls.nuage_vsd_client.get_system_configuration()
-        cls.system_configuration = system_configurations[0]
-        cls.must_have_default_domain_tunnel_type(
-            constants.DOMAIN_TUNNEL_TYPE_GRE)
-
-    @classmethod
-    def resource_cleanup(cls):
-        cls.must_have_default_domain_tunnel_type(
-            constants.DOMAIN_TUNNEL_TYPE_VXLAN)
-        super(NuageDomainTunnelTypeBase, cls).resource_cleanup()
-
-    @classmethod
-    def must_have_default_domain_tunnel_type(cls, domain_tunnel_type):
-        if not (cls.system_configuration['domainTunnelType'] ==
-                domain_tunnel_type):
-            cls.system_configuration['domainTunnelType'] = domain_tunnel_type
-            configuration_id = cls.system_configuration['ID']
-            cls.nuage_vsd_client.update_system_configuration(
-                configuration_id, cls.system_configuration)
-
-            updated_system_configurations = \
-                cls.nuage_vsd_client.get_system_configuration()
-            updated_system_configuration = \
-                updated_system_configurations[0]
-
-            cls.system_configuration = updated_system_configuration
 
     def _create_router(self, **kwargs):
         # Create a router
