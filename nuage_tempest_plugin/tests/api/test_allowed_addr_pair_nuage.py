@@ -77,10 +77,11 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         self.assertEqual(ip_address, addrpair_ip)
         self.assertEqual(mac_address, addrpair_mac)
 
-    def create_port(self, network, **kwargs):
+    def create_port(self, network, cleanup=True, **kwargs):
         port = super(AllowedAddressPairTest, self).create_port(network,
                                                                **kwargs)
-        self.addCleanup(self.ports_client.delete_port, port['id'])
+        if cleanup:
+            self.addCleanup(self.ports_client.delete_port, port['id'])
         return port
 
     def test_create_address_pair_on_l2domain_with_no_mac(self):
@@ -115,6 +116,47 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         nuage_subnet = self.nuage_client.get_l2domain(
             filters='externalID', filter_value=subnet_ext_id)
         port_ext_id = self.nuage_client.get_vsd_external_id(port['id'])
+        nuage_vport = self.nuage_client.get_vport(
+            n_constants.L2_DOMAIN,
+            nuage_subnet[0]['ID'],
+            filters='externalID',
+            filter_value=port_ext_id)
+        self.assertEqual(n_constants.ENABLED,
+                         nuage_vport[0]['addressSpoofing'])
+
+    def test_create_address_pair_on_l2domain_update_fixed_ip(self):
+        # Create port with allowed address pair attribute
+        # For /32 cidr
+        port = self.create_port(self.network)
+        allowed_address_pairs = [{'ip_address':
+                                  port['fixed_ips'][0]['ip_address'],
+                                  'mac_address': port['mac_address']}]
+        port = self.update_port(port,
+                                allowed_address_pairs=allowed_address_pairs)
+
+        # Check address spoofing is disabled on vport in VSD
+        subnet_ext_id = self.nuage_client.get_vsd_external_id(
+            port['fixed_ips'][0]['subnet_id'])
+        nuage_subnet = self.nuage_client.get_l2domain(
+            filters='externalID', filter_value=subnet_ext_id)
+        port_ext_id = self.nuage_client.get_vsd_external_id(port['id'])
+        nuage_vport = self.nuage_client.get_vport(
+            n_constants.L2_DOMAIN,
+            nuage_subnet[0]['ID'],
+            filters='externalID',
+            filter_value=port_ext_id)
+        self.assertEqual(n_constants.INHERITED,
+                         nuage_vport[0]['addressSpoofing'])
+
+        # Update fixed ip
+        # Get free IP in subnet
+        addrpair_port = self.create_port(self.network, cleanup=False)
+        ip = addrpair_port['fixed_ips'][0]['ip_address']
+        self.ports_client.delete_port(addrpair_port['id'])
+        subnet_id = port['fixed_ips'][0]['subnet_id']
+        self.update_port(port, fixed_ips=[{
+            'subnet_id': subnet_id,
+            'ip_address': ip}])
         nuage_vport = self.nuage_client.get_vport(
             n_constants.L2_DOMAIN,
             nuage_subnet[0]['ID'],
