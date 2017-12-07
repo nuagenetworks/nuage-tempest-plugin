@@ -13,7 +13,7 @@ from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 CONF = config.CONF
 
 
-class TestPorts(NuageBaseTest):
+class PortsTest(NuageBaseTest):
     LOG = logging.getLogger(__name__)
 
     @decorators.attr(type='smoke')

@@ -15,6 +15,7 @@ from netaddr import IPNetwork
 from netaddr import IPRange
 from oslo_log import log as oslo_logging
 
+from tempest.api.network import base
 from tempest.common import waiters
 from tempest import config
 from tempest.lib.common import rest_client
@@ -1197,3 +1198,20 @@ class NuageBaseOrchestrationTest(NuageBaseTest):
     def get_stack_output(self, stack_identifier, output_key):
         body = self.client.show_stack(stack_identifier)['stack']
         return self.stack_output(body, output_key)
+
+
+class NuageAdminNetworksTest(base.BaseAdminNetworkTest):
+
+    dhcp_agent_present = None
+
+    def is_dhcp_agent_present(self):
+        if self.dhcp_agent_present is None:
+            agents = self.admin_agents_client.list_agents().get('agents')
+            if agents:
+                self.dhcp_agent_present = any(
+                    agent for agent in agents if agent['alive'] and
+                    agent['binary'] == 'neutron-dhcp-agent')
+            else:
+                self.dhcp_agent_present = False
+
+        return self.dhcp_agent_present
