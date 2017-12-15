@@ -27,7 +27,7 @@ CONF = config.CONF
 
 
 class Topology(object):
-    def __init__(self, vsd_client, network, subnet, router, port):
+    def __init__(self, vsd_client, network, subnet, router, port, subnetv6):
         super(Topology, self).__init__()
         self.vsd_client = vsd_client
         self.network = network
@@ -35,6 +35,7 @@ class Topology(object):
         self.router = router
         self.normal_port = port
         self.direct_port = None
+        self.subnetv6 = subnetv6
 
     @property
     def vsd_vport_parent(self):
@@ -198,12 +199,28 @@ class PortsDirectTest(network_mixin.NetworkMixin,
         topology = self._create_topology(with_router=True)
         self._test_direct_port(topology, update=True)
 
+    def test_direct_port_l3_ipv6_create(self):
+        topology = self._create_topology(with_router=True, dualstack=True)
+        self._test_direct_port(topology, update=False)
+
+    def test_direct_port_l3_ipv6_update(self):
+        topology = self._create_topology(with_router=True, dualstack=True)
+        self._test_direct_port(topology, update=True)
+
     def test_direct_port_l2_create(self):
         topology = self._create_topology(with_router=False)
         self._test_direct_port(topology, update=False)
 
     def test_direct_port_l2_update(self):
         topology = self._create_topology(with_router=False)
+        self._test_direct_port(topology, update=True)
+
+    def test_direct_port_l2_ipv6_create(self):
+        topology = self._create_topology(with_router=False, dualstack=True)
+        self._test_direct_port(topology, update=False)
+
+    def test_direct_port_l2_ipv6_update(self):
+        topology = self._create_topology(with_router=False, dualstack=True)
         self._test_direct_port(topology, update=True)
 
     @testtools.skip("Currently unknown how to trigger vport resolution")
@@ -248,8 +265,9 @@ class PortsDirectTest(network_mixin.NetworkMixin,
                     vif_type, matchers.Equals('binding_failed'),
                     message="Port has unexpected vif_type")
 
-    def _create_topology(self, with_router=False, with_port=False):
-        router = port = None
+    def _create_topology(self, with_router=False,
+                         with_port=False, dualstack=False):
+        router = port = subnetv6 = None
         if with_router:
             router = self.create_router()
         kwargs = {'segments': [
@@ -260,11 +278,21 @@ class PortsDirectTest(network_mixin.NetworkMixin,
         ]}
         network = self.create_network(**kwargs)
         subnet = self.create_subnet('10.20.30.0/24', network['id'])
+        if dualstack:
+            kwargs = {'ipv6_ra_mode': 'dhcpv6-stateful',
+                      'ipv6_address_mode': 'dhcpv6-stateful'}
+            subnetv6 = self.create_subnet('a1ca:c10d:1111:1111::/64',
+                                          network['id'],
+                                          **kwargs)
         if with_router:
             self.add_router_interface(router['id'], subnet_id=subnet['id'])
+            if dualstack:
+                self.add_router_interface(router['id'],
+                                          subnet_id=subnetv6['id'])
         if with_port:
             port = self.create_port(network['id'])
-        return Topology(self.vsd_client, network, subnet, router, port)
+        return Topology(self.vsd_client, network,
+                        subnet, router, port, subnetv6)
 
     def _test_direct_port(self, topology, update=False):
         create_data = {'binding:vnic_type': 'direct',
