@@ -22,8 +22,6 @@ from nuage_tempest_plugin.lib.mixins import network as network_mixin
 from nuage_tempest_plugin.lib.mixins import sg as sg_mixin
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
-from nuage_tempest_plugin.services.nuage_network_client \
-    import NuageNetworkClientJSON
 
 CONF = config.CONF
 
@@ -51,14 +49,6 @@ class BaremetalTest(network_mixin.NetworkMixin,
     def setup_clients(cls):
         super(BaremetalTest, cls).setup_clients()
         cls.vsd_client = NuageRestClient()
-        cls.trunk_client = NuageNetworkClientJSON(
-            cls.os_admin.auth_provider,
-            CONF.network.catalog_type,
-            CONF.network.region or CONF.identity.region,
-            endpoint_type=CONF.network.endpoint_type,
-            build_interval=CONF.network.build_interval,
-            build_timeout=CONF.network.build_timeout,
-            **cls.os_admin.default_params)
 
     @classmethod
     def resource_setup(cls):
@@ -230,24 +220,22 @@ class BaremetalTest(network_mixin.NetworkMixin,
                              'port': port,
                              'segmentation_id': segmentation_id,
                              'router': router_sub})
-
-        trunk = self.trunk_client.create_trunk(
+        create_data = {
+            'name': self.name
+        }
+        trunk = self.create_trunk(
             parent_port_id=parent['id'],
             subports=None,
-            name=self.name
-        )['trunk']
+            **create_data
+        )
 
-        self.addCleanup(self.trunk_client.delete_trunk, trunk['id'])
         for i in range(number_subports):
             subport = {
                 'port_id': subports[i]['port']['id'],
                 'segmentation_type': 'vlan',
                 'segmentation_id': subports[i]['segmentation_id']
             }
-            self.trunk_client.add_subports(trunk['id'],
-                                           [subport])
-            self.addCleanup(self.trunk_client.remove_subports, trunk['id'],
-                            [subport])
+            self.add_subports(trunk['id'], [subport])
             self.assertEqual(
                 'trunk:subport',
                 self.get_port(subports[i]['port']['id'])['device_owner'])

@@ -16,9 +16,14 @@ import contextlib
 import netaddr
 
 from tempest.common.utils import data_utils
+from tempest import config
 from tempest.lib import exceptions
 
 from nuage_tempest_plugin.lib.mixins import base
+from nuage_tempest_plugin.services.nuage_network_client \
+    import NuageNetworkClientJSON
+
+CONF = config.CONF
 
 
 class NetworkMixin(base.BaseMixin):
@@ -30,10 +35,27 @@ class NetworkMixin(base.BaseMixin):
             cls.networks_client = cls.os_primary.networks_client
             cls.subnets_client = cls.os_primary.subnets_client
             cls.ports_client = cls.os_primary.ports_client
+            cls.plugin_network_client = NuageNetworkClientJSON(
+                cls.os_primary.auth_provider,
+                CONF.network.catalog_type,
+                CONF.network.region or CONF.identity.region,
+                endpoint_type=CONF.network.endpoint_type,
+                build_interval=CONF.network.build_interval,
+                build_timeout=CONF.network.build_timeout,
+                **cls.os_primary.default_params)
+
         if cls.has_admin:
             cls.networks_client_admin = cls.os_admin.networks_client
             cls.subnets_client_admin = cls.os_admin.subnets_client
             cls.ports_client_admin = cls.os_admin.ports_client
+            cls.plugin_network_client_admin = NuageNetworkClientJSON(
+                cls.os_admin.auth_provider,
+                CONF.network.catalog_type,
+                CONF.network.region or CONF.identity.region,
+                endpoint_type=CONF.network.endpoint_type,
+                build_interval=CONF.network.build_interval,
+                build_timeout=CONF.network.build_timeout,
+                **cls.os_admin.default_params)
 
     # ---------- Networks ----------
 
@@ -195,3 +217,83 @@ class NetworkMixin(base.BaseMixin):
         except exceptions.NotFound:
             if not ignore_not_found:
                 raise
+
+    # ---------- Trunks ----------
+    def trunk_client(self, as_admin=False):
+        if as_admin or not self.has_primary:
+            return self.plugin_network_client_admin
+        return self.plugin_network_client
+
+    @contextlib.contextmanager
+    def trunk(self, parent_port_id, subports=None,
+              as_admin=False, **kwargs):
+        client = self.trunk_client(as_admin=as_admin)
+        trunk = client.create_trunk(parent_port_id=parent_port_id,
+                                    subports=subports,
+                                    as_admin=as_admin,
+                                    **kwargs)
+        try:
+            yield trunk
+        finally:
+            self.remove_subports(trunk['id'], subports)
+            self.delete_trunk(trunk['id'])
+
+    def get_trunk(self, trunk_id, as_admin=False):
+        client = self.trunk_client(as_admin=as_admin)
+        return client.show_trunk(trunk_id)['trunk']
+
+    def show_trunk(self, trunk_id, as_admin=False):
+        return self.get_trunk(trunk_id, as_admin=as_admin)
+
+    def get_trunks(self, as_admin=False, **kwargs):
+        client = self.trunk_client(as_admin=as_admin)
+        return client.list_trunks(**kwargs)['trunks']
+
+    def list_trunks(self, as_admin=False, **kwargs):
+        return self.get_trunks(as_admin=as_admin, **kwargs)
+
+    def create_trunk(self, parent_port_id, subports,
+                     cleanup=True, as_admin=False, **kwargs):
+        client = self.trunk_client(as_admin=as_admin)
+        trunk = {'name': data_utils.rand_name('trunk')}
+        trunk.update(kwargs)
+        trunk = client.create_trunk(parent_port_id,
+                                    subports, **trunk)['trunk']
+        if cleanup:
+            self.addCleanup(self.delete_trunk, trunk['id'])
+            if subports:
+                self.addCleanup(self.remove_subports, trunk['id'], subports,
+                                ignore_not_found=True, as_admin=as_admin)
+        return trunk
+
+    def update_trunk(self, trunk_id, as_admin=False, **kwargs):
+        client = self.trunk_client(as_admin=as_admin)
+        return client.update_trunk(trunk_id, **kwargs)['trunk']
+
+    def delete_trunk(self, trunk_id, as_admin=False, ignore_not_found=True):
+        client = self.trunk_client(as_admin=as_admin)
+        try:
+            client.delete_trunk(trunk_id)
+        except exceptions.NotFound:
+            if not ignore_not_found:
+                raise
+
+    def add_subports(self, trunk_id, subports, as_admin=False):
+        client = self.trunk_client(as_admin=as_admin)
+        sub_ports = client.add_subports(trunk_id, subports)['sub_ports']
+        self.addCleanup(self.remove_subports, trunk_id, sub_ports,
+                        ignore_not_found=True, as_admin=as_admin)
+        return sub_ports
+
+    def remove_subports(self, trunk_id, subports,
+                        ignore_not_found=False, as_admin=False):
+        client = self.trunk_client(as_admin=as_admin)
+        try:
+            return client.remove_subports(trunk_id, subports)['sub_ports']
+        except exceptions.NotFound:
+            if not ignore_not_found:
+                raise
+
+    def get_subports(self, trunk_id, as_admin=False):
+        client = self.trunk_client(as_admin=as_admin)
+        return client.get_subports(trunk_id)['sub_ports']
