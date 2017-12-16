@@ -99,7 +99,7 @@ class VsdTestCaseMixin(test.BaseTestCase):
         params = {}
         if ip_type == "IPV4":
             params.update({'IPType': "IPV4"})
-        elif ip_type == "IPV6":  # kris added
+        elif ip_type == "IPV6":
             params.update({'IPType': "IPV6"})
         elif ip_type == "DUALSTACK":
             params.update({'IPType': "DUALSTACK"})
@@ -122,13 +122,11 @@ class VsdTestCaseMixin(test.BaseTestCase):
         if cidr6:
             params.update({'IPv6Address': str(cidr6)})
 
-            # Kris added
             if "netmask6" in kwargs:
                 netmask6 = kwargs['netmask6']
             else:
                 netmask6 = str(cidr6.netmask)
             params.update({'netmask6': netmask6})
-            # Kris added end
 
             if "gateway6" in kwargs:
                 gateway6_ip = kwargs['gateway6']

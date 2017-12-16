@@ -24,7 +24,8 @@ from nuage_tempest_plugin.lib.utils import exceptions
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
-from nuage_tempest_plugin.tests.api.vsd_managed import test_vsd_managed_network
+from nuage_tempest_plugin.tests.api.vsd_managed \
+    import base_vsd_managed_network as base_vsdman
 
 from tempest.api.network import base
 from tempest import config
@@ -41,7 +42,7 @@ LOG = logging.getLogger(__name__)
 
 
 class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
-                           test_vsd_managed_network.VSDManagedTestNetworks):
+                           base_vsdman.BaseVSDManagedNetworksTest):
     _interface = 'json'
 
     @classmethod

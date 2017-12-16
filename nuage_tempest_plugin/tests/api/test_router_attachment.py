@@ -49,6 +49,6 @@ class RouterAttachmentTest(NuageBaseTest):
         subnet = self.create_subnet(network)
         self.create_tenant_server(tenant_networks=[network])
 
-        # TODO(FIXME) - adding delay_cleanup_for_nuage_bug fixes the above test
-        router = self.create_router(delay_cleanup_for_nuage_bug=True)
+        # TODO(FIXME) - adding retry_on_router_delete fixes the above test
+        router = self.create_router(retry_on_router_delete=True)
         self.router_attach(router, subnet)

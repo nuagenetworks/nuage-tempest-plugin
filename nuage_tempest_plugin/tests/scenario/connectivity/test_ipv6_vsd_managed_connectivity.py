@@ -1,13 +1,15 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
 
+from netaddr import IPAddress
+from netaddr import IPNetwork
 from oslo_log import log as logging
 import testtools
-
 import time
 
 from tempest.lib import decorators
 
+from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
 
@@ -95,90 +97,183 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
             self.assert_ping(server1, server2, network, should_pass=True)
             self.assert_ping6(server1, server2, network, should_pass=False)
 
-    @decorators.attr(type='smoke')
-    @testtools.skipIf(not Topology.run_connectivity_tests(),
-                      'Connectivity tests are disabled.')
-    def test_icmp_connectivity_vsd_managed_dualstack_l3_domain(self):
-        # Provision VSD managed network
-        vsd_l3domain_template = self.vsd.create_l3domain_template()
-        self.addCleanup(vsd_l3domain_template.delete)
+    def icmp_connectivity_l3_vsd_managed(
+            self, cidr4, cidr6=None, no_gateway=False, pool4=None, pool6=None,
+            vsd_domain=None, vsd_subnet=None,
+            skip_server2_and_ping_tests=False,
+            server2_pre_set_up=None, incl_negative_ping_test=False):
 
-        vsd_l3domain = self.vsd.create_l3domain(
-            template_id=vsd_l3domain_template.id)
-        self.addCleanup(vsd_l3domain.delete)
+        if not vsd_domain:
+            vsd_domain_template = self.vsd.create_l3domain_template()
+            self.addCleanup(vsd_domain_template.delete)
 
-        vsd_zone = self.vsd.create_zone(domain=vsd_l3domain)
-        self.addCleanup(vsd_zone.delete)
+            vsd_domain = self.vsd.create_l3domain(
+                template_id=vsd_domain_template.id)
+            self.addCleanup(vsd_domain.delete)
 
-        vsd_l3domain_subnet = self.vsd.create_subnet(
-            zone=vsd_zone,
-            ip_type="DUALSTACK",
-            cidr4=self.cidr4,
-            gateway4=self.gateway4,
-            cidr6=self.cidr6,
-            gateway6=self.gateway6)
-        self.addCleanup(vsd_l3domain_subnet.delete)
+            vsd_zone = self.vsd.create_zone(domain=vsd_domain)
+            self.addCleanup(vsd_zone.delete)
 
-        self.vsd.define_any_to_any_acl(vsd_l3domain,
-                                       allow_ipv4=True,
-                                       allow_ipv6=True)
+            if cidr6:
+                vsd_subnet = self.vsd.create_subnet(
+                    zone=vsd_zone,
+                    ip_type="DUALSTACK",
+                    cidr4=cidr4,
+                    gateway4=str(IPAddress(cidr4) + 1),
+                    cidr6=cidr6,
+                    gateway6=str(IPAddress(cidr6) + 1))
+            else:
+                vsd_subnet = self.vsd.create_subnet(
+                    zone=vsd_zone,
+                    ip_type="IPV4",
+                    cidr4=cidr4,
+                    gateway4=str(IPAddress(cidr4) + 1))
+            self.addCleanup(vsd_subnet.delete)
+
+            self.vsd.define_any_to_any_acl(vsd_domain,
+                                           allow_ipv4=True,
+                                           allow_ipv6=True)
 
         # Provision OpenStack network linked to VSD network resources
         network = self.create_network()
+
+        # v4
+        if pool4:
+            kwargs = {'allocation_pools': [pool4]}
+        else:
+            kwargs = {}
         ipv4_subnet = self.create_l3_vsd_managed_subnet(
-            network, vsd_l3domain_subnet)
-        ipv6_subnet = self.create_l3_vsd_managed_subnet(
-            network, vsd_l3domain_subnet, ip_version=6, dhcp_managed=False)
+            network, vsd_subnet, no_gateway=no_gateway, **kwargs)
         self.assertIsNotNone(ipv4_subnet)
-        self.assertIsNotNone(ipv6_subnet)
+
+        # v6
+        if cidr6:
+            if pool6:
+                kwargs = {'allocation_pools': [pool6]}
+            else:
+                kwargs = {}
+            ipv6_subnet = self.create_l3_vsd_managed_subnet(
+                network, vsd_subnet, dhcp_managed=False, ip_version=6,
+                no_gateway=no_gateway, **kwargs)
+            self.assertIsNotNone(ipv6_subnet)
+        else:
+            ipv6_subnet = None
 
         # Launch tenant servers in OpenStack network
         server1 = self.create_tenant_server(tenant_networks=[network])
-        server2 = self.create_tenant_server(tenant_networks=[network])
 
-        # Attach FIP if possible
-        self.prepare_for_ping_test(server1, vsd_domain=vsd_l3domain,
-                                   vsd_subnet=vsd_l3domain_subnet)
+        if cidr6:
+            server1_ipv6 = server1.get_server_ip_in_network(
+                network['name'], ip_type=6)
 
-        # Test IPv4 connectivity between peer servers
-        self.assert_ping(server1, server2, network)
+            self.prepare_for_nic_provisioning(server1, vsd_domain=vsd_domain,
+                                              vsd_subnet=vsd_subnet)
 
-        # Define IPv6 interface in the guest VM's
-        # as VSP does not support DHCPv6 for IPv6 addresses
-        server1_ipv6 = server1.get_server_ip_in_network(
-            network['name'], ip_type=6)
-        server2_ipv6 = server2.get_server_ip_in_network(
-            network['name'], ip_type=6)
+            server1.configure_dualstack_interface(
+                server1_ipv6, subnet=ipv6_subnet, device="eth0", )
 
-        self.prepare_for_nic_provisioning(server1, vsd_domain=vsd_l3domain,
-                                          vsd_subnet=vsd_l3domain_subnet)
-        self.prepare_for_nic_provisioning(server2, vsd_domain=vsd_l3domain,
-                                          vsd_subnet=vsd_l3domain_subnet)
+        if skip_server2_and_ping_tests:
+            return vsd_domain, vsd_subnet, server1
 
-        server1.configure_dualstack_interface(
-            server1_ipv6, subnet=ipv6_subnet, device="eth0", )
-        server2.configure_dualstack_interface(
-            server2_ipv6, subnet=ipv6_subnet, device="eth0", )
+        if server2_pre_set_up:
+            server2 = server2_pre_set_up
+            network2 = server2.networks[0] if server2.networks else network
+        else:
+            server2 = self.create_tenant_server(tenant_networks=[network])
+            network2 = network
 
-        # TODO(team): find out why we need 5 seconds sleep for stable success?
         time.sleep(5)
 
-        # Test IPv6 connectivity between peer servers
-        self.assert_ping6(server1, server2, network)
+        # Test IPv4 connectivity between peer servers
+        self.prepare_for_ping_test(server1, vsd_domain=vsd_domain,
+                                   vsd_subnet=vsd_subnet)
 
-        if self.include_negative_testing:
-            # Allow IPv6 only
-            self.vsd.define_any_to_any_acl(vsd_l3domain,
-                                           allow_ipv4=False,
-                                           allow_ipv6=True)
+        self.assert_ping(server1, server2, network2)
 
-            self.assert_ping(server1, server2, network, should_pass=False)
-            self.assert_ping6(server1, server2, network, should_pass=True)
+        if cidr6:
+            if not server2_pre_set_up:
+                server2_ipv6 = server2.get_server_ip_in_network(
+                    network2['name'], ip_type=6)
 
+                self.prepare_for_nic_provisioning(
+                    server2, vsd_domain=vsd_domain, vsd_subnet=vsd_subnet)
+
+                server2.configure_dualstack_interface(
+                    server2_ipv6, subnet=ipv6_subnet, device="eth0", )
+
+            # Test IPv6 connectivity between peer servers
+            self.assert_ping6(server1, server2, network2)
+
+            if incl_negative_ping_test:
+                # Allow IPv6 only
+                self.vsd.define_any_to_any_acl(vsd_domain,
+                                               allow_ipv4=False,
+                                               allow_ipv6=True)
+
+                self.assert_ping(server1, server2, network2, should_pass=False)
+                self.assert_ping6(server1, server2, network2)
+
+        if incl_negative_ping_test:
             # Allow IPv4 only
-            self.vsd.define_any_to_any_acl(vsd_l3domain,
+            self.vsd.define_any_to_any_acl(vsd_domain,
                                            allow_ipv4=True,
                                            allow_ipv6=False)
 
-            self.assert_ping(server1, server2, network, should_pass=True)
-            self.assert_ping6(server1, server2, network, should_pass=False)
+            self.assert_ping(server1, server2, network2)
+            self.assert_ping6(server1, server2, network2, should_pass=False)
+
+        return vsd_domain, vsd_subnet, server1
+
+    @testtools.skipIf(not Topology.run_connectivity_tests(),
+                      'Connectivity tests are disabled.')
+    @decorators.attr(type='smoke')
+    def test_icmp_connectivity_l3_vsd_managed(self):
+        self.icmp_connectivity_l3_vsd_managed(
+            self.cidr4, self.cidr6)  # FIXME(Kris) incl_negative_ping_test=True
+
+    @testtools.skipIf(not Topology.run_connectivity_tests(),
+                      'Connectivity tests are disabled.')
+    @decorators.attr(type='smoke')
+    def test_icmp_connectivity_l3_vsd_managed_no_gw(self):
+        self.icmp_connectivity_l3_vsd_managed(
+            self.cidr4, self.cidr6, no_gateway=True)
+
+    @testtools.skipIf(not Topology.run_connectivity_tests(),
+                      'Connectivity tests are disabled.')
+    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsdmgd_subnets,
+                      'Multi-linked VSD mgd subnets are not supported in this '
+                      'release')
+    @decorators.attr(type='smoke')
+    def test_icmp_connectivity_l3_vsd_managed_linked_v4_networks(self):
+        vsd_domain, vsd_subnet, server = self.icmp_connectivity_l3_vsd_managed(
+            cidr4=IPNetwork('10.10.100.0/24'),
+            pool4={'start': '10.10.100.100', 'end': '10.10.100.109'},
+            skip_server2_and_ping_tests=True)
+
+        self.icmp_connectivity_l3_vsd_managed(
+            cidr4=IPNetwork('10.10.100.0/24'),
+            pool4={'start': '10.10.100.110', 'end': '10.10.100.119'},
+            vsd_domain=vsd_domain, vsd_subnet=vsd_subnet,
+            server2_pre_set_up=server)
+
+    @testtools.skipIf(not Topology.run_connectivity_tests(),
+                      'Connectivity tests are disabled.')
+    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsdmgd_subnets,
+                      'Multi-linked VSD mgd subnets are not supported in this '
+                      'release')
+    @decorators.attr(type='smoke')
+    def test_icmp_connectivity_l3_vsd_managed_linked_dualstack_networks(self):
+        vsd_domain, vsd_subnet, server = self.icmp_connectivity_l3_vsd_managed(
+            cidr4=IPNetwork('10.10.100.0/24'),
+            pool4={'start': '10.10.100.100', 'end': '10.10.100.109'},
+            cidr6=IPNetwork('cafe:babe::/64'),
+            pool6={'start': 'cafe:babe::100', 'end': 'cafe:babe::109'},
+            skip_server2_and_ping_tests=True)
+
+        self.icmp_connectivity_l3_vsd_managed(
+            cidr4=IPNetwork('10.10.100.0/24'),
+            pool4={'start': '10.10.100.110', 'end': '10.10.100.119'},
+            cidr6=IPNetwork('cafe:babe::/64'),
+            pool6={'start': 'cafe:babe::110', 'end': 'cafe:babe::119'},
+            vsd_domain=vsd_domain, vsd_subnet=vsd_subnet,
+            server2_pre_set_up=server)

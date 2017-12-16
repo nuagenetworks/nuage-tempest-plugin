@@ -353,7 +353,9 @@ class BaremetalTest(network_mixin.NetworkMixin,
 
             # Repeated check in case of agent
             for attempt in range(5):
-                if len(topology.get_vsd_policygroups(True)) != expected_pgs:
+                if len(topology.get_vsd_policygroups(True)) == expected_pgs:
+                    break
+                else:
                     LOG.error("Unexpected amount of PGs found, "
                               "expected {} found {} (attempt {})".format(
                                   expected_pgs, len(topology.vsd_policygroups),

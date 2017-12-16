@@ -15,16 +15,19 @@
 
 import netaddr
 from random import randint
+import time
 import uuid
 
-from tempest.api.network.admin import test_routers as admin_test_routers
-from tempest.api.network import test_routers
+from oslo_log import log as oslo_logging
+
+from tempest.api.network import base
 from tempest.common import utils
 from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
+from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
@@ -35,18 +38,29 @@ from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
     import ExternalId
 
 CONF = config.CONF
+LOG = oslo_logging.getLogger(__name__)
+
 external_id_release = Release(n_constants.EXTERNALID_RELEASE)
 current_release = Release(Topology.nuage_release)
+
 NUAGE_PAT_ENABLED = 'ENABLED'
 NUAGE_PAT_DISABLED = 'DISABLED'
 
+NBR_RETRIES_ON_ROUTER_DELETE = 10
 
-class RoutersTestNuage(test_routers.RoutersTest):
-    _interface = 'json'
+
+class NuageRoutersTest(base.BaseNetworkTest):
+
+    @classmethod
+    def skip_checks(cls):
+        super(NuageRoutersTest, cls).skip_checks()
+        if not utils.is_extension_enabled('router', 'network'):
+            msg = "router extension not enabled."
+            raise cls.skipException(msg)
 
     @classmethod
     def setup_clients(cls):
-        super(RoutersTestNuage, cls).setup_clients()
+        super(NuageRoutersTest, cls).setup_clients()
         cls.client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
             CONF.network.catalog_type,
@@ -57,9 +71,53 @@ class RoutersTestNuage(test_routers.RoutersTest):
             **cls.os_primary.default_params)
         cls.nuage_vsd_client = NuageRestClient()
 
+    # copy of RoutersTest - start
+
+    def _cleanup_router(self, router):
+        self.delete_router(router)
+        self.routers.remove(router)
+
+    def _create_router(self, name=None, admin_state_up=False,
+                       external_network_id=None, enable_snat=None):
+        # associate a cleanup with created routers to avoid quota limits
+        router = self.create_router(name, admin_state_up,
+                                    external_network_id, enable_snat)
+        self.addCleanup(self._cleanup_router, router)
+        return router
+
+    def _delete_extra_routes(self, router_id):
+        self.routers_client.update_router(router_id, routes=None)
+
+    def _add_router_interface_with_subnet_id(self, router_id, subnet_id):
+        interface = self.routers_client.add_router_interface(
+            router_id, subnet_id=subnet_id)
+        self.addCleanup(self._remove_router_interface_with_subnet_id,
+                        router_id, subnet_id)
+        self.assertEqual(subnet_id, interface['subnet_id'])
+        return interface
+
+    def _remove_router_interface_with_subnet_id(self, router_id, subnet_id):
+        body = self.routers_client.remove_router_interface(router_id,
+                                                           subnet_id=subnet_id)
+        self.assertEqual(subnet_id, body['subnet_id'])
+
+    # copy of RoutersTest - end
+
     @classmethod
-    def resource_setup(cls):
-        super(RoutersTestNuage, cls).resource_setup()
+    def delete_router(cls, router):
+        # TODO(TEAM: FOLLOW UP ON THIS) - VSD-21337
+        for attempt in (1, NBR_RETRIES_ON_ROUTER_DELETE):
+            try:
+                super(NuageRoutersTest, cls).delete_router(router)
+                return
+            except Exception as e:
+                if 'Nuage API: vPort has VMInterface network interfaces ' \
+                   'associated with it.' not in str(e):
+                    raise e
+                LOG.error('VSD-21337: Domain deletion failed! (%d)', attempt)
+                time.sleep(1)
+
+        super(NuageRoutersTest, cls).delete_router(router)
 
     @decorators.attr(type='smoke')
     def test_create_show_list_update_delete_router(self):
@@ -572,92 +630,48 @@ class RoutersTestNuage(test_routers.RoutersTest):
             filters='externalID', filter_value=create_body['router']['id'])
         self.assertEqual(rd, nuage_domain[0]['routeDistinguisher'])
 
-    # TODO(TEAM) Overruling from upstream test class is not good practice
-    # This particular below test fails upstream - temp. overrule as for now
-    def test_create_router_set_gateway_with_fixed_ip(self):
-        self.skipTest('Skipping test as not Nuage supported.')
 
+class NuageRoutersAdminTest(base.BaseAdminNetworkTest):
 
-class RoutersAdminTestNuage(admin_test_routers.RoutersAdminTest):
+    @classmethod
+    def skip_checks(cls):
+        super(NuageRoutersAdminTest, cls).skip_checks()
+        if not utils.is_extension_enabled('router', 'network'):
+            msg = "router extension not enabled."
+            raise cls.skipException(msg)
+
+    def _cleanup_router(self, router):
+        self.delete_router(router)
+        self.routers.remove(router)
+
+    def _create_router(self, name=None, admin_state_up=False,
+                       external_network_id=None, enable_snat=None):
+        # associate a cleanup with created routers to avoid quota limits
+        router = self.create_router(name, admin_state_up,
+                                    external_network_id, enable_snat)
+        self.addCleanup(self._cleanup_router, router)
+        return router
+
+    @classmethod
+    def delete_router(cls, router):
+        # TODO(TEAM: FOLLOW UP ON THIS) - VSD-21337
+        for attempt in (1, NBR_RETRIES_ON_ROUTER_DELETE):
+            try:
+                super(NuageRoutersAdminTest, cls).delete_router(router)
+                return
+            except Exception as e:
+                if 'Nuage API: vPort has VMInterface network interfaces ' \
+                   'associated with it.' not in str(e):
+                    raise e
+                LOG.error('VSD-21337: Domain deletion failed! (%d)', attempt)
+                time.sleep(1)
+
+        super(NuageRoutersAdminTest, cls).delete_router(router)
 
     @classmethod
     def setup_clients(cls):
-        super(RoutersAdminTestNuage, cls).setup_clients()
+        super(NuageRoutersAdminTest, cls).setup_clients()
         cls.nuage_vsd_client = NuageRestClient()
-
-    @utils.requires_ext(extension='ext-gw-mode', service='network')
-    @decorators.attr(type='smoke')
-    def test_create_router_with_default_snat_value(self):
-        (super(RoutersAdminTestNuage, self).
-         test_create_router_with_default_snat_value())
-        nuage_domain = self.nuage_vsd_client.get_l3domain(
-            filters='externalID', filter_value=self.routers[-1]['id'])
-        self.assertEqual(nuage_domain[0]['PATEnabled'], NUAGE_PAT_DISABLED)
-
-    @utils.requires_ext(extension='ext-gw-mode', service='network')
-    @decorators.attr(type='smoke')
-    def test_update_router_set_gateway_with_snat_explicit(self):
-        super(RoutersAdminTestNuage,
-              self).test_update_router_set_gateway_with_snat_explicit()
-        nuage_domain = self.nuage_vsd_client.get_l3domain(
-            filters='externalID', filter_value=self.routers[-1]['id'])
-        self.assertEqual(nuage_domain[0]['PATEnabled'], NUAGE_PAT_ENABLED)
-
-    @utils.requires_ext(extension='ext-gw-mode', service='network')
-    @decorators.attr(type='smoke')
-    def test_update_router_set_gateway_without_snat(self):
-        super(RoutersAdminTestNuage,
-              self).test_update_router_set_gateway_without_snat()
-        nuage_domain = self.nuage_vsd_client.get_l3domain(
-            filters='externalID', filter_value=self.routers[-1]['id'])
-        self.assertEqual(nuage_domain[0]['PATEnabled'], NUAGE_PAT_DISABLED)
-
-    @utils.requires_ext(extension='ext-gw-mode', service='network')
-    @decorators.attr(type='smoke')
-    def test_update_router_reset_gateway_without_snat(self):
-        router = self._create_router(
-            data_utils.rand_name('router-'),
-            external_network_id=CONF.network.public_network_id)
-        nuage_domain = self.nuage_vsd_client.get_l3domain(
-            filters='externalID', filter_value=router['id'])
-        self.assertEqual(nuage_domain[0]['PATEnabled'], NUAGE_PAT_DISABLED)
-        self.admin_routers_client.update_router(
-            router['id'],
-            external_gateway_info={
-                'network_id': CONF.network.public_network_id,
-                'enable_snat': False})
-        self._verify_router_gateway(
-            router['id'],
-            {'network_id': CONF.network.public_network_id,
-             'enable_snat': False})
-        self._verify_gateway_port(router['id'])
-        nuage_domain = self.nuage_vsd_client.get_l3domain(
-            filters='externalID', filter_value=router['id'])
-        self.assertEqual(nuage_domain[0]['PATEnabled'], NUAGE_PAT_DISABLED)
-
-    @utils.requires_ext(extension='ext-gw-mode', service='network')
-    @decorators.attr(type='smoke')
-    def test_create_router_with_snat_explicit(self):
-        name = data_utils.rand_name('snat-router')
-        # Create a router enabling snat attributes
-        enable_snat_states = [False, True]
-        for enable_snat in enable_snat_states:
-            external_gateway_info = {
-                'network_id': CONF.network.public_network_id,
-                'enable_snat': enable_snat}
-            create_body = self.admin_routers_client.create_router(
-                name=name, external_gateway_info=external_gateway_info)
-            self.addCleanup(self.admin_routers_client.delete_router,
-                            create_body['router']['id'])
-            # Verify snat attributes after router creation
-            self._verify_router_gateway(create_body['router']['id'],
-                                        exp_ext_gw_info=external_gateway_info)
-            nuage_domain = self.nuage_vsd_client.get_l3domain(
-                filters='externalID',
-                filter_value=create_body['router']['id'])
-            self.assertEqual(
-                nuage_domain[0]['PATEnabled'],
-                NUAGE_PAT_ENABLED if enable_snat else NUAGE_PAT_DISABLED)
 
     @decorators.attr(type='smoke')
     def test_add_router_interface_shared_network(self):
@@ -818,3 +832,207 @@ class RoutersAdminTestNuage(admin_test_routers.RoutersAdminTest):
                           self.admin_routers_client.create_router,
                           name=data_utils.rand_name('router-'),
                           nuage_backhaul_rd="2:-3")
+
+
+class NuageRoutersV6Test(NuageRoutersTest):
+
+    _ip_version = 6
+
+    @classmethod
+    def skip_checks(cls):
+        super(NuageRoutersV6Test, cls).skip_checks()
+        if not NUAGE_FEATURES.os_managed_dualstack_subnets:
+            raise cls.skipException(
+                'OS Managed Dual Stack is not supported in this release')
+
+    def _verify_router_interface(self, router_id, subnet_id, port_id):
+        show_port_body = self.ports_client.show_port(port_id)
+        interface_port = show_port_body['port']
+        self.assertEqual(router_id, interface_port['device_id'])
+        self.assertEqual(subnet_id,
+                         interface_port['fixed_ips'][0]['subnet_id'])
+
+    @classmethod
+    def create_subnet(cls, network, gateway='', cidr=None, mask_bits=None,
+                      ip_version=None, client=None, **kwargs):
+
+        if "enable_dhcp" not in kwargs:
+            # NUAGE non-compliance: enforce enable_dhcp = False as
+            # the default option
+            return super(NuageRoutersV6Test, cls).create_subnet(
+                network, gateway, cidr, mask_bits,
+                ip_version, client, enable_dhcp=False, **kwargs)
+        else:
+            return super(NuageRoutersV6Test, cls).create_subnet(
+                network, gateway, cidr, mask_bits,
+                ip_version, client, **kwargs)
+
+    @decorators.attr(type='smoke')
+    # OPENSTACK-1886: fails to remove router with only IPv6 subnet interface
+    def test_add_remove_router_interface_with_subnet_id(self):
+        network = self.create_network()
+
+        # NUAGE non-compliance: Must have IPv4 subnet
+        subnet4 = self.create_subnet(network, ip_version=4, enable_dhcp=True)
+        self.addCleanup(self.subnets_client.delete_subnet, subnet4['id'])
+
+        subnet = self.create_subnet(network)
+        router = self._create_router()
+
+        # Add router interface with subnet id
+        interface = self.routers_client.add_router_interface(
+            router['id'], subnet_id=subnet['id'])
+        self.addCleanup(self._remove_router_interface_with_subnet_id,
+                        router['id'], subnet['id'])
+        self.assertIn('subnet_id', interface.keys())
+        self.assertIn('port_id', interface.keys())
+        # Verify router id is equal to device id in port details
+        show_port_body = self.ports_client.show_port(
+            interface['port_id'])
+        self.assertEqual(show_port_body['port']['device_id'],
+                         router['id'])
+
+    @decorators.attr(type='smoke')
+    def test_add_remove_router_interface_with_port_id(self):
+        network = self.create_network()
+
+        # NUAGE non-compliance: Must have IPv4 subnet
+        subnet4 = self.create_subnet(network, ip_version=4, enable_dhcp=True)
+        self.addCleanup(self.subnets_client.delete_subnet, subnet4['id'])
+
+        self.create_subnet(network)
+        router = self._create_router()
+        port_body = self.ports_client.create_port(
+            network_id=network['id'])
+        # add router interface to port created above
+        interface = self.routers_client.add_router_interface(
+            router['id'],
+            port_id=port_body['port']['id'])
+        self.addCleanup(self.routers_client.remove_router_interface,
+                        router['id'], port_id=port_body['port']['id'])
+        self.assertIn('subnet_id', interface.keys())
+        self.assertIn('port_id', interface.keys())
+        # Verify router id is equal to device id in port details
+        show_port_body = self.ports_client.show_port(
+            interface['port_id'])
+        self.assertEqual(show_port_body['port']['device_id'],
+                         router['id'])
+
+    @utils.requires_ext(extension='extraroute', service='network')
+    # OPENSTACK-1887
+    def test_update_delete_extra_route(self):
+        # Create different cidr for each subnet to avoid cidr duplicate
+        # The cidr starts from project_cidr
+        next_cidr = netaddr.IPNetwork(self.cidr)
+        # Prepare to build several routes
+        test_routes = []
+        routes_num = 4
+        # Create a router
+        router = self._create_router(admin_state_up=True)
+        self.addCleanup(
+            self._delete_extra_routes,
+            router['id'])
+        # Update router extra route, second ip of the range is
+        # used as next hop
+        for i in range(routes_num):
+            network = self.create_network()
+            subnet = self.create_subnet(network, cidr=next_cidr)
+            next_cidr = next_cidr.next()
+
+            # Add router interface with subnet id
+            self.create_router_interface(router['id'], subnet['id'])
+
+            cidr = netaddr.IPNetwork(subnet['cidr'])
+            next_hop = str(cidr[2])
+            destination = str(subnet['cidr'])
+            test_routes.append(
+                {'nexthop': next_hop, 'destination': destination}
+            )
+
+        test_routes.sort(key=lambda x: x['destination'])
+        extra_route = self.routers_client.update_router(
+            router['id'], routes=test_routes)
+        show_body = self.routers_client.show_router(router['id'])
+        # Assert the number of routes
+        self.assertEqual(routes_num, len(extra_route['router']['routes']))
+        self.assertEqual(routes_num, len(show_body['router']['routes']))
+
+        routes = extra_route['router']['routes']
+        routes.sort(key=lambda x: x['destination'])
+        # Assert the nexthops & destination
+        for i in range(routes_num):
+            self.assertEqual(test_routes[i]['destination'],
+                             routes[i]['destination'])
+            self.assertEqual(test_routes[i]['nexthop'], routes[i]['nexthop'])
+
+        routes = show_body['router']['routes']
+        routes.sort(key=lambda x: x['destination'])
+        for i in range(routes_num):
+            self.assertEqual(test_routes[i]['destination'],
+                             routes[i]['destination'])
+            self.assertEqual(test_routes[i]['nexthop'], routes[i]['nexthop'])
+
+        self._delete_extra_routes(router['id'])
+        show_body_after_deletion = self.routers_client.show_router(
+            router['id'])
+        self.assertEmpty(show_body_after_deletion['router']['routes'])
+
+    def test_add_router_interface_different_netpart(self):
+        self.skipTest('Test skipped for v6')
+
+    @decorators.attr(type='smoke')
+    # OPENSTACK-1886: fails to remove router with only IPv6 subnet interface
+    def test_add_multiple_router_interfaces(self):
+        network01 = self.create_network(
+            network_name=data_utils.rand_name('router-network01-'))
+
+        # NUAGE non-compliance: Must have IPv4 subnet
+        subnet01_ipv4 = self.create_subnet(
+            network01, ip_version=4, enable_dhcp=True)
+        self.addCleanup(self.subnets_client.delete_subnet, subnet01_ipv4['id'])
+
+        network02 = self.create_network(
+            network_name=data_utils.rand_name('router-network02-'))
+
+        # NUAGE non-compliance: Must have IPv4 subnet
+        subnet02_ipv4_cidr = netaddr.IPNetwork(subnet01_ipv4['cidr']).next()
+        subnet02_ipv4 = self.create_subnet(
+            network02, ip_version=4, cidr=subnet02_ipv4_cidr, enable_dhcp=True)
+        self.addCleanup(self.subnets_client.delete_subnet, subnet02_ipv4['id'])
+
+        subnet01 = self.create_subnet(network01)
+        sub02_cidr = netaddr.IPNetwork(self.cidr).next()
+        subnet02 = self.create_subnet(network02, cidr=sub02_cidr)
+        router = self._create_router()
+        interface01 = self._add_router_interface_with_subnet_id(router['id'],
+                                                                subnet01['id'])
+        self._verify_router_interface(router['id'], subnet01['id'],
+                                      interface01['port_id'])
+        interface02 = self._add_router_interface_with_subnet_id(router['id'],
+                                                                subnet02['id'])
+        self._verify_router_interface(router['id'], subnet02['id'],
+                                      interface02['port_id'])
+        pass
+
+    # OPENSTACK-1886: fails to remove router with only IPv6 subnet interface
+    def test_router_interface_port_update_with_fixed_ip(self):
+        network = self.create_network()
+
+        # NUAGE non-compliance: Must have IPv4 subnet
+        subnet_ipv4 = self.create_subnet(
+            network, ip_version=4, enable_dhcp=True)
+        self.addCleanup(self.subnets_client.delete_subnet, subnet_ipv4['id'])
+
+        subnet = self.create_subnet(network)
+        router = self._create_router()
+        fixed_ip = [{'subnet_id': subnet['id']}]
+        interface = self._add_router_interface_with_subnet_id(router['id'],
+                                                              subnet['id'])
+        self.assertIn('port_id', interface)
+        self.assertIn('subnet_id', interface)
+        port = self.ports_client.show_port(interface['port_id'])
+        self.assertEqual(port['port']['id'], interface['port_id'])
+        router_port = self.ports_client.update_port(port['port']['id'],
+                                                    fixed_ips=fixed_ip)
+        self.assertEqual(subnet['id'],
+                         router_port['port']['fixed_ips'][0]['subnet_id'])

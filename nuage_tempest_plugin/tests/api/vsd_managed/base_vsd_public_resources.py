@@ -118,12 +118,12 @@ class BaseVSDPublicResourcesTest(
             }
             self.vsd_l2_shared_managed_opt3 = \
                 self.create_vsd_shared_l2domain_managed(**kwargs)
-            self.nuage_vsd_client.create_dhcpoption(
+            self.nuage_vsd_client.create_dhcpoption_on_shared(
                 self.vsd_l2_shared_managed_opt3[0]['ID'], 3, [dhcp_option_3])
             self.current_l2_dhcp_option_3 = dhcp_option_3
         elif dhcp_option_3 != self.current_l2_dhcp_option_3:
             # we want tot est with another dhcp+option_3 value, set it
-            self.nuage_vsd_client.create_dhcpoption(
+            self.nuage_vsd_client.create_dhcpoption_on_shared(
                 self.vsd_l2_shared_managed_opt3[0]['ID'], 3, [dhcp_option_3])
             self.current_l2_dhcp_option_3 = dhcp_option_3
         vsd_l2_dom_unmgd_l2_shared_mgd_opt3 = \
@@ -166,12 +166,12 @@ class BaseVSDPublicResourcesTest(
             }
             self.vsd_l3_shared_mgd_opt3 = \
                 self.create_vsd_shared_l3domain_managed(**kwargs)
-            self.nuage_vsd_client.create_dhcpoption(
+            self.nuage_vsd_client.create_dhcpoption_on_shared(
                 self.vsd_l3_shared_mgd_opt3[0]['ID'], 3, [dhcp_option_3])
             self.current_l3_dhcp_option_3 = dhcp_option_3
         elif dhcp_option_3 != self.current_l3_dhcp_option_3:
             # we want to test with another dhcp_option_3 value: set it
-            self.nuage_vsd_client.create_dhcpoption(
+            self.nuage_vsd_client.create_dhcpoption_on_shared(
                 self.vsd_l3_shared_mgd_opt3[0]['ID'], 3, [dhcp_option_3])
             self.current_l3_dhcp_option_3 = dhcp_option_3
         vsd_l3_domain = self.create_vsd_l3domain(
@@ -199,7 +199,7 @@ class BaseVSDPublicResourcesTest(
             }
             self.vsd_l3_shared_mgd_opt3 = \
                 self.create_vsd_shared_l3domain_managed(**kwargs)
-            self.nuage_vsd_client.create_dhcpoption(
+            self.nuage_vsd_client.create_dhcpoption_on_shared(
                 self.vsd_l3_shared_mgd_opt3[0]['ID'], 3, ['0.0.0.0'])
         vsd_l3_domain = self.create_vsd_l3domain(
             tid=self.vsd_l3_dom_template[0]['ID'])
