@@ -249,8 +249,8 @@ class VSDManagedDualStackSubnetL2DHCPManagedTest(NetworkTestCaseMixin,
                                                  VsdTestCaseMixin):
     def link_dualstack_net_l2(
             self,
-            cidr4=None, mask_bits4=None, dhcp4_port=None,
-            cidr6=None, mask_bits6=None, dhcp6_port=None,
+            cidr4=None, mask_bits4=None, dhcp4_port=None, gateway4=None,
+            cidr6=None, mask_bits6=None, dhcp6_port=None, gateway6=None,
             pool4=None, pool6=None,
             vsd_l2dom=None, should_pass4=True, should_pass6=True):
 
@@ -280,7 +280,7 @@ class VSDManagedDualStackSubnetL2DHCPManagedTest(NetworkTestCaseMixin,
 
         # create Openstack IPv4 subnet on Openstack based on VSD l2domain
         kwargs4 = {
-            'gateway': None,  # --no-gateway (as router option 3 is not set)
+            'gateway': gateway4,
             'cidr': cidr4,
             'mask_bits': mask_bits4,
             'nuagenet': vsd_l2dom['ID'],
@@ -292,13 +292,17 @@ class VSDManagedDualStackSubnetL2DHCPManagedTest(NetworkTestCaseMixin,
         if should_pass4:
             ipv4_subnet = self.create_subnet(network, **kwargs4)
             self.assertEqual(ipv4_subnet['cidr'], str(cidr4))
+            if pool4:
+                subnet_pool4 = ipv4_subnet['allocation_pools']
+                self.assertEqual(1, len(subnet_pool4))
+                self.assertEqual(pool4, subnet_pool4[0])
         else:
             self.assertRaises(exceptions.BadRequest,
                               self.create_subnet, network, **kwargs4)
 
         # create Openstack IPv6 subnet on Openstack based on VSD l2dom subnet
         kwargs6 = {
-            'gateway': None,
+            'gateway': gateway6,
             'cidr': cidr6,
             'mask_bits': mask_bits6,
             'ip_version': 6,
@@ -311,7 +315,11 @@ class VSDManagedDualStackSubnetL2DHCPManagedTest(NetworkTestCaseMixin,
 
         if should_pass6:
             ipv6_subnet = self.create_subnet(network, **kwargs6)
-            self.assertEqual(ipv6_subnet['cidr'], str(cidr6))
+            self.assertEqual(str(cidr6), ipv6_subnet['cidr'])
+            if pool6:
+                subnet_pool6 = ipv6_subnet['allocation_pools']
+                self.assertEqual(1, len(subnet_pool6))
+                self.assertEqual(pool6, subnet_pool6[0])
         else:
             self.assertRaises(exceptions.BadRequest,
                               self.create_subnet, network, **kwargs6)

@@ -35,7 +35,8 @@ MSG_INVALID_INPUT_FOR_AAP_IPS = "'%s' is not a valid IP address."
 
 
 class AllowedAddressPairIpV6NuageTest(
-    base_tempest.AllowedAddressPairTestJSON):
+        base_tempest.AllowedAddressPairTestJSON):
+
     _ip_version = 6
 
     @classmethod
