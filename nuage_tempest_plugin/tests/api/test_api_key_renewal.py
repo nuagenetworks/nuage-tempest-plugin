@@ -77,11 +77,6 @@ class APIKeyRenewal(NuageBaseTest):
         LOG.debug('API_KEY IS %s', api_key)
         return api_key
 
-    @decorators.attr(type='smoke')
-    def test_api_key_exists_in_database(self):
-        current_api_key = self._get_current_api_key_from_neutron()
-        self.assertIsNotNone(current_api_key)
-
     @testtools.skipIf(not Topology.neutron_restart_supported(),
                       'Skipping tests that restart neutron')
     @decorators.attr(type='slow')
