@@ -6,7 +6,6 @@ from enum import Enum
 from netaddr import IPNetwork
 from oslo_log import log as logging
 
-from tempest.api.network import base
 from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest import test
@@ -26,7 +25,8 @@ class Action(Enum):
     no_vip = 3
 
 
-class IpAntiSpoofingTestBase(base.BaseNetworkTest):
+class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
+
     @classmethod
     def resource_setup(cls):
         super(IpAntiSpoofingTestBase, cls).resource_setup()
@@ -335,9 +335,16 @@ class IpAntiSpoofingTestBase(base.BaseNetworkTest):
         vsd_port_pg = vsd_port.policy_groups.get_first()
         vsd_l3dom_pgs = vsd_domain.policy_groups.get()
         pg_cnt = len(vsd_l3dom_pgs)
-        self.assertEqual(1, pg_cnt)
-        vsd_l3dom_pg = vsd_l3dom_pgs[0]
-        self.assertEqual(vsd_port_pg.name[:21], 'PG_FOR_LESS_SECURITY_')
+        if self.is_dhcp_agent_present():
+            self.assertTrue(1 <= pg_cnt <= 2)
+        else:
+            self.assertEqual(1, pg_cnt)
+        vsd_l3dom_pg = None
+        for l3dom_pg in vsd_l3dom_pgs:
+            self.assertEqual(l3dom_pg.name[:21], 'PG_FOR_LESS_SECURITY_')
+            if vsd_domain.id in l3dom_pg.external_id:
+                vsd_l3dom_pg = l3dom_pg
+        self.assertIsNotNone(vsd_l3dom_pg)
         self.assertEqual(vsd_port_pg.name, vsd_l3dom_pg.name)
         # Check the two ingress and egress rules
         self._verify_ingress_egress_rules(vsd_port_pg)
