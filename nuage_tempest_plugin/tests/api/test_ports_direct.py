@@ -321,6 +321,7 @@ class PortsDirectTest(network_mixin.NetworkMixin,
         self._validate_direct_vport(topology)
         self._validate_vlan(topology)
         self._validate_interface(topology)
+        self._validate_policygroup(topology, pg_name='defaultPG-VSG-BRIDGE')
 
     def _validate_direct_vport(self, topology):
         self.assertThat(topology.vsd_direct_vport['type'],
@@ -344,6 +345,25 @@ class PortsDirectTest(network_mixin.NetworkMixin,
             self.assertThat(
                 topology.vsd_direct_interface['IPAddress'],
                 matchers.Equals(neutron_port['fixed_ips'][0]['ip_address']))
+
+    def _validate_policygroup(self, topology, pg_name=None):
+        expected_pgs = 1  # Expecting only hardware
+        self.assertThat(topology.vsd_policygroups,
+                        matchers.HasLength(expected_pgs),
+                        message="Unexpected amount of PGs found")
+        vsd_policygroup = topology.vsd_policygroups[0]
+        self.assertThat(vsd_policygroup['type'], matchers.Equals('HARDWARE'))
+        if pg_name:
+            self.assertThat(vsd_policygroup['name'],
+                            matchers.Contains(pg_name))
+
+        vsd_pg_vports = self.vsd_client.get_vport(constants.POLICYGROUP,
+                                                  vsd_policygroup['ID'])
+        self.assertThat(vsd_pg_vports, matchers.HasLength(1),
+                        message="Expected to find exactly 1 vport in PG")
+        self.assertThat(vsd_pg_vports[0]['ID'],
+                        matchers.Equals(topology.vsd_direct_vport['ID']),
+                        message="Vport should be part of HARDWARE PG")
 
     def _validate_dhcp_option(self, topology):
         self.assertThat(topology.vsd_direct_dhcp_opts,
