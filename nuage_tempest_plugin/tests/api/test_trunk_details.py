@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from tempest.lib import decorators
+
 from nuage_tempest_plugin.tests.api import test_trunk
 
 
@@ -19,6 +21,7 @@ class TestTrunkDetailsJSON(test_trunk.TrunkTestJSONBase):
 
     required_extensions = ['trunk-details']
 
+    @decorators.attr(type='smoke')
     def test_port_resource_trunk_details_no_subports(self):
         trunk = self._create_trunk_with_network_and_parent([])
         port = self.client.show_port(trunk['trunk']['port_id'])

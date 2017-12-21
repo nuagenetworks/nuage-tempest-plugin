@@ -113,12 +113,14 @@ class BaremetalTest(network_mixin.NetworkMixin,
         vsd_vlan = self.vsd_client.get_bridge_port_gateway_vlan(vport)
         return vsd_vlan[0]
 
+    @decorators.attr(type='smoke')
     def test_single_subport_l2(self):
         self._test_trunking(router=False, number_subports=1)
 
     def test_multiple_subports_l2(self):
         self._test_trunking(router=False, number_subports=2)
 
+    @decorators.attr(type='smoke')
     def test_single_subport_l3(self):
         self._test_trunking(router=True, number_subports=1)
 

@@ -93,6 +93,7 @@ class BaremetalTest(network_mixin.NetworkMixin,
         self._test_baremetal_port(topology, update=False,
                                   vlan_transparent=True)
 
+    @decorators.attr(type='smoke')
     def test_baremetal_port_l3_update(self):
         topology = self._create_topology(with_router=True)
         self._test_baremetal_port(topology, update=True)
@@ -103,10 +104,12 @@ class BaremetalTest(network_mixin.NetworkMixin,
         self._test_baremetal_port(topology, update=True,
                                   vlan_transparent=True)
 
+    @decorators.attr(type='smoke')
     def test_baremetal_port_l2_create(self):
         topology = self._create_topology(with_router=False)
         self._test_baremetal_port(topology, update=False)
 
+    @decorators.attr(type='smoke')
     def test_baremetal_port_l2_create_vlan_transparent(self):
         topology = self._create_topology(with_router=False,
                                          vlan_transparent=True)

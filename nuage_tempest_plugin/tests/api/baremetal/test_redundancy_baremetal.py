@@ -125,12 +125,14 @@ class BaremetalRedcyTest(network_mixin.NetworkMixin,
         topology = self._create_topology(with_router=True)
         self._test_redundancy_port(topology, update=False)
 
+    @decorators.attr(type='smoke')
     def test_baremetal_redcy_l3_create_vlan_transparent(self):
         topology = self._create_topology(with_router=True,
                                          vlan_transparent=True)
         self._test_redundancy_port(topology, update=False,
                                    vlan_transparent=True)
 
+    @decorators.attr(type='smoke')
     def test_baremetal_redcy_l3_update(self):
         topology = self._create_topology(with_router=True)
         self._test_redundancy_port(topology, update=True)
@@ -141,6 +143,7 @@ class BaremetalRedcyTest(network_mixin.NetworkMixin,
         self._test_redundancy_port(topology, update=True,
                                    vlan_transparent=True)
 
+    @decorators.attr(type='smoke')
     def test_baremetal_redcy_l2_create(self):
         topology = self._create_topology(with_router=False)
         self._test_redundancy_port(topology, update=False)

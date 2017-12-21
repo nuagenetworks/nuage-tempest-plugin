@@ -21,6 +21,7 @@ from tempest.api.network import base
 from tempest.common import utils
 from tempest import config
 from tempest.lib.common.utils import test_utils
+from tempest.lib import decorators
 from tempest.lib import exceptions as lib_exc
 
 CONF = config.CONF
@@ -92,6 +93,7 @@ class TrunkTestJSONBase(base.BaseAdminNetworkTest):
 
 class TrunkTestJSON(TrunkTestJSONBase):
 
+    @decorators.attr(type='smoke')
     def _test_create_trunk(self, subports):
         trunk = self._create_trunk_with_network_and_parent(subports)
         observed_trunk = self._show_trunk(trunk['trunk']['id'])
@@ -106,12 +108,14 @@ class TrunkTestJSON(TrunkTestJSONBase):
             mac[3] = int(base_mac[3], 16)
         return ':'.join(["%02x" % x for x in mac])
 
+    @decorators.attr(type='smoke')
     def test_create_trunk_empty_subports_list(self):
         self._test_create_trunk([])
 
     def test_create_trunk_subports_not_specified(self):
         self._test_create_trunk(None)
 
+    @decorators.attr(type='smoke')
     def test_create_show_delete_trunk(self):
         trunk = self._create_trunk_with_network_and_parent(None)
         trunk_id = trunk['trunk']['id']
@@ -132,6 +136,7 @@ class TrunkTestJSON(TrunkTestJSONBase):
         self.assertEqual(self.client.tenant_id, show_trunk['project_id'])
         self.assertEqual(self.client.tenant_id, show_trunk['tenant_id'])
 
+    @decorators.attr(type='smoke')
     def test_create_update_trunk(self):
         trunk = self._create_trunk_with_network_and_parent(None)
         rev = trunk['trunk']['revision_number']
@@ -168,6 +173,7 @@ class TrunkTestJSON(TrunkTestJSONBase):
         for trunk in matched_trunks:
             self.assertEqual(expected_trunks[trunk['id']], trunk)
 
+    @decorators.attr(type='smoke')
     def test_add_subport(self):
         trunk = self._create_trunk_with_network_and_parent([])
         port = self._create_port_for_trunk()
@@ -189,6 +195,7 @@ class TrunkTestJSON(TrunkTestJSONBase):
         trunk = self._create_trunk_with_network_and_parent(subports)
         self.client.delete_trunk(trunk['trunk']['id'])
 
+    @decorators.attr(type='smoke')
     def test_remove_subport(self):
         subport_parent1 = self._create_port_for_trunk()
         subport_parent2 = self._create_port_for_trunk()
