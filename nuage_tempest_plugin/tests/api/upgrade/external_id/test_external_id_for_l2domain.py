@@ -124,7 +124,6 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
             # matching values
             self.test.assertEqual(
                 self.subnet['tenant_id'], vsd_groups[0]['name'])
-            self.test.assertEqual("CMS", vsd_groups[0]['managementMode'])
 
             if with_external_id is None:
                 self.test.assertIsNone(vsd_groups[0]['externalID'])
@@ -151,7 +150,6 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
 
             # matching values
             self.test.assertEqual("Everybody", vsd_groups[0]['name'])
-            self.test.assertEqual("DEFAULT", vsd_groups[0]['managementMode'])
 
             self.test.assertIsNone(vsd_groups[0]['externalID'])
 
@@ -168,7 +166,6 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
             # matching values
             self.test.assertEqual(
                 self.subnet['tenant_id'], vsd_users[0]['userName'])
-            self.test.assertEqual("CMS", vsd_users[0]['managementMode'])
 
             if with_external_id is None:
                 self.test.assertIsNone(vsd_users[0]['externalID'])
