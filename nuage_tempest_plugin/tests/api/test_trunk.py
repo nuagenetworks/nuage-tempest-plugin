@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import random
+
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
@@ -94,6 +96,14 @@ class TrunkTestJSON(TrunkTestJSONBase):
         trunk = self._create_trunk_with_network_and_parent(subports)
         observed_trunk = self._show_trunk(trunk['trunk']['id'])
         self.assertEqual(trunk, observed_trunk)
+
+    def _get_random_mac(base_mac):
+        mac = [int(base_mac[0], 16), int(base_mac[1], 16),
+               int(base_mac[2], 16), random.randint(0x00, 0xff),
+               random.randint(0x00, 0xff), random.randint(0x00, 0xff)]
+        if base_mac[3] != '00':
+            mac[3] = int(base_mac[3], 16)
+        return ':'.join(["%02x" % x for x in mac])
 
     def test_create_trunk_empty_subports_list(self):
         self._test_create_trunk([])
@@ -217,3 +227,16 @@ class TrunkTestJSON(TrunkTestJSONBase):
         trunk = self.client.get_subports(trunk['trunk']['id'])
         observed_subports = trunk['sub_ports']
         self.assertEqual(1, len(observed_subports))
+
+    def test_update_subport(self):
+        port = self._create_port_for_trunk()
+        subports = [{'port_id': port['id'],
+                     'segmentation_type': 'vlan',
+                     'segmentation_id': 2}]
+        trunk = self._create_trunk_with_network_and_parent(subports)
+        mac = self._generate_random_mac('fa:16:3e:00:00:00'.split(':'))
+        update_data = {'mac_address': mac}
+        updated_port = self.update_port(port, **update_data)
+        observed_subports = trunk['sub_ports']
+        self.assertEqual(1, len(observed_subports))
+        self.assertEqual(updated_port['mac_address'], mac)
