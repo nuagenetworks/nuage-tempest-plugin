@@ -97,6 +97,7 @@ class TrunkTestJSON(TrunkTestJSONBase):
         observed_trunk = self._show_trunk(trunk['trunk']['id'])
         self.assertEqual(trunk, observed_trunk)
 
+    @staticmethod
     def _get_random_mac(base_mac):
         mac = [int(base_mac[0], 16), int(base_mac[1], 16),
                int(base_mac[2], 16), random.randint(0x00, 0xff),
@@ -234,7 +235,7 @@ class TrunkTestJSON(TrunkTestJSONBase):
                      'segmentation_type': 'vlan',
                      'segmentation_id': 2}]
         trunk = self._create_trunk_with_network_and_parent(subports)
-        mac = self._generate_random_mac('fa:16:3e:00:00:00'.split(':'))
+        mac = self._get_random_mac('fa:16:3e:00:00:00'.split(':'))
         update_data = {'mac_address': mac}
         updated_port = self.update_port(port, **update_data)
         observed_subports = trunk['sub_ports']
