@@ -324,15 +324,6 @@ class ExternalIdForL3domainTest(base.BaseAdminNetworkTest):
         super(ExternalIdForL3domainTest, cls).setup_clients()
         cls.nuage_vsd_client = NuageRestClient()
 
-    def _delete_network(self, network):
-        # Deleting network also deletes its subnets if exists
-        self.networks_client.delete_network(network['id'])
-        if network in self.networks:
-            self.networks.remove(network)
-        for subnet in self.subnets:
-            if subnet['network_id'] == network['id']:
-                self.subnets.remove(subnet)
-
     @nuage_test.header()
     def test_router_matches_to_l3domain(self):
         # Create a router
@@ -378,7 +369,6 @@ class ExternalIdForL3domainTest(base.BaseAdminNetworkTest):
         # Create a network
         name = data_utils.rand_name('network-')
         network = self.create_network(network_name=name)
-        self.addCleanup(self._delete_network, network)
 
         # Create a subnet
         subnet = self.create_subnet(network)

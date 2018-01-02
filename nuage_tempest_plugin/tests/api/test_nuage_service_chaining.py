@@ -55,13 +55,16 @@ class NuageServiceChaining(base.BaseNetworkTest):
     @classmethod
     def resource_setup(cls):
         super(NuageServiceChaining, cls).resource_setup()
-        for i in range(2):
-            # Nuage specific resource addition
-            name = data_utils.rand_name('network-')
-            cls.network = cls.create_network(network_name=name)
-            cls.subnet = cls.create_subnet(cls.network)
+        # Nuage specific resource addition
+        name = data_utils.rand_name('network-')
+        cls.network_l2 = cls.create_network(network_name=name)
+        cls.subnet_l2 = cls.create_subnet(cls.network_l2)
+
+        name = data_utils.rand_name('network-')
+        cls.network_l3 = cls.create_network(network_name=name)
+        cls.subnet_l3 = cls.create_subnet(cls.network_l3)
         cls.router = cls.create_router(data_utils.rand_name('router-'))
-        cls.create_router_interface(cls.router['id'], cls.subnets[1]['id'])
+        cls.create_router_interface(cls.router['id'], cls.subnet_l3['id'])
 
     def _verify_redirect_target(self, rt, parent, parentinfo, postinfo):
         redirect_target = self.nuage_vsd_client.get_redirection_target(
@@ -170,7 +173,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
         # parameters for nuage redirection target
         post_body = {'insertion_mode': 'VIRTUAL_WIRE',
                      'redundancy_enabled': 'False',
-                     'subnet_id': self.subnets[0]['id'],
+                     'subnet_id': self.subnet_l2['id'],
                      'name': 'RT1'}
 
         # Creating redirection Target
@@ -178,7 +181,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
 
         subnet_ext_id = (
             self.nuage_vsd_client.get_vsd_external_id(
-                self.subnets[0]['id'])
+                self.subnet_l2['id'])
         )
 
         vsd_subnet = self.nuage_vsd_client.get_l2domain(
@@ -206,7 +209,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
 
         # Verifying Redirect Target Rule on VSD
         if external_id_release <= current_release:
-            external_id = ExternalId(self.subnets[0]['id']).at_cms_id()
+            external_id = ExternalId(self.subnet_l2['id']).at_cms_id()
         else:
             external_id = None
 
@@ -215,7 +218,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
             with_external_id=external_id)
 
         # Associating port to Redirect Target
-        rtport = self.create_port(self.networks[0])
+        rtport = self.create_port(self.network_l2)
         self.addCleanup(self.ports_client.delete_port, rtport['id'])
 
         self._assign_unassign_rt_port(
@@ -254,7 +257,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
 
         subnet_ext_id = (
             self.nuage_vsd_client.get_vsd_external_id(
-                self.subnets[1]['id'])
+                self.subnet_l3['id'])
         )
 
         vsd_subnet = (
@@ -296,7 +299,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
                                            with_external_id=external_id)
 
         # Associating port to Redirect Target
-        rtport = self.create_port(self.networks[1])
+        rtport = self.create_port(self.network_l3)
         self.addCleanup(self.ports_client.delete_port, rtport['id'])
         self._assign_unassign_rt_port(rtport, rt, 'subnets', vsd_subnet[0])
 
@@ -314,7 +317,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
         # parameters for nuage redirection target
         post_body = {'insertion_mode': 'VIRTUAL_WIRE',
                      'redundancy_enabled': 'False',
-                     'subnet_id': self.subnets[1]['id'],
+                     'subnet_id': self.subnet_l3['id'],
                      'name': 'RT2'}
 
         # Creating redirection Target
@@ -332,7 +335,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
 
         subnet_ext_id = (
             self.nuage_vsd_client.get_vsd_external_id(
-                self.subnets[1]['id'])
+                self.subnet_l3['id'])
         )
 
         vsd_subnet = (
@@ -365,7 +368,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
 
         # Verifying Redirect Target Rule on VSD
         if external_id_release <= current_release:
-            external_id = ExternalId(self.subnets[1]['id']).at_cms_id()
+            external_id = ExternalId(self.subnet_l3['id']).at_cms_id()
         else:
             external_id = None
 
@@ -374,7 +377,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
                                            with_external_id=external_id)
 
         # Associating port to Redirect Target
-        rtport = self.create_port(self.networks[1])
+        rtport = self.create_port(self.network_l3)
         self.addCleanup(self.ports_client.delete_port, rtport['id'])
         self._assign_unassign_rt_port(rtport, rt, 'subnets', vsd_subnet[0])
 
@@ -410,7 +413,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
 
         subnet_ext_id = (
             self.nuage_vsd_client.get_vsd_external_id(
-                self.subnets[1]['id'])
+                self.subnet_l3['id'])
         )
 
         vsd_subnet = (
@@ -449,7 +452,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
                                            with_external_id=external_id)
 
         # Associating port to Redirect Target
-        rtport = self.create_port(self.networks[1])
+        rtport = self.create_port(self.network_l3)
         self.addCleanup(self.ports_client.delete_port, rtport['id'])
         self._assign_unassign_rt_port(rtport, rt, 'subnets', vsd_subnet[0])
 
@@ -484,7 +487,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
 
         subnet_ext_id = (
             self.nuage_vsd_client.get_vsd_external_id(
-                self.subnets[1]['id'])
+                self.subnet_l3['id'])
         )
 
         vsd_subnet = (
@@ -504,7 +507,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
             netaddr.IPNetwork(CONF.network.project_network_cidr)[6]
         )
         vip_body = {"virtual_ip_address": str(vip_ip_address),
-                    "subnet_id": self.subnets[1]['id'],
+                    "subnet_id": self.subnet_l3['id'],
                     "redirect_target_id": rt['nuage_redirect_target']['id']}
 
         self.client.create_redirection_target_vip(**vip_body)
@@ -533,7 +536,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
                                            with_external_id=external_id)
 
         # Associating port to Redirect Target
-        rtport = self.create_port(self.networks[1])
+        rtport = self.create_port(self.network_l3)
         self.addCleanup(self.ports_client.delete_port, rtport['id'])
         self._assign_unassign_rt_port(rtport, rt, 'subnets', vsd_subnet[0])
 

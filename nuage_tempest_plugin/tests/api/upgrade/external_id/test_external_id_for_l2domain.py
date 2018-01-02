@@ -332,21 +332,11 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
             build_timeout=CONF.network.build_timeout,
             **cls.os_primary.default_params)
 
-    def _delete_network(self, network):
-        # Deleting network also deletes its subnets if exists
-        self.networks_client.delete_network(network['id'])
-        if network in self.networks:
-            self.networks.remove(network)
-        for subnet in self.subnets:
-            if subnet['network_id'] == network['id']:
-                self.subnets.remove(subnet)
-
     @nuage_test.header()
     def test_neutron_isolated_subnet_matches_to_l2domain(self):
         # Create a network
         name = data_utils.rand_name('network-')
         network = self.create_network(network_name=name)
-        self.addCleanup(self._delete_network, network)
         self.assertEqual('ACTIVE', network['status'])
 
         # Create a subnet
@@ -417,14 +407,12 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
         # Create a network 1 in netpartition A
         name = data_utils.rand_name('networkA1')
         network_a1 = self.create_network(network_name=name)
-        self.addCleanup(self._delete_network, network_a1)
         subnet_a1 = self.create_subnet(network_a1,
                                        net_partition=netpartition_a['name'])
 
         # Create a network 2 in netpartition A
         name = data_utils.rand_name('networkA2')
         network_a2 = self.create_network(network_name=name)
-        self.addCleanup(self._delete_network, network_a2)
         subnet_a2 = self.create_subnet(network_a2,
                                        net_partition=netpartition_a['name'])
         self.assertIsNotNone(subnet_a2)  # dummy check to use local variable
@@ -432,7 +420,6 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
         # Create a network 1 in netpartition B
         name = data_utils.rand_name('networkB1')
         network_b1 = self.create_network(network_name=name)
-        self.addCleanup(self._delete_network, network_b1)
         subnet_b1 = self.create_subnet(network_b1,
                                        net_partition=netpartition_b['name'])
 
@@ -480,15 +467,6 @@ class ExternalIdForL2domainAdminTest(ExternalIdForL2domainTest):
         cls.admin_routers_client = cls.os_admin.routers_client
         cls.admin_subnets_client = cls.os_admin.subnets_client
 
-    def _delete_network(self, network):
-        # Deleting network also deletes its subnets if exists
-        self.admin_networks_client.delete_network(network['id'])
-        if network in self.networks:
-            self.networks.remove(network)
-        for subnet in self.subnets:
-            if subnet['network_id'] == network['id']:
-                self.subnets.remove(subnet)
-
     @nuage_test.header()
     def test_neutron_isolated_shared_subnet_matches_to_l2domain(self):
         # Create a network
@@ -497,7 +475,6 @@ class ExternalIdForL2domainAdminTest(ExternalIdForL2domainTest):
         body = self.os_admin.networks_client.create_network(
             name=name, shared=True)
         network = body['network']
-        self.addCleanup(self._delete_network, network)
         self.assertEqual('ACTIVE', network['status'])
 
         # Create a subnet

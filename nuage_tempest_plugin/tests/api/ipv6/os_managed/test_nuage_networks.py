@@ -45,7 +45,6 @@ class NuageNetworksIpV6Test(tempest_test_networks.NetworksIpV6Test):
 
     def test_update_subnet_gw_dns_host_routes_dhcp(self):
         network = self.create_network()
-        self.addCleanup(self._delete_network, network)
 
         ipv4_subnet = self.create_subnet(network,
                                          ip_version=4,

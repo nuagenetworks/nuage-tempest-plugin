@@ -193,7 +193,6 @@ class NetworksTestJSONNuage(test_networks.NetworksTest):
 
         self._compare_resource_attrs(subnet, compare_args)
         self.networks_client.delete_network(net_id)
-        self.networks.pop()
         self.subnets.pop()
 
     @decorators.attr(type='smoke')

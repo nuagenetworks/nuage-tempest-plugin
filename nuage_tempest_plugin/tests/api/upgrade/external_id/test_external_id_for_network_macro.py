@@ -110,15 +110,6 @@ class ExternalIdForNetworkMacroTest(base.BaseAdminNetworkTest):
         netpartition = body['net_partition']
         return netpartition
 
-    def _delete_network(self, network):
-        # Deleting network also deletes its subnets if exists
-        self.networks_client.delete_network(network['id'])
-        if network in self.networks:
-            self.networks.remove(network)
-        for subnet in self.subnets:
-            if subnet['network_id'] == network['id']:
-                self.subnets.remove(subnet)
-
     @testtools.skipUnless(Release('4.0R5') <= Release(Topology.nuage_release),
                           'No upgrade testing on network macro')
     @nuage_test.header()
@@ -131,7 +122,6 @@ class ExternalIdForNetworkMacroTest(base.BaseAdminNetworkTest):
         # Create a network 1 in netpartition A
         name = data_utils.rand_name('networkA1')
         network_a1 = self.create_network(network_name=name)
-        self.addCleanup(self._delete_network, network_a1)
         subnet_a1 = self.create_subnet(
             network_a1, net_partition=netpartition_b['name'])
         self.assertIsNotNone(subnet_a1)  # dummy check to use local variable
