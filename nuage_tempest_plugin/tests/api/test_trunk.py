@@ -237,7 +237,8 @@ class TrunkTestJSON(TrunkTestJSONBase):
         trunk = self._create_trunk_with_network_and_parent(subports)
         mac = self._get_random_mac('fa:16:3e:00:00:00'.split(':'))
         update_data = {'mac_address': mac}
-        updated_port = self.update_port(port, **update_data)
-        observed_subports = trunk['sub_ports']
+        updated_port = self.admin_ports_client.update_port(port['id'],
+                                                           **update_data)
+        observed_subports = trunk['trunk']['sub_ports']
         self.assertEqual(1, len(observed_subports))
-        self.assertEqual(updated_port['mac_address'], mac)
+        self.assertEqual(updated_port['port']['mac_address'], mac)
