@@ -117,41 +117,33 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
         self.assertEqual(subnet['cidr'], str(cidr))
         self.assertTrue(self._verify_vm_ip(network['id'], net_name))
 
-    # @nuage_test.header(tags=['smoke'])
-    # OPENSTACK-1809
-    # this test fails already at create_subnet  (at least with core plugin)
-    # because L2domaintemplate is made with 'gateway' 10.10.100.1.
-    # however in our mapping of L2domains to subnets in openstack,
-    # gateway  is 3: router  DHCP option.
-    # The test wrongly believes a L2 domain on VSD is made with gateway,
-    # and will try to make subnet in openstack with that gateway,
-    # but in plugin this is on VSD a subnet with --no-gateway as the
-    # router option is not set.
-    # TODO(FIXME) - FIX TEST AND TAKE OUT FIXME prefix which i added
-    def FIXME_test_link_subnet_l2_allocation_pool(self):
+    @nuage_test.header(tags=['smoke'])
+    def test_link_subnet_l2_allocation_pool(self):
         # create l2domain on VSD
         name = data_utils.rand_name('l2domain-')
         cidr = IPNetwork('10.10.100.0/24')
+        dhcp_port = '10.10.100.1'
         vsd_l2dom_tmplt = self.create_vsd_dhcpmanaged_l2dom_template(
-            name=name, cidr=cidr, gateway='10.10.100.1')
+            name=name, cidr=cidr, gateway=dhcp_port)
         vsd_l2dom = self.create_vsd_l2domain(name=name,
-                                             tid=vsd_l2dom_tmplt[0]['ID'])
+                                             tid=vsd_l2dom_tmplt[0]['ID'])[0]
+        self.assertEqual(vsd_l2dom['name'], name)
 
-        self.assertEqual(vsd_l2dom[0][u'name'], name)
-        # create subnet on OS with nuagenet param set to l2domain UUID
+        # network
         net_name = data_utils.rand_name('network-')
         network = self.create_network(network_name=net_name)
 
+        # vsd mgd subnet
         start_ip = IPAddress(cidr) + 3
         end_ip = IPAddress(cidr) + 5
         pool_dict = [{'start': start_ip, 'end': end_ip}]
 
         subnet = self.create_subnet(
             network, cidr=cidr, mask_bits=24,
-            gateway=vsd_l2dom[0]['gateway'],
+            gateway=None,  # as no DHCP option 3 set on VSD
             allocation_pools=pool_dict,
-            nuagenet=vsd_l2dom[0]['ID'],
-            net_partition=Topology.def_netpartition)  # fails here
+            nuagenet=vsd_l2dom['ID'],
+            net_partition=Topology.def_netpartition)
         self.assertEqual(subnet['cidr'], str(cidr))
         pool = subnet['allocation_pools'][0]
         self.assertEqual(pool['start'], start_ip.format())
