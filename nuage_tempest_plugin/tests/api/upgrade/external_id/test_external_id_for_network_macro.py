@@ -18,6 +18,7 @@ from oslo_log import log as logging
 from tempest.api.network import base as base
 from tempest import config
 from tempest.lib.common.utils import data_utils
+from tempest.lib.common.utils import test_utils
 
 import testtools
 
@@ -108,6 +109,11 @@ class ExternalIdForNetworkMacroTest(base.BaseAdminNetworkTest):
 
         body = cls.nuage_network_client.create_netpartition(name)
         netpartition = body['net_partition']
+
+        cls.addClassResourceCleanup(
+            test_utils.call_and_ignore_notfound_exc,
+            cls.nuage_network_client.delete_netpartition,
+            netpartition['id'])
         return netpartition
 
     @testtools.skipUnless(Release('4.0R5') <= Release(Topology.nuage_release),
@@ -116,8 +122,6 @@ class ExternalIdForNetworkMacroTest(base.BaseAdminNetworkTest):
     def test_network_macro_matches_to_enterprise(self):
         # Create a dedicated netpartition
         netpartition_b = self._create_netpartition()
-        self.addCleanup(self.nuage_network_client.delete_netpartition,
-                        netpartition_b['id'])
 
         # Create a network 1 in netpartition A
         name = data_utils.rand_name('networkA1')
