@@ -11,6 +11,8 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+from netaddr import IPNetwork
+
 import testtools
 from testtools import matchers
 
@@ -20,6 +22,7 @@ from tempest.lib.common.utils import data_utils
 from nuage_tempest_plugin.lib.mixins import l3
 from nuage_tempest_plugin.lib.mixins import net_topology as topology_mixin
 from nuage_tempest_plugin.lib.mixins import network as network_mixin
+from nuage_tempest_plugin.lib.topology import Topology as PluginTopology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
@@ -27,7 +30,8 @@ CONF = config.CONF
 
 
 class Topology(object):
-    def __init__(self, vsd_client, network, subnet, router, port, subnetv6):
+    def __init__(self, vsd_client, network, subnet, router, port, subnetv6,
+                 l2domain=None):
         super(Topology, self).__init__()
         self.vsd_client = vsd_client
         self.network = network
@@ -36,6 +40,22 @@ class Topology(object):
         self.normal_port = port
         self.direct_port = None
         self.subnetv6 = subnetv6
+        self.vsd_managed = l2domain is not None
+
+        self.gw_port = None
+        self.binding_data = None
+
+        self._vsd_vport_parent = l2domain
+        self._vsd_vport_parent_resource = None
+        self._vsd_direct_vport = None
+        self._vsd_domain = None
+        self._vsd_domain_resource = None
+        self._vsd_policygroups = None
+        self._vsd_direct_interface_resource = None
+        self._vsd_direct_interface = None
+        self._vsd_egress_acl_templates = None
+        self._vsd_egress_acl_entries = None
+        self._vsd_direct_dhcp_opts = None
 
     @property
     def vsd_vport_parent(self):
@@ -172,10 +192,21 @@ class PortsDirectTest(network_mixin.NetworkMixin,
             data_utils.rand_name(name='vsg'),
             data_utils.rand_name(name='sys_id'), 'VSG')[0]
 
+        # for VSD managed
+        cls.vsd_l2dom_template = []
+        cls.vsd_l2domain = []
+
     @classmethod
     def resource_cleanup(cls):
         super(PortsDirectTest, cls).resource_cleanup()
         cls.vsd_client.delete_gateway(cls.gateway['ID'])
+
+        for vsd_l2domain in cls.vsd_l2domain:
+            cls.vsd_client.delete_l2domain(vsd_l2domain['ID'])
+
+        for vsd_l2dom_template in cls.vsd_l2dom_template:
+            cls.vsd_client.delete_l2domaintemplate(
+                vsd_l2dom_template['ID'])
 
     def setUp(self):
         super(PortsDirectTest, self).setUp()
@@ -190,6 +221,8 @@ class PortsDirectTest(network_mixin.NetworkMixin,
                 "physical_network": "physnet1",
                 "pci_vendor_info": "8086:10ed"
             }}
+
+    # os managed
 
     def test_direct_port_l3_create(self):
         topology = self._create_topology(with_router=True)
@@ -223,6 +256,18 @@ class PortsDirectTest(network_mixin.NetworkMixin,
         topology = self._create_topology(with_router=False, dualstack=True)
         self._test_direct_port(topology, update=True)
 
+    # vsd managed
+
+    def test_vsd_mgd_direct_port_l2_create(self):
+        topology = self._create_topology(vsd_managed=True)
+        self._test_direct_port(topology)
+
+    def test_vsd_mgd_direct_port_l2_update(self):
+        topology = self._create_topology(vsd_managed=True)
+        self._test_direct_port(topology)
+
+    # l3 .. skipped
+
     @testtools.skip("Currently unknown how to trigger vport resolution")
     def test_router_attach(self):
         topology = self._create_topology(with_router=False)
@@ -231,6 +276,8 @@ class PortsDirectTest(network_mixin.NetworkMixin,
         with self.router(attached_subnets=[topology.subnet['id']]) as router:
             topology.router = router
             self._validate_vsd(topology)
+
+    # other
 
     def test_bind_dead_agent(self):
         topology = self._create_topology(with_router=False)
@@ -266,10 +313,31 @@ class PortsDirectTest(network_mixin.NetworkMixin,
                     message="Port has unexpected vif_type")
 
     def _create_topology(self, with_router=False,
-                         with_port=False, dualstack=False):
-        router = port = subnetv6 = None
+                         with_port=False, dualstack=False, vsd_managed=False):
+        assert (not with_router or not vsd_managed)  # but not both
+        assert (not dualstack or not vsd_managed)  # initially not both (later)
+
+        vsd_l2dom = router = port = subnetv6 = None
+        cidr = IPNetwork('10.20.30.0/24')
+
+        if vsd_managed:
+            name = data_utils.rand_name('l2domain-')
+            params = {
+                'DHCPManaged': True,
+                'address': str(cidr.ip),
+                'netmask': str(cidr.netmask),
+                'gateway': str(cidr[1])
+            }
+            vsd_l2dom_tmplt = self.vsd_client.create_l2domaintemplate(
+                name + '-template', extra_params=params)[0]
+            self.vsd_l2dom_template.append(vsd_l2dom_tmplt)
+            vsd_l2dom = self.vsd_client.create_l2domain(
+                name, templateId=vsd_l2dom_tmplt['ID'])[0]
+            self.vsd_l2domain.append(vsd_l2dom)
+
         if with_router:
             router = self.create_router()
+
         kwargs = {'segments': [
             {"provider:network_type": "vxlan"},
             {"provider:network_type": "vlan",
@@ -277,13 +345,23 @@ class PortsDirectTest(network_mixin.NetworkMixin,
              "provider:segmentation_id": "123"}
         ]}
         network = self.create_network(**kwargs)
-        subnet = self.create_subnet('10.20.30.0/24', network['id'])
+
+        kwargs = {
+            'gateway_ip': None,
+            'nuagenet': vsd_l2dom['ID'],
+            'net_partition': PluginTopology.def_netpartition
+        } if vsd_managed else {}
+        subnet = self.create_subnet('10.20.30.0/24', network['id'], **kwargs)
+        assert subnet
+
         if dualstack:
             kwargs = {'ipv6_ra_mode': 'dhcpv6-stateful',
                       'ipv6_address_mode': 'dhcpv6-stateful'}
             subnetv6 = self.create_subnet('a1ca:c10d:1111:1111::/64',
                                           network['id'],
                                           **kwargs)
+            assert subnetv6
+
         if with_router:
             self.add_router_interface(router['id'], subnet_id=subnet['id'])
             if dualstack:
@@ -292,7 +370,7 @@ class PortsDirectTest(network_mixin.NetworkMixin,
         if with_port:
             port = self.create_port(network['id'])
         return Topology(self.vsd_client, network,
-                        subnet, router, port, subnetv6)
+                        subnet, router, port, subnetv6, vsd_l2dom)
 
     def _test_direct_port(self, topology, update=False):
         create_data = {'binding:vnic_type': 'direct',
@@ -321,7 +399,9 @@ class PortsDirectTest(network_mixin.NetworkMixin,
         self._validate_direct_vport(topology)
         self._validate_vlan(topology)
         self._validate_interface(topology)
-        self._validate_policygroup(topology, pg_name='defaultPG-VSG-BRIDGE')
+        if not topology.vsd_managed:
+            self._validate_policygroup(
+                topology, pg_name='defaultPG-VSG-BRIDGE')
 
     def _validate_direct_vport(self, topology):
         self.assertThat(topology.vsd_direct_vport['type'],
