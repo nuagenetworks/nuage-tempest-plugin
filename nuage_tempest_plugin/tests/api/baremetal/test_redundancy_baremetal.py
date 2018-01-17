@@ -121,6 +121,21 @@ class BaremetalRedcyTest(network_mixin.NetworkMixin,
 
         }
 
+    dhcp_agent_present = None
+
+    def is_dhcp_agent_present(self):
+        if self.dhcp_agent_present is None:
+            agents = self.os_admin.network_agents_client.list_agents()\
+                .get('agents')
+            if agents:
+                self.dhcp_agent_present = any(
+                    agent for agent in agents if agent['alive'] and
+                    agent['binary'] == 'neutron-dhcp-agent')
+            else:
+                self.dhcp_agent_present = False
+
+        return self.dhcp_agent_present
+
     def test_baremetal_redcy_l3_create(self):
         topology = self._create_topology(with_router=True)
         self._test_redundancy_port(topology, update=False)
@@ -261,6 +276,8 @@ class BaremetalRedcyTest(network_mixin.NetworkMixin,
             expected_pgs = 2  # Expecting software + hardware
         else:
             expected_pgs = 1  # Expecting only hardware
+        if self.is_dhcp_agent_present():
+            expected_pgs += 1  # Extra PG for dhcp agent
         self.assertThat(topology.vsd_policygroups,
                         matchers.HasLength(expected_pgs),
                         message="Unexpected amount of PGs found")
