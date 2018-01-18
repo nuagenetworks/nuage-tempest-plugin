@@ -59,6 +59,8 @@ class NuageFeatures(object):
             self.project_name_in_user_group_description = (
                 self.current_release >= Release('5.1'))
             self.vsd_shared_infrastructure = True
+            self.stateless_securitygroups = (
+                self.current_release >= Release('5.2.2'))
 
     def _log_features(self):
         LOG.info("FEATURES:")
@@ -76,6 +78,8 @@ class NuageFeatures(object):
                  format(self.os_managed_dualstack_subnets))
         LOG.info("vsd_shared_infrastructure        : {}".
                  format(self.vsd_shared_infrastructure))
+        LOG.info("stateless_securitygroups         : {}".
+                 format(self.stateless_securitygroups))
 
     def __init__(self):
         """Initialize a feature set"""
@@ -90,6 +94,7 @@ class NuageFeatures(object):
         self.os_managed_dualstack_subnets = False
         self.vsd_shared_infrastructure = False
         self.ipv6_enabled = CONF.network_feature_enabled.ipv6
+        self.stateless_securitygroups = False
 
         self._set_features()
         self._log_features()

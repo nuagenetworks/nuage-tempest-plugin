@@ -527,6 +527,33 @@ class RemoteCliBaseTestCase(ssh_cli.ClientTestBase):
         self.security_groups.append(security_group)
         return security_group
 
+    def update_security_group_with_args(self, *args):
+        """Wrapper utility that returns a test security group."""
+        the_params = ''
+        for arg in args:
+            the_params += ' '
+            the_params += arg
+
+        response = self.cli.neutron('security-group-update',
+                                    params=the_params)
+
+        self.assertFirstLineStartsWith(response.split('\n'),
+                                       'Updated security_group:')
+        security_group = self.parser.details(response)
+        return security_group
+
+    def show_security_group(self, sg_id):
+        response = self.cli.neutron('security-group-show', params=sg_id)
+        security_group = self.parser.details(response)
+        self.assertEqual(security_group['id'], sg_id)
+        return security_group
+
+    def delete_security_group(self, sg_id):
+        response = self.cli.neutron('security-group-delete', params=sg_id)
+        self.assertFirstLineStartsWith(response.split('\n'),
+                                       'Deleted security_group(s)')
+        self.assertIn(sg_id, response)
+
     def create_security_group_rule_with_args(self, *args):
         """Wrapper utility that returns a test security group rule."""
         the_params = ''
