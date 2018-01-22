@@ -191,6 +191,7 @@ class Ipv4ConnectivityTest(NuageBaseTest):
 
     @testtools.skipIf(not Topology.run_connectivity_tests(),
                       'Connectivity tests are disabled.')
+    @decorators.attr(type='smoke')
     def test_icmp_connectivity_vsd_managed_l3_domain(self):
         # Provision VSD managed network resources
         vsd_l3domain_template = self.vsd.create_l3domain_template()

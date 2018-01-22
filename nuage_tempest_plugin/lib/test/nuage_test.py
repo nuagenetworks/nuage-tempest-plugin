@@ -303,17 +303,17 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         return body['subnet']
 
     def create_l2_vsd_managed_subnet(self, network, vsd_l2domain, ip_version=4,
-                                     dhcp_managed=True):
+                                     dhcp_managed=True, dhcp_option_3=None):
         if not isinstance(vsd_l2domain, self.vsd.vspk.NUL2Domain):
             self.fail("Must have an VSD L2 domain")
 
         if ip_version == 4:
             cidr = IPNetwork(vsd_l2domain.address + "/" +
-                             vsd_l2domain.netmask),
-            gateway = vsd_l2domain.gateway,
+                             vsd_l2domain.netmask)
+            gateway = dhcp_option_3
         elif ip_version == 6:
-            gateway = vsd_l2domain.ipv6_gateway,
-            cidr = IPNetwork(vsd_l2domain.ipv6_address),
+            gateway = None
+            cidr = IPNetwork(vsd_l2domain.ipv6_address)
         else:
             self.fail("IP version {} is not supported".format(ip_version))
 
@@ -321,9 +321,9 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             network,
             enable_dhcp=dhcp_managed,
             ip_version=ip_version,
-            cidr=cidr[0],
-            mask_bits=cidr[0].prefixlen,
-            gateway=gateway[0],
+            cidr=cidr,
+            mask_bits=cidr.prefixlen,
+            gateway=gateway,
             nuagenet=vsd_l2domain.id,
             net_partition=vsd_l2domain.parent_object.name)
 
@@ -335,11 +335,11 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             self.fail("Must have an VSD L3 subnet")
 
         if ip_version == 4:
-            cidr = IPNetwork(vsd_subnet.address + "/" + vsd_subnet.netmask),
-            gateway = vsd_subnet.gateway,
+            cidr = IPNetwork(vsd_subnet.address + "/" + vsd_subnet.netmask)
+            gateway = vsd_subnet.gateway
         elif ip_version == 6:
-            gateway = vsd_subnet.ipv6_gateway,
-            cidr = IPNetwork(vsd_subnet.ipv6_address),
+            gateway = vsd_subnet.ipv6_gateway
+            cidr = IPNetwork(vsd_subnet.ipv6_address)
         else:
             self.fail("IP version {} is not supported".format(ip_version))
 
@@ -351,9 +351,9 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             network,
             enable_dhcp=dhcp_managed,
             ip_version=ip_version,
-            cidr=cidr[0],
-            mask_bits=cidr[0].prefixlen,
-            gateway=gateway[0],
+            cidr=cidr,
+            mask_bits=cidr.prefixlen,
+            gateway=gateway,
             nuagenet=vsd_subnet.id,
             net_partition=net_partition)
 
@@ -507,7 +507,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             port_id, ip4 = self._get_server_port_id_and_ip4(server)
 
         floatingip_subnet_id = self.osc_list_networks(
-            id=external_network_id)[0]['subnets'][0]['id']
+            id=external_network_id)[0]['subnets'][0]
         shared_network_resource_id = self.vsd.get_shared_network_resource(
             by_fip_subnet_id=floatingip_subnet_id).id
         # Create floating ip

@@ -973,7 +973,7 @@ class VsdHelper(object):
                     filter=vspk_filter)
         elif by_fip_subnet_id:
             shared_network_resource = self.get_shared_network_resource(
-                by_fip_subnet_id=self.get_external_id_filter(by_fip_subnet_id))
+                self.get_external_id_filter(by_fip_subnet_id))
         else:
             LOG.error('a qualifier is required')
             return None
