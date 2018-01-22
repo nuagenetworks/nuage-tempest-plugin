@@ -41,9 +41,7 @@ class Topology(object):
 
     @staticmethod
     def run_connectivity_tests():
-        # temporary exclusion of connectivity tests in none-single worker runs
-        return (Topology.is_devstack() and
-                Topology.single_worker_run())  # TODO(Kris) make True
+        return Topology.is_devstack()
 
     @staticmethod
     def telnet_console_access_to_vm_enabled():
