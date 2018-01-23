@@ -6,6 +6,7 @@ from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
 
 from tempest import config
+from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.utils import constants
@@ -20,6 +21,7 @@ CONF = config.CONF
 VALID_MAC_ADDRESS = 'fa:fa:3e:e8:e8:01'
 VALID_MAC_ADDRESS_2A = 'fa:fa:3e:e8:e8:2a'
 VALID_MAC_ADDRESS_2B = 'fa:fa:3e:e8:e8:2b'
+IPv6_SUBNET_RANDOM = 'fee::'
 
 ###############################################################################
 ###############################################################################
@@ -42,30 +44,25 @@ class VSDManagedAllowedAddresPairsTest(NetworkTestCaseMixin,
         super(VSDManagedAllowedAddresPairsTest, cls).resource_setup()
 
         cls.port_configs = {
-            # AAP is single IP address
-            'case-no-aap': {  # no fixed-ips, no allowed address pairs
-                'fixed-ips': [],
-                'allowed-address-pairs': [],
-                'IPV4-VIP': False,
-                'l2-disable-anti-spoofing': False,
-                'l3-disable-anti-spoofing': False},
             'case-no-aap-fixed-ip4-no-ip6': {  # no fixed-ips, no aap
                 'fixed-ips': [],
                 'allowed-address-pairs': [],
                 'IPV4-VIP': False,
                 'l2-disable-anti-spoofing': False,
-                'l3-disable-anti-spoofing': False},
+                'l3-disable-anti-spoofing': False,
+                'vip-created-on-vsd': False},
             'case-aap-ipv4': {
                 'fixed-ips': [
-                    {'ip_address': str(IPAddress(cls.cidr4.first) + 2)},
-                    {'ip_address': str(IPAddress(cls.cidr6.first) + 2)}
+                    {'ip_address': str(IPAddress(cls.cidr4.first) + 12)},
+                    {'ip_address': str(IPAddress(cls.cidr6.first) + 12)}
                 ],
                 'allowed-address-pairs': [
                     {'ip_address': str(IPAddress(cls.cidr4.first) + 10)}
                 ],
                 'IPV4-VIP': False,
                 'l2-disable-anti-spoofing': True,
-                'l3-disable-anti-spoofing': False},
+                'l3-disable-anti-spoofing': False,
+                'vip-created-on-vsd': True},
             'case-aap-ipv6': {
                 'fixed-ips': [
                     {'ip_address': str(IPAddress(cls.cidr4.first) + 3)},
@@ -76,7 +73,8 @@ class VSDManagedAllowedAddresPairsTest(NetworkTestCaseMixin,
                 ],
                 'IPV4-VIP': False,
                 'l2-disable-anti-spoofing': True,
-                'l3-disable-anti-spoofing': True},
+                'l3-disable-anti-spoofing': False,
+                'vip-created-on-vsd': True},
             'case-aap-ipv4-ipv6': {
                 'fixed-ips': [
                     {'ip_address': str(IPAddress(cls.cidr4.first) + 4)},
@@ -87,7 +85,8 @@ class VSDManagedAllowedAddresPairsTest(NetworkTestCaseMixin,
                     {'ip_address': str(IPAddress(cls.cidr6.first) + 10)}],
                 'IPV4-VIP': False,
                 'l2-disable-anti-spoofing': True,
-                'l3-disable-anti-spoofing': True},
+                'l3-disable-anti-spoofing': False,
+                'vip-created-on-vsd': True},
             'case-aap-ipv4-mac4-ipv6': {
                 'fixed-ips': [
                     {'ip_address': str(IPAddress(cls.cidr4.first) + 5)},
@@ -99,7 +98,8 @@ class VSDManagedAllowedAddresPairsTest(NetworkTestCaseMixin,
                     {'ip_address': str(IPAddress(cls.cidr6.first) + 10)}],
                 'IPV4-VIP': False,
                 'l2-disable-anti-spoofing': True,
-                'l3-disable-anti-spoofing': True},
+                'l3-disable-anti-spoofing': False,
+                'vip-created-on-vsd': True},
             'case-aap-ipv4-ipv6-mac6': {
                 'fixed-ips': [
                     {'ip_address': str(IPAddress(cls.cidr4.first) + 6)},
@@ -111,7 +111,8 @@ class VSDManagedAllowedAddresPairsTest(NetworkTestCaseMixin,
                      'mac_address': VALID_MAC_ADDRESS_2B}],
                 'IPV4-VIP': False,
                 'l2-disable-anti-spoofing': True,
-                'l3-disable-anti-spoofing': True},
+                'l3-disable-anti-spoofing': False,
+                'vip-created-on-vsd': True},
             'case-aap-ipv4-mac4-ipv6-mac6': {
                 'fixed-ips': [
                     {'ip_address': str(IPAddress(cls.cidr4.first) + 7)},
@@ -124,7 +125,8 @@ class VSDManagedAllowedAddresPairsTest(NetworkTestCaseMixin,
                      'mac_address': VALID_MAC_ADDRESS_2B}],
                 'IPV4-VIP': False,
                 'l2-disable-anti-spoofing': True,
-                'l3-disable-anti-spoofing': True},
+                'l3-disable-anti-spoofing': False,
+                'vip-created-on-vsd': True},
             # AAP is a range of IP addresses
             'case-aap-ipv4-range': {
                 # AAP for range of IPv4 addresses
@@ -138,8 +140,36 @@ class VSDManagedAllowedAddresPairsTest(NetworkTestCaseMixin,
                     {'ip_address': str(IPAddress(cls.cidr6.first) + 10)}],
                 'IPV4-VIP': False,
                 'l2-disable-anti-spoofing': True,
-                'l3-disable-anti-spoofing': True}
-        }
+                'l3-disable-anti-spoofing': True,
+                'vip-created-on-vsd': False},
+            # AAP is a range of IP addresses
+            'case-aap-ipv4-ipv6-range': {
+                # AAP for range of IPv6 addresses
+                # AAP for range of  IPv4 address
+                'fixed-ips': [
+                    {'ip_address': str(IPAddress(cls.cidr4.first) + 8)},
+                    {'ip_address': str(IPAddress(cls.cidr6.first) + 8)}
+                ],
+                'allowed-address-pairs': [
+                    {'ip_address': str(cls.cidr4.subnet(24, 1).next())},
+                    {'ip_address': str(cls.cidr6.subnet(64, 1).next())}],
+                'IPV4-VIP': False,
+                'l2-disable-anti-spoofing': True,
+                'l3-disable-anti-spoofing': True,
+                'vip-created-on-vsd': False},
+            'case-aap-ipv6-different-cidr': {
+                'fixed-ips': [
+                    {'ip_address': str(IPAddress(cls.cidr4.first) + 7)},
+                    {'ip_address': str(IPAddress(cls.cidr6.first) + 7)}
+                ],
+                'allowed-address-pairs': [
+                    {'ip_address': str(IPAddress(IPv6_SUBNET_RANDOM) + 10),
+                     'mac_address': VALID_MAC_ADDRESS}],
+                'IPV4-VIP': False,
+                'l2-disable-anti-spoofing': True,
+                'l3-disable-anti-spoofing': True,
+                'vip-created-on-vsd': False},
+            }
 
     def _has_ipv6_allowed_address_pairs(self, allowed_address_pairs):
         has_ipv6 = False
@@ -217,24 +247,32 @@ class VSDManagedAllowedAddresPairsTest(NetworkTestCaseMixin,
                                           Equals(expected_address_spoofing)}),
                             'Scenario %s expected %s.' % (
                                 scenario, expected_address_spoofing))
+            if (port_config['vip-created-on-vsd'] and
+                    vsd_subnet_type == nuage_constants.SUBNETWORK):
+                self._verify_vip(nuage_vport, port)
         finally:
             self.ports_client.delete_port(port['id'])
 
-    @nuage_test.header()
-    def test_provision_port_without_address_pairs_in_l2_subnet_unmanaged(self):
-        # Given I have a VSD-L2-Unmanaged subnet
-        vsd_l2_subnet = self._given_vsd_l2domain(dhcp_managed=False)
-        network, subnet4, subnet6 = self._given_network_linked_to_vsd_subnet(
-            vsd_l2_subnet, cidr4=self.cidr4, cidr6=self.cidr6,
-            enable_dhcp=False)
+    def _verify_vip(self, nuage_vport, port):
+        for aap in port['allowed_address_pairs']:
+            ip_address = aap['ip_address']
+            nuage_vip = self.nuage_vsd_client.get_virtual_ip(
+                constants.VPORT,
+                nuage_vport['ID'],
+                filters='virtualIP',
+                filter_value=str(ip_address))
+            self._verify_port_allowed_address_fields(
+                aap, nuage_vip[0]['virtualIP'], nuage_vip[0]['MAC'])
 
-        # scenario = "case-no-aap"  # see OPENSTACK-1669
-        # scenario = "case-aap-ipv4-range"  # see OPENSTACK-1670
-        scenario = "case-aap-ipv6"
-        self._check_crud_port(scenario, network, subnet4, subnet6,
-                              vsd_l2_subnet, nuage_constants.L2_DOMAIN)
+    def _verify_port_allowed_address_fields(self, aap,
+                                            addrpair_ip, addrpair_mac):
+        ip_address = aap['ip_address']
+        mac_address = aap['mac_address']
+        self.assertEqual(ip_address, addrpair_ip)
+        self.assertEqual(mac_address, addrpair_mac)
 
     @nuage_test.header()
+    @decorators.attr(type='smoke')
     def test_provision_ports_without_address_pairs_in_l2_subnet_unmanaged(
             self):
         # Given I have a VSD-L2-Unmanaged subnet
@@ -249,20 +287,7 @@ class VSDManagedAllowedAddresPairsTest(NetworkTestCaseMixin,
                                   vsd_l2_subnet, nuage_constants.L2_DOMAIN)
 
     @nuage_test.header()
-    def test_provision_port_without_address_pairs_in_l3_subnet(self):
-        # Given I have a VSD-L3-Managed subnet
-        vsd_l3_domain, vsd_l3_subnet = self._given_vsd_l3subnet(
-            cidr4=self.cidr4, cidr6=self.cidr6)
-        network, subnet4, subnet6 = self._given_network_linked_to_vsd_subnet(
-            vsd_l3_subnet, cidr4=self.cidr4, cidr6=self.cidr6)
-
-        # scenario = "case-no-aap"
-        scenario = "case-no-aap-fixed-ip4-no-ip6"
-        # scenario = "case-aap-ipv4-range"
-        self._check_crud_port(scenario, network, subnet4, subnet6,
-                              vsd_l3_subnet, nuage_constants.SUBNETWORK)
-
-    @nuage_test.header()
+    @decorators.attr(type='smoke')
     def test_provision_ports_with_address_pairs_in_l3_subnet(self):
         # Given I have a VSD-L3-Managed subnet - dhcp-managed
         vsd_l3_domain, vsd_l3_subnet = self._given_vsd_l3subnet(
