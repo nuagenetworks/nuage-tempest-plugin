@@ -39,8 +39,6 @@ class BaseOrchestrationTest(tempest.test.BaseTestCase):
     @classmethod
     def skip_checks(cls):
         super(BaseOrchestrationTest, cls).skip_checks()
-        if not CONF.service_available.heat:
-            raise cls.skipException("Heat support is required")
 
     @classmethod
     def setup_clients(cls):
@@ -49,11 +47,10 @@ class BaseOrchestrationTest(tempest.test.BaseTestCase):
         # add ourselves for now as was removed upstream
         cls.orchestration_client = orchestration.OrchestrationClient(
             cls.os_admin.auth_provider,
-            CONF.orchestration.catalog_type,
-            CONF.orchestration.region or CONF.identity.region,
-            endpoint_type=CONF.orchestration.endpoint_type,
-            build_interval=CONF.orchestration.build_interval,
-            build_timeout=CONF.orchestration.build_timeout,
+            CONF.heat_plugin.catalog_type,
+            CONF.heat_plugin.region or CONF.identity.region,
+            build_interval=CONF.heat_plugin.build_interval,
+            build_timeout=CONF.heat_plugin.build_timeout,
             **cls.os_admin.default_params)
 
         cls.client = cls.orchestration_client
@@ -66,8 +63,8 @@ class BaseOrchestrationTest(tempest.test.BaseTestCase):
     @classmethod
     def resource_setup(cls):
         super(BaseOrchestrationTest, cls).resource_setup()
-        cls.build_timeout = CONF.orchestration.build_timeout
-        cls.build_interval = CONF.orchestration.build_interval
+        cls.build_timeout = CONF.heat_plugin.build_timeout
+        cls.build_interval = CONF.heat_plugin.build_interval
         cls.stacks = []
         cls.keypairs = []
         cls.images = []

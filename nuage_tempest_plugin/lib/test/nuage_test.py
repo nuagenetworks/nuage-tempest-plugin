@@ -1033,14 +1033,12 @@ class NuageBaseOrchestrationTest(NuageBaseTest):
     @classmethod
     def setup_credentials(cls):
         super(NuageBaseOrchestrationTest, cls).setup_credentials()
-        stack_owner_role = CONF.orchestration.stack_owner_role
+        stack_owner_role = CONF.heat_plugin.admin_username
         cls.os = cls.get_client_manager(roles=[stack_owner_role])
 
     @classmethod
     def skip_checks(cls):
         super(NuageBaseOrchestrationTest, cls).skip_checks()
-        if not CONF.service_available.heat:
-            raise cls.skipException("Heat support is required")
         if not CONF.service_available.neutron:
             raise cls.skipException("Neutron support is required")
 
@@ -1051,11 +1049,10 @@ class NuageBaseOrchestrationTest(NuageBaseTest):
         # add ourselves for now as was removed upstream
         cls.orchestration_client = orchestration.OrchestrationClient(
             cls.os_admin.auth_provider,
-            CONF.orchestration.catalog_type,
-            CONF.orchestration.region or CONF.identity.region,
-            endpoint_type=CONF.orchestration.endpoint_type,
-            build_interval=CONF.orchestration.build_interval,
-            build_timeout=CONF.orchestration.build_timeout,
+            CONF.heat_plugin.catalog_type,
+            CONF.heat_plugin.region or CONF.identity.region,
+            build_interval=CONF.heat_plugin.build_interval,
+            build_timeout=CONF.heat_plugin.build_timeout,
             **cls.os_admin.default_params)
 
         cls.admin_networks_client = cls.os_admin.networks_client
@@ -1065,8 +1062,8 @@ class NuageBaseOrchestrationTest(NuageBaseTest):
     def resource_setup(cls):
         super(NuageBaseOrchestrationTest, cls).resource_setup()
 
-        cls.build_timeout = CONF.orchestration.build_timeout
-        cls.build_interval = CONF.orchestration.build_interval
+        cls.build_timeout = CONF.heat_plugin.build_timeout
+        cls.build_interval = CONF.heat_plugin.build_interval
 
         cls.net_partition_name = CONF.nuage.nuage_default_netpartition
         cls.private_net_name = data_utils.rand_name('heat-network-')

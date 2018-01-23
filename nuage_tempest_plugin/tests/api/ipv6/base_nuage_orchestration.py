@@ -38,7 +38,7 @@ class NuageBaseOrchestrationTest(tempest.test.BaseTestCase):
     @classmethod
     def skip_checks(cls):
         super(NuageBaseOrchestrationTest, cls).skip_checks()
-        if not CONF.service_available.heat:
+        if not CONF.service_available.heat_plugin:
             raise cls.skipException("Heat support is required")
         if not CONF.service_available.neutron:
             raise cls.skipException("Neutron support is required")
@@ -52,11 +52,10 @@ class NuageBaseOrchestrationTest(tempest.test.BaseTestCase):
         # add ourselves for now as was removed upstream
         cls.orchestration_client = orchestration.OrchestrationClient(
             cls.os_admin.auth_provider,
-            CONF.orchestration.catalog_type,
-            CONF.orchestration.region or CONF.identity.region,
-            endpoint_type=CONF.orchestration.endpoint_type,
-            build_interval=CONF.orchestration.build_interval,
-            build_timeout=CONF.orchestration.build_timeout,
+            CONF.heat_plugin.catalog_type,
+            CONF.heat_plugin.region or CONF.identity.region,
+            build_interval=CONF.heat_plugin.build_interval,
+            build_timeout=CONF.heat_plugin.build_timeout,
             **cls.os_admin.default_params)
 
         cls.admin_networks_client = cls.os_admin.networks_client
@@ -66,8 +65,8 @@ class NuageBaseOrchestrationTest(tempest.test.BaseTestCase):
     def resource_setup(cls):
         super(NuageBaseOrchestrationTest, cls).resource_setup()
 
-        cls.build_timeout = CONF.orchestration.build_timeout
-        cls.build_interval = CONF.orchestration.build_interval
+        cls.build_timeout = CONF.heat_plugin.build_timeout
+        cls.build_interval = CONF.heat_plugin.build_interval
 
         cls.net_partition_name = CONF.nuage.nuage_default_netpartition
         cls.private_net_name = data_utils.rand_name('heat-network-')

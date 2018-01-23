@@ -8,7 +8,6 @@ from netaddr import IPNetwork
 
 from tempest import config
 from tempest.lib.common.utils import data_utils
-from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
@@ -26,81 +25,7 @@ LOG = logging.getLogger(__name__)
 class OrchestrationDualStackScaleTest(NuageBaseOrchestrationTest,
                                       NetworkTestCaseMixin,
                                       VsdTestCaseMixin):
-    @decorators.attr(type='slow')
-    @nuage_test.header()
-    def test_link_subnet_to_vsd_l2domain_dhcp_managed_scale_ports(self):
-        """test_link_subnet_to_vsd_l2domain_dhcp_managed_scale_ports
 
-        Test heat creation of a private VSD managed network from
-        dhcp-managed l2 domain template
-
-        OpenStack network is created with minimal attributes.
-        """
-        # create l2domain on VSD
-        vsd_l2domain_template = self.create_vsd_l2domain_template(
-            ip_type="DUALSTACK",
-            dhcp_managed=True,
-            cidr4=self.cidr4,
-            cidr6=self.cidr6,
-            gateway=self.gateway4,
-            gateway6=self.gateway6)
-
-        self._verify_vsd_l2domain_template(vsd_l2domain_template,
-                                           ip_type="DUALSTACK",
-                                           dhcp_managed=True,
-                                           cidr4=self.cidr4,
-                                           cidr6=self.cidr6,
-                                           IPv6Gateway=self.gateway6,
-                                           gateway=self.gateway4)
-
-        vsd_l2domain = self.create_vsd_l2domain(vsd_l2domain_template['ID'])
-        self._verify_vsd_l2domain_with_template(
-            vsd_l2domain, vsd_l2domain_template)
-
-        # launch a heat stack
-        stack_file_name = 'nuage_vsd_managed_network_dualstack'
-        stack_name = data_utils.rand_name('heat-' + stack_file_name)
-        template = self.read_template(stack_file_name)
-
-        ports_template = ""
-        port_template = """  port%s:
-    type: OS::Neutron::Port
-    properties:
-      network: { get_resource: dualstack_net }
-      name: 'dualstack-port'
-      fixed_ips: [ { subnet: { get_resource: subnet4 } },
-                   { subnet: { get_resource: subnet6 } } ]
-"""
-        for i in range(1, 50):
-            ports_template = ports_template + (port_template % i)
-
-        template = template + ports_template
-
-        stack_parameters = {
-            'vsd_subnet_id': vsd_l2domain['ID'],
-            'netpartition_name': self.net_partition_name,
-            'net_name': self.private_net_name,
-            'cidr4': str(self.cidr4),
-            'gateway4': self.gateway4,
-            'maskbits4': self.mask_bits4,
-            'cidr6': str(self.cidr6),
-            'gateway6': self.gateway6,
-            'maskbits6': self.mask_bits6
-        }
-        self.launch_stack_template(stack_name, template, stack_parameters)
-
-        # Verifies created resources
-        expected_resources = ['dualstack_net', 'subnet4', 'subnet6']
-        self.verify_stack_resources(expected_resources,
-                                    self.template_resources,
-                                    self.test_resources)
-
-        # Test network
-        network = self.verify_created_network('dualstack_net')
-        self.verify_created_subnet('subnet4', network)
-        self.verify_created_subnet('subnet6', network)
-
-    @decorators.attr(type='slow')
     @nuage_test.header()
     def test_link_subnet_to_vsd_l2domain_dhcp_managed_scale_vm_in_net(self):
         """test_link_subnet_to_vsd_l2domain_dhcp_managed_scale_vm_in_net
@@ -144,7 +69,7 @@ class OrchestrationDualStackScaleTest(NuageBaseOrchestrationTest,
     depends_on: [subnet4, subnet6]
     properties:
       flavor: m1.tiny
-      image: cirros
+      image: { get_param: image }
       networks:
         - network: { get_resource: dualstack_net }
       user_data: |
@@ -154,7 +79,7 @@ class OrchestrationDualStackScaleTest(NuageBaseOrchestrationTest,
 
 """
 
-        for i in range(1, 100):
+        for i in range(1, 5):
             extra_template = extra_template + (_template % i)
 
         template = template + extra_template
@@ -168,7 +93,8 @@ class OrchestrationDualStackScaleTest(NuageBaseOrchestrationTest,
             'maskbits4': self.mask_bits4,
             'cidr6': str(self.cidr6),
             'gateway6': self.gateway6,
-            'maskbits6': self.mask_bits6
+            'maskbits6': self.mask_bits6,
+            'image': CONF.compute.image_ref
         }
         self.launch_stack_template(stack_name, template, stack_parameters)
 
@@ -183,9 +109,8 @@ class OrchestrationDualStackScaleTest(NuageBaseOrchestrationTest,
         self.verify_created_subnet('subnet4', network)
         self.verify_created_subnet('subnet6', network)
 
-    @decorators.attr(type='slow')
     @nuage_test.header()
-    def test_link_subnet_to_vsd_l3domain_dhcp_managed__scale_ports(self):
+    def test_link_subnet_to_vsd_l3domain_dhcp_managed_scale_ports(self):
         """test_link_subnet_to_vsd_l3domain_dhcp_managed__scale_ports
 
         Test heat creation of a private VSD managed network from
@@ -234,13 +159,12 @@ class OrchestrationDualStackScaleTest(NuageBaseOrchestrationTest,
       fixed_ips: [ { subnet: { get_resource: subnet4 } },
                    { subnet: { get_resource: subnet6 } } ]
 """
-        for i in range(1, 50):
+        for i in range(1, 10):
             ports_template = ports_template + (port_template % i)
 
         template = template + ports_template
 
         # launch a heat stack
-        stack_file_name = 'nuage_vsd_managed_network_dualstack_vm_on_port'
         stack_parameters = {
             'vsd_subnet_id': vsd_l3domain_subnet['ID'],
             'netpartition_name': self.net_partition_name,
@@ -251,7 +175,10 @@ class OrchestrationDualStackScaleTest(NuageBaseOrchestrationTest,
             'cidr6': str(subnet_ipv6_cidr),
             'gateway6': subnet_ipv6_gateway,
             'maskbits6': IPNetwork(
-                vsd_l3domain_subnet['IPv6Address']).prefixlen
+                vsd_l3domain_subnet['IPv6Address']).prefixlen,
+            'pool_start6': str(IPAddress(subnet_ipv6_gateway) + 1),
+            'pool_end6': str(IPAddress(subnet_ipv6_cidr.last)),
+            'image': CONF.compute.image_ref
         }
         self.launch_stack_template(stack_name, template, stack_parameters)
 
@@ -266,7 +193,6 @@ class OrchestrationDualStackScaleTest(NuageBaseOrchestrationTest,
         self.verify_created_subnet('subnet4', network)
         self.verify_created_subnet('subnet6', network)
 
-    @decorators.attr(type='slow')
     @nuage_test.header()
     def test_link_subnet_to_vsd_l3domain_dhcp_managed__scale_vm_in_net(self):
         """test_link_subnet_to_vsd_l3domain_dhcp_managed__scale_vm_in_net
@@ -315,7 +241,7 @@ class OrchestrationDualStackScaleTest(NuageBaseOrchestrationTest,
     depends_on: [subnet4, subnet6]
     properties:
       flavor: m1.tiny
-      image: cirros
+      image: { get_param: image }
       networks:
         - network: { get_resource: dualstack_net }
       user_data: |
@@ -325,7 +251,7 @@ class OrchestrationDualStackScaleTest(NuageBaseOrchestrationTest,
 
 """
 
-        for i in range(1, 100):
+        for i in range(1, 5):
             extra_template = extra_template + (_template % i)
 
         template = template + extra_template
@@ -342,7 +268,8 @@ class OrchestrationDualStackScaleTest(NuageBaseOrchestrationTest,
             'cidr6': str(subnet_ipv6_cidr),
             'gateway6': subnet_ipv6_gateway,
             'maskbits6': IPNetwork(
-                vsd_l3domain_subnet['IPv6Address']).prefixlen
+                vsd_l3domain_subnet['IPv6Address']).prefixlen,
+            'image': CONF.compute.image_ref
         }
         self.launch_stack_template(stack_name, template, stack_parameters)
 

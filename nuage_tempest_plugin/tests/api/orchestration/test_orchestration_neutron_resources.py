@@ -52,7 +52,7 @@ class OrchestrationNeutronResourcesTest(nuage_base.NuageBaseOrchestrationTest):
         cls.neutron_basic_template = cls.load_template('nuage_neutron_basic')
         cls.stack_name = data_utils.rand_name('heat')
         template = cls.read_template('nuage_neutron_basic')
-        cls.keypair_name = (CONF.orchestration.keypair_name or
+        cls.keypair_name = (CONF.heat_plugin.keypair_name or
                             cls._create_keypair()['name'])
         cls.external_network_id = CONF.network.public_network_id
 
@@ -66,10 +66,10 @@ class OrchestrationNeutronResourcesTest(nuage_base.NuageBaseOrchestrationTest):
             template,
             parameters={
                 'KeyName': cls.keypair_name,
-                'InstanceType': CONF.orchestration.instance_type,
+                'InstanceType': CONF.heat_plugin.instance_type,
                 'ImageId': CONF.compute.image_ref,
                 'ExternalNetworkId': cls.external_network_id,
-                'timeout': CONF.orchestration.build_timeout,
+                'timeout': CONF.heat_plugin.build_timeout,
                 'DNSServers': CONF.network.dns_servers,
                 'SubNetCidr': str(cls.subnet_cidr)
             })

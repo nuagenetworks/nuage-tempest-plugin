@@ -33,11 +33,10 @@ class NeutronRedirectionTargetsTest(nuage_base.NuageBaseOrchestrationTest):
         super(NeutronRedirectionTargetsTest, cls).setup_clients()
         cls.orchestration_client = orchestration.OrchestrationClient(
             cls.os_primary.auth_provider,
-            CONF.orchestration.catalog_type,
-            CONF.orchestration.region or CONF.identity.region,
-            endpoint_type=CONF.orchestration.endpoint_type,
-            build_interval=CONF.orchestration.build_interval,
-            build_timeout=CONF.orchestration.build_timeout,
+            CONF.heat_plugin.catalog_type,
+            CONF.heat_plugin.region or CONF.identity.region,
+            build_interval=CONF.heat_plugin.build_interval,
+            build_timeout=CONF.heat_plugin.build_timeout,
             **cls.os_primary.default_params)
 
     @classmethod
