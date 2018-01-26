@@ -12,6 +12,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import time
+
+from oslo_log import log as logging
+
 import testtools
 from testtools import matchers
 
@@ -29,6 +33,7 @@ from nuage_tempest_plugin.tests.api.baremetal.baremetal_topology \
     import Topology
 
 CONF = config.CONF
+LOG = logging.getLogger(__name__)
 
 
 class BaremetalTest(network_mixin.NetworkMixin,
@@ -345,7 +350,17 @@ class BaremetalTest(network_mixin.NetworkMixin,
             expected_pgs = 1  # Expecting only hardware
         if self.is_dhcp_agent_present():
             expected_pgs += 1  # Extra PG for dhcp agent
-        self.assertThat(topology.vsd_policygroups,
+
+            # Repeated check in case of agent
+            for attempt in range(5):
+                if len(topology.get_vsd_policygroups(True)) != expected_pgs:
+                    LOG.error("Unexpected amount of PGs found, "
+                              "expected {} found {} (attempt {})".format(
+                                  expected_pgs, len(topology.vsd_policygroups),
+                                  attempt))
+                    time.sleep(1)
+
+        self.assertThat(topology.get_vsd_policygroups(True),
                         matchers.HasLength(expected_pgs),
                         message="Unexpected amount of PGs found")
         for pg in topology.vsd_policygroups:

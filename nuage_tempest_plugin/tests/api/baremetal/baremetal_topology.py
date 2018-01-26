@@ -80,7 +80,10 @@ class Topology(object):
 
     @property
     def vsd_policygroups(self):
-        if not getattr(self, '_vsd_policygroups', False):
+        return self.get_vsd_policygroups()
+
+    def get_vsd_policygroups(self, force_read=False):
+        if force_read or not getattr(self, '_vsd_policygroups', False):
             self._vsd_policygroups = self.vsd_client.get_policygroup(
                 self.vsd_domain_resource,
                 self.vsd_domain['ID'])
