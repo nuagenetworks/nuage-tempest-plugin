@@ -44,8 +44,9 @@ MSG_INVALID_GATEWAY_FOR_IP_TYPE = "Invalid input for operation: gateway_ip " \
 
 
 @nuage_test.class_header(tags=[tags.ML2])
-class OsManagedDualStackL2SubnetsTest(NuageBaseTest):
-    credentials = ['primary']
+class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
+                                      nuage_test.NuageAdminNetworksTest):
+    credentials = ['primary', 'admin']
 
     @classmethod
     def skip_checks(cls):
@@ -751,6 +752,9 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest):
     @decorators.attr(type='negative')
     @nuage_test.header()
     def test_multiple_ipv4_subnets_with_ipv6_subnet_neg(self):
+        if self.is_dhcp_agent_present():
+            raise self.skipException(
+                'Cannot run this test case when DHCP agent is enabled')
         # Provision OpenStack network
         network = self.create_network()
 

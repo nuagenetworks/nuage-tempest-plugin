@@ -8,12 +8,12 @@ from tempest import config
 from tempest.lib import exceptions
 from tempest.test import decorators
 
-from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.test.nuage_test import NuageAdminNetworksTest
 
 CONF = config.CONF
 
 
-class PortsTest(NuageBaseTest):
+class PortsTest(NuageAdminNetworksTest):
     LOG = logging.getLogger(__name__)
 
     @decorators.attr(type='smoke')
@@ -26,6 +26,9 @@ class PortsTest(NuageBaseTest):
     def test_nuage_port_update_fixed_ips_negative(self):
         # Set up resources
         # Base resources
+        if self.is_dhcp_agent_present():
+            raise self.skipException(
+                'Cannot run this test case when DHCP agent is enabled')
         network = self.create_network()
         self.assertIsNotNone(network, "Unable to create network")
 

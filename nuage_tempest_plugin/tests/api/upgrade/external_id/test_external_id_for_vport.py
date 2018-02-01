@@ -16,7 +16,6 @@
 from oslo_log import log as logging
 import testtools
 
-from tempest.api.network import base as base
 from tempest import config
 from tempest.lib.common.utils import data_utils
 
@@ -45,7 +44,7 @@ extra_dhcp_opts = [
 ]
 
 
-class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
+class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
     class MatchingVsdVPort(object):
         def __init__(self, outer, port, subnet):
             """Construct a Vsd_port. """

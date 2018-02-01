@@ -297,3 +297,20 @@ class NetworkMixin(base.BaseMixin):
     def get_subports(self, trunk_id, as_admin=False):
         client = self.trunk_client(as_admin=as_admin)
         return client.get_subports(trunk_id)['sub_ports']
+
+    # ---------- Agents ----------
+
+    dhcp_agent_present = None
+
+    def is_dhcp_agent_present(self):
+        if self.dhcp_agent_present is None:
+            agents = self.os_admin.network_agents_client.list_agents() \
+                .get('agents')
+            if agents:
+                self.dhcp_agent_present = any(
+                    agent for agent in agents if agent['alive'] and
+                    agent['binary'] == 'neutron-dhcp-agent')
+            else:
+                self.dhcp_agent_present = False
+
+        return self.dhcp_agent_present
