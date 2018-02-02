@@ -24,11 +24,15 @@ from tempest.lib import exceptions as lib_exc
 from tempest.scenario import manager
 from tempest.services import orchestration
 
+from testtools.matchers import ContainsDict
+from testtools.matchers import Equals
+
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test import tags as test_tags
 from nuage_tempest_plugin.lib.test.tenant_server import TenantServer
 from nuage_tempest_plugin.lib.test import vsd_helper
 from nuage_tempest_plugin.lib.topology import Topology
+
 
 CONF = config.CONF
 LOG = oslo_logging.getLogger(__name__)
@@ -161,6 +165,9 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         cls.manager = cls.get_client_manager()
         cls.admin_manager = cls.get_client_manager(credential_type='admin')
         cls.vsd = vsd_helper.VsdHelper()
+        cls.networks_client = cls.manager.networks_client
+        cls.subnets_client = cls.manager.subnets_client
+        cls.ports_client = cls.manager.ports_client
 
     @classmethod
     def resource_setup(cls):
@@ -378,7 +385,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                                                **kwargs)
         return body['port']
 
-    def _verify_port(self, port, subnet4=None, subnet6=None):
+    def _verify_port(self, port, subnet4=None, subnet6=None, **kwargs):
         has_ipv4_ip = False
         has_ipv6_ip = False
 
@@ -409,6 +416,15 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 "Must have an IPv6 ip in subnet: %s" % subnet6['id'])
 
         self.assertIsNotNone(port['mac_address'])
+        # verify all other kwargs as attributes (key,value) pairs
+        for key, value in kwargs.iteritems():
+            if isinstance(value, dict):
+                # compare dict
+                raise NotImplementedError
+            if isinstance(value, list):
+                self.assertItemsEqual(port[key], value)
+            else:
+                self.assertThat(port, ContainsDict({key: Equals(value)}))
 
     def _verify_vport_in_l2_domain(self, port, vsd_l2domain):
         vport = self.vsd.get_vport(l2domain=vsd_l2domain,
