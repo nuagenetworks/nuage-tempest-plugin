@@ -3,6 +3,8 @@
 
 from netaddr import IPNetwork
 
+from tempest.lib import decorators
+
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
@@ -116,6 +118,71 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
 
         # And I associate the port with the policy group
         self.cli_associate_port_with_policy_group(port, policy_group)
+
+        # Then I expect the port in the show policy group response
+        port_present = self.cli_check_port_in_show_policy_group(
+            port['id'], policy_group[0]['ID'])
+        self.assertTrue(
+            port_present,
+            "Port(%s) associated to policy group (%s) is not present" %
+            (port['id'], policy_group[0]['ID']))
+        # When I disassociate the port from the policy group
+        self.cli_disassociate_port_from_policy_group(port['id'])
+        # Then I do NOT expect the port in the show plicy group response
+        port_present = self._check_port_in_policy_group(
+            port['id'], policy_group[0]['ID'])
+        self.assertFalse(
+            port_present,
+            "Port(%s) disassociated to policy group (%s) is still present" %
+            (port['id'], policy_group[0]['ID']))
+
+    @decorators.attr(type='smoke')
+    @nuage_test.header()
+    def test_cli_l2_create_port_with_nuage_policygroup(self):
+        # Given I have a VSD-L2-Managed-Subnet in openstack with a
+        # VSD created policy group
+        cidr4 = IPNetwork('1.1.20.0/24')
+        cidr6 = IPNetwork("2001:5f74:c4a5:b82e::/64")
+        vsd_l2_subnet = self._given_vsd_l2domain(
+            cidr4=cidr4, cidr6=cidr6, dhcp_managed=True)
+        cli_network, cli_subnet4, cli_subnet6 = \
+            self._cli_create_os_l2_vsd_managed_dualstack_subnet(vsd_l2_subnet)
+        policy_group = self.nuage_vsd_client.create_policygroup(
+            constants.L2_DOMAIN,
+            vsd_l2_subnet['ID'],
+            name='cli-myVSDpg-1',
+            type='SOFTWARE',
+            extra_params=None)
+
+        # When I retrieve the VSD-L2-Managed-Subnet
+
+        # I expect the policy group in my list
+        policy_group_list4 = self.list_nuage_policy_group_for_subnet(
+            cli_subnet4['id'])
+        pg_present = self._cli_check_policy_group_in_list(
+            policy_group[0]['ID'], policy_group_list4)
+        self.assertTrue(pg_present,
+                        "Did not find vsd policy group in policy group list")
+
+        policy_group_list6 = self.list_nuage_policy_group_for_subnet(
+            cli_subnet6['id'])
+        pg_present = self._cli_check_policy_group_in_list(
+            policy_group[0]['ID'], policy_group_list6)
+        self.assertTrue(pg_present,
+                        "Did not find vsd policy group in policy group list")
+
+        # And it has no external ID
+        self.assertIsNone(
+            policy_group[0]['externalID'],
+            "Policy Group has an external ID, while it should not")
+
+        # When I create a port in the subnet
+        port = self.create_port_with_args(cli_network['id'],
+                                          "--nuage-policy-groups",
+                                          policy_group[0]['ID'],
+                                          "--name port-with-vsd-pg")
+        self.addCleanup(self._delete_port, port['id'])
+        self.ports.remove(port)
 
         # Then I expect the port in the show policy group response
         port_present = self.cli_check_port_in_show_policy_group(
