@@ -7,6 +7,7 @@ from tempest.lib import exceptions
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
 
 import base_nuage_domain_tunnel_type
 
@@ -29,11 +30,20 @@ class NuageDomainTunnelTypeNegativeTest(
 
     def _do_test_invalid_value(self, invalid_value):
         reported_value = invalid_value if invalid_value != '' else 'None'
-        self.assertRaisesRegex(exceptions.BadRequest,
-                               "Invalid input for tunnel_type. "
-                               "Reason: %s is not in" % reported_value,
-                               self._do_create_router_with_domain_tunnel_type,
-                               invalid_value)
+        if Topology.openstack_version == 'newton':
+            self.assertRaisesRegex(
+                exceptions.BadRequest,
+                "Invalid input for tunnel_type. "
+                "Reason: '%s' is not in" % reported_value,
+                self._do_create_router_with_domain_tunnel_type,
+                invalid_value)
+        else:
+            self.assertRaisesRegex(
+                exceptions.BadRequest,
+                "Invalid input for tunnel_type. "
+                "Reason: %s is not in" % reported_value,
+                self._do_create_router_with_domain_tunnel_type,
+                invalid_value)
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
