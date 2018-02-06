@@ -30,7 +30,8 @@ class SGMixin(base.BaseMixin):
             cls.sg_rules_client = cls.os_primary.security_group_rules_client
         if cls.has_admin:
             cls.sg_client_admin = cls.os_admin.security_groups_client
-            cls.sg_rules_client = cls.os_admin.security_group_rules_client
+            cls.sg_rules_client_admin =\
+                cls.os_admin.security_group_rules_client
 
     # ---------- SG ----------
     def sg_client(self, as_admin=False):
@@ -120,7 +121,8 @@ class SGMixin(base.BaseMixin):
         client = self.sg_rules_client(as_admin=as_admin)
         sg_rule = {'security_group_id': sg_id}
         sg_rule.update(kwargs)
-        sg_rule = client.create_port(**sg_rule)['security_group_rule']
+        sg_rule = client.create_security_group_rule(
+            **sg_rule)['security_group_rule']
         if cleanup:
             self.addCleanup(self.delete_security_group_rule, sg_rule['id'])
         return sg_rule
