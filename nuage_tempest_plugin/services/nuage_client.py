@@ -620,7 +620,17 @@ class NuageRestClient(object):
         return self.put(res_path, data)
 
     def delete_l2domain(self, l2dom_id):
-        return self.delete_resource(constants.L2_DOMAIN, l2dom_id)
+        for attempt in range(1, 6):
+            try:
+                return self.delete_resource(constants.L2_DOMAIN, l2dom_id)
+            except Exception as e:
+                if 'l2domain is in use and its properties can neither be ' \
+                   'modified or deleted.' not in str(e):
+                    raise
+                else:
+                    self.LOG.error('Got {} (attempt {})'.format(str(e),
+                                                                attempt))
+                    time.sleep(1)
 
     def get_l2domain(self, filters=None, filter_value=None, netpart_name=None):
         return self.get_resource(constants.L2_DOMAIN,

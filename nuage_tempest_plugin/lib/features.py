@@ -54,9 +54,7 @@ class NuageFeatures(object):
             self.project_name_in_user_group_description = self._from('5.1')
             self.vsd_shared_infrastructure = True
             self.stateless_securitygroups = self._from('5.2.2')
-            self.multi_linked_vsdmgd_subnets = (
-                self._from('5.2.2') and
-                self.openstack_version != Release('pike'))
+            self.multi_linked_vsdmgd_subnets = self._from('5.2.2')
 
     def _from(self, release):
         return self.current_release >= Release(release)
