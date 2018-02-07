@@ -673,6 +673,140 @@ class NuageRoutersAdminTest(base.BaseAdminNetworkTest):
         super(NuageRoutersAdminTest, cls).setup_clients()
         cls.nuage_vsd_client = NuageRestClient()
 
+    # Start of copy from upstream
+    def _verify_router_gateway(self, router_id, exp_ext_gw_info=None):
+        show_body = self.admin_routers_client.show_router(router_id)
+        actual_ext_gw_info = show_body['router']['external_gateway_info']
+        if exp_ext_gw_info is None:
+            self.assertIsNone(actual_ext_gw_info)
+            return
+        # Verify only keys passed in exp_ext_gw_info
+        for k, v in exp_ext_gw_info.items():
+            self.assertEqual(v, actual_ext_gw_info[k])
+
+    def _verify_gateway_port(self, router_id):
+        list_body = self.admin_ports_client.list_ports(
+            network_id=CONF.network.public_network_id,
+            device_id=router_id)
+        self.assertEqual(len(list_body['ports']), 1)
+        gw_port = list_body['ports'][0]
+        fixed_ips = gw_port['fixed_ips']
+        self.assertNotEmpty(fixed_ips)
+        # Assert that all of the IPs from the router gateway port
+        # are allocated from a valid public subnet.
+        public_net_body = self.admin_networks_client.show_network(
+            CONF.network.public_network_id)
+        public_subnet_ids = public_net_body['network']['subnets']
+        for fixed_ip in fixed_ips:
+            subnet_id = fixed_ip['subnet_id']
+            self.assertIn(subnet_id, public_subnet_ids)
+    # End of copy from upstream
+
+    @utils.requires_ext(extension='ext-gw-mode', service='network')
+    @decorators.attr(type='smoke')
+    def test_create_router_with_default_snat_value(self):
+        # Start of copy from upstream
+        # Create a router with default snat rule
+        router = self._create_router(
+            external_network_id=CONF.network.public_network_id)
+        self._verify_router_gateway(
+            router['id'], {'network_id': CONF.network.public_network_id,
+                           'enable_snat': True})
+        # End of copy from upstream
+
+        nuage_domain = self.nuage_vsd_client.get_l3domain(
+            filters='externalID', filter_value=self.routers[-1]['id'])
+        self.assertEqual(nuage_domain[0]['PATEnabled'], NUAGE_PAT_DISABLED)
+
+    @utils.requires_ext(extension='ext-gw-mode', service='network')
+    @decorators.attr(type='smoke')
+    def test_update_router_set_gateway_with_snat_explicit(self):
+        # Start of copy from upstream
+        router = self._create_router()
+        self.admin_routers_client.update_router(
+            router['id'],
+            external_gateway_info={
+                'network_id': CONF.network.public_network_id,
+                'enable_snat': True})
+        self._verify_router_gateway(
+            router['id'],
+            {'network_id': CONF.network.public_network_id,
+             'enable_snat': True})
+        self._verify_gateway_port(router['id'])
+        # End of copy from upstream
+
+        nuage_domain = self.nuage_vsd_client.get_l3domain(
+            filters='externalID', filter_value=self.routers[-1]['id'])
+        self.assertEqual(nuage_domain[0]['PATEnabled'], NUAGE_PAT_ENABLED)
+
+    @utils.requires_ext(extension='ext-gw-mode', service='network')
+    @decorators.attr(type='smoke')
+    def test_update_router_set_gateway_without_snat(self):
+        # Start of copy from upstream
+        router = self._create_router()
+        self.admin_routers_client.update_router(
+            router['id'],
+            external_gateway_info={
+                'network_id': CONF.network.public_network_id,
+                'enable_snat': False})
+        self._verify_router_gateway(
+            router['id'],
+            {'network_id': CONF.network.public_network_id,
+             'enable_snat': False})
+        self._verify_gateway_port(router['id'])
+        # End of copy from upstream
+
+        nuage_domain = self.nuage_vsd_client.get_l3domain(
+            filters='externalID', filter_value=self.routers[-1]['id'])
+        self.assertEqual(nuage_domain[0]['PATEnabled'], NUAGE_PAT_DISABLED)
+
+    @utils.requires_ext(extension='ext-gw-mode', service='network')
+    @decorators.attr(type='smoke')
+    def test_update_router_reset_gateway_without_snat(self):
+        router = self._create_router(
+            data_utils.rand_name('router-'),
+            external_network_id=CONF.network.public_network_id)
+        nuage_domain = self.nuage_vsd_client.get_l3domain(
+            filters='externalID', filter_value=router['id'])
+        self.assertEqual(nuage_domain[0]['PATEnabled'], NUAGE_PAT_DISABLED)
+        self.admin_routers_client.update_router(
+            router['id'],
+            external_gateway_info={
+                'network_id': CONF.network.public_network_id,
+                'enable_snat': False})
+        self._verify_router_gateway(
+            router['id'],
+            {'network_id': CONF.network.public_network_id,
+             'enable_snat': False})
+        self._verify_gateway_port(router['id'])
+        nuage_domain = self.nuage_vsd_client.get_l3domain(
+            filters='externalID', filter_value=router['id'])
+        self.assertEqual(nuage_domain[0]['PATEnabled'], NUAGE_PAT_DISABLED)
+
+    @utils.requires_ext(extension='ext-gw-mode', service='network')
+    @decorators.attr(type='smoke')
+    def test_create_router_with_snat_explicit(self):
+        name = data_utils.rand_name('snat-router')
+        # Create a router enabling snat attributes
+        enable_snat_states = [False, True]
+        for enable_snat in enable_snat_states:
+            external_gateway_info = {
+                'network_id': CONF.network.public_network_id,
+                'enable_snat': enable_snat}
+            create_body = self.admin_routers_client.create_router(
+                name=name, external_gateway_info=external_gateway_info)
+            self.addCleanup(self.admin_routers_client.delete_router,
+                            create_body['router']['id'])
+            # Verify snat attributes after router creation
+            self._verify_router_gateway(create_body['router']['id'],
+                                        exp_ext_gw_info=external_gateway_info)
+            nuage_domain = self.nuage_vsd_client.get_l3domain(
+                filters='externalID',
+                filter_value=create_body['router']['id'])
+            self.assertEqual(
+                nuage_domain[0]['PATEnabled'],
+                NUAGE_PAT_ENABLED if enable_snat else NUAGE_PAT_DISABLED)
+
     @decorators.attr(type='smoke')
     def test_add_router_interface_shared_network(self):
         # Create a shared network
