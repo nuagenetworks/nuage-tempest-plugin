@@ -8,7 +8,7 @@ from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
 
-from tempest.lib import decorators
+# from tempest.lib import decorators
 
 
 class Ipv6ConnectivityTest(NuageBaseTest):
@@ -67,7 +67,7 @@ class Ipv6ConnectivityTest(NuageBaseTest):
         # Test IPv6 connectivity between peer servers
         self.assert_ping6(server1, server2, network)
 
-    @decorators.attr(type='smoke')
+    # TODO(KRIS) @decorators.attr(type='smoke')
     @testtools.skipIf(not Topology.run_connectivity_tests(),
                       'Connectivity tests are disabled.')
     def test_icmp_connectivity_os_managed_dualstack_l3_domain(self):
