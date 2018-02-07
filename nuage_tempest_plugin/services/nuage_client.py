@@ -432,15 +432,25 @@ class NuageRestClient(object):
     def delete_domain_subnet(self, subnet_id):
         return self.delete_resource(constants.SUBNETWORK, subnet_id)
 
-    # DHCPOption
-    def create_dhcpoption(self, parent, option_number, option_values):
+    # DHCPOptions
+    def create_dhcpoption(self, parent_type, parent,
+                          option_number, option_values):
         data = {
             'actualType': option_number,
             'actualValues': option_values
         }
-        res_path = self.build_resource_path(constants.SHARED_NET_RES, parent,
+        res_path = self.build_resource_path(parent_type, parent,
                                             constants.DHCPOPTION)
         return self.post(res_path, data)
+
+    def create_dhcpoption_on_l2dom(self, parent, option_number, option_values):
+        return self.create_dhcpoption(constants.L2_DOMAIN, parent,
+                                      option_number, option_values)
+
+    def create_dhcpoption_on_shared(self, parent,
+                                    option_number, option_values):
+        return self.create_dhcpoption(constants.SHARED_NET_RES, parent,
+                                      option_number, option_values)
 
     def get_dhcpoption(self, parent, parent_id):
         return self.get_child_resource(

@@ -36,16 +36,12 @@ class NuageFeatures(object):
 
     def _set_features(self):
         if self.current_release.major_release == "3.2":
-            self.bidirectional_fip_rate_limit = \
-                self.current_release >= Release('3.2R10')
+            self.bidirectional_fip_rate_limit = self._from('3.2R10')
 
         elif self.current_release.major_release == "4.0":
-            self.full_external_id_support = \
-                self.current_release >= Release('4.0R5')
-            self.bidirectional_fip_rate_limit = \
-                self.current_release >= Release('4.0R6')
-            self.vsd_managed_dualstack_subnets = \
-                self.current_release == Release('4.0VZ')
+            self.full_external_id_support = self._from('4.0R5')
+            self.bidirectional_fip_rate_limit = self._from('4.0R6')
+            self.vsd_managed_dualstack_subnets = self._from('4.0VZ')
 
         else:
             self.full_external_id_support = True
@@ -54,13 +50,16 @@ class NuageFeatures(object):
             self.full_os_networking = True
             self.vsd_managed_dualstack_subnets = Topology.is_ml2
             self.os_managed_dualstack_subnets = (
-                self.current_release >= Release('5.1') and
-                self.ipv6_enabled)
-            self.project_name_in_user_group_description = (
-                self.current_release >= Release('5.1'))
+                self._from('5.1') and self.ipv6_enabled)
+            self.project_name_in_user_group_description = self._from('5.1')
             self.vsd_shared_infrastructure = True
-            self.stateless_securitygroups = (
-                self.current_release >= Release('5.2.2'))
+            self.stateless_securitygroups = self._from('5.2.2')
+            self.multi_linked_vsdmgd_subnets = (
+                self._from('5.2.2') and
+                self.openstack_version != Release('pike'))
+
+    def _from(self, release):
+        return self.current_release >= Release(release)
 
     def _log_features(self):
         LOG.info("FEATURES:")
@@ -80,11 +79,15 @@ class NuageFeatures(object):
                  format(self.vsd_shared_infrastructure))
         LOG.info("stateless_securitygroups         : {}".
                  format(self.stateless_securitygroups))
+        LOG.info("multi_linked_vsdmgd_subnets      : {}".
+                 format(self.multi_linked_vsdmgd_subnets))
 
     def __init__(self):
-        """Initialize a feature set"""
         super(NuageFeatures, self).__init__()
+
+        self.openstack_version = Release(Topology.openstack_version)
         self.current_release = Release(Topology.nuage_release)
+        self.ipv6_enabled = CONF.network_feature_enabled.ipv6
 
         self.full_external_id_support = False
         self.bidirectional_fip_rate_limit = False
@@ -95,6 +98,7 @@ class NuageFeatures(object):
         self.vsd_shared_infrastructure = False
         self.ipv6_enabled = CONF.network_feature_enabled.ipv6
         self.stateless_securitygroups = False
+        self.multi_linked_vsdmgd_subnets = False
 
         self._set_features()
         self._log_features()

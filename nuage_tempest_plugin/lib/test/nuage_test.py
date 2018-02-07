@@ -33,6 +33,8 @@ from nuage_tempest_plugin.lib.topology import Topology
 CONF = config.CONF
 LOG = oslo_logging.getLogger(__name__)
 
+NBR_RETRIES_ON_ROUTER_DELETE = 10
+
 
 def skip_because(*args, **kwargs):
     """A decorator useful to skip tests hitting known bugs
@@ -167,13 +169,6 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         super(NuageBaseTest, cls).resource_setup()
         cls.setup_network_resources(cls)
 
-    @classmethod
-    def resource_cleanup(cls):
-        super(NuageBaseTest, cls).resource_cleanup()
-
-    def setUp(self):
-        super(NuageBaseTest, self).setUp()
-
     def skipTest(self, reason):
         LOG.warn('TEST SKIPPED: ' + reason)
         super(NuageBaseTest, self).skipTest(reason)
@@ -206,7 +201,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                  .format(str(cls.cidr6)))
 
     @staticmethod
-    def sleep(seconds, msg=None):
+    def sleep(seconds=1, msg=None):
         if not msg:
             LOG.error(
                 "Added a {}s sleep without clarification. "
@@ -286,8 +281,8 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                     raise
         else:
             message = 'Available CIDR for subnet creation could not be found'
-            # raise exceptions.BuildErrorException(message)  # QA repo
-            raise ValueError(message)  # dev repo
+            raise ValueError(message)
+
         subnet = body['subnet']
 
         if cleanup:
@@ -303,7 +298,8 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         return body['subnet']
 
     def create_l2_vsd_managed_subnet(self, network, vsd_l2domain, ip_version=4,
-                                     dhcp_managed=True, dhcp_option_3=None):
+                                     dhcp_managed=True, dhcp_option_3=None,
+                                     **subnet_kwargs):
         if not isinstance(vsd_l2domain, self.vsd.vspk.NUL2Domain):
             self.fail("Must have an VSD L2 domain")
 
@@ -325,20 +321,23 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             mask_bits=cidr.prefixlen,
             gateway=gateway,
             nuagenet=vsd_l2domain.id,
-            net_partition=vsd_l2domain.parent_object.name)
+            net_partition=vsd_l2domain.parent_object.name,
+            **subnet_kwargs)
 
         return subnet
 
     def create_l3_vsd_managed_subnet(self, network, vsd_subnet,
-                                     dhcp_managed=True, ip_version=4):
+                                     dhcp_managed=True, ip_version=4,
+                                     no_gateway=False,
+                                     **subnet_kwargs):
         if not isinstance(vsd_subnet, self.vsd.vspk.NUSubnet):
             self.fail("Must have an VSD L3 subnet")
 
         if ip_version == 4:
             cidr = IPNetwork(vsd_subnet.address + "/" + vsd_subnet.netmask)
-            gateway = vsd_subnet.gateway
+            gateway = None if no_gateway else vsd_subnet.gateway
         elif ip_version == 6:
-            gateway = vsd_subnet.ipv6_gateway
+            gateway = None if no_gateway else vsd_subnet.ipv6_gateway
             cidr = IPNetwork(vsd_subnet.ipv6_address)
         else:
             self.fail("IP version {} is not supported".format(ip_version))
@@ -355,7 +354,8 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             mask_bits=cidr.prefixlen,
             gateway=gateway,
             nuagenet=vsd_subnet.id,
-            net_partition=net_partition)
+            net_partition=net_partition,
+            **subnet_kwargs)
 
         return subnet
 
@@ -426,15 +426,15 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         else:
             return self.create_public_router()  # needs FIP access
 
-    def create_public_router(self, delay_cleanup_for_nuage_bug=False):
+    def create_public_router(self, retry_on_router_delete=False):
         return self.create_router(
             external_network_id=CONF.network.public_network_id,
-            delay_cleanup_for_nuage_bug=delay_cleanup_for_nuage_bug)
+            retry_on_router_delete=retry_on_router_delete)
 
     def create_router(self, router_name=None, admin_state_up=True,
                       external_network_id=None, enable_snat=None,
                       client=None, cleanup=True,
-                      delay_cleanup_for_nuage_bug=False,
+                      retry_on_router_delete=False,
                       no_net_partition=False,
                       **kwargs):
         """Wrapper utility that creates a router."""
@@ -454,33 +454,30 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         router = body['router']
         if cleanup:
             self.addCleanup(self.delete_router, router, client,
-                            delay_cleanup_for_nuage_bug)
+                            retry_on_router_delete)
         return router
 
-    # TODO(TEAM) - OPENSTACK-1880 : DELETE ROUTER OFTEN FAILS WHEN
+    # TODO(TEAM) - VSD-21337 : DELETE ROUTER OFTEN FAILS WHEN
     # TODO(TEAM) - DONE TOO SOON AFTER SUBNET DETACH. MEANWHILE THIS IS A
     # TODO(TEAM) - WORK-AROUND, BY GIVING DELAY TO THIS METHOD
     def delete_router(self, router, client=None,
-                      delay_cleanup_for_nuage_bug=False):
+                      retry_on_router_delete=False):
         if not client:
             client = self.manager
-        if delay_cleanup_for_nuage_bug:
-            nbr_attempts = 3
-            attempt = 1
-            while attempt <= nbr_attempts:
+        if retry_on_router_delete:
+            for attempt in (1, NBR_RETRIES_ON_ROUTER_DELETE):
                 try:
-                    self.sleep(attempt)
                     client.routers_client.delete_router(router['id'])
-                    break
-                except lib_exc.ServerFault as e:
-                    if 'Nuage API: vPort has VMInterface network interfaces ' \
-                            'associated with it.' not in str(e):
+                    return
+                except Exception as e:
+                    if ('Nuage API: vPort has VMInterface network interfaces '
+                            'associated with it.' not in str(e)):
                         raise e
-                    LOG.error('Domain deletion failed! (%d)', attempt)
-                    attempt += 1
+                    LOG.error('VSD-21337: Domain deletion failed (%d)',
+                              attempt)
+                    self.sleep(msg='Give time for VSD-21337')
 
-        else:
-            client.routers_client.delete_router(router['id'])
+        client.routers_client.delete_router(router['id'])
 
     def create_floatingip(self, external_network_id=None,
                           client=None, cleanup=True):
@@ -510,11 +507,13 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             id=external_network_id)[0]['subnets'][0]
         shared_network_resource_id = self.vsd.get_shared_network_resource(
             by_fip_subnet_id=floatingip_subnet_id).id
+
         # Create floating ip
         floating_ip = self.vsd.create_floating_ip(
             vsd_domain,
             shared_network_resource_id=shared_network_resource_id)
         self.addCleanup(floating_ip.delete)
+
         # Associate floating ip
         vport = self.vsd.get_vport(subnet=vsd_subnet, by_port_id=port_id)
         vport.associated_floating_ip_id = floating_ip.id
@@ -715,12 +714,11 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             volumes_client.wait_for_volume_status(volume['volume']['id'],
                                                   'available')
 
-            bd_map_v2 = [{
-                         'uuid': volume['volume']['id'],
-                         'source_type': 'volume',
-                         'destination_type': 'volume',
-                         'boot_index': 0,
-                         'delete_on_termination': True}]
+            bd_map_v2 = [{'uuid': volume['volume']['id'],
+                          'source_type': 'volume',
+                          'destination_type': 'volume',
+                          'boot_index': 0,
+                          'delete_on_termination': True}]
             kwargs['block_device_mapping_v2'] = bd_map_v2
 
             # Since this is boot from volume an image does not need
@@ -770,7 +768,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         name = name or data_utils.rand_name('test-server')
 
         server = TenantServer(client, self.admin_manager.servers_client,
-                              image_profile)
+                              image_profile, tenant_networks)
         image_id = None
         if image_profile != 'default':
             image_id = self.osc_get_image_id(server.image_name)
@@ -788,7 +786,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         self.addCleanup(server.cleanup)
         return server
 
-    def create_fip_to_server(self, server, port=None, validate_access=True,
+    def create_fip_to_server(self, server, port=None, validate_access=False,
                              vsd_domain=None, vsd_subnet=None):
         """Create a fip and connect it to the given server
 
@@ -799,6 +797,9 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         :param vsd_subnet: L3Subnet VSPK object
         :return:
         """
+        LOG.debug("create_fip_to_server: vsd_domain={}, vsd_subnet={}".format(
+            str(vsd_domain), str(vsd_subnet)))
+
         if not server.associated_fip:
             if vsd_domain:
                 fip = self.create_associate_vsd_managed_floating_ip(
@@ -814,8 +815,13 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 )['floating_ip_address']
 
             server.associate_fip(fip)
-        if validate_access:
-            server.check_connectivity()
+            LOG.debug("create_fip_to_server: "
+                      "fip associated: {}".format(str(fip)))
+
+            if validate_access:
+                assert server.check_connectivity(3)
+                LOG.debug("create_fip_to_server: server connectivity verified")
+
         return server.associated_fip
 
     def prepare_for_ping_test(self, server, port=None, vsd_domain=None,
@@ -852,7 +858,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 LOG.exception('Stopping server %s failed', server_id)
 
     def assert_ping(self, server1, server2, network, ip_type=4,
-                    should_pass=True, interface=None, ping_count=5):
+                    should_pass=True, interface=None, ping_count=3):
         if not server1.console():
             self.skipTest('This test cannot complete assert_ping request '
                           'as it has no console access.')
@@ -860,29 +866,24 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         server1.prepare_nics()  # server2 is assumed to be prepared
         address2 = server2.get_server_ip_in_network(
             network['name'], ip_type)
-        ping_pass = 'FAILED'
-        nbr_retries = 5
-        try_cnt = 1
-        while try_cnt <= nbr_retries:
-            LOG.info('assert_ping: ping attempt %d start', try_cnt)
+        ping_pass = None  # keeps pycharm happy
+        for attempt in range(1, 6):
+            LOG.info('assert_ping: ping attempt %d start', attempt)
 
             ping_result = server1.ping(address2, ping_count, interface,
                                        ip_type, should_pass)
-            if ping_result:
-                ping_pass = 'PASSED'
-            LOG.info('assert_ping: ping attempt %d %s', try_cnt, ping_pass)
+            ping_pass = 'PASSED' if ping_result else 'FAILED'
             if ping_result == should_pass:
+                LOG.info('assert_ping: ping attempt %d %s', attempt, ping_pass)
                 return
-            else:
-                self.sleep(1)
-                try_cnt += 1
+
+            LOG.error('assert_ping: ping attempt %d %s', attempt, ping_pass)
+            self.sleep(1)
 
         LOG.error(
             'Ping from server {} to server {} on IP address {} {}.'
             .format(server1.id(), server2.id(), address2, ping_pass))
 
-        # TODO(team): do more diagnostics here
-        # finally fail
         self.fail('Ping unexpectedly ' + ping_pass)
 
     def assert_ping6(self, server1, server2, network, should_pass=True):

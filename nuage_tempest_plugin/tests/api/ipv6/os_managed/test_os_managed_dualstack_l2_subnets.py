@@ -237,7 +237,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
         ipv6_subnet = self.create_subnet(
             network, ip_version=6, cidr=IPNetwork(ipv6_cidr),
             mask_bits=IPNetwork(ipv6_cidr).prefixlen,
-            gateway=ipv6_gateway,
+            gateway=None,
             enable_dhcp=False)
         self.assertIsNotNone(ipv6_subnet)
 

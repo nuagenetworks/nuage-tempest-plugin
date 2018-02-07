@@ -15,6 +15,7 @@
 
 from netaddr import IPAddress
 from netaddr import IPNetwork
+import testtools
 
 from tempest.api.compute import base as serv_base
 from tempest.api.network import base
@@ -24,6 +25,7 @@ from tempest.lib import exceptions
 from tempest.scenario import manager
 from tempest.test import decorators
 
+from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.test import tags
@@ -37,7 +39,7 @@ from nuage_tempest_plugin.tests.api.vsd_managed \
 CONF = config.CONF
 
 
-@nuage_test.class_header(tags=[tags.VSD_MANAGED, tags.MONOLITHIC])
+@nuage_test.class_header(tags=[tags.VSD_MANAGED])
 class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
                              test_netpartitions.NetPartitionTestJSON,
                              manager.NetworkScenarioTest,
@@ -92,63 +94,150 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
                                   networks=[{'uuid': network_id}],
                                   wait_until='ACTIVE')
 
-    @nuage_test.header(tags=['smoke'])
-    def test_link_subnet_l2(self):
+    def link_subnet_l2(self, cidr=None, mask_bits=None, dhcp_port=None,
+                       dhcp_option_3=None,
+                       pool=None, vsd_l2dom=None,
+                       should_pass=True, create_server=False):
         # create l2domain on VSD
         name = data_utils.rand_name('l2domain-')
-        cidr = IPNetwork('10.10.100.0/24')
-        vsd_l2dom_tmplt = self.create_vsd_dhcpmanaged_l2dom_template(
-            name=name,
-            cidr=cidr, gateway='10.10.100.1')
-        vsd_l2dom = self.create_vsd_l2domain(name=name,
-                                             tid=vsd_l2dom_tmplt[0]['ID'])
+        cidr = cidr or IPNetwork('10.10.100.0/24')
+        mask_bits = mask_bits or 24
+        dhcp_port = dhcp_port or '10.10.100.1'
 
-        self.assertEqual(vsd_l2dom[0][u'name'], name)
-        # create subnet on OS with nuagenet param set to l2domain UUID
-        net_name = data_utils.rand_name('network-')
-        network = self.create_network(network_name=net_name)
-        subnet = self.create_subnet(
-            network,
-            gateway=None,
-            cidr=cidr,
-            mask_bits=24,
-            nuagenet=vsd_l2dom[0]['ID'],
-            net_partition=Topology.def_netpartition)
-        self.assertEqual(subnet['cidr'], str(cidr))
-        self.assertTrue(self._verify_vm_ip(network['id'], net_name))
-
-    @nuage_test.header(tags=['smoke'])
-    def test_link_subnet_l2_allocation_pool(self):
-        # create l2domain on VSD
-        name = data_utils.rand_name('l2domain-')
-        cidr = IPNetwork('10.10.100.0/24')
-        dhcp_port = '10.10.100.1'
-        vsd_l2dom_tmplt = self.create_vsd_dhcpmanaged_l2dom_template(
-            name=name, cidr=cidr, gateway=dhcp_port)
-        vsd_l2dom = self.create_vsd_l2domain(name=name,
-                                             tid=vsd_l2dom_tmplt[0]['ID'])[0]
-        self.assertEqual(vsd_l2dom['name'], name)
+        if vsd_l2dom is None:
+            vsd_l2dom_tmplt = self.create_vsd_dhcpmanaged_l2dom_template(
+                name=name,
+                cidr=cidr, gateway=dhcp_port)[0]
+            vsd_l2dom = self.create_vsd_l2domain(
+                name=name, tid=vsd_l2dom_tmplt['ID'])[0]
+            self.assertEqual(vsd_l2dom['name'], name)
+            if dhcp_option_3:
+                self.nuageclient.create_dhcpoption_on_l2dom(
+                    vsd_l2dom['ID'], 3, [dhcp_option_3])
 
         # network
         net_name = data_utils.rand_name('network-')
         network = self.create_network(network_name=net_name)
 
-        # vsd mgd subnet
-        start_ip = IPAddress(cidr) + 3
-        end_ip = IPAddress(cidr) + 5
-        pool_dict = [{'start': start_ip, 'end': end_ip}]
+        # subnet
+        kwargs = {
+            'gateway': dhcp_option_3,
+            'cidr': cidr,
+            'mask_bits': mask_bits,
+            'nuagenet': vsd_l2dom['ID'],
+            'net_partition': Topology.def_netpartition
+        }
+        if pool:
+            kwargs['allocation_pools'] = [pool]
+        if should_pass:
+            subnet = self.create_subnet(network, **kwargs)
+            self.assertEqual(subnet['cidr'], str(cidr))
+            sub_pool = subnet['allocation_pools'][0]
+            if pool:
+                self.assertEqual(sub_pool['start'], pool['start'])
+                self.assertEqual(sub_pool['end'], pool['end'])
+            else:
+                if dhcp_option_3 and dhcp_option_3 == '10.10.100.2':
+                    self.assertEqual(2, len(subnet['allocation_pools']))
+                    # today we split the allocation pool ...
+                    # apparently the pools order can vary ...
+                    # so allow for both order permutations ...
+                    # TODO(Kris) dig deeper why order is random
+                    other_sub_pool = subnet['allocation_pools'][1]
+                    if sub_pool['start'] != str(cidr[1]):
+                        # swap
+                        tmp = other_sub_pool
+                        other_sub_pool = sub_pool
+                        sub_pool = tmp
 
-        subnet = self.create_subnet(
-            network, cidr=cidr, mask_bits=24,
-            gateway=None,  # as no DHCP option 3 set on VSD
-            allocation_pools=pool_dict,
-            nuagenet=vsd_l2dom['ID'],
-            net_partition=Topology.def_netpartition)
-        self.assertEqual(subnet['cidr'], str(cidr))
-        pool = subnet['allocation_pools'][0]
-        self.assertEqual(pool['start'], start_ip.format())
-        self.assertEqual(pool['end'], end_ip.format())
-        self.assertTrue(self._verify_vm_ip(network['id'], net_name))
+                    self.assertEqual(sub_pool['start'], str(cidr[1]))
+                    self.assertEqual(sub_pool['end'], str(cidr[1]))
+
+                    self.assertEqual(other_sub_pool['start'], str(cidr[3]))
+                    self.assertEqual(other_sub_pool['end'], str(cidr[-2]))
+
+                elif dhcp_option_3 and dhcp_option_3 != '10.10.100.2':
+                    raise NotImplementedError  # volunteers, feel free
+
+                else:
+                    self.assertEqual(sub_pool['start'], str(cidr[1]))
+                    self.assertEqual(sub_pool['end'], str(cidr[-2]))
+
+            if create_server:
+                self.assertTrue(self._verify_vm_ip(network['id'], net_name))
+
+        else:
+            self.assertRaises(self.failure_type, self.create_subnet,
+                              network, **kwargs)
+
+        return vsd_l2dom
+
+    @nuage_test.header(tags=['smoke'])
+    def test_link_subnet_l2_no_gw(self):
+        self.link_subnet_l2(create_server=True)
+
+        # test recreating a new (identical) vsd mgd sub
+        self.link_subnet_l2()
+
+    @nuage_test.header(tags=['smoke'])
+    def test_link_subnet_l2_with_gw(self):
+        self.link_subnet_l2(dhcp_option_3='10.10.100.2', create_server=True)
+
+    def double_link_subnet_l2(
+            self, cidr=None, mask_bits=None, dhcp_port=None,
+            dhcp_option_3=None,
+            pool1=None, pool2=None,
+            should_pass=True):
+
+        cidr = cidr or IPNetwork('10.10.100.0/24')
+        mask_bits = mask_bits or 24
+        dhcp_port = dhcp_port or '10.10.100.1'
+
+        # 1st net
+        vsd_l2dom = self.link_subnet_l2(cidr, mask_bits, dhcp_port,
+                                        dhcp_option_3, pool1)
+
+        # 2nd net
+        self.link_subnet_l2(cidr, mask_bits, dhcp_port, dhcp_option_3, pool2,
+                            vsd_l2dom=vsd_l2dom, should_pass=should_pass)
+
+    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsdmgd_subnets,
+                      'Multi-linked VSD mgd subnets are not supported in this '
+                      'release')
+    @nuage_test.header(tags=['smoke'])
+    def test_double_link_subnet_l2_no_gw_no_allocation_pools(self):
+        self.double_link_subnet_l2(should_pass=False)
+
+    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsdmgd_subnets,
+                      'Multi-linked VSD mgd subnets are not supported in this '
+                      'release')
+    @nuage_test.header(tags=['smoke'])
+    def test_double_link_subnet_l2_no_gw_non_disjunct_allocation_pools(self):
+        self.double_link_subnet_l2(
+            pool1={'start': '10.10.100.100', 'end': '10.10.100.110'},
+            pool2={'start': '10.10.100.110', 'end': '10.10.100.120'},
+            should_pass=False)
+
+    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsdmgd_subnets,
+                      'Multi-linked VSD mgd subnets are not supported in this '
+                      'release')
+    @nuage_test.header(tags=['smoke'])
+    def test_double_link_subnet_l2_no_gw_disjunct_allocation_pools(self):
+        self.double_link_subnet_l2(
+            pool1={'start': '10.10.100.100', 'end': '10.10.100.109'},
+            pool2={'start': '10.10.100.110', 'end': '10.10.100.120'},
+            should_pass=True)
+
+    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsdmgd_subnets,
+                      'Multi-linked VSD mgd subnets are not supported in this '
+                      'release')
+    @nuage_test.header(tags=['smoke'])
+    def test_double_link_subnet_l2_with_gw_disjunct_allocation_pools(self):
+        self.double_link_subnet_l2(
+            dhcp_option_3='10.10.100.2',
+            pool1={'start': '10.10.100.100', 'end': '10.10.100.109'},
+            pool2={'start': '10.10.100.110', 'end': '10.10.100.120'},
+            should_pass=True)
 
     @nuage_test.header(tags=['smoke'])
     def test_link_vsd_managed_shared_subnet_l2(self):
@@ -332,35 +421,6 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
                           net_partition=netpart['name'])
 
     @nuage_test.header(tags=['smoke'])
-    def test_link_duplicate_subnet_l2(self):
-        name = data_utils.rand_name('l2domain-')
-        cidr = IPNetwork('10.10.100.0/24')
-        vsd_l2dom_tmplt = self.create_vsd_dhcpmanaged_l2dom_template(
-            name=name, cidr=cidr, gateway='10.10.100.1')
-        vsd_l2dom = self.create_vsd_l2domain(name=name,
-                                             tid=vsd_l2dom_tmplt[0]['ID'])
-
-        self.assertEqual(vsd_l2dom[0][u'name'], name)
-        # create subnet on OS with nuagenet param set to l2domain UUID
-        net_name = data_utils.rand_name('network-')
-        network = self.create_network(network_name=net_name)
-        subnet = self.create_subnet(
-            network,
-            gateway=None,
-            cidr=cidr,
-            mask_bits=24,
-            nuagenet=vsd_l2dom[0]['ID'],
-            net_partition=Topology.def_netpartition)
-        self.assertEqual(subnet['cidr'], str(cidr))
-        # Try linking 2nd subnet to same VSD subnet. It should fail.
-        network = self.create_network(network_name=net_name)
-        self.assertRaises(
-            self.failure_type, self.create_subnet,
-            network, cidr=cidr,
-            mask_bits=24, nuagenet=vsd_l2dom[0]['ID'],
-            net_partition=Topology.def_netpartition)
-
-    @nuage_test.header(tags=['smoke'])
     def test_link_subnet_with_incorrect_cidr_l2(self):
         # netpartition does exist in neutron DB but it is not
         # where the l2domain is created
@@ -523,8 +583,9 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
             name=sub_name,
             zone_id=vsd_zone[0]['ID'],
             cidr=cidr,
-            gateway='10.10.100.1')
-        self.assertEqual(vsd_domain_subnet[0]['name'], sub_name)
+            gateway='10.10.100.1')[0]
+        self.assertEqual(vsd_domain_subnet['name'], sub_name)
+
         # create subnet on OS with nuagenet param set to subnet UUID
         net_name = data_utils.rand_name('network-')
         network = self.create_network(network_name=net_name)
@@ -533,7 +594,7 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
             subnet = self.create_subnet(
                 network,
                 cidr=IPNetwork('10.10.100.0/24'),
-                mask_bits=24, nuagenet=vsd_domain_subnet[0]['ID'],
+                mask_bits=24, nuagenet=vsd_domain_subnet['ID'],
                 gateway='10.10.100.5',
                 net_partition=Topology.def_netpartition)
             self.assertEqual(subnet['cidr'], str(cidr))
@@ -544,7 +605,7 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
                 self.create_subnet,
                 network,
                 cidr=IPNetwork('10.10.100.0/24'),
-                mask_bits=24, nuagenet=vsd_domain_subnet[0]['ID'],
+                mask_bits=24, nuagenet=vsd_domain_subnet['ID'],
                 gateway='10.10.100.5',
                 net_partition=Topology.def_netpartition)
 
@@ -613,8 +674,9 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
     def test_link_vsd_shared_subnet_l3_with_dhcp_option(self):
         vsd_shared_l3dom_subnet, cidr, gateway, mask_bits = \
             self._create_vsd_shared_resource(type='PUBLIC')
-        self.nuageclient.create_dhcpoption(vsd_shared_l3dom_subnet['ID'], '03',
-                                           [str(IPAddress(cidr) + 2)])
+        self.nuageclient.create_dhcpoption_on_shared(
+            vsd_shared_l3dom_subnet['ID'], '03',  # TODO(Kris) bad '03'?
+            [str(IPAddress(cidr) + 2)])
 
         name = data_utils.rand_name('l3dom-with-shared')
         vsd_l3dom_tmplt = self.create_vsd_l3dom_template(name=name)

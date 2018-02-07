@@ -164,7 +164,8 @@ class TenantServer(object):
         }
     }
 
-    def __init__(self, client, admin_client, image_profile='default'):
+    def __init__(self, client, admin_client, image_profile='default',
+                 networks=None):
         self.tenant_client = client
         self.admin_client = admin_client
 
@@ -183,6 +184,8 @@ class TenantServer(object):
         self.server_connectivity_verified = False
         self.nbr_nics_configured = 0
         self.nbr_nics_prepared_for = 0
+
+        self.networks = networks
 
     def console(self):
         return self.vm_console
@@ -348,11 +351,26 @@ class TenantServer(object):
     def assert_prepared_for_fip_access(self):
         assert self.has_fip_access()
 
-    def check_connectivity(self, force_recheck=False):
-        if force_recheck or not self.server_connectivity_verified:
-            self.assert_prepared_for_fip_access()  # TODO(Kris) make generic
-            self.vm_console.validate_authentication()
-            self.server_connectivity_verified = True
+    def check_connectivity(self, retry_cnt=1, force_recheck=False):
+        if force_recheck:
+            self.server_connectivity_verified = False
+        if not self.server_connectivity_verified:
+            for attempt in range(retry_cnt):
+                try:
+                    LOG.error('check_connectivity attempt %d' % attempt)
+
+                    # TODO(Kris) make generic
+                    self.assert_prepared_for_fip_access()
+
+                    self.vm_console.validate_authentication()
+                    self.server_connectivity_verified = True
+                    break
+
+                except lib_exc.SSHTimeout as e:
+                    LOG.error('check_connectivity failed (attempt %d) : %s' %
+                              (attempt, str(e)))
+
+        return self.server_connectivity_verified
 
     def ping(self, destination, count=3, interface=None, ip_type=4,
              should_pass=True):
