@@ -2,16 +2,14 @@
 
 from netaddr import IPNetwork
 
-from tempest import config
 from tempest.lib.common.utils import data_utils
 
 import base_nuage_extra_dhcp_options
 from base_nuage_extra_dhcp_options import NUAGE_NETWORK_TYPE
 
 from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as constants
-
-CONF = config.CONF
 
 
 class NuageExtraDHCPOptionsBaseL3(
@@ -398,7 +396,7 @@ class NuageExtraDHCPOptionsVsdManagedL3Test(
         cls.vsdmgd_l3_subnet = cls.create_subnet(
             cls.vsdmgd_l3_network,
             cidr=cidr, mask_bits=24, nuagenet=cls.vsd_domain_subnet[0]['ID'],
-            net_partition=CONF.nuage.nuage_default_netpartition)
+            net_partition=Topology.def_netpartition)
 
     @classmethod
     def resource_cleanup(cls):

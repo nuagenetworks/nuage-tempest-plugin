@@ -15,22 +15,21 @@
 #    under the License.
 
 import collections
-from oslo_log import log as logging
 import re
 import time
 
 from tempest.api.network import base
 from tempest.common import utils
-from tempest import config
 from tempest import exceptions
 from tempest.lib.common.utils import data_utils
 from tempest import test
 
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.tests.scenario \
     import base_nuage_network_scenario_test
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 Floating_IP_tuple = collections.namedtuple('Floating_IP_tuple',
                                            ['floating_ip', 'server'])
@@ -304,8 +303,10 @@ class TestNetworkBasicOps(
                                   if port['id'] != old_port['id']]
             return len(self.new_port_list) == 1
 
-        if not test.call_until_true(check_ports, CONF.network.build_timeout,
-                                    CONF.network.build_interval):
+        if not test.call_until_true(
+                check_ports,
+                CONF.network.build_timeout,
+                CONF.network.build_interval):
             raise exceptions.TimeoutException(
                 "No new port attached to the server in time (%s sec)! "
                 "Old port: %s. Number of new ports: %d" % (
@@ -319,8 +320,10 @@ class TestNetworkBasicOps(
             self.diff_list = [n for n in new_nic_list if n not in old_nic_list]
             return len(self.diff_list) == 1
 
-        if not test.call_until_true(check_new_nic, CONF.network.build_timeout,
-                                    CONF.network.build_interval):
+        if not test.call_until_true(
+                check_new_nic,
+                CONF.network.build_timeout,
+                CONF.network.build_interval):
             raise exceptions.TimeoutException("Interface not visible on the "
                                               "guest after %s sec"
                                               % CONF.network.build_timeout)
@@ -330,7 +333,8 @@ class TestNetworkBasicOps(
                                     addr=new_port.fixed_ips[0]['ip_address'])
         ssh_client.turn_nic_on(nic=new_nic)
 
-    def _get_server_nics(self, ssh_client):
+    @staticmethod
+    def _get_server_nics(ssh_client):
         reg = re.compile(r'(?P<num>\d+): (?P<nic_name>\w+):')
         ipatxt = ssh_client.get_ip_list()
         return reg.findall(ipatxt)
@@ -370,7 +374,8 @@ class TestNetworkBasicOps(
         # which is always IPv4, so we must only test connectivity to
         # external IPv4 IPs if the external network is dualstack.
         v4_subnets = [s for s in self._list_subnets(
-            network_id=CONF.network.public_network_id) if s['ip_version'] == 4]
+            network_id=CONF.network.public_network_id)
+            if s['ip_version'] == 4]
         self.assertEqual(1, len(v4_subnets),
                          "Found %d IPv4 subnets" % len(v4_subnets))
 
@@ -400,14 +405,15 @@ class TestNetworkBasicOps(
                                                          src=floating_ip))
                 raise
 
-    def _get_server_mtu(self, ssh_client, interface='eth0'):
+    @staticmethod
+    def _get_server_mtu(ssh_client, interface='eth0'):
         command = 'ip a | grep -v inet | grep ' + interface + \
                   ' | cut -d" " -f 5'
-
         mtu = ssh_client.exec_command(command)
         return int(mtu)
 
-    def _get_server_domain_name(self, ssh_client):
+    @staticmethod
+    def _get_server_domain_name(ssh_client):
         command = 'grep search /etc/resolv.conf | cut -d" " -f2'
         domain_name = str(ssh_client.exec_command(command)).rstrip('\n')
         return domain_name
@@ -475,4 +481,3 @@ class TestNetworkBasicOps(
                      " Connectivity is BACK")
             self._check_public_connectivity(
                 should_connect=True, should_check_floating_ip_status=False)
-        pass

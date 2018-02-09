@@ -1,23 +1,22 @@
 # Copyright 2015 Alcatel-Lucent
 # All Rights Reserved.
 
-import logging
 from netaddr import IPAddress
 
 from tempest.common import utils
-from tempest import config
 from tempest.lib.common.utils import data_utils
 
 import nuage_base
 
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_networks
 from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_port_attributes
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 VALID_MAC_ADDRESS = 'fa:fa:3e:e8:e8:c0'
 
@@ -169,7 +168,7 @@ class HeatVsdManagedPortAttributesTest(
         #  Floating IP
         #
         # I expect the claimed floating ip in the port show response
-        if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+        if not Topology.is_ml2:
             fip_present = self._check_fip_in_port_show(l3_port_id,
                                                        claimed_fip_id)
             self.assertTrue(fip_present,
@@ -181,7 +180,7 @@ class HeatVsdManagedPortAttributesTest(
         self._disassociate_fip_from_port(l3_show_port)
         # Then I no longer expect the claimed floating ip in the port
         # show response
-        if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+        if not Topology.is_ml2:
             fip_present = self._check_fip_in_port_show(l3_port_id,
                                                        claimed_fip_id)
             self.assertFalse(fip_present,
@@ -225,7 +224,7 @@ class HeatVsdManagedPortAttributesTest(
 
         stack_parameters = {
             'vsd_l2_subnet_id': vsd_l2_subnet[0]['ID'],
-            'netpartition_name': CONF.nuage.nuage_default_netpartition,
+            'netpartition_name': Topology.def_netpartition,
             'l2_net_name': data_utils.rand_name('l2-net'),
             'l2_subnet_name': data_utils.rand_name('l2-subnet'),
             'l2_net_cidr': str(l2_cidr.cidr),

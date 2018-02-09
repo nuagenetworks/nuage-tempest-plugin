@@ -1,8 +1,6 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
 
-from tempest import config
-
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
@@ -11,8 +9,6 @@ from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
     import ExternalId
 
 from tempest.lib import decorators
-
-CONF = config.CONF
 
 
 @nuage_test.class_header(tags=[tags.ML2])

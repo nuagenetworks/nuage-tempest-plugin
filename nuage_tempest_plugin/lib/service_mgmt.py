@@ -5,17 +5,14 @@
 import time
 import urlparse
 
-from oslo_log import log as logging
-
-from tempest import config
 from tempest.lib.common import ssh as ssh
 from tempest.lib import exceptions
 
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as constants
 
-CONF = config.CONF
-
-LOG = logging.getLogger(__name__)
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 class ServiceManager(object):
@@ -23,12 +20,10 @@ class ServiceManager(object):
         self.service_start_cmd = \
             constants.NEUTRON_KILODEVSTACK_UBUNTU_START_CMD
 
-        if CONF.nuage_sut.controller_service_management_mode == "ubuntu" or\
-           CONF.nuage_sut.controller_service_management_mode == "rhel":
+        if Topology.management_mode == "ubuntu" or \
+                Topology.management_mode == "rhel":
             self.service_start_cmd = constants.NEUTRON_KILO_UBUNTU_START_CMD
             self.service_stop_cmd = constants.NEUTRON_KILO_UBUNTU_STOP_CMD
-
-        pass
 
     @staticmethod
     def execute(cmd):
@@ -46,8 +41,8 @@ class ServiceManager(object):
         netloc_parts = uri_object.netloc.rsplit(':')
         ip_address = netloc_parts[0]
 
-        username = CONF.nuage_sut.controller_user
-        password = CONF.nuage_sut.controller_password
+        username = Topology.controller_user
+        password = Topology.controller_password
 
         ssh_client = ssh.Client(ip_address, username, password,
                                 ssh_timeout,
@@ -121,8 +116,8 @@ class ServiceManager(object):
         pids = response.split('\n')
 
         LOG.debug("Stopping service " + service)
-        if CONF.nuage_sut.controller_service_management_mode == "ubuntu" or\
-           CONF.nuage_sut.controller_service_management_mode == "rhel":
+        if Topology.management_mode == "ubuntu" or \
+                Topology.management_mode == "rhel":
 
             try:
                 self.execute(self.service_stop_cmd)
@@ -149,8 +144,8 @@ class ServiceManager(object):
 
     def get_configuration_attribute(self, config_file, config_group,
                                     config_key):
-        if CONF.nuage_sut.controller_service_management_mode == "ubuntu" or\
-           CONF.nuage_sut.controller_service_management_mode == "rhel":
+        if Topology.management_mode == "ubuntu" or \
+                Topology.management_mode == "rhel":
             cmd = "source functions-common.sh; iniget " + config_file +\
                   ' ' + config_group + ' ' + config_key
             response = self.execute(cmd)
@@ -169,8 +164,8 @@ class ServiceManager(object):
 
     def set_configuration_attribute(self, config_file, config_group,
                                     config_key, value):
-        if CONF.nuage_sut.controller_service_management_mode == "ubuntu" or\
-           CONF.nuage_sut.controller_service_management_mode == "rhel":
+        if Topology.management_mode == "ubuntu" or \
+                Topology.management_mode == "rhel":
             cmd = "source functions-common.sh; iniset " + config_file + ' '\
                   + config_group + ' ' + config_key + ' ' + value
         else:
@@ -185,8 +180,8 @@ class ServiceManager(object):
 
     def comment_configuration_attribute(self, config_file, config_group,
                                         config_key):
-        if CONF.nuage_sut.controller_service_management_mode == "ubuntu" or\
-           CONF.nuage_sut.controller_service_management_mode == "rhel":
+        if Topology.management_mode == "ubuntu" or \
+                Topology.management_mode == "rhel":
             cmd = "source functions-common.sh; inicomment " + config_file +\
                   ' ' + config_group + ' ' + config_key
         else:

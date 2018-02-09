@@ -24,13 +24,35 @@ from six.moves.urllib import parse as urlparse
 from tempest.lib.common import rest_client as service_client
 from tempest.lib.common.utils import data_utils
 
+from nuage_tempest_plugin.lib.topology import Topology
 import nuage_tempest_plugin.lib.utils.constants as constants
+
+CONF = Topology.get_conf()
 
 
 class NuageNetworkClientJSON(service_client.RestClient):
 
     version = '2.0'
     uri_prefix = "v2.0"
+
+    def __init__(self,
+                 auth_provider,
+                 service=CONF.network.catalog_type,
+                 region=CONF.network.region or CONF.identity.region,
+                 endpoint_type=CONF.network.endpoint_type,
+                 build_interval=CONF.network.build_interval,
+                 build_timeout=CONF.network.build_timeout,
+                 disable_ssl_certificate_validation=False,
+                 ca_certs=None,
+                 trace_requests='',
+                 name=None,
+                 http_timeout=None,
+                 proxy_url=None):
+        super(NuageNetworkClientJSON, self).__init__(
+            auth_provider, service, region, endpoint_type,
+            build_interval, build_timeout,
+            disable_ssl_certificate_validation, ca_certs,
+            trace_requests, name, http_timeout, proxy_url)
 
     def _get_request(self, uri):
         resp, body = self.get(uri)

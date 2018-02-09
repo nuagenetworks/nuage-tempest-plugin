@@ -4,18 +4,15 @@
 import re
 
 from netaddr import IPNetwork
-from oslo_log import log as logging
 
-from tempest import config
 from tempest.lib.common.utils.linux.remote_client import RemoteClient
 from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions as lib_exc
 
 from nuage_tempest_plugin.lib.topology import Topology
 
-
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 class Console(object):
@@ -132,15 +129,14 @@ class FipAccessConsole(RemoteClient, Console):
 
 
 class TenantServer(object):
-    LOG = logging.getLogger(__name__)
 
-    """
+    """TenantServer
+
     Object to represent a server managed by the CMS to be consumed by tenants.
     Can be:
     - a tenant VM on a KVM hypervisor
     - a baremetal server
     """
-
     tenant_client = None
     admin_client = None
     image_profiles = {

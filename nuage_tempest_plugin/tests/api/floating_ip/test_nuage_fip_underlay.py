@@ -15,9 +15,6 @@
 
 from __future__ import print_function
 
-from oslo_log import log as logging
-
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
@@ -26,11 +23,9 @@ from nuage_tempest_plugin.lib.test import nuage_test
 
 import base_nuage_fip_underlay
 
-CONF = config.CONF
-
 
 class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
-    LOG = logging.getLogger(__name__)
+
     # user order of tests as in this file to avoid unnecessary neutron restart
     #   unittest.TestLoader.sortTestMethodsUsing(None)
 

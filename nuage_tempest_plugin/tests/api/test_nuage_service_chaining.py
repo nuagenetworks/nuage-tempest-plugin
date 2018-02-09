@@ -13,27 +13,20 @@
 #    under the License.
 
 import netaddr
-from oslo_log import log as logging
 
-from tempest.api.network import base  # Kris added
-from tempest import config
+from tempest.api.network import base
 from tempest.lib.common.utils import data_utils
 from tempest.test import decorators
 
-from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
     import ExternalId
 
-CONF = config.CONF
-external_id_release = Release(n_constants.EXTERNALID_RELEASE)
-current_release = Release(Topology.nuage_release)
-
-LOG = logging.getLogger(__name__)
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 class NuageServiceChaining(base.BaseNetworkTest):
@@ -45,11 +38,6 @@ class NuageServiceChaining(base.BaseNetworkTest):
         cls.nuage_vsd_client = NuageRestClient()
         cls.client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
-            CONF.network.catalog_type,
-            CONF.network.region or CONF.identity.region,
-            endpoint_type=CONF.network.endpoint_type,
-            build_interval=CONF.network.build_interval,
-            build_timeout=CONF.network.build_timeout,
             **cls.os_primary.default_params)
 
     @classmethod
@@ -155,7 +143,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
         )
         self.assertEqual(
             redirect_vip[0]['virtualIP'], vipinfo['virtual_ip_address'])
-        if external_id_release <= current_release:
+        if Topology.within_ext_id_release():
             self.assertIsNotNone(redirect_vip[0]['externalID'],
                                  message="External ID is not set for"
                                          " Redirect VIP")
@@ -190,7 +178,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
         # Verifying Redirect Target on VSD
         redirect_target = self._verify_redirect_target(
             rt, 'l2domains', vsd_subnet[0], post_body)
-        if external_id_release <= current_release:
+        if Topology.within_ext_id_release():
             self.assertEqual(redirect_target[0]['externalID'], subnet_ext_id)
         body = self.security_groups_client.list_security_groups()
         security_group_id = body['security_groups'][0]['id']
@@ -208,7 +196,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
         rtrule = self.client.create_redirection_target_rule(**rule_body)
 
         # Verifying Redirect Target Rule on VSD
-        if external_id_release <= current_release:
+        if Topology.within_ext_id_release():
             external_id = ExternalId(self.subnet_l2['id']).at_cms_id()
         else:
             external_id = None
@@ -269,7 +257,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
         # Verifying Redirect Target on VSD
         redirect_target = self._verify_redirect_target(
             rt, 'domains', domain[0], post_body)
-        if external_id_release <= current_release:
+        if Topology.within_ext_id_release():
             self.assertEqual(redirect_target[0]['externalID'], router_ext_id)
 
         body = self.security_groups_client.list_security_groups()
@@ -289,7 +277,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
         rtrule = self.client.create_redirection_target_rule(**rule_body)
 
         # Verifying Redirect Target Rule on VSD
-        if external_id_release <= current_release:
+        if Topology.within_ext_id_release():
             external_id = ExternalId(self.router['id']).at_cms_id()
         else:
             external_id = None
@@ -347,7 +335,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
         # Verifying Redirect Target on VSD
         redirect_target = self._verify_redirect_target(
             rt, 'domains', domain[0], post_body)
-        if external_id_release <= current_release:
+        if Topology.within_ext_id_release():
             self.assertEqual(redirect_target[0]['externalID'], subnet_ext_id)
 
         body = self.security_groups_client.list_security_groups()
@@ -367,7 +355,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
         rtrule = self.client.create_redirection_target_rule(**rule_body)
 
         # Verifying Redirect Target Rule on VSD
-        if external_id_release <= current_release:
+        if Topology.within_ext_id_release():
             external_id = ExternalId(self.subnet_l3['id']).at_cms_id()
         else:
             external_id = None
@@ -425,7 +413,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
         # Verifying Redirect Target on VSD
         redirect_target = self._verify_redirect_target(
             rt, 'domains', domain[0], post_body)
-        if external_id_release <= current_release:
+        if Topology.within_ext_id_release():
             self.assertEqual(redirect_target[0]['externalID'], router_ext_id)
         body = self.security_groups_client.list_security_groups()
         security_group_id = body['security_groups'][0]['id']
@@ -442,7 +430,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
         rtrule = self.client.create_redirection_target_rule(**rule_body)
 
         # Verifying Redirect Target Rule on VSD
-        if external_id_release <= current_release:
+        if Topology.within_ext_id_release():
             external_id = ExternalId(self.router['id']).at_cms_id()
         else:
             external_id = None
@@ -526,7 +514,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
         rtrule = self.client.create_redirection_target_rule(**rule_body)
 
         # Verifying Redirect Target Rule on VSD
-        if external_id_release <= current_release:
+        if Topology.within_ext_id_release():
             external_id = ExternalId(self.router['id']).at_cms_id()
         else:
             external_id = None

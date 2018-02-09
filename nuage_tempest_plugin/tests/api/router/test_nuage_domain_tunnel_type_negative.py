@@ -1,8 +1,6 @@
 # Copyright 2015 Alcatel-Lucent
 # All Rights Reserved.
-#
 
-from tempest import config
 from tempest.lib import exceptions
 from tempest.test import decorators
 
@@ -10,8 +8,6 @@ from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 
 import base_nuage_domain_tunnel_type
-
-CONF = config.CONF
 
 
 class NuageDomainTunnelTypeNegativeTest(
@@ -30,7 +26,7 @@ class NuageDomainTunnelTypeNegativeTest(
 
     def _do_test_invalid_value(self, invalid_value):
         reported_value = invalid_value if invalid_value != '' else 'None'
-        if Topology.openstack_version == 'newton':
+        if Topology.at_openstack('newton'):
             self.assertRaisesRegex(
                 exceptions.BadRequest,
                 "Invalid input for tunnel_type. "

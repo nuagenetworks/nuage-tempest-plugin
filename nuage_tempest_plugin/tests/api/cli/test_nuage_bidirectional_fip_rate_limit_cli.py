@@ -3,7 +3,6 @@
 
 import json
 
-from tempest import config
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib import service_mgmt
@@ -12,8 +11,6 @@ from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 
 from base_nuage_fip_rate_limit_cli import BaseNuageFipRateLimit
-
-CONF = config.CONF
 
 MSG_NO_INPUT = "neutron floatingip-create: error: argument " \
                "--nuage-ingress-fip-rate-kbps: expected one argument"
@@ -25,6 +22,8 @@ MSG_INVALID_INPUT_FOR_OPERATION = "Invalid input for operation: " \
                                   "higher than 0, " \
                                   "-1 for unlimited or 'default' for " \
                                   "the configured default value.."
+
+LOG = Topology.get_logger(__name__)
 
 
 class TestNuageBidiFRLCliWODefault(BaseNuageFipRateLimit):
@@ -41,12 +40,12 @@ class TestNuageBidiFRLCliWODefault(BaseNuageFipRateLimit):
         # TODO(Kris) FIXME.....................................................
 
         fip_eg_rate_limit = cls.service_manager.get_configuration_attribute(
-            CONF.nuage_sut.nuage_plugin_configuration,
+            Topology.nuage_plugin_configuration,
             constants.FIP_RATE_GROUP,
             constants.BIDIRECTIONAL_FIP_RATE_DEFAULT_EGRESS
         )
         fip_ig_rate_limit = cls.service_manager.get_configuration_attribute(
-            CONF.nuage_sut.nuage_plugin_configuration,
+            Topology.nuage_plugin_configuration,
             constants.FIP_RATE_GROUP,
             constants.BIDIRECTIONAL_FIP_RATE_DEFAULT_INGRESS
         )
@@ -68,12 +67,12 @@ class TestNuageBidiFRLCliWODefault(BaseNuageFipRateLimit):
             if Topology.neutron_restart_supported():
                 cls.service_manager = service_mgmt.ServiceManager()
                 cls.service_manager.must_have_configuration_attribute(
-                    CONF.nuage_sut.nuage_plugin_configuration,
+                    Topology.nuage_plugin_configuration,
                     constants.FIP_RATE_GROUP,
                     constants.BIDIRECTIONAL_FIP_RATE_DEFAULT_EGRESS,
                     cls.configured_default_fip_rate)
                 cls.service_manager.must_have_configuration_attribute(
-                    CONF.nuage_sut.nuage_plugin_configuration,
+                    Topology.nuage_plugin_configuration,
                     constants.FIP_RATE_GROUP,
                     constants.BIDIRECTIONAL_FIP_RATE_DEFAULT_INGRESS,
                     cls.configured_default_fip_rate)
@@ -97,10 +96,10 @@ class TestNuageBidiFRLCliWODefault(BaseNuageFipRateLimit):
 
         self.assertEqual(created_floating_ip['fixed_ip_address'],
                          fixed_ips_dict['ip_address'])
-        self.LOG.info("Ingress FIP Rate limit %s",
-                      created_floating_ip['nuage_ingress_fip_rate_kbps'])
-        self.LOG.info("Egress FIP Rate limit %s",
-                      created_floating_ip['nuage_egress_fip_rate_kbps'])
+        LOG.info("Ingress FIP Rate limit %s",
+                 created_floating_ip['nuage_ingress_fip_rate_kbps'])
+        LOG.info("Egress FIP Rate limit %s",
+                 created_floating_ip['nuage_egress_fip_rate_kbps'])
         if ingress_rate_limit is not None:
             self.assertEqual(
                 float(created_floating_ip['nuage_ingress_fip_rate_kbps']),
@@ -150,10 +149,10 @@ class TestNuageBidiFRLCliWODefault(BaseNuageFipRateLimit):
         self.assertEqual(1, len(qos))
         self.assertEqual(True, qos[0]['FIPRateLimitingActive'])
 
-        self.LOG.info("OpenStack Egress FIP Rate limit %s",
-                      qos[0]['FIPPeakInformationRate'])
-        self.LOG.info("OpenStack Ingress FIP Rate limit %s",
-                      qos[0]['EgressFIPPeakInformationRate'])
+        LOG.info("OpenStack Egress FIP Rate limit %s",
+                 qos[0]['FIPPeakInformationRate'])
+        LOG.info("OpenStack Ingress FIP Rate limit %s",
+                 qos[0]['EgressFIPPeakInformationRate'])
         if ingress_rate_limit is not None:
             self.assertEqualFiprate(
                 ingress_rate_limit,

@@ -1,14 +1,12 @@
 # Copyright 2015 Alcatel-Lucent
 # All Rights Reserved.
 
-import logging
-
 from netaddr import IPAddress
 
-from tempest import config
 from tempest.lib.common.utils import data_utils
 
 from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
 
 from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
     import NetworkTestCaseMixin
@@ -17,9 +15,8 @@ from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
 from nuage_tempest_plugin.tests.api.ipv6.base_nuage_orchestration \
     import NuageBaseOrchestrationTest
 
-CONF = config.CONF
-
-LOG = logging.getLogger(__name__)
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 class OrchestrationVsdManagedNetworkDualStackTest(NuageBaseOrchestrationTest,

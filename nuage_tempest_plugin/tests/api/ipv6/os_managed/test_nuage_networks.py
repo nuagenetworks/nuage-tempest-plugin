@@ -12,17 +12,18 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 import netaddr
 
-from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
-
 from tempest.api.network import test_networks as tempest_test_networks
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions as lib_exc
 
-CONF = config.CONF
+from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
+from nuage_tempest_plugin.lib.topology import Topology
+
+CONF = Topology.get_conf()
 
 
 class NuageNetworksIpV6Test(tempest_test_networks.NetworksIpV6Test):

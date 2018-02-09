@@ -13,15 +13,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo_log import log as logging
 import urlparse
 
-from tempest import config
 from tempest.lib.common import ssh
 from tempest.lib import exceptions
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+from nuage_tempest_plugin.lib.topology import Topology
+
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 SET_EXTERNAL_ID_UPGRADE_SCRIPT = "set_externalid_with_cmsid.py"
 SCRIPT_PATH = "/opt/upgrade-script/upgrade-scripts/"
@@ -40,8 +40,8 @@ def execute(cmd):
     netloc_parts = uri_object.netloc.rsplit(':')
     ip_address = netloc_parts[0]
 
-    username = CONF.nuage_sut.controller_user
-    password = CONF.nuage_sut.controller_password
+    username = Topology.controller_user
+    password = Topology.controller_password
 
     ssh_client = ssh.Client(ip_address, username, password,
                             ssh_timeout,

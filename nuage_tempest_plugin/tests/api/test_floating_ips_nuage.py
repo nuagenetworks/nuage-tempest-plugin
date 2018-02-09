@@ -15,24 +15,18 @@
 
 import uuid
 
-from nuage_tempest_plugin.lib import features
-
-from nuage_tempest_plugin.lib.release import Release
+from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
 from tempest.api.network import test_floating_ips
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
 from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
-
-CONF = config.CONF
-current_release = Release(Topology.nuage_release)
 
 
 class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
@@ -81,10 +75,9 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
                              " Associated to the port" + port_id + " on VSD")
             self.assertTrue(validation, msg=error_message)
 
-        elif current_release.sub_release < 2099:
-            pass
         else:
-            self.assertEqual(0, len(nuage_domain_fip))
+            # self.assertEqual(0, len(nuage_domain_fip))
+            pass
 
     @decorators.attr(type='smoke')
     def test_create_list_show_update_delete_floating_ip(self):
@@ -211,8 +204,7 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
             floatingip_id_list.append(f['id'])
         self.assertIn(created_floating_ip['id'], floatingip_id_list)
 
-        if Release(CONF.nuage_sut.openstack_version) >= Release('Newton') and \
-                CONF.nuage_sut.nuage_plugin_mode == 'ml2':
+        if Topology.from_openstack('Newton') and Topology.is_ml2:
             self.floating_ips_client.update_floatingip(
                 created_floating_ip['id'],
                 port_id=self.ports[3]['id'])
@@ -290,8 +282,7 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
             "device_owner": "compute:None", "device_id": str(uuid.uuid1())}
         port_other_router = self.create_port(network2, **post_body)
 
-        if Release(CONF.nuage_sut.openstack_version) >= Release('Newton') and \
-                CONF.nuage_sut.nuage_plugin_mode == 'ml2':
+        if Topology.from_openstack('Newton') and Topology.is_ml2:
             self.floating_ips_client.update_floatingip(
                 created_floating_ip['id'],
                 port_id=port_other_router['id'])
@@ -364,7 +355,7 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
         body = self.floating_ips_client.show_floatingip(fip_id)
         fip = body['floatingip']
 
-        if features.NUAGE_FEATURES.bidirectional_fip_rate_limit:
+        if NUAGE_FEATURES.bidirectional_fip_rate_limit:
             # rate_limit is in kbps now!
             self.assertThat(fip, ContainsDict(
                 {'nuage_ingress_fip_rate_kbps': Equals(-1)}))
@@ -399,7 +390,7 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
         self.assertThat(qos[0], ContainsDict(
             {'FIPPeakBurstSize': Equals(str(100))}))
 
-        if features.NUAGE_FEATURES.bidirectional_fip_rate_limit:
+        if NUAGE_FEATURES.bidirectional_fip_rate_limit:
             self.assertThat(qos[0], ContainsDict(
                 {'EgressFIPPeakInformationRate': Equals('INFINITY')}))
             self.assertThat(qos[0], ContainsDict(
@@ -430,7 +421,7 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
         body = self.floating_ips_client.show_floatingip(fip_id)
         fip = body['floatingip']
 
-        if features.NUAGE_FEATURES.bidirectional_fip_rate_limit:
+        if NUAGE_FEATURES.bidirectional_fip_rate_limit:
             self.assertIsNotNone(fip.get('nuage_ingress_fip_rate_kbps'))
             self.assertIsNotNone(fip.get('nuage_egress_fip_rate_kbps'))
         else:
@@ -452,7 +443,7 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
                          qos[0]['externalID'])
         self.assertEqual(True, qos[0]['FIPRateLimitingActive'])
 
-        if features.NUAGE_FEATURES.bidirectional_fip_rate_limit:
+        if NUAGE_FEATURES.bidirectional_fip_rate_limit:
             self.assertEqual('INFINITY', qos[0]['FIPPeakInformationRate'])
             self.assertEqual('INFINITY',
                              qos[0]['EgressFIPPeakInformationRate'])

@@ -1,22 +1,16 @@
 # Copyright 2015 Alcatel-Lucent
 # All Rights Reserved.
 
-from oslo_log import log as logging
-from tempest import config
-
-from nuage_tempest_plugin.lib.remote_cli import remote_cli_base_testcase
+from nuage_tempest_plugin.lib.cli import client_testcase
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.tests.api.floating_ip.base_nuage_fip_underlay \
     import NuageFipUnderlayBase
 
-CONF = config.CONF
-
 
 class TestNuageFipUnderlayConfigurationCliNone(
-        remote_cli_base_testcase.RemoteCliBaseTestCase, NuageFipUnderlayBase):
+        client_testcase.CLIClientTestCase, NuageFipUnderlayBase):
 
     """FIP to Underlay tests using Neutron CLI client. """
-    LOG = logging.getLogger(__name__)
 
     @classmethod
     def resource_setup(cls):
@@ -51,10 +45,9 @@ class TestNuageFipUnderlayConfigurationCliNone(
 
 
 class TestNuageFipUnderlayConfigCliDefaultFalse(
-        remote_cli_base_testcase.RemoteCliBaseTestCase, NuageFipUnderlayBase):
+        client_testcase.CLIClientTestCase, NuageFipUnderlayBase):
 
     """FIP to Underlay tests using Neutron CLI client. """
-    LOG = logging.getLogger(__name__)
 
     @classmethod
     def resource_setup(cls):
@@ -89,10 +82,9 @@ class TestNuageFipUnderlayConfigCliDefaultFalse(
 
 
 class TestNuageFipUnderlayConfigCliDefaultTrue(
-        remote_cli_base_testcase.RemoteCliBaseTestCase, NuageFipUnderlayBase):
+        client_testcase.CLIClientTestCase, NuageFipUnderlayBase):
 
     """FIP to Underlay tests using Neutron CLI client. """
-    LOG = logging.getLogger(__name__)
 
     @classmethod
     def resource_setup(cls):

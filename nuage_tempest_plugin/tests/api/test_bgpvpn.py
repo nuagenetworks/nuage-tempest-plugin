@@ -12,12 +12,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo_log import log as logging
 import uuid
 
 from tempest.api.network import base
 from tempest.common import utils
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions as lib_exc
 from tempest.test import decorators
@@ -30,9 +28,10 @@ from nuage_tempest_plugin.lib.mixins.bgpvpn import BGPVPNMixin
 from nuage_tempest_plugin.lib.mixins.l3 import L3Mixin
 from nuage_tempest_plugin.lib.mixins.network import NetworkMixin
 from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
 
-LOG = logging.getLogger(__name__)
-CONF = config.CONF
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 class BgpvpnBase(BGPVPNMixin):
@@ -51,7 +50,7 @@ class BgpvpnBase(BGPVPNMixin):
         super(BgpvpnBase, cls).resource_setup()
         cls.tenant_id = cls.bgpvpn_client.tenant_id
         cls.admin_tenant_id = cls.bgpvpn_client_admin.tenant_id
-        cls.def_net_partition = CONF.nuage.nuage_default_netpartition
+        cls.def_net_partition = Topology.def_netpartition
 
     @classmethod
     def resource_cleanup(cls):
@@ -137,13 +136,13 @@ class RouterAssociationTest(BgpvpnBase, L3Mixin):
                          route_distinguishers=['123:321'],
                          route_targets=['123:321']) as bgpvpn,\
                 self.router() as router,\
-                self.router_assocation(router['id'],
-                                       bgpvpn['id']) as rtr_assoc:
+                self.router_association(router['id'],
+                                        bgpvpn['id']) as rtr_assoc:
             router = self.routers_client.show_router(router['id'])['router']
             self.assertThat(router['rd'],
                             Equals(bgpvpn['route_distinguishers'][0]))
             self.assertThat(router['rt'], Equals(bgpvpn['route_targets'][0]))
-            rtr_assoc_show = self.rtr_assoc_client.show_router_assocation(
+            rtr_assoc_show = self.rtr_assoc_client.show_router_association(
                 rtr_assoc['id'], bgpvpn['id'])
             self.assertThat(rtr_assoc_show['router_id'], Equals(router['id']))
             self.os_data.insert_resource('os-router-ra-1',
@@ -159,13 +158,13 @@ class RouterAssociationTest(BgpvpnBase, L3Mixin):
                          route_distinguishers=['123:321'],
                          route_targets=['123:321']) as bgpvpn,\
                 self.router() as router,\
-                self.router_assocation(router['id'],
-                                       bgpvpn['id']):  # as rtr_assoc:
+                self.router_association(router['id'],
+                                        bgpvpn['id']):  # as rtr_assoc:
             router = self.routers_client.show_router(router['id'])['router']
             self.assertThat(router['rd'],
                             Equals(bgpvpn['route_distinguishers'][0]))
             self.assertThat(router['rt'], Equals(bgpvpn['route_targets'][0]))
-            rtr_assoc_list = self.rtr_assoc_client.list_router_assocations(
+            rtr_assoc_list = self.rtr_assoc_client.list_router_associations(
                 bgpvpn['id'])
             self.assertThat(rtr_assoc_list[0]['router_id'],
                             Equals(router['id']))
@@ -183,7 +182,7 @@ class RouterAssociationTest(BgpvpnBase, L3Mixin):
                 self.router() as router:
             self.assertRaisesRegex(
                 lib_exc.BadRequest, "route_distinguisher is required",
-                self.rtr_assoc_client.create_router_assocation,
+                self.rtr_assoc_client.create_router_association,
                 bgpvpn['id'], router_id=router['id'])
 
     def test_router_association_missing_rt(self):
@@ -192,7 +191,7 @@ class RouterAssociationTest(BgpvpnBase, L3Mixin):
                 self.router() as router:
             self.assertRaisesRegex(
                 lib_exc.BadRequest, "route_target is required",
-                self.rtr_assoc_client.create_router_assocation,
+                self.rtr_assoc_client.create_router_association,
                 bgpvpn['id'], router_id=router['id'])
 
     def test_router_association_import_targets(self):
@@ -204,7 +203,7 @@ class RouterAssociationTest(BgpvpnBase, L3Mixin):
             self.assertRaisesRegex(
                 lib_exc.BadRequest,
                 "This bgpvpn can't have any import_targets",
-                self.rtr_assoc_client.create_router_assocation,
+                self.rtr_assoc_client.create_router_association,
                 bgpvpn['id'], router_id=router['id'])
 
     def test_router_association_export_targets(self):
@@ -216,7 +215,7 @@ class RouterAssociationTest(BgpvpnBase, L3Mixin):
             self.assertRaisesRegex(
                 lib_exc.BadRequest,
                 "This bgpvpn can't have any export_targets",
-                self.rtr_assoc_client.create_router_assocation,
+                self.rtr_assoc_client.create_router_association,
                 bgpvpn['id'], router_id=router['id'])
 
     def test_router_association_invalid_bgpvpn_id(self):
@@ -224,7 +223,7 @@ class RouterAssociationTest(BgpvpnBase, L3Mixin):
             self.assertRaisesRegex(
                 lib_exc.NotFound,
                 "could not be found",
-                self.rtr_assoc_client.create_router_assocation,
+                self.rtr_assoc_client.create_router_association,
                 uuid.uuid4(), router_id=router['id'])
 
     def test_router_association_invalid_router(self):
@@ -232,7 +231,7 @@ class RouterAssociationTest(BgpvpnBase, L3Mixin):
             self.assertRaisesRegex(
                 lib_exc.NotFound,
                 "could not be found",
-                self.rtr_assoc_client.create_router_assocation,
+                self.rtr_assoc_client.create_router_association,
                 bgpvpn['id'], router_id=str(uuid.uuid4()))
 
     def test_router_association_multiplerouters_singlebgpvpn(self):
@@ -241,12 +240,12 @@ class RouterAssociationTest(BgpvpnBase, L3Mixin):
                          route_targets=['123:321']) as bgpvpn, \
                 self.router() as router, \
                 self.router() as router2, \
-                self.router_assocation(router['id'],
-                                       bgpvpn['id']):
+                self.router_association(router['id'],
+                                        bgpvpn['id']):
             self.assertRaisesRegex(
                 lib_exc.BadRequest,
                 "Can not have more than 1 router association per bgpvpn",
-                self.rtr_assoc_client.create_router_assocation,
+                self.rtr_assoc_client.create_router_association,
                 bgpvpn['id'], router_id=router2['id'])
 
     def test_router_association_singlerouter_multiplebgpvpn(self):
@@ -257,12 +256,12 @@ class RouterAssociationTest(BgpvpnBase, L3Mixin):
                             route_distinguishers=['234:432'],
                             route_targets=['234:432']) as bgpvpn2, \
                 self.router() as router, \
-                self.router_assocation(router['id'],
-                                       bgpvpn['id']):
+                self.router_association(router['id'],
+                                        bgpvpn['id']):
             self.assertRaisesRegex(
                 lib_exc.BadRequest,
                 "Can not have more than 1 router association per router",
-                self.rtr_assoc_client.create_router_assocation,
+                self.rtr_assoc_client.create_router_association,
                 bgpvpn2['id'], router_id=router['id'])
 
     def test_delete_bgpvpn_with_router_association(self):
@@ -271,7 +270,7 @@ class RouterAssociationTest(BgpvpnBase, L3Mixin):
             route_distinguishers=['256:432'],
             route_targets=['256:432'])
         router = self.routers_client.create_router(name='router-bgpvpn')
-        self.rtr_assoc_client.create_router_assocation(
+        self.rtr_assoc_client.create_router_association(
             bgpvpn['id'], router_id=router['router']['id'])
         self.bgpvpn_client_admin.delete_bgpvpn(bgpvpn['id'])
         self.assertRaisesRegex(
@@ -285,13 +284,13 @@ class RouterAssociationTest(BgpvpnBase, L3Mixin):
                          route_distinguishers=['878:878'],
                          route_targets=['878:878']) as bgpvpn,\
                 self.router() as router,\
-                self.router_assocation(router['id'],
-                                       bgpvpn['id']):  # as rtr_assoc:
+                self.router_association(router['id'],
+                                        bgpvpn['id']):  # as rtr_assoc:
             router = self.routers_client.show_router(router['id'])['router']
             self.assertThat(router['rd'],
                             Equals(bgpvpn['route_distinguishers'][0]))
             self.assertThat(router['rt'], Equals(bgpvpn['route_targets'][0]))
-            rtr_assoc_list = self.rtr_assoc_client.list_router_assocations(
+            rtr_assoc_list = self.rtr_assoc_client.list_router_associations(
                 bgpvpn['id'])
             self.assertThat(rtr_assoc_list[0]['router_id'],
                             Equals(router['id']))
@@ -323,14 +322,14 @@ class RouterAssociationTest(BgpvpnBase, L3Mixin):
                             route_targets=['343:343']) as bgpvpn2, \
                 self.router() as router1, \
                 self.router() as router2, \
-                self.router_assocation(router1['id'],
-                                       bgpvpn1['id']):
+                self.router_association(router1['id'],
+                                        bgpvpn1['id']):
             self.assertRaisesRegex(
                 lib_exc.ServerFault,
                 "Nuage API: routeDistinguisher",
-                self.rtr_assoc_client.create_router_assocation,
+                self.rtr_assoc_client.create_router_association,
                 bgpvpn2['id'], router_id=router2['id'])
-            rout_assoc = self.rtr_assoc_client.list_router_assocations(
+            rout_assoc = self.rtr_assoc_client.list_router_associations(
                 bgpvpn2['id'])
             self.assertEqual(rout_assoc, [])
 
@@ -340,15 +339,15 @@ class RouterAssociationTest(BgpvpnBase, L3Mixin):
                          route_targets=['343:343']) as bgpvpn1, \
                 self.router() as router1, \
                 self.router() as router2:
-            rout_asso = self.rtr_assoc_client.create_router_assocation(
+            rout_asso = self.rtr_assoc_client.create_router_association(
                 bgpvpn1['id'], router_id=router1['id'])
-            self.rtr_assoc_client.delete_router_assocation(
+            self.rtr_assoc_client.delete_router_association(
                 rout_asso['id'],
                 bgpvpn1['id'])
             self.assertRaisesRegex(
                 lib_exc.ServerFault,
                 "Nuage API: routeDistinguisher",
-                self.rtr_assoc_client.create_router_assocation,
+                self.rtr_assoc_client.create_router_association,
                 bgpvpn1['id'], router_id=router2['id'])
 
 
@@ -377,7 +376,7 @@ class NetworkAssociationTest(BgpvpnBase, NetworkMixin):
 
 class BgpvpnCliTests(BGPVPNMixin, base.BaseNetworkTest):
 
-    def_net_partition = CONF.nuage.nuage_default_netpartition
+    def_net_partition = Topology.def_netpartition
 
     @classmethod
     def skip_checks(cls):

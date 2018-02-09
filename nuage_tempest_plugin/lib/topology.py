@@ -2,7 +2,7 @@ from oslo_log import log as logging
 
 from tempest import config
 
-LOG = logging.getLogger(__name__)
+from nuage_tempest_plugin.lib.release import Release
 
 CONF = config.CONF
 
@@ -20,16 +20,97 @@ class Singleton(type):
 class Topology(object):
     __metaclass__ = Singleton  # noqa H236
 
-    nuage_release = CONF.nuage_sut.release
-    openstack_version = CONF.nuage_sut.openstack_version
+    nuage_release_qualifier = CONF.nuage_sut.release
+    nuage_release = Release(nuage_release_qualifier)
+    openstack_version_qualifier = CONF.nuage_sut.openstack_version
+    openstack_version = Release(openstack_version_qualifier)
     is_ml2 = CONF.nuage_sut.nuage_plugin_mode.lower() == 'ml2'
+    nuage_plugin_configuration = CONF.nuage_sut.nuage_plugin_configuration
+
     controller_user = CONF.nuage_sut.controller_user
     controller_password = CONF.nuage_sut.controller_password
     database_user = CONF.nuage_sut.database_user
     database_password = CONF.nuage_sut.database_password
     api_workers = int(CONF.nuage_sut.api_workers)
+    management_mode = CONF.nuage_sut.controller_service_management_mode
+    nuage_baremetal_driver = CONF.nuage_sut.nuage_baremetal_driver
+
+    vsd_server = CONF.nuage.nuage_vsd_server
+    vsd_org = CONF.nuage.nuage_vsd_org
+    base_uri = CONF.nuage.nuage_base_uri
+    auth_resource = CONF.nuage.nuage_auth_resource
+    server_auth = (CONF.nuage.nuage_vsd_user + ":" +
+                   CONF.nuage.nuage_vsd_password)
     def_netpartition = CONF.nuage.nuage_default_netpartition
-    public_network_id = CONF.network.public_network_id
+    cms_id = CONF.nuage.nuage_cms_id
+
+    # - - - - - -
+
+    @staticmethod
+    def get_logger(name):
+        return logging.getLogger(name)
+
+    @staticmethod
+    def get_conf():
+        return CONF
+
+    # - - - - - -
+
+    @staticmethod
+    def at_nuage(nuage_release):
+        return Topology.nuage_release == Release(nuage_release)
+
+    @staticmethod
+    def at_openstack(openstack_version):
+        return Topology.openstack_version == Release(openstack_version)
+
+    @staticmethod
+    def beyond_nuage(nuage_release):
+        return Topology.nuage_release > Release(nuage_release)
+
+    @staticmethod
+    def beyond_openstack(openstack_version):
+        return Topology.openstack_version > Release(openstack_version)
+
+    @staticmethod
+    def from_nuage(nuage_release):
+        return Topology.nuage_release >= Release(nuage_release)
+
+    @staticmethod
+    def from_tock(nuage_release):
+        this = Topology.nuage_release
+        spec = Release(nuage_release)
+        # TODO(team)
+        # below comparison is hacky and should be replaced - problem is
+        # Release class still assumes nuage release formats in form of x.yRz
+        return (this > spec and
+                Release.nuage_part(this) != Release.nuage_part(spec) + '.1')
+
+    @staticmethod
+    def from_openstack(openstack_version):
+        return Topology.openstack_version >= Release(openstack_version)
+
+    @staticmethod
+    def before_nuage(nuage_release):
+        return Topology.nuage_release < Release(nuage_release)
+
+    @staticmethod
+    def before_openstack(openstack_version):
+        return Topology.openstack_version < Release(openstack_version)
+
+    @staticmethod
+    def up_to_nuage(nuage_release):
+        return Topology.nuage_release <= Release(nuage_release)
+
+    @staticmethod
+    def up_to_openstack(openstack_version):
+        return Topology.openstack_version <= Release(openstack_version)
+
+    @staticmethod
+    def within_ext_id_release():
+        return Topology.from_nuage('4.0r5')
+
+    # - - - - - -
 
     nbr_retries_for_test_robustness = 10
 
@@ -52,10 +133,6 @@ class Topology(object):
     @staticmethod
     def access_to_l2_supported():
         return Topology.telnet_console_access_to_vm_enabled()
-
-    @staticmethod
-    def use_local_cli_client():  # rather than ssh'ing into the osc
-        return Topology.is_devstack()
 
     @staticmethod
     def neutron_restart_supported():

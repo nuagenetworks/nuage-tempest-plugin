@@ -1,11 +1,10 @@
 # Copyright 2015 Alcatel-Lucent
 # All Rights Reserved.
 
-from tempest import config
 from tempest.lib.common.utils import data_utils
 
-from nuage_tempest_plugin.lib.remote_cli.remote_cli_base_testcase \
-    import RemoteCliBaseTestCase
+from nuage_tempest_plugin.lib.cli.client_testcase \
+    import CLIClientTestCase
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
@@ -13,11 +12,9 @@ from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.tests.api.router.base_nuage_pat_underlay \
     import NuagePatUnderlayBase
 
-CONF = config.CONF
-
 
 class TestNuagePatUnderlayCliConfPatNotAvailable(
-        RemoteCliBaseTestCase, NuagePatUnderlayBase):
+        CLIClientTestCase, NuagePatUnderlayBase):
 
     @classmethod
     def resource_cleanup(cls):
@@ -88,7 +85,7 @@ class TestNuagePatUnderlayCliConfPatNotAvailable(
 
 
 class TestNuagePatUnderlayCliConfPatNone(
-        RemoteCliBaseTestCase, NuagePatUnderlayBase):
+        CLIClientTestCase, NuagePatUnderlayBase):
 
     @classmethod
     def resource_setup(cls):
@@ -155,7 +152,7 @@ class TestNuagePatUnderlayCliConfPatNone(
 
 
 class TestNuagePatUnderlayCliConfPatDefaultDisabled(
-        RemoteCliBaseTestCase, NuagePatUnderlayBase):
+        CLIClientTestCase, NuagePatUnderlayBase):
 
     @classmethod
     def resource_setup(cls):
@@ -227,7 +224,7 @@ class TestNuagePatUnderlayCliConfPatDefaultDisabled(
 
 
 class TestNuagePatUnderlayCliConfPatDefaultEnabled(
-        RemoteCliBaseTestCase, NuagePatUnderlayBase):
+        CLIClientTestCase, NuagePatUnderlayBase):
 
     @classmethod
     def skip_checks(cls):

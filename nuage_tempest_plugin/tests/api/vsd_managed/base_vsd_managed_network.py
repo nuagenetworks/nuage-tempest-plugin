@@ -13,11 +13,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from tempest.api.network import base
-from tempest import config
 
-CONF = config.CONF
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
 
 class BaseVSDManagedNetworksTest(base.BaseNetworkTest):
@@ -28,7 +27,7 @@ class BaseVSDManagedNetworksTest(base.BaseNetworkTest):
 
     @classmethod
     def resource_setup(cls):
-        if CONF.nuage_sut.nuage_plugin_mode == 'ml2':
+        if Topology.is_ml2:
             # create default netpartition if it is not there
             netpartition_name = cls.nuageclient.def_netpart_name
             net_partition = cls.nuageclient.get_net_partition(

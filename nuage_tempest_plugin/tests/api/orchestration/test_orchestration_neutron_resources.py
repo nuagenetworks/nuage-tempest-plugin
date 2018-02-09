@@ -10,29 +10,21 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import logging
 import netaddr
 
 import nuage_base
 
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+from nuage_tempest_plugin.lib.topology import Topology
+
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 class OrchestrationNeutronResourcesTest(nuage_base.NuageBaseOrchestrationTest):
-
-    @classmethod
-    def skip_checks(cls):
-        super(OrchestrationNeutronResourcesTest, cls).skip_checks()
-        if not CONF.service_available.neutron:
-            raise cls.skipException("Neutron support is required")
-        if not CONF.compute.image_ref:
-            raise cls.skipException("No image available to test")
 
     @classmethod
     def setup_credentials(cls):

@@ -1,4 +1,4 @@
-# Copyright 2014 NEC Corporation. All rights reserved.
+# Copyright 2014 OpenStack Foundation
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -16,18 +16,18 @@ import six
 
 from tempest.api.network import base
 from tempest.common import utils
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions as lib_exc
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.test import vsd_helper
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.services.fwaas import fwaas_mixins
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
-CONF = config.CONF
+CONF = Topology.get_conf()
 
 
 class BaseFWaaSTest(fwaas_mixins.FWaaSClientMixin, base.BaseNetworkTest):
@@ -36,14 +36,9 @@ class BaseFWaaSTest(fwaas_mixins.FWaaSClientMixin, base.BaseNetworkTest):
     def resource_setup(cls):
         cls.nuage_ent_client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
-            CONF.network.catalog_type,
-            CONF.network.region or CONF.identity.region,
-            endpoint_type=CONF.network.endpoint_type,
-            build_interval=CONF.network.build_interval,
-            build_timeout=CONF.network.build_timeout,
             **cls.os_primary.default_params)
         super(BaseFWaaSTest, cls).resource_setup()
-        cls.def_net_partition = CONF.nuage.nuage_default_netpartition
+        cls.def_net_partition = Topology.def_netpartition
 
 
 class FWaaSExtensionTestJSON(BaseFWaaSTest):
@@ -164,8 +159,9 @@ class FWaaSExtensionTestJSON(BaseFWaaSTest):
             firewall = firewall['firewall']
             return firewall['status'] in target_states
 
-        if not test_utils.call_until_true(_wait, CONF.network.build_timeout,
-                                          CONF.network.build_interval):
+        if not test_utils.call_until_true(
+                _wait, CONF.network.build_timeout,
+                CONF.network.build_interval):
             m = ("Timed out waiting for firewall %s to reach %s state(s)" %
                  (fw_id, target_states))
             raise lib_exc.TimeoutException(m)

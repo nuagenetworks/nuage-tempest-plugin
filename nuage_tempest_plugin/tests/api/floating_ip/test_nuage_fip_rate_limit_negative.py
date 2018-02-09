@@ -1,16 +1,12 @@
 # Copyright 2015 Alcatel-Lucent
 # All Rights Reserved.
-#
 
-from tempest import config
 from tempest.lib import exceptions as lib_exc
 from tempest.test import decorators
 
 import base_nuage_fip_rate_limit
 
 from nuage_tempest_plugin.lib.test import nuage_test
-
-CONF = config.CONF
 
 # MSG_INVALID_INPUT = "Invalid input for nuage_fip_rate. " \
 #                     "Reason: \'nuage_fip_rate\' " + \

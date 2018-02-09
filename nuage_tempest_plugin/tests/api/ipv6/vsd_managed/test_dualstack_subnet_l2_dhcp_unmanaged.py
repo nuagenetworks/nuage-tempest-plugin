@@ -4,20 +4,17 @@
 from netaddr import IPAddress
 from netaddr import IPNetwork
 
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions as tempest_exceptions
 
-from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.test import tags
+from nuage_tempest_plugin.lib.topology import Topology
 
 from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
     import NetworkTestCaseMixin
 from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
     import VsdTestCaseMixin
-
-CONF = config.CONF
 
 MSG_INVALID_GATEWAY = "Invalid IPv6 network gateway"
 MSG_INVALID_IPV6_ADDRESS = "Invalid network IPv6 address"
@@ -141,7 +138,7 @@ class VSDManagedDualStackSubnetL2DHCPUnmanagedTest(NetworkTestCaseMixin,
             cidr=self.cidr4,
             mask_bits=self.mask_bits4,
             nuagenet=vsd_l2_domain['ID'],
-            net_partition=CONF.nuage.nuage_default_netpartition)
+            net_partition=Topology.def_netpartition)
         self.assertEqual(
             ipv4_subnet['cidr'],
             str(IPNetwork(self.cidr4).subnet(self.mask_bits4).next()))
@@ -164,7 +161,7 @@ class VSDManagedDualStackSubnetL2DHCPUnmanagedTest(NetworkTestCaseMixin,
             mask_bits=self.mask_bits6,
             enable_dhcp=False,
             nuagenet=vsd_l2_domain['ID'],
-            net_partition=CONF.nuage.nuage_default_netpartition)
+            net_partition=Topology.def_netpartition)
 
         # create a port in the network
         port = self.create_port(network)
@@ -197,7 +194,7 @@ class VSDManagedDualStackSubnetL2DHCPUnmanagedTest(NetworkTestCaseMixin,
             cidr=self.cidr4,
             mask_bits=self.mask_bits4,
             nuagenet=vsd_l2_domain['ID'],
-            net_partition=CONF.nuage.nuage_default_netpartition)
+            net_partition=Topology.def_netpartition)
         self.assertEqual(
             ipv4_subnet['cidr'],
             str(IPNetwork(self.cidr4).subnet(self.mask_bits4).next()))
@@ -270,7 +267,7 @@ class VSDManagedDualStackSubnetL2DHCPUnmanagedTest(NetworkTestCaseMixin,
                 mask_bits=ipv6_network.prefixlen,
                 enable_dhcp=False,
                 nuagenet=vsd_l2domain['ID'],
-                net_partition=CONF.nuage.nuage_default_netpartition)
+                net_partition=Topology.def_netpartition)
 
             # create Openstack IPv4 subnet on Openstack based on VSD l2domain
             ipv4_subnet = self.create_subnet(
@@ -279,7 +276,7 @@ class VSDManagedDualStackSubnetL2DHCPUnmanagedTest(NetworkTestCaseMixin,
                 enable_dhcp=False,
                 mask_bits=self.mask_bits4,
                 nuagenet=vsd_l2domain['ID'],
-                net_partition=CONF.nuage.nuage_default_netpartition)
+                net_partition=Topology.def_netpartition)
             self.assertEqual(
                 ipv4_subnet['cidr'],
                 str(IPNetwork(self.cidr4).subnet(self.mask_bits4).next()))
@@ -321,9 +318,9 @@ class VSDManagedDualStackSubnetL2DHCPUnmanagedTest(NetworkTestCaseMixin,
             ip_version=6,
             enable_dhcp=False,
             nuagenet=vsd_l2domain['ID'],
-            net_partition=CONF.nuage.nuage_default_netpartition)
+            net_partition=Topology.def_netpartition)
 
-        if Release(CONF.nuage_sut.openstack_version) >= Release('Newton'):
+        if Topology.from_openstack('Newton'):
             expected_exception = tempest_exceptions.BadRequest
             expected_message = "Port can't be a pure ipv6 port. " \
                                "Need ipv4 fixed ip."
@@ -365,7 +362,7 @@ class VSDManagedDualStackSubnetL2DHCPUnmanagedTest(NetworkTestCaseMixin,
             cidr=self.cidr4,
             mask_bits=self.mask_bits4,
             nuagenet=vsd_l2domain['ID'],
-            net_partition=CONF.nuage.nuage_default_netpartition)
+            net_partition=Topology.def_netpartition)
         self.assertEqual(
             ipv4_subnet['cidr'],
             str(IPNetwork(self.cidr4).subnet(self.mask_bits4).next()))
@@ -391,7 +388,7 @@ class VSDManagedDualStackSubnetL2DHCPUnmanagedTest(NetworkTestCaseMixin,
             mask_bits=self.cidr6.prefixlen,
             enable_dhcp=False,
             nuagenet=vsd_l2domain['ID'],
-            net_partition=CONF.nuage.nuage_default_netpartition)
+            net_partition=Topology.def_netpartition)
 
         # shall not create port with IP already in use
         port_args = {'fixed_ips': [{'subnet_id': ipv4_subnet['id'],
@@ -411,7 +408,7 @@ class VSDManagedDualStackSubnetL2DHCPUnmanagedTest(NetworkTestCaseMixin,
                                     'ip_address': IPAddress(
                                         self.cidr6.first + 10)}]}
 
-        if Release(CONF.nuage_sut.openstack_version) >= Release('Newton'):
+        if Topology.from_openstack('Newton'):
             expected_exception = tempest_exceptions.Conflict
             expected_message = "IP address %s already allocated in subnet %s" \
                 % (IPAddress(self.cidr6.first + 10), ipv6_subnet['id'])
@@ -449,7 +446,7 @@ class VSDManagedDualStackSubnetL2DHCPUnmanagedTest(NetworkTestCaseMixin,
                                     'ip_address':
                                         IPAddress(self.cidr6.first + 21)}]}
 
-        if Release(CONF.nuage_sut.openstack_version) >= Release('Newton'):
+        if Topology.from_openstack('Newton'):
             expected_exception = tempest_exceptions.BadRequest
             expected_message = "Port can't be a pure ipv6 port. " \
                                "Need ipv4 fixed ip."
@@ -469,7 +466,7 @@ class VSDManagedDualStackSubnetL2DHCPUnmanagedTest(NetworkTestCaseMixin,
         port_args = {'fixed_ips': [{'subnet_id': ipv6_subnet['id'],
                                     'ip_address':
                                         IPAddress(self.cidr6.first + 21)}]}
-        if Release(CONF.nuage_sut.openstack_version) >= Release('Newton'):
+        if Topology.from_openstack('Newton'):
             expected_exception = tempest_exceptions.BadRequest
             expected_message = "Port can't be a pure ipv6 port. " \
                                "Need ipv4 fixed ip."
@@ -510,7 +507,7 @@ class VSDManagedDualStackSubnetL2DHCPUnmanagedTest(NetworkTestCaseMixin,
             enable_dhcp=False,
             mask_bits=self.mask_bits4,
             nuagenet=vsd_l2domain['ID'],
-            net_partition=CONF.nuage.nuage_default_netpartition)
+            net_partition=Topology.def_netpartition)
 
         ipv6_subnet = self.create_subnet(
             network,
@@ -520,7 +517,7 @@ class VSDManagedDualStackSubnetL2DHCPUnmanagedTest(NetworkTestCaseMixin,
             mask_bits=self.mask_bits6,
             enable_dhcp=False,
             nuagenet=vsd_l2domain['ID'],
-            net_partition=CONF.nuage.nuage_default_netpartition)
+            net_partition=Topology.def_netpartition)
 
         # noinspection PyPep8
         invalid_ipv6 = [

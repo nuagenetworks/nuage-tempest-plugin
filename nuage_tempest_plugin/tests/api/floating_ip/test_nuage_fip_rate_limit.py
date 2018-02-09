@@ -1,19 +1,15 @@
 # Copyright 2015 Alcatel-Lucent
 # All Rights Reserved.
 
-from oslo_log import log as logging
-
-from tempest import config
 from tempest.test import decorators
 
 import base_nuage_fip_rate_limit
 
 from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 
-LOG = logging.getLogger(__name__)
-
-CONF = config.CONF
+LOG = Topology.get_logger(__name__)
 
 
 class TestNuageFipRateLimit(base_nuage_fip_rate_limit.NuageFipRateLimitBase):

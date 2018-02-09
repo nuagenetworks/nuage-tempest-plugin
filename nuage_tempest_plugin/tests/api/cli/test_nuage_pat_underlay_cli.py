@@ -2,24 +2,22 @@
 # All Rights Reserved.
 
 from netaddr import IPNetwork
-from oslo_log import log as logging
 
 from tempest.common import utils
-from tempest import config
 from tempest.lib.common.utils import data_utils
 
 from nuage_tempest_plugin.tests.api.router.base_nuage_pat_underlay \
     import NuagePatUnderlayBase
 
-from nuage_tempest_plugin.lib.remote_cli import remote_cli_base_testcase
+from nuage_tempest_plugin.lib.cli import client_testcase
 from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
 
-CONF = config.CONF
+LOG = Topology.get_logger(__name__)
 
 
-class TestNuagePatUnderlayCli(remote_cli_base_testcase.RemoteCliBaseTestCase,
+class TestNuagePatUnderlayCli(client_testcase.CLIClientTestCase,
                               NuagePatUnderlayBase):
-    LOG = logging.getLogger(__name__)
 
     @classmethod
     def resource_setup(cls):
@@ -102,7 +100,7 @@ class TestNuagePatUnderlayCli(remote_cli_base_testcase.RemoteCliBaseTestCase,
                 network['id'] + ',enable_snat=' + str(enable_snat)
             exp_message = "Invalid input for operation: '" + enable_snat + \
                           "' cannot be converted to boolean."
-            self.LOG.info("exp_message = " + exp_message)
+            LOG.info("exp_message = " + exp_message)
             self.assertCommandFailed(exp_message, self.create_router_with_args,
                                      name, external_gw_info_cli)
 
@@ -128,7 +126,7 @@ class TestNuagePatUnderlayCli(remote_cli_base_testcase.RemoteCliBaseTestCase,
             bad_network_id + ',enable_snat=True'
         exp_message = "Invalid input for external_gateway_info. Reason: '" + \
                       bad_network_id + "' is not a valid UUID."
-        self.LOG.info("exp_message = " + exp_message)
+        LOG.info("exp_message = " + exp_message)
         self.assertCommandFailed(exp_message, self.create_router_with_args,
                                  name, external_gw_info_cli)
 
@@ -166,14 +164,14 @@ class TestNuagePatUnderlayCli(remote_cli_base_testcase.RemoteCliBaseTestCase,
         #               "VSD-Managed Subnet create not allowed " \
         #               "on external network"
         exp_message = "router:external in network must be False"
-        self.LOG.info("exp_message = " + exp_message)
+        LOG.info("exp_message = " + exp_message)
         self.assertCommandFailed(exp_message,
                                  self.create_subnet_with_args,
                                  network['name'],
                                  str(cidr.cidr),
                                  '--name subnet-VSD-managed '
                                  '--net-partition',
-                                 CONF.nuage.nuage_default_netpartition,
+                                 Topology.def_netpartition,
                                  '--nuagenet',
                                  vsd_l2domain[0][u'ID'])
         # Delete the VSD manged subnet
@@ -198,7 +196,7 @@ class TestNuagePatUnderlayCli(remote_cli_base_testcase.RemoteCliBaseTestCase,
             network['id'] + ',enable_snat=True'
         exp_message = "Bad router request: Network " + network['id'] + \
                       " is not an external network"
-        self.LOG.info("exp_message = " + exp_message)
+        LOG.info("exp_message = " + exp_message)
         self.assertCommandFailed(exp_message, self.create_router_with_args,
                                  name, external_gw_info_cli)
 

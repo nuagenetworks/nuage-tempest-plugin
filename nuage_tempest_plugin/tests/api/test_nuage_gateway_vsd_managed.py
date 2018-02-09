@@ -18,15 +18,13 @@ import base_nuage_gateway as base
 from netaddr import IPNetwork
 from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_network as base_vsdman
-from oslo_log import log as logging
 
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.test import decorators
 
-CONF = config.CONF
+from nuage_tempest_plugin.lib.topology import Topology
 
-LOG = logging.getLogger(__name__)
+LOG = Topology.get_logger(__name__)
 
 
 class NuageGatewayTestVSDManaged(base.BaseNuageGatewayTest,
@@ -63,7 +61,7 @@ class NuageGatewayTestVSDManaged(base.BaseNuageGatewayTest,
             extra_params=extra_params)
         net_name = data_utils.rand_name('network-vsd-managed-')
         net = self.create_network(network_name=net_name)
-        np = CONF.nuage.nuage_default_netpartition
+        np = Topology.def_netpartition
         subnet = self.create_subnet(net,
                                     cidr=cidr,
                                     mask_bits=24,
@@ -129,7 +127,7 @@ class NuageGatewayTestVSDManaged(base.BaseNuageGatewayTest,
         subnet = self.create_subnet(
             net, gateway=None,
             cidr=cidr, mask_bits=24, nuagenet=vsd_l2dom[0]['ID'],
-            net_partition=CONF.nuage.nuage_default_netpartition,
+            net_partition=Topology.def_netpartition,
             enable_dhcp=True)
         post_body = {"network_id": net['id'],
                      "device_owner": 'compute:ironic'}
@@ -191,7 +189,7 @@ class NuageGatewayTestVSDManaged(base.BaseNuageGatewayTest,
             net,
             cidr=IPNetwork('10.10.100.0/24'),
             mask_bits=24, nuagenet=vsd_l2dom[0]['ID'],
-            net_partition=CONF.nuage.nuage_default_netpartition,
+            net_partition=Topology.def_netpartition,
             enable_dhcp=False)
         post_body = {"network_id": net['id'],
                      "device_owner": 'compute:ironic'}

@@ -15,16 +15,15 @@
 
 from netaddr import IPAddress
 from netaddr import IPNetwork
-from oslo_log import log as logging
 
-from tempest import config
 from tempest.lib.common.utils import data_utils
 
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_port_attributes
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 class BaseVSDManagedSRIOV(
@@ -33,7 +32,6 @@ class BaseVSDManagedSRIOV(
     @classmethod
     def setup_clients(cls):
         super(BaseVSDManagedSRIOV, cls).setup_clients()
-        # cls.nuageclient = NuageRestClient()
 
     # TODO(team) shd below methods be class methods ? then replace self by cls
 
@@ -51,17 +49,17 @@ class BaseVSDManagedSRIOV(
 
     @classmethod
     def _create_vsd_l3_managed_subnet_withoptions(
-            self, cidr, net_name_prefix="l3dom_template"):
+            cls, cidr, net_name_prefix="l3dom_template"):
         # create template
         kwargs = {
             'name': data_utils.rand_name("l3dom_template"),
         }
-        l3dom_template = self.create_vsd_l3dom_template(**kwargs)
+        l3dom_template = cls.create_vsd_l3dom_template(**kwargs)
         # create domain
-        vsd_l3_domain = self.create_vsd_l3domain(tid=l3dom_template[0]['ID'])
+        vsd_l3_domain = cls.create_vsd_l3domain(tid=l3dom_template[0]['ID'])
         # create zone om domain
-        zone = self.create_vsd_zone(name='l3-zone',
-                                    domain_id=vsd_l3_domain[0]['ID'])
+        zone = cls.create_vsd_zone(name='l3-zone',
+                                   domain_id=vsd_l3_domain[0]['ID'])
         # create subnet in zone
         kwargs = {
             'name': data_utils.rand_name("vsd-l3-mgd-subnet"),
@@ -70,7 +68,7 @@ class BaseVSDManagedSRIOV(
             'gateway': str(IPAddress(cidr.first + 1)),
             'extra_params': ""
         }
-        vsd_l3_subnet = self.create_vsd_l3domain_managed_subnet(**kwargs)
+        vsd_l3_subnet = cls.create_vsd_l3domain_managed_subnet(**kwargs)
         return vsd_l3_subnet, vsd_l3_domain
 
     @classmethod
@@ -80,7 +78,7 @@ class BaseVSDManagedSRIOV(
             'network': network,
             'cidr': cidr,
             'mask_bits': cidr.prefixlen,
-            'net_partition': CONF.nuage.nuage_default_netpartition,
+            'net_partition': Topology.def_netpartition,
             'nuagenet': vsd_subnet[0]['ID']
             # 'tenant_id': None
         }

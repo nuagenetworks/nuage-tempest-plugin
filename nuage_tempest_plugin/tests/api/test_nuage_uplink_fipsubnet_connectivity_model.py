@@ -13,11 +13,14 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo_log import log as logging
 import random
 import uuid
 
-from nuage_tempest_plugin.lib.release import Release
+from tempest.api.network import base
+from tempest.lib.common.utils import data_utils
+from tempest.lib import exceptions
+from tempest.test import decorators
+
 from nuage_tempest_plugin.lib import service_mgmt
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as nuage_constants
@@ -25,14 +28,7 @@ from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
-from tempest.api.network import base
-from tempest import config
-from tempest.lib.common.utils import data_utils
-from tempest.lib import exceptions
-from tempest.test import decorators
-
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+LOG = Topology.get_logger(__name__)
 
 
 class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
@@ -45,11 +41,6 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
         # Overriding cls.client with Nuage network client
         cls.client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
-            CONF.network.catalog_type,
-            CONF.network.region or CONF.identity.region,
-            endpoint_type=CONF.network.endpoint_type,
-            build_interval=CONF.network.build_interval,
-            build_timeout=CONF.network.build_timeout,
             **cls.os_primary.default_params)
 
         cls.service_manager = service_mgmt.ServiceManager()
@@ -57,7 +48,7 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
                 not cls.service_manager.is_service_running(
                 nuage_constants.NEUTRON_SERVICE)):
             cls.service_manager.comment_configuration_attribute(
-                CONF.nuage_sut.nuage_plugin_configuration,
+                Topology.nuage_plugin_configuration,
                 nuage_constants.NUAGE_UPLINK_GROUP,
                 nuage_constants.NUAGE_UPLINK)
             cls.service_manager.start_service(
@@ -157,7 +148,7 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
         self.service_manager.stop_service(nuage_constants.NEUTRON_SERVICE)
         # Add the shared zone ID to the plugin.ini file
         self.service_manager.set_configuration_attribute(
-            CONF.nuage_sut.nuage_plugin_configuration,
+            Topology.nuage_plugin_configuration,
             nuage_constants.NUAGE_UPLINK_GROUP,
             nuage_constants.NUAGE_UPLINK,
             nuage_uplink)
@@ -171,7 +162,7 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
 
         self.service_manager.stop_service(nuage_constants.NEUTRON_SERVICE)
         self.service_manager.comment_configuration_attribute(
-            CONF.nuage_sut.nuage_plugin_configuration,
+            Topology.nuage_plugin_configuration,
             nuage_constants.NUAGE_UPLINK_GROUP,
             nuage_constants.NUAGE_UPLINK)
         self.service_manager.start_service(nuage_constants.NEUTRON_SERVICE)
@@ -264,8 +255,7 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
                   'ip_version': 4,
                   'cidr': '172.40.0.0/24',
                   'nuage_uplink': nuage_fipsubnet1[0]['parentID']}
-        if Release(CONF.nuage_sut.openstack_version) >= Release('Newton') and \
-                CONF.nuage_sut.nuage_plugin_mode == 'ml2':
+        if Topology.from_openstack('Newton') and Topology.is_ml2:
             self.assertRaisesRegex(
                 exceptions.BadRequest,
                 "Network 172.40.0.0/255.255.255.0 overlaps with "

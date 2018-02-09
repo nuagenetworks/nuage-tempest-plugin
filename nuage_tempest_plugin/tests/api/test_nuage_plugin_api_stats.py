@@ -12,10 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo_log import log as logging
-
 from tempest.api.network import base
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.test import decorators
 
@@ -23,14 +20,13 @@ from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+LOG = Topology.get_logger(__name__)
 
 
 class NuagePluginApiStats(base.BaseAdminNetworkTest):
     _interface = 'json'
 
-    os_version = Topology.openstack_version
+    os_version = Topology.openstack_version_qualifier
     api_workers = Topology.api_workers
     api_count = 0
     api_discrepancies = []
@@ -130,11 +126,6 @@ class NuagePluginApiStats(base.BaseAdminNetworkTest):
         super(NuagePluginApiStats, cls).setup_clients()
         cls.client = NuageNetworkClientJSON(
             cls.os_admin.auth_provider,
-            CONF.network.catalog_type,
-            CONF.network.region or CONF.identity.region,
-            endpoint_type=CONF.network.endpoint_type,
-            build_interval=CONF.network.build_interval,
-            build_timeout=CONF.network.build_timeout,
             **cls.os_admin.default_params)
 
     @classmethod

@@ -16,12 +16,9 @@
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 
 from tempest.api.network import test_routers_negative as test_routers_negative
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions as lib_exc
-
-CONF = config.CONF
 
 
 class NuageRoutersNegativeIpV6Test(test_routers_negative.RoutersNegativeTest):

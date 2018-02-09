@@ -3,25 +3,23 @@
 
 from netaddr import IPNetwork
 
-from tempest import config
 from tempest.lib.common.utils import data_utils
 
-from nuage_tempest_plugin.lib.release import Release
-from nuage_tempest_plugin.lib.remote_cli import remote_cli_base_testcase
+from nuage_tempest_plugin.lib.cli import client_testcase
 from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.tests.api.floating_ip.base_nuage_fip_underlay \
     import NuageFipUnderlayBase
 
-CONF = config.CONF
+LOG = Topology.get_logger(__name__)
 
 
-class TestNuageFipUnderlayCli(remote_cli_base_testcase.RemoteCliBaseTestCase,
+class TestNuageFipUnderlayCli(client_testcase.CLIClientTestCase,
                               NuageFipUnderlayBase):
     """TestNuageFipUnderlayCli
 
     FIP to Underlay tests using Neutron CLI client.
     """
-    # LOG = logging.getLogger(__name__)
 
     @classmethod
     def resource_setup(cls):
@@ -72,7 +70,7 @@ class TestNuageFipUnderlayCli(remote_cli_base_testcase.RemoteCliBaseTestCase,
 
         int_network = self.create_network_with_args(int_network_name)
         exp_message = "Cannot update read-only attribute underlay"
-        self.LOG.info("exp_message = " + exp_message)
+        LOG.info("exp_message = " + exp_message)
         int_subnet = self.create_subnet_with_args(int_network['name'],
                                                   "100.99.98.0/24",
                                                   "--name ", int_subnet_name)
@@ -111,7 +109,6 @@ class TestNuageFipUnderlayCli(remote_cli_base_testcase.RemoteCliBaseTestCase,
                                      "98.99.99.0/24",
                                      "--name ", ext_subnet_name,
                                      underlay_str)
-        pass
 
     @nuage_test.header()
     def test_cli_create_external_subnet_with_underlay_invalid_syntax_neg(self):
@@ -172,8 +169,7 @@ class TestNuageFipUnderlayCli(remote_cli_base_testcase.RemoteCliBaseTestCase,
         network_name = data_utils.rand_name('ext-pat-network')
         self.network = self.create_network_with_args(network_name,
                                                      ' --router:external')
-        if (Release(CONF.nuage_sut.openstack_version) >= Release('Newton') and
-                CONF.nuage_sut.nuage_plugin_mode == 'ml2'):
+        if Topology.from_openstack('Newton') and Topology.is_ml2:
             exp_message = "Bad request: " \
                           "router:external in network must be False"
         else:
@@ -181,14 +177,14 @@ class TestNuageFipUnderlayCli(remote_cli_base_testcase.RemoteCliBaseTestCase,
                           "VSD-Managed Subnet create not allowed on " \
                           "external network"
 
-        self.LOG.info("exp_message = " + exp_message)
+        LOG.info("exp_message = " + exp_message)
         self.assertCommandFailed(exp_message,
                                  self.create_subnet_with_args,
                                  self.network['name'],
                                  str(cidr.cidr),
                                  '--name subnet-VSD-managed '
                                  '--net-partition',
-                                 CONF.nuage.nuage_default_netpartition,
+                                 Topology.def_netpartition,
                                  '--nuagenet',
                                  vsd_l2domain[0][u'ID'],
                                  '--underlay=True')
@@ -213,7 +209,7 @@ class TestNuageFipUnderlayCli(remote_cli_base_testcase.RemoteCliBaseTestCase,
             int_network = self.create_network_with_args(network_name)
             exp_message = "Bad request: underlay attribute can not be set " \
                           "for internal subnets"
-            self.LOG.info("exp_message = " + exp_message)
+            LOG.info("exp_message = " + exp_message)
             underlay_str = "--underlay=" + str(underlay)
             self.assertCommandFailed(exp_message,
                                      self.create_subnet_with_args,

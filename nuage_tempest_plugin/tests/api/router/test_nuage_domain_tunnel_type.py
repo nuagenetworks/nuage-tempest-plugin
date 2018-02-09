@@ -1,14 +1,10 @@
 # Copyright 2015 Alcatel-Lucent
 # All Rights Reserved.
 
-from tempest import config
-
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.utils import constants
 
 import base_nuage_domain_tunnel_type
-
-CONF = config.CONF
 
 
 class NuageDomainTunnelType(

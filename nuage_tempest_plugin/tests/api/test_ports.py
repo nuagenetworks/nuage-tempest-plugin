@@ -3,18 +3,17 @@
 
 from netaddr import IPNetwork
 
-from oslo_log import log as logging
-from tempest import config
 from tempest.lib import exceptions
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageAdminNetworksTest
+from nuage_tempest_plugin.lib.topology import Topology
 
-CONF = config.CONF
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 class PortsTest(NuageAdminNetworksTest):
-    LOG = logging.getLogger(__name__)
 
     @decorators.attr(type='smoke')
     def test_nuage_port_create(self):
@@ -91,7 +90,7 @@ class PortsTest(NuageAdminNetworksTest):
                 pass
             else:
                 # Differentiate between VSD failure and update failure
-                self.LOG.debug(e._error_string)
+                LOG.debug(e._error_string)
                 self.fail("A different NuageBadRequest exception"
                           " was expected for this operation.")
 
@@ -111,6 +110,6 @@ class PortsTest(NuageAdminNetworksTest):
                 pass
             else:
                 # Differentiate between VSD failure and update failure
-                self.LOG.debug(e._error_string)
+                LOG.debug(e._error_string)
                 self.fail("A different NuageBadRequest exception"
                           " was expected for this operation.")

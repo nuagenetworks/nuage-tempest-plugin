@@ -19,14 +19,12 @@ import testtools
 
 from tempest.api.compute import base as serv_base
 from tempest.api.network import base
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.scenario import manager
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
-from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.test import tags
 from nuage_tempest_plugin.lib.topology import Topology
@@ -36,7 +34,7 @@ import nuage_tempest_plugin.tests.api.test_netpartitions as test_netpartitions
 from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_network as base_vsdman
 
-CONF = config.CONF
+CONF = Topology.get_conf()
 
 
 @nuage_test.class_header(tags=[tags.VSD_MANAGED])
@@ -47,15 +45,14 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
 
     def __init__(self, *args, **kwargs):
         super(VSDManagedTestNetworks, self).__init__(*args, **kwargs)
-        if Release(Topology.openstack_version) < Release('Newton'):
+        if Topology.before_openstack('Newton'):
             self.failure_type = exceptions.ServerFault
         else:
             self.failure_type = exceptions.BadRequest
 
     @classmethod
     def get_server_ip_from_vsd(cls, vm_id):
-        if (Release(constants.EXTERNALID_RELEASE) <=
-                Release(Topology.nuage_release)):
+        if Topology.within_ext_id_release():
             vm_details = cls.nuageclient.get_resource(
                 constants.VM,
                 filters='externalID',
@@ -201,14 +198,14 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
         self.link_subnet_l2(cidr, mask_bits, dhcp_port, dhcp_option_3, pool2,
                             vsd_l2dom=vsd_l2dom, should_pass=should_pass)
 
-    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsdmgd_subnets,
+    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsd_mgd_subnets,
                       'Multi-linked VSD mgd subnets are not supported in this '
                       'release')
     @nuage_test.header(tags=['smoke'])
     def test_double_link_subnet_l2_no_gw_no_allocation_pools(self):
         self.double_link_subnet_l2(should_pass=False)
 
-    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsdmgd_subnets,
+    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsd_mgd_subnets,
                       'Multi-linked VSD mgd subnets are not supported in this '
                       'release')
     @nuage_test.header(tags=['smoke'])
@@ -218,7 +215,7 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
             pool2={'start': '10.10.100.110', 'end': '10.10.100.120'},
             should_pass=False)
 
-    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsdmgd_subnets,
+    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsd_mgd_subnets,
                       'Multi-linked VSD mgd subnets are not supported in this '
                       'release')
     @nuage_test.header(tags=['smoke'])
@@ -228,7 +225,7 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
             pool2={'start': '10.10.100.110', 'end': '10.10.100.120'},
             should_pass=True)
 
-    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsdmgd_subnets,
+    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsd_mgd_subnets,
                       'Multi-linked VSD mgd subnets are not supported in this '
                       'release')
     @nuage_test.header(tags=['smoke'])
@@ -589,8 +586,7 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
         # create subnet on OS with nuagenet param set to subnet UUID
         net_name = data_utils.rand_name('network-')
         network = self.create_network(network_name=net_name)
-        if Release(Topology.openstack_version) >= Release('Newton') and \
-                Topology.is_ml2:
+        if Topology.from_openstack('Newton') and Topology.is_ml2:
             subnet = self.create_subnet(
                 network,
                 cidr=IPNetwork('10.10.100.0/24'),
@@ -729,8 +725,9 @@ class VSDManagedAdminTestNetworks(base.BaseAdminNetworkTest):
     @decorators.attr(type='smoke')
     def test_link_subnet_on_external_net_l2(self):
         self.assertRaises(
-            exceptions.BadRequest, self.admin_subnets_client.create_subnet,
-            network_id=Topology.public_network_id,
+            exceptions.BadRequest,
+            self.admin_subnets_client.create_subnet,
+            network_id=CONF.network.public_network_id,
             cidr='10.10.100.0/24',
             ip_version=self._ip_version,
             net_partition=Topology.def_netpartition,

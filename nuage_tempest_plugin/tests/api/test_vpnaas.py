@@ -1,21 +1,20 @@
 import netaddr
-from oslo_log import log as logging
 
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from testtools.matchers import Contains
 from testtools.matchers import Not
 
 from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.services.vpnaas.vpnaas_mixins import VPNMixin
 
-LOG = logging.getLogger(__name__)
-CONF = config.CONF
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 class VPNaaSBase(VPNMixin):
 
-    def_net_partition = CONF.nuage.nuage_default_netpartition
+    def_net_partition = Topology.def_netpartition
 
     @classmethod
     def skip_checks(cls):

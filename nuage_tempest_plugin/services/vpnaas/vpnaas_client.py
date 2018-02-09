@@ -3,12 +3,12 @@ import json
 import six
 import urllib
 
-from tempest import config
 from tempest.lib.common import rest_client
 from tempest.lib import exceptions as lib_exc
 
+from nuage_tempest_plugin.lib.topology import Topology
 
-CONF = config.CONF
+CONF = Topology.get_conf()
 
 
 @six.add_metaclass(abc.ABCMeta)

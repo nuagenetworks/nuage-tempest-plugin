@@ -3,7 +3,6 @@
 
 from netaddr import IPAddress
 from netaddr import IPNetwork
-from oslo_log import log as logging
 import testtools
 import time
 
@@ -15,8 +14,6 @@ from nuage_tempest_plugin.lib.topology import Topology
 
 
 class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
-
-    LOG = logging.getLogger(__name__)
 
     include_negative_testing = False  # TODO(Kris) FIXME
 
@@ -284,7 +281,7 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
 
     @testtools.skipIf(not Topology.run_connectivity_tests(),
                       'Connectivity tests are disabled.')
-    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsdmgd_subnets,
+    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsd_mgd_subnets,
                       'Multi-linked VSD mgd subnets are not supported in this '
                       'release')
     @decorators.attr(type='smoke')
@@ -302,7 +299,7 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
 
     @testtools.skipIf(not Topology.run_connectivity_tests(),
                       'Connectivity tests are disabled.')
-    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsdmgd_subnets,
+    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsd_mgd_subnets,
                       'Multi-linked VSD mgd subnets are not supported in this '
                       'release')
     @decorators.attr(type='smoke')

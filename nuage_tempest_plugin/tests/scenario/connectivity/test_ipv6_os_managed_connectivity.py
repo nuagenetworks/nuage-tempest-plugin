@@ -1,7 +1,6 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
 
-from oslo_log import log as logging
 import testtools
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
@@ -12,8 +11,6 @@ from nuage_tempest_plugin.lib.topology import Topology
 
 
 class Ipv6ConnectivityTest(NuageBaseTest):
-
-    LOG = logging.getLogger(__name__)
 
     @classmethod
     def skip_checks(cls):

@@ -14,12 +14,9 @@
 #    under the License.
 
 from netaddr import IPNetwork
-from oslo_log import log as logging
 
-from tempest import config
 from tempest.lib.common.utils import data_utils
 
-from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
@@ -32,8 +29,7 @@ from nuage_tempest_plugin.tests.scenario \
 
 import upgrade_external_id_with_cms_id as upgrade_script
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+LOG = Topology.get_logger(__name__)
 
 
 class ExternalIdForVmTest(
@@ -107,10 +103,7 @@ class ExternalIdForVmTest(
     @classmethod
     def skip_checks(cls):
         super(ExternalIdForVmTest, cls).skip_checks()
-
-        external_id_release = Release('4.0R5')
-        current_release = Release(Topology.nuage_release)
-        cls.test_upgrade = external_id_release > current_release
+        cls.test_upgrade = not Topology.within_ext_id_release()
 
     @classmethod
     def setup_clients(cls):
@@ -224,7 +217,7 @@ class ExternalIdForVmTest(
             'gateway_ip': None,
             'network_id': network['id'],
             'nuagenet': vsd_l2domain['ID'],
-            'net_partition': CONF.nuage.nuage_default_netpartition,
+            'net_partition': Topology.def_netpartition,
             'enable_dhcp': True,
             'ip_version': 4}
 
@@ -281,7 +274,7 @@ class ExternalIdForVmTest(
             'gateway_ip': None,
             'network_id': network['id'],
             'nuagenet': vsd_l2domain['ID'],
-            'net_partition': CONF.nuage.nuage_default_netpartition,
+            'net_partition': Topology.def_netpartition,
             'enable_dhcp': True,
             'ip_version': 4}
 

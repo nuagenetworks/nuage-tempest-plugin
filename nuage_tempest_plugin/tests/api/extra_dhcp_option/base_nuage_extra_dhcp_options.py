@@ -1,21 +1,15 @@
 # Copyright 2015 Alcatel-Lucent
 
-from oslo_log import log as logging
-
 from tempest.api.network import base
 from tempest.common import utils
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
-from nuage_tempest_plugin.lib import features
-from nuage_tempest_plugin.lib.release import Release
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as constants
 from nuage_tempest_plugin.services import nuage_client
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
-
-CONF = config.CONF
 
 #
 # See http://tools.ietf.org/html/rfc2132
@@ -174,7 +168,7 @@ TREAT_DHCP_OPTION_NETBIOS_NODETYPE = [
     'netbios-nodetype'
 ]
 
-# Distinghuih the 4 different cases
+# Distinguish the 4 different cases
 NUAGE_NETWORK_TYPE = {
     'OS_Managed_L2': 1,
     'OS_Managed_L3': 2,
@@ -182,9 +176,10 @@ NUAGE_NETWORK_TYPE = {
     'VSD_Managed_L3': 4
 }
 
+LOG = Topology.get_logger(__name__)
+
 
 class NuageExtraDHCPOptionsBase(base.BaseAdminNetworkTest):
-    LOG = logging.getLogger(__name__)
 
     def __init__(self, *args, **kwargs):
         super(NuageExtraDHCPOptionsBase, self).__init__(*args, **kwargs)
@@ -206,16 +201,11 @@ class NuageExtraDHCPOptionsBase(base.BaseAdminNetworkTest):
         # # TODO(Hendrik) only use admin credentials where required!
         cls.client = NuageNetworkClientJSON(
             cls.os_admin.auth_provider,
-            CONF.network.catalog_type,
-            CONF.network.region or CONF.identity.region,
-            endpoint_type=CONF.network.endpoint_type,
-            build_interval=CONF.network.build_interval,
-            build_timeout=CONF.network.build_timeout,
             **cls.os_admin.default_params)
 
     @classmethod
     def resource_setup(cls):
-        if CONF.nuage_sut.nuage_plugin_mode == 'ml2':
+        if Topology.is_ml2:
             # create default netpartition if it is not there
             netpartition_name = cls.nuage_vsd_client.def_netpart_name
             net_partition = cls.nuage_vsd_client.get_net_partition(
@@ -377,7 +367,7 @@ class NuageExtraDHCPOptionsBase(base.BaseAdminNetworkTest):
         # so we can use easy list comparison
         tmp_var = ""
 
-        if features.NUAGE_FEATURES.current_release < Release("4.0R1"):
+        if Topology.before_nuage("4.0R1"):
             if opt_name in TREAT_32_DHCP_OPTION_AS_INT:
                 for opt_value in opt_values:
                     # opt_values[opt_value.index(opt_value)] = \
@@ -465,8 +455,8 @@ class NuageExtraDHCPOptionsBase(base.BaseAdminNetworkTest):
                     else:
                         # don't fail yet, log to put all zero-length options in
                         # the log file
-                        self.LOG.warning("VSD has extra DHCP option - %s of "
-                                         "length zero !", str(vsd_opt_name))
+                        LOG.warning("VSD has extra DHCP option - %s of "
+                                    "length zero !", str(vsd_opt_name))
             else:
                 self.fail('Extra DHCP option mismatch VSD  and Openstack')
 

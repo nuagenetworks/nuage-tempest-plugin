@@ -14,15 +14,12 @@
 #    under the License.
 
 from netaddr import IPAddress
-from oslo_log import log as logging
 
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
-from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.test import tags
 from nuage_tempest_plugin.lib.topology import Topology
@@ -35,10 +32,9 @@ from nuage_tempest_plugin.tests.api.vsd_managed \
 from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_port_attributes
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+LOG = Topology.get_logger(__name__)
 
-# # Stuff for the interconnectivity VM
+# # Stuff for the inter-connectivity VM
 # OS_CONNECTING_NW_CIDR = IPNetwork('33.33.33.0/24')
 # OS_CONNECTING_NW_GW = '33.33.33.1'
 
@@ -52,9 +48,6 @@ SEVERAL_VSD_FIP_POOLS = 3
 SEVERAL_VSD_CLAIMED_FIPS = 3
 
 VALID_MAC_ADDRESS = 'fa:fa:3e:e8:e8:c0'
-
-external_id_release = Release(constants.EXTERNALID_RELEASE)
-current_release = Release(Topology.nuage_release)
 
 
 @nuage_test.class_header(tags=tags.VSD_MANAGED)
@@ -95,7 +88,7 @@ class VSDManagedRedirectTargetTest(
                             "Redirect target not found on VSD")
 
         # with externalID
-        if external_id_release <= current_release:
+        if Topology.within_ext_id_release():
             self.assertEqual(vsd_redirect_target[0]['externalID'],
                              ExternalId(subnet['id']).at_cms_id())
 
@@ -130,7 +123,6 @@ class VSDManagedRedirectTargetTest(
             constants.L2_DOMAIN, vsd_l2_subnet[0]['ID'], filters='ID',
             filter_value=os_redirect_target['nuage_redirect_target']['id'])
         self.assertEqual(vsd_redirect_target, '')
-        pass
 
     @nuage_test.header()
     @decorators.attr(type='smoke')
@@ -186,7 +178,6 @@ class VSDManagedRedirectTargetTest(
             constants.L2_DOMAIN, vsd_l2_subnet[0]['ID'], filters='ID',
             filter_value=vsd_redirect_target[0]['ID'])
         self.assertEqual(vsd_redirect_target, '')
-        pass
 
     @nuage_test.header()
     def test_create_delete_several_redirection_targets_l2_mgd_subnet(self):
@@ -268,7 +259,6 @@ class VSDManagedRedirectTargetTest(
                 filter_value=vsd_redirect_targets[i][
                     'nuage_redirect_target']['id'])
             self.assertEqual(vsd_redirect_target, '')
-        pass
 
     @nuage_test.header()
     @decorators.attr(type='smoke')
@@ -322,7 +312,6 @@ class VSDManagedRedirectTargetTest(
             constants.DOMAIN, vsd_l3_domain[0]['ID'], filters='ID',
             filter_value=os_redirect_target['nuage_redirect_target']['id'])
         self.assertEqual(vsd_redirect_target, '')
-        pass
 
     @nuage_test.header()
     def test_create_delete_vsd_redirection_target_l3_mgd_subnet(self):
@@ -374,7 +363,6 @@ class VSDManagedRedirectTargetTest(
             constants.DOMAIN, vsd_l3_domain[0]['ID'], filters='ID',
             filter_value=vsd_redirect_target[0]['ID'])
         self.assertEqual(vsd_redirect_target, '')
-        pass
 
     @nuage_test.header()
     def test_create_delete_several_redirection_targets_l3_mgd_subnet(self):
@@ -457,7 +445,6 @@ class VSDManagedRedirectTargetTest(
                 filter_value=vsd_redirect_targets[i][
                     'nuage_redirect_target']['id'])
             self.assertEqual(vsd_redirect_target, '')
-        pass
 
     @nuage_test.header()
     def test_create_os_redirection_target_same_name_diff_l2_mgd_subnet(self):
@@ -522,7 +509,6 @@ class VSDManagedRedirectTargetTest(
             self._create_redirect_target_in_l2_subnet,
             subnet,
             name)
-        pass
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
@@ -555,14 +541,13 @@ class VSDManagedRedirectTargetTest(
 
         if NUAGE_FEATURES.ml2_limited_exceptions:
             expected_exception = exceptions.ServerFault
-            if (CONF.nuage_sut.openstack_version == 'kilo' and
-                    CONF.nuage_sut.nuage_plugin_mode == 'ml2'):
+            if Topology.at_openstack('kilo') and Topology.is_ml2:
                 msg = "update_port_postcommit failed"
-            elif CONF.nuage_sut.nuage_plugin_mode == 'ml2':
+            elif Topology.is_ml2:
                 msg = "update_port_precommit failed"
         else:
             # VSD-14419 - VSD throws wrong error
-            if current_release < Release('4.0R5'):
+            if not Topology.within_ext_id_release():
                 expected_exception = exceptions.ServerFault
                 LOG.warning("VSD-14419: throws wrong http error code: "
                             "ServerFault iso BadRequest")
@@ -616,8 +601,8 @@ class VSDManagedRedirectTargetTest(
                      'name': "rt-l2-insertion-mode-l3-fail"}
 
         expected_exception = exceptions.BadRequest
-        if (CONF.nuage_sut.nuage_plugin_mode == 'ml2' and
-                Release(CONF.nuage_sut.openstack_version) < Release('Newton')):
+        if (Topology.is_ml2 and
+                Topology.before_openstack('Newton')):
             expected_exception = exceptions.ServerFault
             msg = "Got server fault"
         else:
@@ -650,10 +635,7 @@ class VSDManagedRedirectTargetTest(
                      'name': "rt-l2-insertion-mode-l2-fail"}
 
         # I expect a badRequest
-        msg = EXPECT_NO_MULTIPLE_RT_MSG
-        expected_exception = exceptions.BadRequest
-        if (CONF.nuage_sut.nuage_plugin_mode == 'ml2' and
-                Release(CONF.nuage_sut.openstack_version) < Release('Newton')):
+        if Topology.is_ml2 and Topology.before_openstack('Newton'):
             msg = "Got server fault"
             expected_exception = exceptions.ServerFault
         else:
@@ -673,7 +655,7 @@ class VSDManagedRedirectTargetTest(
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_multiple_L2_vsd_redirection_targets_per_port_neg(self):
+    def test_multiple_l2_vsd_redirection_targets_per_port_neg(self):
         vsd_redirect_targets = []
         # Given I have a VSD-L2-Managed-Subnet in openstack
         vsd_l2_subnet, l2dom_templ = self._create_vsd_l2_managed_subnet()
@@ -861,7 +843,7 @@ class VSDManagedPolicyGroupsTest(
         show_port = self.ports_client.show_port(port['id'])
 
         # Then I expect all policy groups in the response
-        if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+        if not Topology.is_ml2:
             all_pg_present = self._check_all_policy_groups_in_show_port(
                 pg_id_list, show_port)
             self.assertTrue(all_pg_present,
@@ -879,7 +861,7 @@ class VSDManagedPolicyGroupsTest(
         # Then I do NOT expect this policy group in the show port response
         show_port = self.ports_client.show_port(port['id'])
 
-        if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+        if not Topology.is_ml2:
             for i in range(SEVERAL_POLICY_GROUPS):
                 pg_present = self._check_policy_group_in_show_port(
                     [policy_groups[i][0]['ID']], show_port)
@@ -894,7 +876,7 @@ class VSDManagedPolicyGroupsTest(
 
         # Then I do NOT expect the policy Groups in the show port response
         show_port = self.ports_client.show_port(port['id'])
-        if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+        if not Topology.is_ml2:
             self.assertEmpty(show_port['port']['nuage_policy_groups'],
                              "Port-show list disassociated ports")
 
@@ -930,7 +912,7 @@ class VSDManagedPolicyGroupsTest(
             show_port = self.ports_client.show_port(ports[i]['id'])
             # Then I expect all policy groups in the response
 
-            if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+            if not Topology.is_ml2:
                 all_pg_present = self._check_all_policy_groups_in_show_port(
                     pg_id_list, show_port)
                 self.assertTrue(all_pg_present,
@@ -954,7 +936,7 @@ class VSDManagedPolicyGroupsTest(
             # Then I do NOT expect the policy Groups in the show port response
             show_port = self.ports_client.show_port(ports[i]['id'])
 
-            if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+            if not Topology.is_ml2:
                 self.assertEmpty(show_port['port']['nuage_policy_groups'],
                                  "Port-show list disassociated ports")
 
@@ -1220,7 +1202,7 @@ class VSDManagedPolicyGroupsTest(
             show_port = self.ports_client.show_port(ports[i]['id'])
             # Then I expect all policy groups in the response
 
-            if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+            if not Topology.is_ml2:
                 all_pg_present = \
                     self._check_all_policy_groups_in_show_port(
                         pg_id_list, show_port)
@@ -1246,7 +1228,7 @@ class VSDManagedPolicyGroupsTest(
             # Then I do NOT expect the policy Groups in the show port response
             show_port = self.ports_client.show_port(ports[i]['id'])
 
-            if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+            if not Topology.is_ml2:
                 self.assertEmpty(show_port['port']['nuage_policy_groups'],
                                  "Port-show list disassociated ports")
 
@@ -1592,7 +1574,7 @@ class VSDManagedAssociateFIPTest(
         # self._associate_fip_to_port(port, claimed_fip[0]['ID'])
 
         # Then I expect the claimed floating ip in the port show response
-        if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+        if not Topology.is_ml2:
             fip_present = self._check_fip_in_port_show(port['id'],
                                                        claimed_fip[0]['ID'])
             self.assertTrue(fip_present,
@@ -1603,7 +1585,7 @@ class VSDManagedAssociateFIPTest(
         # When I disassociate the claimed fip from the port
         self._disassociate_fip_from_port(port)
         # Then I no longer expect the claimed floating ip in the port show resp
-        if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+        if not Topology.is_ml2:
             fip_present = self._check_fip_in_port_show(port['id'],
                                                        claimed_fip[0]['ID'])
             self.assertFalse(fip_present,
@@ -1637,7 +1619,7 @@ class VSDManagedAssociateFIPTest(
         self._associate_fip_to_port(port, claimed_fip[0]['ID'])
 
         # Then I expect the claimed floating ip in the port show response
-        if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+        if not Topology.is_ml2:
             fip_present = self._check_fip_in_port_show(port['id'],
                                                        claimed_fip[0]['ID'])
             self.assertTrue(fip_present,
@@ -1648,7 +1630,7 @@ class VSDManagedAssociateFIPTest(
         # When I disassociate the claimed fip from the port
         self._disassociate_fip_from_port(port)
         # Then I no longer expect the claimed floating ip in the port show resp
-        if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+        if not Topology.is_ml2:
             fip_present = self._check_fip_in_port_show(port['id'],
                                                        claimed_fip[0]['ID'])
             self.assertFalse(fip_present,
@@ -1690,7 +1672,7 @@ class VSDManagedAssociateFIPTest(
             self._associate_fip_to_port(ports[i], claimed_fips[i][0]['ID'])
         for i in range(SEVERAL_VSD_CLAIMED_FIPS):
             # Then I expect the claimed floating ip in the port show response
-            if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+            if not Topology.is_ml2:
                 fip_present = self._check_fip_in_port_show(
                     ports[i]['id'], claimed_fips[i][0]['ID'])
                 self.assertTrue(fip_present,
@@ -1703,7 +1685,7 @@ class VSDManagedAssociateFIPTest(
             # Then I no longer expect the claimed floating ip in the
             # port show response
 
-            if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+            if not Topology.is_ml2:
                 fip_present = self._check_fip_in_port_show(
                     ports[i]['id'], claimed_fips[i][0]['ID'])
                 self.assertFalse(fip_present,
@@ -1939,7 +1921,7 @@ class VSDManagedAssociateFIPTest(
         # self.update_port(port_1, **kwargs)
 
         # Then I expect the claimed floating ip in the port show response
-        if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+        if not Topology.is_ml2:
             fip_present = self._check_fip_in_port_show(
                 port_1['id'], claimed_fip[0]['ID'])
             self.assertTrue(fip_present,
@@ -1956,7 +1938,7 @@ class VSDManagedAssociateFIPTest(
 
         if NUAGE_FEATURES.ml2_limited_exceptions:
             expected_exception = exceptions.ServerFault
-            if CONF.nuage_sut.openstack_version == 'kilo':
+            if Topology.at_openstack('kilo'):
                 msg = "update_port_postcommit failed"
             else:
                 msg = "Got server fault"

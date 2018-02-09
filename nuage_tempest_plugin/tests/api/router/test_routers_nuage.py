@@ -19,17 +19,13 @@ import testtools
 import time
 import uuid
 
-from oslo_log import log as oslo_logging
-
 from tempest.api.network import base
 from tempest.common import utils
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
-from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
@@ -38,11 +34,8 @@ from nuage_tempest_plugin.services.nuage_network_client \
 from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
     import ExternalId
 
-CONF = config.CONF
-LOG = oslo_logging.getLogger(__name__)
-
-external_id_release = Release(n_constants.EXTERNALID_RELEASE)
-current_release = Release(Topology.nuage_release)
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 NUAGE_PAT_ENABLED = 'ENABLED'
 NUAGE_PAT_DISABLED = 'DISABLED'
@@ -62,11 +55,6 @@ class NuageRoutersTest(base.BaseNetworkTest):
         super(NuageRoutersTest, cls).setup_clients()
         cls.client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
-            CONF.network.catalog_type,
-            CONF.network.region or CONF.identity.region,
-            endpoint_type=CONF.network.endpoint_type,
-            build_interval=CONF.network.build_interval,
-            build_timeout=CONF.network.build_timeout,
             **cls.os_primary.default_params)
         cls.nuage_vsd_client = NuageRestClient()
 
@@ -135,7 +123,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
         nuage_domain = self.nuage_vsd_client.get_l3domain(
             filters='externalID', filter_value=rtr_id)
         self.assertEqual(nuage_domain[0][u'description'], name)
-        if external_id_release <= current_release:
+        if Topology.within_ext_id_release():
             nuage_zones = self.nuage_vsd_client.get_zone(
                 parent_id=nuage_domain[0]['ID'])
             self.assertEqual(len(nuage_zones), 2, "Zones for the corresponding"
@@ -356,7 +344,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
         self.assertEqual(
             nuage_static_route[0][u'nextHopIp'], next_hop, "wrong nexthop")
 
-        if Release(Topology.nuage_release) >= Release('4.0R5'):
+        if Topology.from_nuage('4.0R5'):
             self.assertEqual(nuage_static_route[0]['externalID'],
                              ExternalId(self.router['id']).at_cms_id())
 
@@ -408,8 +396,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
         template_name = data_utils.rand_name('rtr-template')
         nuage_template = self.nuage_vsd_client.create_l3domaintemplate(
             template_name)
-        args = [n_constants.DOMAIN_TEMPLATE, nuage_template[0]['ID'],
-                True]
+        args = [n_constants.DOMAIN_TEMPLATE, nuage_template[0]['ID'], True]
         self.addCleanup(self.nuage_vsd_client.delete_resource, *args)
 
         # Create zones under the template
@@ -706,7 +693,7 @@ class NuageRoutersAdminTest(base.BaseAdminNetworkTest):
     @utils.requires_ext(extension='ext-gw-mode', service='network')
     @testtools.skipIf(Topology.new_route_to_underlay_model_enabled(),
                       'Skipping test as new route-to-UL model is enabled')
-    @testtools.skipIf(NUAGE_FEATURES.current_release >= Release('5.2'),
+    @testtools.skipIf(NUAGE_FEATURES.route_to_underlay,
                       'Skipping test as relying on OS-911 bug')
     @decorators.attr(type='smoke')
     def test_create_router_with_default_snat_value(self):

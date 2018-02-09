@@ -16,14 +16,12 @@
 
 import collections
 
-from oslo_log import log as logging
-
-from tempest import config
 from tempest.lib import exceptions as lib_exc
 from tempest.scenario import manager
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+from nuage_tempest_plugin.lib.topology import Topology
+
+LOG = Topology.get_logger(__name__)
 
 Floating_IP_tuple = collections.namedtuple('Floating_IP_tuple',
                                            ['floating_ip', 'server'])

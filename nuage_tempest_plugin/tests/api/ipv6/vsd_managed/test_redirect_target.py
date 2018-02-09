@@ -1,7 +1,6 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
 
-from tempest import config
 from tempest.lib.common.utils import data_utils
 
 from nuage_tempest_plugin.lib.test import nuage_test
@@ -11,8 +10,6 @@ from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
     import NetworkTestCaseMixin
 from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
     import VsdTestCaseMixin
-
-CONF = config.CONF
 
 ###############################################################################
 ###############################################################################

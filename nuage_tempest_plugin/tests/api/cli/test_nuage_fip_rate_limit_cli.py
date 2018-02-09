@@ -3,7 +3,6 @@
 
 import json
 
-from tempest import config
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib import service_mgmt
@@ -12,8 +11,6 @@ from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 
 from base_nuage_fip_rate_limit_cli import BaseNuageFipRateLimit
-
-CONF = config.CONF
 
 MSG_INVALID_INPUT = "Invalid input for nuage_fip_rate. " \
                     "Reason: \'nuage_fip_rate\' " + \
@@ -25,6 +22,8 @@ MSG_INVALID_INPUT_FOR_OPERATION = "Invalid input for operation: " \
                                   "higher than 0, " \
                                   "-1 for unlimited or 'default' for the " \
                                   "configured default value.."
+
+LOG = Topology.get_logger(__name__)
 
 
 # TODO(waelj) don't want to have a dedicated parent class for CLI
@@ -42,7 +41,7 @@ class TestNuageFipRateLimitCliWithoutDefault(BaseNuageFipRateLimit):
         # TODO(Kris) FIXME.....................................................
 
         fip_rate_limit = cls.service_manager.get_configuration_attribute(
-            CONF.nuage_sut.nuage_plugin_configuration,
+            Topology.nuage_plugin_configuration,
             constants.FIP_RATE_GROUP,
             constants.FIP_RATE_DEFAULT
         )
@@ -61,7 +60,7 @@ class TestNuageFipRateLimitCliWithoutDefault(BaseNuageFipRateLimit):
             if Topology.neutron_restart_supported():
                 cls.service_manager = service_mgmt.ServiceManager()
                 cls.service_manager.must_have_configuration_attribute(
-                    CONF.nuage_sut.nuage_plugin_configuration,
+                    Topology.nuage_plugin_configuration,
                     constants.FIP_RATE_GROUP, constants.FIP_RATE_DEFAULT,
                     cls.configured_default_fip_rate)
 
@@ -87,14 +86,14 @@ class TestNuageFipRateLimitCliWithoutDefault(BaseNuageFipRateLimit):
         # [ip['ip_address'] for ip in ip_address)]
 
         if 'nuage_fip_rate' in created_floating_ip:
-            self.LOG.info("FIP Rate limit %s",
-                          created_floating_ip['nuage_fip_rate'])
+            LOG.info("FIP Rate limit %s",
+                     created_floating_ip['nuage_fip_rate'])
         if 'nuage_egress_fip_rate_kbps' in created_floating_ip:
-            self.LOG.info("Egress FIP Rate limit kbps %s",
-                          created_floating_ip['nuage_egress_fip_rate_kbps'])
+            LOG.info("Egress FIP Rate limit kbps %s",
+                     created_floating_ip['nuage_egress_fip_rate_kbps'])
         if 'nuage_ingress_fip_rate_kbps' in created_floating_ip:
-            self.LOG.info("Ingress FIP Rate limit kbps %s",
-                          created_floating_ip['nuage_ingress_fip_rate_kbps'])
+            LOG.info("Ingress FIP Rate limit kbps %s",
+                     created_floating_ip['nuage_ingress_fip_rate_kbps'])
 
         # TODO(Kris) temporarily taken out
         # self.assertEqual(created_floating_ip['nuage_fip_rate'],
@@ -141,7 +140,7 @@ class TestNuageFipRateLimitCliWithoutDefault(BaseNuageFipRateLimit):
         self.assertEqual(1, len(qos))
         self.assertEqual(True, qos[0]['FIPRateLimitingActive'])
 
-        self.LOG.info("FIP Rate limit %s", qos[0]['FIPPeakInformationRate'])
+        LOG.info("FIP Rate limit %s", qos[0]['FIPPeakInformationRate'])
         self.assertEqualFiprate(default_rate_limit,
                                 qos[0]['FIPPeakInformationRate'])
 

@@ -1,41 +1,25 @@
 # Copyright 2015 Alcatel-Lucent
 # All Rights Reserved.
 
-from oslo_log import log as logging
 import re
 
 from tempest.common import utils
-from tempest import config
 from tempest.lib import decorators
 
-from nuage_tempest_plugin.lib.release import Release
-from nuage_tempest_plugin.lib.remote_cli import remote_cli_base_testcase
+from nuage_tempest_plugin.lib.cli import client_testcase
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
-current_release = Release(Topology.nuage_release)
+LOG = Topology.get_logger(__name__)
 
 
-class TestNuageNeutronCli(remote_cli_base_testcase.RemoteCliBaseTestCase):
+class TestNuageNeutronCli(client_testcase.CLIClientTestCase):
     """Basic, read-only tests for Neutron CLI client.
 
     Checks return values and output of read-only commands.
     These tests do not presume any content, nor do they create
     their own. They only verify the structure of output if present.
     """
-    # cli_client = None
-
-    def __init__(self, *args, **kwargs):
-        super(TestNuageNeutronCli, self).__init__(*args, **kwargs)
-
-    @classmethod
-    def resource_setup(cls):
-        if not CONF.service_available.neutron:
-            msg = "Skipping all Neutron cli tests because it is not available"
-            raise cls.skipException(msg)
-        super(TestNuageNeutronCli, cls).resource_setup()
 
     @decorators.attr(type='smoke')
     @nuage_test.header()
@@ -95,7 +79,7 @@ class TestNuageNeutronCli(remote_cli_base_testcase.RemoteCliBaseTestCase):
             wanted_commands = wanted_commands.union(self._crud_command_list(
                 'nuage-redirect-target-rule', update=False))
 
-        if Release('4.0') <= current_release:
+        if Topology.from_nuage('4.0'):
             wanted_commands.add('nuage-policy-group-list')
             wanted_commands.add('nuage-policy-group-show')
             wanted_commands.add('nuage-floatingip-list')

@@ -16,21 +16,17 @@
 from netaddr import IPAddress
 import uuid
 
-from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
 from tempest.api.network import base
 from tempest.common import utils
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
-CONF = config.CONF
-external_id_release = Release(n_constants.EXTERNALID_RELEASE)
-current_release = Release(Topology.nuage_release)
+CONF = Topology.get_conf()
 
 
 class AllowedAddressPairTest(base.BaseNetworkTest):
@@ -291,7 +287,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
             filters='virtualIP',
             filter_value=str(addrpair_port['fixed_ips'][0]['ip_address']))
         self.assertEqual(addrpair_port['mac_address'], nuage_vip[0]['MAC'])
-        if external_id_release <= current_release:
+        if Topology.within_ext_id_release():
             self.assertEqual(nuage_vip[0]['externalID'],
                              self.nuage_vsd_client.get_vsd_external_id(
                                  port['id']))
@@ -349,7 +345,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
             filters='virtualIP',
             filter_value=str(addrpair_port['fixed_ips'][0]['ip_address']))
         self.assertEqual(addrpair_port['mac_address'], nuage_vip[0]['MAC'])
-        if external_id_release <= current_release:
+        if Topology.within_ext_id_release():
             self.assertEqual(nuage_vip[0]['externalID'],
                              self.nuage_vsd_client.get_vsd_external_id(
                                  port['id']))
@@ -394,7 +390,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
             filters='virtualIP',
             filter_value=str(addrpair_port['fixed_ips'][0]['ip_address']))
         self.assertEqual(port['mac_address'], nuage_vip[0]['MAC'])
-        if external_id_release <= current_release:
+        if Topology.within_ext_id_release():
             self.assertEqual(nuage_vip[0]['externalID'],
                              self.nuage_vsd_client.get_vsd_external_id(
                                  port['id']))
@@ -521,7 +517,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
             filters='virtualIP',
             filter_value=str(addrpair_port_1['fixed_ips'][0]['ip_address']))
         self.assertEqual(addrpair_port_1['mac_address'], nuage_vip[0]['MAC'])
-        if external_id_release <= current_release:
+        if Topology.within_ext_id_release():
             self.assertEqual(nuage_vip[0]['externalID'],
                              self.nuage_vsd_client.get_vsd_external_id(
                                  port['id']))
@@ -553,7 +549,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
             filters='virtualIP',
             filter_value=str(addrpair_port_2['fixed_ips'][0]['ip_address']))
         self.assertEqual(addrpair_port_2['mac_address'], nuage_vip[0]['MAC'])
-        if external_id_release <= current_release:
+        if Topology.within_ext_id_release():
             self.assertEqual(nuage_vip[0]['externalID'],
                              self.nuage_vsd_client.get_vsd_external_id(
                                  port['id']))
@@ -630,7 +626,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
             filters='virtualIP',
             filter_value=str(addrpair_port_1['fixed_ips'][0]['ip_address']))
         self.assertEqual(addrpair_port_1['mac_address'], nuage_vip[0]['MAC'])
-        if external_id_release <= current_release:
+        if Topology.within_ext_id_release():
             self.assertEqual(nuage_vip[0]['externalID'],
                              self.nuage_vsd_client.get_vsd_external_id(
                                  port['id']))
@@ -682,7 +678,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
             filters='virtualIP',
             filter_value=str(addrpair_port_2['fixed_ips'][0]['ip_address']))
         self.assertEqual(addrpair_port_2['mac_address'], nuage_vip[0]['MAC'])
-        if external_id_release <= current_release:
+        if Topology.within_ext_id_release():
             self.assertEqual(nuage_vip[0]['externalID'],
                              self.nuage_vsd_client.get_vsd_external_id(
                                  port['id']))
@@ -696,7 +692,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
 
     @decorators.attr(type='smoke')
     def test_create_address_pair_with_same_ip(self):
-        if Release("4.0R6.1") <= current_release:
+        if Topology.from_nuage("4.0R6.1"):
             return
         # Create a vm
         post_body = {"device_owner": 'compute:None',
@@ -774,7 +770,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
                          nuage_vip[0]['associatedFloatingIPID'])
         self.assertEqual(nuage_domain_fip[0]['assignedToObjectType'],
                          'virtualip')
-        if external_id_release <= current_release:
+        if Topology.within_ext_id_release():
             self.assertEqual(nuage_vip[0]['externalID'],
                              self.nuage_vsd_client.get_vsd_external_id(
                                  port['id']))
@@ -844,7 +840,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
             filters='virtualIP',
             filter_value=str(addrpair_port['fixed_ips'][0]['ip_address']))
         self.assertEqual(addrpair_port['mac_address'], nuage_vip[0]['MAC'])
-        if external_id_release <= current_release:
+        if Topology.within_ext_id_release():
             self.assertEqual(nuage_vip[0]['externalID'],
                              self.nuage_vsd_client.get_vsd_external_id(
                                  port['id']))

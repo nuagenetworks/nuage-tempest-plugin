@@ -169,9 +169,6 @@ NUAGE_PAT_GROUP = 'restproxy'
 NUAGE_UPLINK_GROUP = 'restproxy'
 NUAGE_UPLINK = 'nuage_uplink'
 
-# external-id-release-value
-EXTERNALID_RELEASE = '4.0r5'
-
 VPORT_TYPE_BRIDGE = 'BRIDGE'
 VPORT_TYPE_HOST = 'HOST'
 VPORT_TYPE_VM = 'VM'

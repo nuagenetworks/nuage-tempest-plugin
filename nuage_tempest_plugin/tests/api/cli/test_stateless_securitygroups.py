@@ -14,16 +14,12 @@
 
 from netaddr import IPNetwork
 
-from oslo_log import log as logging
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 
-from nuage_tempest_plugin.lib import features
+from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.tests.api.cli import base_nuage_networks_cli as base
-
-CONF = config.CONF
 
 
 class TestStatelessSGCli(base.BaseNuageNetworksCliTestCase):
@@ -31,7 +27,6 @@ class TestStatelessSGCli(base.BaseNuageNetworksCliTestCase):
     """Nuage stateless SGs tests using Neutron CLI client.
 
     """
-    LOG = logging.getLogger(__name__)
 
     @classmethod
     def setup_clients(cls):
@@ -40,7 +35,7 @@ class TestStatelessSGCli(base.BaseNuageNetworksCliTestCase):
     @classmethod
     def skip_checks(cls):
         super(TestStatelessSGCli, cls).skip_checks()
-        if not features.NUAGE_FEATURES.stateless_securitygroups:
+        if not NUAGE_FEATURES.stateless_security_groups:
             msg = "Stateless SecurityGroups feature is not available"
             raise cls.skipException(msg)
 

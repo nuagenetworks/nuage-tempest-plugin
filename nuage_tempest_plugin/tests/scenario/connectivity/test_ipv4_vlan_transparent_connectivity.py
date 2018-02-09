@@ -1,10 +1,7 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
 
-from oslo_log import log as logging
 import testtools
-
-from tempest import config
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
@@ -12,8 +9,7 @@ from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+LOG = Topology.get_logger(__name__)
 
 
 class VlanTransparentConnectivityTest(NuageBaseTest):
@@ -27,11 +23,6 @@ class VlanTransparentConnectivityTest(NuageBaseTest):
         cls.nuage_vsd_client = NuageRestClient()
         cls.client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
-            CONF.network.catalog_type,
-            CONF.network.region or CONF.identity.region,
-            endpoint_type=CONF.network.endpoint_type,
-            build_interval=CONF.network.build_interval,
-            build_timeout=CONF.network.build_timeout,
             **cls.os_primary.default_params)
 
     def setUp(self):

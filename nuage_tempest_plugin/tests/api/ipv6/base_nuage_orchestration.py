@@ -13,19 +13,16 @@
 import os.path
 import yaml
 
-from oslo_log import log as logging
-
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions as lib_exc
 from tempest.services import orchestration
 import tempest.test
 
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.services import nuage_client
 
-CONF = config.CONF
-
-LOG = logging.getLogger(__name__)
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 # TODO(TEAM) - this class should inherit from NuageBaseOrchestrationTest
@@ -40,8 +37,6 @@ class NuageBaseOrchestrationTest(tempest.test.BaseTestCase):
         super(NuageBaseOrchestrationTest, cls).skip_checks()
         if not CONF.service_available.heat_plugin:
             raise cls.skipException("Heat support is required")
-        if not CONF.service_available.neutron:
-            raise cls.skipException("Neutron support is required")
 
     @classmethod
     def setup_clients(cls):
@@ -68,7 +63,7 @@ class NuageBaseOrchestrationTest(tempest.test.BaseTestCase):
         cls.build_timeout = CONF.heat_plugin.build_timeout
         cls.build_interval = CONF.heat_plugin.build_interval
 
-        cls.net_partition_name = CONF.nuage.nuage_default_netpartition
+        cls.net_partition_name = CONF.def_netpartition
         cls.private_net_name = data_utils.rand_name('heat-network-')
 
         cls.test_resources = {}

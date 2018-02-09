@@ -3,10 +3,8 @@
 
 from netaddr import IPNetwork
 
-from oslo_log import log as logging
-from tempest import config
-
 from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 
 from nuage_tempest_plugin.services.nuage_network_client \
@@ -16,8 +14,7 @@ from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
 
 from base_nuage_networks_cli import BaseNuageNetworksCliTestCase
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+LOG = Topology.get_logger(__name__)
 
 # Constants used in this file
 SEVERAL_REDIRECT_TARGETS = 3
@@ -44,11 +41,6 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
         super(VSDManagedPolicyGroupsCliTest, cls).setup_clients()
         cls.nuage_network_client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
-            CONF.network.catalog_type,
-            CONF.network.region or CONF.identity.region,
-            endpoint_type=CONF.network.endpoint_type,
-            build_interval=CONF.network.build_interval,
-            build_timeout=CONF.network.build_timeout,
             **cls.os_primary.default_params)
 
     def _check_port_in_policy_group(self, port_id, pg_id):
@@ -181,7 +173,7 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
         for i in range(SEVERAL_PORTS):
             show_port = self.show_port(ports[i]['id'])
             # Then I expect all policy groups in the response
-            if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+            if not Topology.is_ml2:
                 all_pg_present = \
                     self._cli_check_all_policy_groups_in_show_port(
                         pg_id_list, show_port)
@@ -204,7 +196,7 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
             # Then I do NOT expect the policy Groups in the show port response
             show_port = self.show_port(ports[i]['id'])
 
-            if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+            if not Topology.is_ml2:
                 self.assertEmpty(show_port['nuage_policy_groups'],
                                  "Port-show list disassociated ports")
 
@@ -451,7 +443,7 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
         for i in range(SEVERAL_PORTS):
             show_port = self.show_port(ports[i]['id'])
             # Then I expect all policy groups in the response
-            if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+            if not Topology.is_ml2:
                 all_pg_present = \
                     self._cli_check_all_policy_groups_in_show_port(
                         pg_id_list, show_port)
@@ -474,7 +466,7 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
 
             # Then I do NOT expect the policy Groups in the show port response
             show_port = self.show_port(ports[i]['id'])
-            if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+            if not Topology.is_ml2:
                 self.assertEmpty(show_port['nuage_policy_groups'],
                                  "Port-show list disassociated ports")
 
@@ -526,7 +518,7 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
         for i in range(SEVERAL_PORTS):
             show_port = self.show_port(ports[i]['id'])
             # Then I expect all policy groups in the response
-            if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+            if not Topology.is_ml2:
                 all_pg_present = \
                     self._cli_check_all_policy_groups_in_show_port(
                         pg_id_list, show_port)
@@ -548,7 +540,7 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
             # Then I do NOT expect the policy Groups in the show port response
             show_port = self.show_port(ports[i]['id'])
 
-            if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+            if not Topology.is_ml2:
                 self.assertEmpty(show_port['nuage_policy_groups'],
                                  "Port-show list disassociated ports")
 

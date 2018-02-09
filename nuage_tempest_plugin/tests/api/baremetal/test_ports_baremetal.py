@@ -14,12 +14,9 @@
 
 import time
 
-from oslo_log import log as logging
-
 import testtools
 from testtools import matchers
 
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions as lib_exc
@@ -31,10 +28,9 @@ from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.tests.api.baremetal.baremetal_topology \
-    import Topology as BaremetalTopology
+    import BaremetalTopology
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+LOG = Topology.get_logger(__name__)
 
 
 class BaremetalTest(network_mixin.NetworkMixin,
@@ -44,10 +40,10 @@ class BaremetalTest(network_mixin.NetworkMixin,
     @classmethod
     def setUpClass(cls):
         super(BaremetalTest, cls).setUpClass()
-        if (CONF.nuage_sut.nuage_baremetal_driver ==
+        if (Topology.nuage_baremetal_driver ==
                 constants.BAREMETAL_DRIVER_BRIDGE):
             cls.expected_vport_type = constants.VPORT_TYPE_BRIDGE
-        elif (CONF.nuage_sut.nuage_baremetal_driver ==
+        elif (Topology.nuage_baremetal_driver ==
               constants.BAREMETAL_DRIVER_HOST):
             cls.expected_vport_type = constants.VPORT_TYPE_HOST
         else:

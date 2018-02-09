@@ -15,17 +15,17 @@
 
 import time
 
-from tempest import config
 from tempest import exceptions
 from tempest.lib.common.utils import data_utils
 from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions as lib_exc
 
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as p_const
 
 from nuage_tempest_plugin.services.fwaas import fwaas_client as client
 
-CONF = config.CONF
+CONF = Topology.get_conf()
 
 
 class FWaaSClientMixin(object):

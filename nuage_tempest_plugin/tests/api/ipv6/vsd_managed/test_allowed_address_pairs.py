@@ -1,9 +1,10 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
 
-from oslo_log import log as logging
+from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as nuage_constants
 
 from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
@@ -13,18 +14,13 @@ from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
 from nuage_tempest_plugin.tests.api.ipv6.test_allowed_address_pair \
     import BaseAllowedAddressPair
 
-from tempest import config
-from tempest.test import decorators
-
-CONF = config.CONF
-
 ###############################################################################
 ###############################################################################
 # MultiVIP . allowed address pairs
 ###############################################################################
 ###############################################################################
 
-LOG = logging.getLogger(__name__)
+LOG = Topology.get_logger(__name__)
 
 
 class VSDManagedAllowedAddresPairsTest(BaseAllowedAddressPair,

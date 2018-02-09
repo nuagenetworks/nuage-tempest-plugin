@@ -15,23 +15,19 @@
 
 from netaddr import IPNetwork
 
-from oslo_log import log as logging
-
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib.common.utils.data_utils import rand_name
 from tempest.test import decorators
 
 import base_nuage_gateway as base
 
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.lib.utils import exceptions
 from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_network as base_vsdman
 
-CONF = config.CONF
-
-LOG = logging.getLogger(__name__)
+LOG = Topology.get_logger(__name__)
 
 
 class NuageGatewayTestRedundancy(base.BaseNuageGatewayTest,
@@ -290,7 +286,7 @@ class NuageGatewayTestRedundancy(base.BaseNuageGatewayTest,
         vlan_ent_permission = self.nuage_vsd_client.get_vlan_permission(
             n_constants.VLAN, vlan['id'], n_constants.ENTERPRISE_PERMS)
         self.assertEqual(vlan_ent_permission[0]['permittedEntityName'],
-                         CONF.nuage.nuage_default_netpartition)
+                         Topology.def_netpartition)
 
         vlan_permission = self.nuage_vsd_client.get_vlan_permission(
             n_constants.VLAN, vlan['id'], n_constants.PERMIT_ACTION)
@@ -470,7 +466,7 @@ class NuageGatewayTestRedundancy(base.BaseNuageGatewayTest,
             extra_params=extra_params)
         net_name = data_utils.rand_name('network-vsd-managed-')
         net = self.create_network(network_name=net_name)
-        np = CONF.nuage.nuage_default_netpartition
+        np = Topology.def_netpartition
         subnet = self.create_subnet(net,
                                     cidr=cidr,
                                     mask_bits=24,
@@ -534,7 +530,7 @@ class NuageGatewayTestRedundancy(base.BaseNuageGatewayTest,
         subnet = self.create_subnet(
             net, gateway=None,
             cidr=cidr, mask_bits=24, nuagenet=vsd_l2dom[0]['ID'],
-            net_partition=CONF.nuage.nuage_default_netpartition,
+            net_partition=Topology.def_netpartition,
             enable_dhcp=True)
         post_body = {"network_id": net['id'],
                      "device_owner": 'compute:ironic'}

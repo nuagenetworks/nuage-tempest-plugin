@@ -14,10 +14,8 @@
 #
 
 from netaddr import IPNetwork
-from oslo_log import log as logging
 import uuid
 
-from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.lib.utils import exceptions
@@ -28,17 +26,13 @@ from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_network as base_vsdman
 
 from tempest.api.network import base
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib.common.utils.data_utils import rand_name
 from tempest.lib import exceptions as lib_exec
 from tempest.test import decorators
 
-CONF = config.CONF
-external_id_release = Release(n_constants.EXTERNALID_RELEASE)
-current_release = Release(Topology.nuage_release)
-
-LOG = logging.getLogger(__name__)
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
@@ -213,20 +207,10 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
         # Overriding cls.client with Nuage network client
         cls.client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
-            CONF.network.catalog_type,
-            CONF.network.region or CONF.identity.region,
-            endpoint_type=CONF.network.endpoint_type,
-            build_interval=CONF.network.build_interval,
-            build_timeout=CONF.network.build_timeout,
             **cls.os_primary.default_params)
         # initialize admin client
         cls.admin_client = NuageNetworkClientJSON(
             cls.os_admin.auth_provider,
-            CONF.network.catalog_type,
-            CONF.network.region or CONF.identity.region,
-            endpoint_type=CONF.network.endpoint_type,
-            build_interval=CONF.network.build_interval,
-            build_timeout=CONF.network.build_timeout,
             **cls.os_admin.default_params)
 
     @classmethod
@@ -267,7 +251,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
         cls.subnet = cls.create_subnet(
             cls.network,
             cidr=cidr, mask_bits=24, nuagenet=vsd_domain_subnet[0]['ID'],
-            net_partition=CONF.nuage.nuage_default_netpartition)
+            net_partition=Topology.def_netpartition)
 
         # Create resources in non-default net-partition
         netpart_body = cls.client.create_netpartition(
@@ -383,7 +367,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
         self.assertEqual(actual_vlan['userMnemonic'],
                          expected_vlan['usermnemonic'])
         self.assertEqual(actual_vlan['value'], expected_vlan['value'])
-        if external_id_release <= current_release and verify_ext:
+        if Topology.within_ext_id_release() and verify_ext:
             external_id = (expected_vlan['gatewayport'] + "." +
                            str(expected_vlan['value']))
             self.assertEqual(actual_vlan['externalID'],
@@ -394,7 +378,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
         self.assertEqual(actual_vport['ID'], expected_vport['id'])
         self.assertEqual(actual_vport['type'], expected_vport['type'])
         self.assertEqual(actual_vport['name'], expected_vport['name'])
-        if external_id_release <= current_release:
+        if Topology.within_ext_id_release():
             if expected_vport['type'] == n_constants.BRIDGE_VPORT:
                 self.assertEqual(actual_vport['externalID'],
                                  self.nuage_vsd_client.get_vsd_external_id(
@@ -753,7 +737,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
         vlan_ent_permission = self.nuage_vsd_client.get_vlan_permission(
             n_constants.VLAN, vlan['id'], n_constants.ENTERPRISE_PERMS)
         self.assertEqual(vlan_ent_permission[0]['permittedEntityName'],
-                         CONF.nuage.nuage_default_netpartition)
+                         Topology.def_netpartition)
 
         vlan_permission = self.nuage_vsd_client.get_vlan_permission(
             n_constants.VLAN, vlan['id'], n_constants.PERMIT_ACTION)

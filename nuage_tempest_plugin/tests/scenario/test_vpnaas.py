@@ -1,16 +1,15 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
 
-from oslo_log import log as logging
 import time
 
 from tempest.api.compute import base as serv_base
-from tempest import config
 
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.tests.api import test_vpnaas
 
-LOG = logging.getLogger(__name__)
-CONF = config.CONF
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 class VPNaaSScenarioTest(test_vpnaas.VPNaaSBase,

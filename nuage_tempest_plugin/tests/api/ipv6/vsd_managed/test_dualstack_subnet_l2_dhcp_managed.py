@@ -5,7 +5,6 @@ from netaddr import IPAddress
 from netaddr import IPNetwork
 import testtools
 
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions as exceptions
@@ -14,9 +13,9 @@ from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
-from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.test import tags
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as nuage_constants
 from nuage_tempest_plugin.lib.utils import exceptions as nuage_exceptions
 
@@ -24,8 +23,6 @@ from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
     import NetworkTestCaseMixin
 from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
     import VsdTestCaseMixin
-
-CONF = config.CONF
 
 MSG_INVALID_GATEWAY = "Invalid network gateway"
 MSG_INVALID_ADDRESS = "Invalid network address"
@@ -337,7 +334,7 @@ class VSDManagedDualStackSubnetL2DHCPManagedTest(NetworkTestCaseMixin,
 
         self.link_dualstack_net_l2(pool4=pool4, pool6=pool6)
 
-    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsdmgd_subnets,
+    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsd_mgd_subnets,
                       'Multi-linked VSD mgd subnets are not supported in this '
                       'release')
     @decorators.attr(type='smoke')
@@ -353,7 +350,7 @@ class VSDManagedDualStackSubnetL2DHCPManagedTest(NetworkTestCaseMixin,
         self.link_dualstack_net_l2(pool4=pool4, pool6=pool6,
                                    vsd_l2dom=vsd_l2dom)
 
-    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsdmgd_subnets,
+    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsd_mgd_subnets,
                       'Multi-linked VSD mgd subnets are not supported in this '
                       'release')
     @decorators.attr(type='smoke')
@@ -369,7 +366,7 @@ class VSDManagedDualStackSubnetL2DHCPManagedTest(NetworkTestCaseMixin,
         self.link_dualstack_net_l2(pool4=pool4, pool6=pool6,
                                    vsd_l2dom=vsd_l2dom, should_pass4=False)
 
-    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsdmgd_subnets,
+    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsd_mgd_subnets,
                       'Multi-linked VSD mgd subnets are not supported in this '
                       'release')
     @decorators.attr(type='smoke')
@@ -567,7 +564,7 @@ class VSDManagedDualStackSubnetL2DHCPManagedTest(NetworkTestCaseMixin,
 
         # should not allow to create a port in this network,
         # as we do not have IPv4 network linked
-        if Release(CONF.nuage_sut.openstack_version) >= Release('Newton'):
+        if Topology.from_openstack('Newton'):
             expected_exception = exceptions.BadRequest
         else:
             expected_exception = exceptions.ServerFault
@@ -659,6 +656,15 @@ class VSDManagedDualStackSubnetL2DHCPManagedTest(NetworkTestCaseMixin,
     # IPv6 address formats
     ########################################
     @decorators.attr(type='smoke')
+    ###########################################################################
+    #
+    #  The author of this test clearly did not know that gateway in VSD
+    #  does not refer to gateway in case of L2.
+    #  For ipv6 moreover, as VSP doesn't support dhcpv6, the whole intent
+    #  of this test is missed.  So read it with that in mind please .....
+    #  We use it for other purpose though.
+    #
+    ###########################################################################
     def test_create_vsd_l2domain_template_dualstack_valid(self):
         # noinspection PyPep8
         valid_ipv6 = [
@@ -696,6 +702,7 @@ class VSDManagedDualStackSubnetL2DHCPManagedTest(NetworkTestCaseMixin,
                 cidr4=self.cidr4,
                 dhcp_managed=True,
                 IPv6Address=ipv6_cidr,
+                # ?? -- this is not meaningful, there is no dhcpv6
                 IPv6Gateway=ipv6_gateway
             )
 
@@ -720,9 +727,9 @@ class VSDManagedDualStackSubnetL2DHCPManagedTest(NetworkTestCaseMixin,
             ipv6_subnet = self.create_subnet(
                 network,
                 ip_version=6,
-                gateway=vsd_l2domain_template['IPv6Gateway'],
-                cidr=IPNetwork(vsd_l2domain_template['IPv6Address']),
+                cidr=IPNetwork(ipv6_cidr),
                 mask_bits=mask_bits,
+                # gateway is not set
                 enable_dhcp=False,
                 nuagenet=vsd_l2domain['ID'],
                 net_partition=self.net_partition)
@@ -730,15 +737,29 @@ class VSDManagedDualStackSubnetL2DHCPManagedTest(NetworkTestCaseMixin,
             self.assertEqual(
                 IPNetwork(ipv6_subnet['cidr']),
                 IPNetwork(vsd_l2domain_template['IPv6Address']))
+            self.assertEqual(IPNetwork(ipv6_subnet['cidr'])[1],
+                             IPAddress(ipv6_subnet['allocation_pools'][0]
+                                       ['start']))
+            self.assertEqual(IPNetwork(ipv6_subnet['cidr'])[-1],
+                             IPAddress(ipv6_subnet['allocation_pools'][0]
+                                       ['end']))
 
             # create Openstack IPv4 subnet based on VSD l2domain
             ipv4_subnet = self.create_subnet(
                 network,
                 cidr=self.cidr4,
                 mask_bits=self.mask_bits4_unsliced,
+                # gateway is not set (which corresponds to option 3 not set)
                 nuagenet=vsd_l2domain['ID'],
                 net_partition=self.net_partition)
+
             self.assertEqual(ipv4_subnet['cidr'], str(self.cidr4))
+            self.assertEqual(IPNetwork(ipv4_subnet['cidr'])[1],
+                             IPAddress(ipv4_subnet['allocation_pools'][0]
+                                       ['start']))
+            self.assertEqual(IPNetwork(ipv4_subnet['cidr'])[-2],
+                             IPAddress(ipv4_subnet['allocation_pools'][0]
+                                       ['end']))
 
             # create a port in the network - IPAM by OS
             port = self.create_port(network)
@@ -902,7 +923,7 @@ class VSDManagedDualStackSubnetL2DHCPManagedTest(NetworkTestCaseMixin,
         net_name = data_utils.rand_name('network-')
         network = self.create_network(network_name=net_name)
 
-        if Release(CONF.nuage_sut.openstack_version) >= Release('Newton'):
+        if Topology.from_openstack('Newton'):
             expected_exception = exceptions.BadRequest
             expected_message = "Subnet with ip_version 6 can't be linked " \
                                "to vsd subnet with IPType IPV4"
@@ -1006,7 +1027,7 @@ class VSDManagedDualStackSubnetL2DHCPManagedTest(NetworkTestCaseMixin,
                                     'ip_address': IPAddress(
                                         self.cidr6.first + 10)}]}
 
-        if Release(CONF.nuage_sut.openstack_version) >= Release('Newton'):
+        if Topology.from_openstack('Newton'):
             expected_exception = exceptions.Conflict,
             expected_message = "IP address %s already allocated in subnet %s" \
                 % (IPAddress(self.cidr6.first + 10), ipv6_subnet['id'])
@@ -1043,7 +1064,7 @@ class VSDManagedDualStackSubnetL2DHCPManagedTest(NetworkTestCaseMixin,
                                     'ip_address': IPAddress(
                                         self.cidr6.first + 21)}]}
 
-        if Release(CONF.nuage_sut.openstack_version) >= Release('Newton'):
+        if Topology.from_openstack('Newton'):
             expected_exception = exceptions.BadRequest
             expected_message = "Port can't be a pure ipv6 port. " \
                                "Need ipv4 fixed ip."
@@ -1063,7 +1084,7 @@ class VSDManagedDualStackSubnetL2DHCPManagedTest(NetworkTestCaseMixin,
                                     'ip_address': IPAddress(
                                         self.cidr6.first + 21)}]}
 
-        if Release(CONF.nuage_sut.openstack_version) >= Release('Newton'):
+        if Topology.from_openstack('Newton'):
             expected_exception = exceptions.BadRequest
             expected_message = "Port can't be a pure ipv6 port. " \
                                "Need ipv4 fixed ip."
@@ -1086,7 +1107,7 @@ class VSDManagedDualStackSubnetL2DHCPManagedTest(NetworkTestCaseMixin,
                                      'ip_address':
                                          vsd_l2domain_template['IPv6Gateway']}
                                     ])
-        if Release(CONF.nuage_sut.openstack_version) >= Release('Newton'):
+        if Topology.from_openstack('Newton'):
             expected_exception = exceptions.Conflict,
             expected_message = "IP address %s already allocated in subnet %s" \
                                % (vsd_l2domain_template['IPv6Gateway'],
@@ -1216,7 +1237,7 @@ class VSDManagedDualStackSubnetL2DHCPManagedTest(NetworkTestCaseMixin,
     #         enable_dhcp=False,
     #         mask_bits=self.mask_bits4,
     #         nuagenet=vsd_l2domain['ID'],
-    #         net_partition=CONF.nuage.nuage_default_netpartition)
+    #         net_partition=Topology.def_netpartition)
     #
     #     ipv6_subnet = self.create_subnet(
     #         network,
@@ -1226,7 +1247,7 @@ class VSDManagedDualStackSubnetL2DHCPManagedTest(NetworkTestCaseMixin,
     #         mask_bits=self.mask_bits6,
     #         enable_dhcp=False,
     #         nuagenet=vsd_l2domain['ID'],
-    #         net_partition=CONF.nuage.nuage_default_netpartition)
+    #         net_partition=Topology.def_netpartition)
     #
     #     # shall not create port with IP already in use
     #     port_args = {'fixed_ips': [{'subnet_id': ipv4_subnet['id'],

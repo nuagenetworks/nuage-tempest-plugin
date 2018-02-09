@@ -14,24 +14,19 @@
 #    under the License.
 
 from netaddr import IPNetwork
-from oslo_log import log as logging
 
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
 import base_nuage_pat_underlay
 
 from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
-
-CONF = config.CONF
 
 
 class TestNuagePatUnderlay(base_nuage_pat_underlay.NuagePatUnderlayBase):
     _interface = 'json'
-
-    LOG = logging.getLogger(__name__)
 
     @classmethod
     def resource_setup(cls):
@@ -188,7 +183,7 @@ class TestNuagePatUnderlay(base_nuage_pat_underlay.NuagePatUnderlayBase):
             'cidr': str(cidr),
             'ip_version': self._ip_version,
             'name': subnet_name,
-            'net_partition': CONF.nuage.nuage_default_netpartition,
+            'net_partition': Topology.def_netpartition,
             'nuagenet': vsd_l2domain[0][u'ID']
         }
         self.assertRaises(exceptions.BadRequest,

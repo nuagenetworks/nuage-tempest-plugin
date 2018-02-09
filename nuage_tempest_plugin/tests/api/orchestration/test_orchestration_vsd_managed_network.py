@@ -1,10 +1,8 @@
 # Copyright 2015 Alcatel-Lucent
 # All Rights Reserved.
 
-import logging
 from netaddr import IPNetwork
 
-from tempest import config
 from tempest.lib.common.utils import data_utils
 
 import nuage_base
@@ -12,9 +10,7 @@ import nuage_base
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 
-CONF = config.CONF
-
-LOG = logging.getLogger(__name__)
+LOG = Topology.get_logger(__name__)
 
 
 class OrchestrationVsdManagedNetworkTest(

@@ -15,9 +15,7 @@
 
 import re
 
-from tempest import config
-
-CONF = config.CONF
+from nuage_tempest_plugin.lib.topology import Topology
 
 
 class ExternalId(object):
@@ -48,7 +46,7 @@ class ExternalId(object):
         return self._build()
 
     def at_cms_id(self):
-        self.cms = CONF.nuage.nuage_cms_id
+        self.cms = Topology.cms_id
         return self._build()
 
     def at_openstack(self):

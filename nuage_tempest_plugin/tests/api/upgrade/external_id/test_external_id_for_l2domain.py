@@ -13,14 +13,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo_log import log as logging
-
 from tempest.api.network import base
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib.common.utils import test_utils
 
-from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
@@ -32,13 +28,12 @@ from nuage_tempest_plugin.services.nuage_network_client \
 from external_id import ExternalId
 import upgrade_external_id_with_cms_id as upgrade_script
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+LOG = Topology.get_logger(__name__)
 
 
 class ExternalIdForL2domainTest(base.BaseNetworkTest):
     test_upgrade = False
-    net_partition_name = CONF.nuage.nuage_default_netpartition
+    net_partition_name = Topology.def_netpartition
 
     class MatchingVsdL2domain(object):
         def __init__(self, outer, subnet):
@@ -315,10 +310,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
     @classmethod
     def skip_checks(cls):
         super(ExternalIdForL2domainTest, cls).skip_checks()
-
-        current_release = Release(Topology.nuage_release)
-        external_id_release = Release('4.0R5')
-        cls.test_upgrade = external_id_release > current_release
+        cls.test_upgrade = not Topology.within_ext_id_release()
 
     @classmethod
     def setup_clients(cls):
@@ -326,11 +318,6 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
         cls.nuage_vsd_client = NuageRestClient()
         cls.nuage_network_client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
-            CONF.network.catalog_type,
-            CONF.network.region or CONF.identity.region,
-            endpoint_type=CONF.network.endpoint_type,
-            build_interval=CONF.network.build_interval,
-            build_timeout=CONF.network.build_timeout,
             **cls.os_primary.default_params)
 
     @nuage_test.header()

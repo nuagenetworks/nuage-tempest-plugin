@@ -19,21 +19,19 @@ from netaddr import IPAddress
 from netaddr import IPNetwork
 import random
 
-from oslo_log import log as logging
-
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_networks
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
-# Stuff for the interconnectivity VM
+# Stuff for the inter-connectivity VM
 OS_CONNECTING_NW_CIDR = IPNetwork('33.33.33.0/24')
 OS_CONNECTING_NW_GW = '33.33.33.1'
 
@@ -94,7 +92,8 @@ class BaseVSDManagedPortAttributes(
         elif ip_version == 6:
             cidr = (
                 cidr or IPNetwork(CONF.network.tenant_network_v6_cidr))
-            mask_bits = mask_bits or CONF.network.tenant_network_v6_mask_bits
+            mask_bits = (mask_bits or
+                         CONF.network.tenant_network_v6_mask_bits)
         # Find a cidr that is not in use yet and create a subnet with it
         for subnet_cidr in cidr.subnet(mask_bits):
             if gateway_not_set:
@@ -661,7 +660,7 @@ class BaseVSDManagedPortAttributes(
             'network': network,
             'cidr': cidr,
             'mask_bits': cidr.prefixlen,
-            'net_partition': CONF.nuage.nuage_default_netpartition,
+            'net_partition': Topology.def_netpartition,
             'nuagenet': vsd_l2_subnet[0]['ID']
         }
         subnet = self._create_subnet(**kwargs)
@@ -676,7 +675,7 @@ class BaseVSDManagedPortAttributes(
             'network': network,
             'cidr': cidr,
             'mask_bits': cidr.prefixlen,
-            'net_partition': CONF.nuage.nuage_default_netpartition,
+            'net_partition': Topology.def_netpartition,
             'nuagenet': vsd_l3_subnet[0]['ID']
         }
         subnet = self._create_subnet(**kwargs)
@@ -1164,7 +1163,7 @@ class BaseVSDManagedPortAttributes(
         network = self.create_network_with_args(network_name)
         subnet_name = data_utils.rand_name('cli-subnet')
         cidr = str(base_vsd_managed_networks.VSD_L2_SHARED_MGD_CIDR.cidr)
-        net_partition = CONF.nuage.nuage_default_netpartition
+        net_partition = Topology.def_netpartition
         nuagenet = vsd_l2_subnet[0]['ID']
         subnet = self.create_subnet_with_args(network['name'],
                                               cidr,
@@ -1189,7 +1188,7 @@ class BaseVSDManagedPortAttributes(
             network['name'],
             str(cidr.cidr),
             "--name", data_utils.rand_name('cli-osl3subnet'),
-            "--net-partition ", CONF.nuage.nuage_default_netpartition,
+            "--net-partition ", Topology.def_netpartition,
             "--nuagenet ", vsd_l3_subnet[0]['ID'])
         return network, subnet
 

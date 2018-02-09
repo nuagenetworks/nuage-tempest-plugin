@@ -10,17 +10,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import logging
-
 from tempest.common import utils
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.test import decorators
 
+from nuage_tempest_plugin.lib.topology import Topology
+
 import nuage_base
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+LOG = Topology.get_logger(__name__)
 
 
 class NeutronRedirectionTargetsTest(nuage_base.NuageBaseOrchestrationTest):

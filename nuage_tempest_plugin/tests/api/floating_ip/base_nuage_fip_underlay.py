@@ -14,13 +14,11 @@
 #    under the License.
 
 from netaddr import IPNetwork
-from oslo_log import log as logging
 import random
 import re
 
 from tempest.api.network import base
 from tempest.common import utils
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
@@ -32,11 +30,10 @@ from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as nuage_constants
 from nuage_tempest_plugin.services import nuage_client
 
-CONF = config.CONF
+CONF = Topology.get_conf()
 
 
 class NuageFipUnderlayBase(base.BaseAdminNetworkTest,):
-    LOG = logging.getLogger(__name__)
 
     @classmethod
     def setup_clients(cls):
@@ -48,11 +45,6 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest,):
         super(NuageFipUnderlayBase, cls).skip_checks()
         if not utils.is_extension_enabled('router', 'network'):
             msg = "router extension not enabled."
-            raise cls.skipException(msg)
-
-        if not CONF.service_available.neutron:
-            msg = "Skipping all externalID Neutron cli tests because it is " \
-                  "not available"
             raise cls.skipException(msg)
 
     @classmethod
@@ -87,7 +79,7 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest,):
             # underlay_value is supposed to be True/False/None, but can be
             # different (add exception case)
             cls.service_manager.must_have_configuration_attribute(
-                CONF.nuage_sut.nuage_plugin_configuration,
+                Topology.nuage_plugin_configuration,
                 nuage_constants.NUAGE_FIP_UNDERLAY_GROUP,
                 nuage_constants.NUAGE_FIP_UNDERLAY, underlay_value)
 
@@ -103,7 +95,7 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest,):
         else:
             fip_underlay_from_ini = \
                 cls.service_manager.get_configuration_attribute(
-                    CONF.nuage_sut.nuage_plugin_configuration,
+                    Topology.nuage_plugin_configuration,
                     nuage_constants.NUAGE_FIP_UNDERLAY_GROUP,
                     nuage_constants.NUAGE_FIP_UNDERLAY)
             return fip_underlay_from_ini

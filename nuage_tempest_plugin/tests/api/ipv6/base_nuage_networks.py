@@ -7,7 +7,6 @@ from netaddr import IPRange
 
 import random
 
-from tempest import config
 from tempest import exceptions
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions as lib_exc
@@ -17,12 +16,11 @@ from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as nuage_constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
-
-CONF = config.CONF
 
 # TODO(TEAM) - make inherit from NuageBaseTest ?
 
@@ -42,11 +40,6 @@ class BaseNuageNetworksTestCase(test.BaseTestCase):
 
         cls.nuage_network_client = NuageNetworkClientJSON(
             client_manager.auth_provider,
-            CONF.network.catalog_type,
-            CONF.network.region or CONF.identity.region,
-            endpoint_type=CONF.network.endpoint_type,
-            build_interval=CONF.network.build_interval,
-            build_timeout=CONF.network.build_timeout,
             **client_manager.default_params)
 
     @classmethod
@@ -70,7 +63,7 @@ class VsdTestCaseMixin(test.BaseTestCase):
     def resource_setup(cls):
         super(VsdTestCaseMixin, cls).resource_setup()
 
-        if CONF.nuage_sut.nuage_plugin_mode == 'ml2':
+        if Topology.is_ml2:
             # create default net_partition if it is not there
             net_partition_name = cls.nuage_vsd_client.def_netpart_name
             cls.net_partition = cls.nuage_vsd_client.get_net_partition(

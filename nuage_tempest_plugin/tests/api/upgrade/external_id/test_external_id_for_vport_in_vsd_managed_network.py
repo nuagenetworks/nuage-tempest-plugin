@@ -14,25 +14,21 @@
 #    under the License.
 
 from netaddr import IPNetwork
-from oslo_log import log as logging
 
 from tempest.api.network import base as base
-from tempest import config
 from tempest.lib.common.utils import data_utils
 
 import testtools
 
 from external_id import ExternalId
 
-from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.lib.utils import exceptions as n_exceptions
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+LOG = Topology.get_logger(__name__)
 
 extra_dhcp_opts = [
     {'opt_value': '255.255.255.0', 'opt_name': 'netmask'},
@@ -238,9 +234,7 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
     @classmethod
     def setUpClass(cls):
         super(ExternalIdForVPortTest, cls).setUpClass()
-        external_id_release = Release('4.0R4')
-        current_release = Release(Topology.nuage_release)
-        cls.test_upgrade = external_id_release > current_release
+        cls.test_upgrade = not Topology.within_ext_id_release()
 
     @classmethod
     def setup_clients(cls):
@@ -260,7 +254,7 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
                         vsd_l2dom_tmplt[0]['ID'])
         return vsd_l2dom_tmplt
 
-    @testtools.skipUnless(Release('4.0R4') <= Release(Topology.nuage_release),
+    @testtools.skipUnless(Topology.within_ext_id_release(),
                           'No upgrade testing on vport')
     @nuage_test.header()
     def test_port_dhcp_options_matches_to_port(self):
@@ -290,7 +284,7 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
             'gateway_ip': None,
             'network_id': network['id'],
             'nuagenet': vsd_l2domain['ID'],
-            'net_partition': CONF.nuage.nuage_default_netpartition,
+            'net_partition': Topology.def_netpartition,
             'enable_dhcp': True,
             'ip_version': 4}
 

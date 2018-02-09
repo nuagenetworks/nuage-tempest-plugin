@@ -14,11 +14,8 @@
 
 import time
 
-from oslo_log import log as logging
-
 from testtools import matchers
 
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions
@@ -32,10 +29,9 @@ from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 from nuage_tempest_plugin.tests.api.baremetal.baremetal_topology \
-    import Topology as BaremetalTopology
+    import BaremetalTopology
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+LOG = Topology.get_logger(__name__)
 
 
 class BaremetalRedcyTest(network_mixin.NetworkMixin,
@@ -45,10 +41,10 @@ class BaremetalRedcyTest(network_mixin.NetworkMixin,
     @classmethod
     def setUpClass(cls):
         super(BaremetalRedcyTest, cls).setUpClass()
-        if (CONF.nuage_sut.nuage_baremetal_driver ==
+        if (Topology.nuage_baremetal_driver ==
                 constants.BAREMETAL_DRIVER_BRIDGE):
             cls.expected_vport_type = constants.VPORT_TYPE_BRIDGE
-        elif (CONF.nuage_sut.nuage_baremetal_driver ==
+        elif (Topology.nuage_baremetal_driver ==
               constants.BAREMETAL_DRIVER_HOST):
             cls.expected_vport_type = constants.VPORT_TYPE_HOST
         else:
@@ -63,11 +59,6 @@ class BaremetalRedcyTest(network_mixin.NetworkMixin,
         cls.vsd_client = NuageRestClient()
         cls.trunk_client = NuageNetworkClientJSON(
             cls.os_admin.auth_provider,
-            CONF.network.catalog_type,
-            CONF.network.region or CONF.identity.region,
-            endpoint_type=CONF.network.endpoint_type,
-            build_interval=CONF.network.build_interval,
-            build_timeout=CONF.network.build_timeout,
             **cls.os_admin.default_params)
 
     @classmethod
@@ -138,7 +129,6 @@ class BaremetalRedcyTest(network_mixin.NetworkMixin,
         self._test_redundancy_port(topology, update=False,
                                    vlan_transparent=True)
 
-    @decorators.attr(type='smoke')
     def test_baremetal_redcy_l3_update(self):
         topology = self._create_topology(with_router=True)
         self._test_redundancy_port(topology, update=True)

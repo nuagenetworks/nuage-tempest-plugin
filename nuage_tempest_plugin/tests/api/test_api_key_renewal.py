@@ -13,11 +13,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo_log import log as logging
 import testtools
 import time
 
-from tempest import config
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib import service_mgmt
@@ -28,8 +26,7 @@ from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+LOG = Topology.get_logger(__name__)
 
 
 class APIKeyRenewal(NuageBaseTest):
@@ -42,11 +39,6 @@ class APIKeyRenewal(NuageBaseTest):
         cls.service_manager = service_mgmt.ServiceManager()
         cls.client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
-            CONF.network.catalog_type,
-            CONF.network.region or CONF.identity.region,
-            endpoint_type=CONF.network.endpoint_type,
-            build_interval=CONF.network.build_interval,
-            build_timeout=CONF.network.build_timeout,
             **cls.os_primary.default_params)
         sys_conf = cls.nuage_vsd_client.get_system_configuration()
 

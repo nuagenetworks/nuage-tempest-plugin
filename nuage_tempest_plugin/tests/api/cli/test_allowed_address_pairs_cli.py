@@ -4,13 +4,11 @@
 from netaddr import IPAddress
 from netaddr import IPNetwork
 
-from oslo_log import log as logging
-
-from tempest import config
 from tempest.lib.common.utils import data_utils
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 
 from nuage_tempest_plugin.services.nuage_network_client \
@@ -20,8 +18,7 @@ from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
 
 from base_nuage_networks_cli import BaseNuageNetworksCliTestCase
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+LOG = Topology.get_logger(__name__)
 
 VALID_MAC_ADDRESS = 'fa:fa:3e:e8:e8:01'
 VALID_MAC_ADDRESS_2A = 'fa:fa:3e:e8:e8:2a'
@@ -52,7 +49,7 @@ class OSManagedAllowedAddresPairsCliTest(
         cidr4 = IPNetwork('1.1.20.0/24')
         cidr6 = IPNetwork("2001:5f74:c4a5:b82e::/64")
 
-        # net_partition = CONF.nuage.nuage_default_netpartition
+        # net_partition = Topology.def_netpartition
         subnet4 = self.create_subnet_with_args(
             network['name'], str(cidr4),
             "--name ", subnet_name + "-4")
@@ -74,11 +71,6 @@ class OSManagedAllowedAddresPairsCliTest(
         super(OSManagedAllowedAddresPairsCliTest, cls).setup_clients()
         cls.nuage_network_client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
-            CONF.network.catalog_type,
-            CONF.network.region or CONF.identity.region,
-            endpoint_type=CONF.network.endpoint_type,
-            build_interval=CONF.network.build_interval,
-            build_timeout=CONF.network.build_timeout,
             **cls.os_primary.default_params)
 
     @nuage_test.header()

@@ -12,7 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions
@@ -20,10 +19,9 @@ from tempest.lib import exceptions
 from nuage_tempest_plugin.lib.mixins import l3
 from nuage_tempest_plugin.lib.mixins import network as network_mixin
 from nuage_tempest_plugin.lib.mixins import sg as sg_mixin
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
-
-CONF = config.CONF
 
 
 class BaremetalTest(network_mixin.NetworkMixin,
@@ -33,10 +31,10 @@ class BaremetalTest(network_mixin.NetworkMixin,
     @classmethod
     def setUpClass(cls):
         super(BaremetalTest, cls).setUpClass()
-        if (CONF.nuage_sut.nuage_baremetal_driver ==
+        if (Topology.nuage_baremetal_driver ==
                 constants.BAREMETAL_DRIVER_BRIDGE):
             cls.expected_vport_type = constants.VPORT_TYPE_BRIDGE
-        elif (CONF.nuage_sut.nuage_baremetal_driver ==
+        elif (Topology.nuage_baremetal_driver ==
               constants.BAREMETAL_DRIVER_HOST):
             cls.expected_vport_type = constants.VPORT_TYPE_HOST
         else:
@@ -86,7 +84,6 @@ class BaremetalTest(network_mixin.NetworkMixin,
             'binding:host_id': None,
             'binding:profile': None,
             'device_owner': ''
-
         }
 
     def _get_vsd_vport(self, port, router, subnet):

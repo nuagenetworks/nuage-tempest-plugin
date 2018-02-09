@@ -4,15 +4,13 @@
 import json
 from netaddr import IPRange
 
-from tempest import config
 from tempest.lib.common.utils import data_utils
 
 from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
 
-from nuage_tempest_plugin.lib.remote_cli import remote_cli_base_testcase
-
-CONF = config.CONF
+from nuage_tempest_plugin.lib.cli import client_testcase
+from nuage_tempest_plugin.lib.topology import Topology
 
 
 def mask_to_prefix(mask):
@@ -20,7 +18,7 @@ def mask_to_prefix(mask):
 
 
 class BaseNuageNetworksCliTestCase(
-        remote_cli_base_testcase.RemoteCliBaseTestCase):
+        client_testcase.CLIClientTestCase):
 
     ###########################################################################
     #
@@ -38,7 +36,7 @@ class BaseNuageNetworksCliTestCase(
         prefixlen = mask_to_prefix(vsd_l2_subnet['netmask'])
         cidr4 = "%s/%d" % (vsd_l2_subnet['address'], prefixlen)
 
-        net_partition = CONF.nuage.nuage_default_netpartition
+        net_partition = Topology.def_netpartition
         nuagenet = vsd_l2_subnet['ID']
         subnet4 = self.create_subnet_with_args(
             network['name'], cidr4,
@@ -71,7 +69,7 @@ class BaseNuageNetworksCliTestCase(
         self.networks.remove(network)
 
         subnet_name = data_utils.rand_name('cli-subnet')
-        net_partition = CONF.nuage.nuage_default_netpartition
+        net_partition = Topology.def_netpartition
         nuagenet = vsd_l2_subnet['ID']
         subnet4 = self.create_subnet_with_args(
             network['name'], str(cidr4),

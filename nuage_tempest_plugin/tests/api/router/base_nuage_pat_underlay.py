@@ -14,24 +14,22 @@
 #    under the License.
 
 from netaddr import IPNetwork
-from oslo_log import log as logging
 import random
 import re
 
 from tempest.api.network import base
 from tempest.common import utils
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
-from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib import service_mgmt
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services import nuage_client
 
-CONF = config.CONF
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
@@ -40,7 +38,6 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
 
     ext_net_id = CONF.network.public_network_id
 
-    LOG = logging.getLogger(__name__)
     PAT_NEEDS_EXT_NETWORK = "Invalid input for external_gateway_info. " \
                             "Reason: Validation of dictionary's keys failed."
     PAT_NOTAVAILABLE_EXT_GW_INFO = "nuage_pat config is set to " \
@@ -62,10 +59,6 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
         super(NuagePatUnderlayBase, cls).skip_checks()
         if not utils.is_extension_enabled('router', 'network'):
             msg = "router extension not enabled."
-            raise cls.skipException(msg)
-
-        if not CONF.service_available.neutron:
-            msg = "Skipping all Neutron cli tests because it is not available"
             raise cls.skipException(msg)
 
         if Topology.new_route_to_underlay_model_enabled():
@@ -91,7 +84,7 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
             if Topology.neutron_restart_supported():
                 # set the nuage_pat setting in the .ini file
                 cls.service_manager.must_have_configuration_attribute(
-                    CONF.nuage_sut.nuage_plugin_configuration,
+                    Topology.nuage_plugin_configuration,
                     constants.NUAGE_PAT_GROUP, constants.NUAGE_PAT, pat_value)
 
             else:
@@ -108,7 +101,7 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
         # TODO(Kris) FIXME.....................................................
 
         pat_from_ini = cls.service_manager.get_configuration_attribute(
-            CONF.nuage_sut.nuage_plugin_configuration,
+            Topology.nuage_plugin_configuration,
             constants.NUAGE_PAT_GROUP, constants.NUAGE_PAT
         )
         return pat_from_ini
@@ -124,12 +117,8 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
         return False
 
     def assertCommandFailed(self, message, fun, *args, **kwds):
-        if Topology.use_local_cli_client():
-            self.assertRaisesRegex(exceptions.CommandFailed, message,
-                                   fun, *args, **kwds)
-        else:
-            self.assertRaisesRegex(exceptions.SSHExecCommandFailed, message,
-                                   fun, *args, **kwds)
+        self.assertRaisesRegex(exceptions.CommandFailed, message,
+                               fun, *args, **kwds)
 
     @staticmethod
     def randomized_cidr():
@@ -191,7 +180,7 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
         else:
             # OPENSTACK-981: mismatch between OS and VSD; OK for PLM in dev ?
             # This is an Schwarzenegger solution: I'll be back
-            if NUAGE_FEATURES.current_release >= Release('5.2'):
+            if NUAGE_FEATURES.route_to_underlay:
                 pat_value = False
                 expected_vsd_pat = constants.NUAGE_PAT_VSD_DISABLED
             else:
@@ -583,7 +572,7 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
             vsd_flag = constants.NUAGE_PAT_VSD_ENABLED
         else:
             # OPENSTACK-981: mismatch between OS and VSD
-            if NUAGE_FEATURES.current_release >= Release('5.2'):
+            if NUAGE_FEATURES.route_to_underlay:
                 compare_snat_str = '"enable_snat": false'
                 vsd_flag = constants.NUAGE_PAT_VSD_DISABLED
             else:
@@ -709,7 +698,6 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
                          "external_gateway_info section is not empty, "
                          "while it must be")
         # self.addCleanup(self.delete_router, show_router['id'])
-        pass
 
     def _cli_show_router_with_ext_gw_without_snat(self):
         """_cli_show_router_with_ext_gw_without_snat
@@ -740,7 +728,6 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
             compare_snat_str = '"enable_snat": false'
         self.assertIn(
             compare_snat_str.lower(), show_router['external_gateway_info'])
-        pass
 
     def _cli_show_router_with_ext_gw_with_snat(self):
         """_cli_show_router_with_ext_gw_with_snat
@@ -791,7 +778,6 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
                     self.assertEqual(
                         listed_snat, 'null',
                         "PAT NOK: external_gateway_info is not null")
-        pass
 
     def _cli_list_router_with_gw_with_snat(self):
         """_cli_list_router_with_gateway_with_snat
@@ -852,8 +838,7 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
                             compare_snat_str = '"enable_snat": true'
                             expected_vsd_pat = constants.NUAGE_PAT_VSD_ENABLED
                         else:
-                            if NUAGE_FEATURES.current_release >= Release(
-                                    '5.2'):
+                            if NUAGE_FEATURES.route_to_underlay:
                                 compare_snat_str = '"enable_snat": false'
                                 expected_vsd_pat = (
                                     constants.NUAGE_PAT_VSD_DISABLED)
@@ -870,7 +855,6 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
                     self.assertEqual(
                         nuage_domain[0]['PATEnabled'],
                         expected_vsd_pat)
-        pass
 
     def _cli_add_subnet_to_existing_ext_gw_with_snat(self):
         enable_snat_states = [False, True]
@@ -931,7 +915,7 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
             # Now run as "demo" user (non-admin) of demo project
             # convert the cidr_net into a string
             cidr = cidr_net.__str__()
-            if Release(Topology.openstack_version) >= Release('pike'):
+            if Topology.from_openstack('pike'):
                 msg = "Tenant (.*) not allowed to create " \
                       "subnet on this network"
             else:
@@ -965,7 +949,7 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
             external_gateway_info_cli = \
                 '--external_gateway_info type=dict network_id=' + \
                 self.ext_net_id + ',enable_snat=' + str(enable_snat)
-            self.LOG.info("exp_message contains : " + exp_message)
+            LOG.info("exp_message contains : " + exp_message)
             self.assertCommandFailed(
                 exp_message,
                 self.create_router_with_args, name, external_gateway_info_cli)

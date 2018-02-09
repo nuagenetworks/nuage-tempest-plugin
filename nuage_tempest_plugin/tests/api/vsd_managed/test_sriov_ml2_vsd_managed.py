@@ -18,22 +18,21 @@
 # run only on the e2e setup ##
 # Assumption - all the configuration for the setup is already done ##
 
-from oslo_log import log as logging
 import time
 
 from tempest.api.compute import base as serv_base
-from tempest import config
 from tempest.lib import exceptions
 from tempest.scenario import manager as scenario_manager
 
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.test import tags
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.services import nuage_client
 from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_sriov
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 @nuage_test.class_header(tags=tags.VSD_MANAGED)

@@ -11,20 +11,18 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 from testtools import matchers
 
-from tempest import config
 from tempest.lib import decorators
 from tempest.lib import exceptions as lib_exc
 
-from nuage_tempest_plugin.lib import features
+from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.mixins import l3
 from nuage_tempest_plugin.lib.mixins import network as network_mixin
 from nuage_tempest_plugin.lib.mixins import sg as sg_mixin
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
-
-CONF = config.CONF
 
 
 class Topology(object):
@@ -141,7 +139,7 @@ class StatelessSecuritygroupTest(network_mixin.NetworkMixin,
     @classmethod
     def skip_checks(cls):
         super(StatelessSecuritygroupTest, cls).skip_checks()
-        if not features.NUAGE_FEATURES.stateless_securitygroups:
+        if not NUAGE_FEATURES.stateless_security_groups:
             msg = "Stateless securitygroups feature is not available"
             raise cls.skipException(msg)
 

@@ -1,12 +1,9 @@
 import time
 
 from tempest.api.compute import base as serv_base
-from tempest import config
 from tempest.scenario import manager
 
 from nuage_tempest_plugin.tests.api import test_ip_anti_spoofing as antispoof
-
-CONF = config.CONF
 
 
 class IpAntiSpoofingTestScenario(antispoof.IpAntiSpoofingTestBase,

@@ -6,20 +6,20 @@ from __future__ import print_function
 from enum import Enum
 import json
 import netaddr
-from oslo_log import log as logging
-import output_parser as cli_output_parser
 import re
-import ssh_cli
 
-from tempest import config
+import client
+import output_parser as cli_output_parser
+
 from tempest.lib.common import cred_client
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
+from tempest import test
 
 from nuage_tempest_plugin.lib.topology import Topology
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 class Role(Enum):
@@ -28,19 +28,13 @@ class Role(Enum):
     nonadmin = 3
 
 
-class RemoteCliBaseTestCase(ssh_cli.ClientTestBase):
+class CLIClientTestCase(test.BaseTestCase):
+    """Base test class for testing the OpenStack client CLI interfaces."""
 
     credentials = ['primary', 'admin']
 
     """
     Base class for the Neutron tests that use the remote CLI clients
-
-    Finally, it is assumed that the following option is defined in the
-    [service_available] section of etc/tempest.conf
-
-        neutron as True
-
-    TODD: update
     """
 
     force_tenant_isolation = False
@@ -51,14 +45,8 @@ class RemoteCliBaseTestCase(ssh_cli.ClientTestBase):
     _osc = None
 
     @classmethod
-    def skip_checks(cls):
-        super(RemoteCliBaseTestCase, cls).skip_checks()
-        if not CONF.service_available.neutron:
-            raise cls.skipException("Neutron support is required")
-
-    @classmethod
     def setup_clients(cls):
-        super(RemoteCliBaseTestCase, cls).setup_clients()
+        super(CLIClientTestCase, cls).setup_clients()
 
         # This creates a client that abstracts identity v2 and v3 operations
         if CONF.identity.auth_version == 'v2':
@@ -89,14 +77,14 @@ class RemoteCliBaseTestCase(ssh_cli.ClientTestBase):
 
     @classmethod
     def setup_credentials(cls):
-        cls.set_network_resources()  # Must be here, to be corrected in QA repo
-        super(RemoteCliBaseTestCase, cls).setup_credentials()
+        cls.set_network_resources()
+        super(CLIClientTestCase, cls).setup_credentials()
 
     @classmethod
     def resource_setup(cls):
-        super(RemoteCliBaseTestCase, cls).resource_setup()
+        super(CLIClientTestCase, cls).resource_setup()
 
-        cls.cli = ssh_cli.CLIClient(
+        cls.cli = client.CLIClient(
             username=CONF.auth.admin_username,
             project_name=CONF.auth.admin_project_name,
             password=CONF.auth.admin_password,
@@ -113,18 +101,6 @@ class RemoteCliBaseTestCase(ssh_cli.ClientTestBase):
         cls.security_group_rules = []
         cls.vms = []
 
-        # cls.pools = []
-        # cls.vips = []
-        # cls.members = []
-        # cls.health_monitors = []
-        # cls.vpnservices = []
-        # cls.ikepolicies = []
-        # cls.metering_labels = []
-        # cls.metering_label_rules = []
-        # cls.fw_rules = []
-        # cls.fw_policies = []
-        # cls.ipsecpolicies = []
-
         cls.ethertype = "IPv" + str(cls._ip_version)
 
         # tricky stuff to work with 2 OS controllers on Nuage testbed
@@ -138,12 +114,12 @@ class RemoteCliBaseTestCase(ssh_cli.ClientTestBase):
 
         # make the uri point to the one of osc-1
         cls.uri = cls.uri_1
-        cls.admin_cli = ssh_cli.CLIClient(
+        cls.admin_cli = client.CLIClient(
             username=CONF.auth.admin_username,
             project_name=CONF.auth.admin_project_name,
             password=CONF.auth.admin_password,
             creds_client=cls.creds_client)
-        cls.nonadmin_cli = ssh_cli.CLIClient(
+        cls.nonadmin_cli = client.CLIClient(
             username="nonadmin",
             project_name=CONF.auth.admin_project_name,
             password=CONF.auth.admin_password,
@@ -173,20 +149,64 @@ class RemoteCliBaseTestCase(ssh_cli.ClientTestBase):
                 user=cls.user,
                 role_name=role_name)
 
-        cls.tenant_cli = ssh_cli.CLIClient(
+        cls.tenant_cli = client.CLIClient(
             username=cls.user['name'],
             project_name=cls.project['name'],
             password='tigris',
             creds_client=cls.creds_client)
         cls.me = Role.tenant
 
+    @classmethod
+    def resource_cleanup(cls):
+        # TODO(team): security groups
+        # TODO(team): security group rules
+
+        # Clean up ports
+        for port in cls.ports:
+            cls._delete_port(port['id'])
+        cls.ports = []
+
+        # Clean up routers
+        for router in cls.routers:
+            cls.delete_router(router)
+        cls.routers = []
+
+        # Clean up subnets
+        for subnet in cls.subnets:
+            cls._delete_subnet(subnet['id'])
+        cls.subnets = []
+
+        # Clean up networks
+        for network in cls.networks:
+            cls._delete_network(network['id'])
+        cls.networks = []
+
+        cls.creds_client.delete_user(cls.user['id'])
+        cls.creds_client.delete_project(cls.project['id'])
+
+        super(CLIClientTestCase, cls).resource_cleanup()
+
+    def setUp(self):
+        super(CLIClientTestCase, self).setUp()
+        self.clients = self._get_clients()
+        self.parser = cli_output_parser
+
+    def assertFirstLineStartsWith(self, lines, beginning):
+        """assertFirstLineStartsWith
+
+        Verify that the first line starts with a string
+        :param lines: strings for each line of output
+        :type lines: list
+        :param beginning: verify this is at the beginning of the first line
+        :type beginning: string
+        """
+        self.assertTrue(lines[0].startswith(beginning),
+                        msg=('Beginning of first line has invalid content: %s'
+                             % lines[:3]))
+
     def assertCommandFailed(self, message, fun, *args, **kwds):
-        if Topology.use_local_cli_client():
-            self.assertRaisesRegex(exceptions.CommandFailed, message,
-                                   fun, *args, **kwds)
-        else:
-            self.assertRaisesRegex(exceptions.SSHExecCommandFailed, message,
-                                   fun, *args, **kwds)
+        self.assertRaisesRegex(exceptions.CommandFailed, message,
+                               fun, *args, **kwds)
 
     def _get_clients(self):
         if self.me == Role.admin:
@@ -197,13 +217,6 @@ class RemoteCliBaseTestCase(ssh_cli.ClientTestBase):
             self.cli = self.nonadmin_cli
         return self.cli
 
-    def _use_osc(self, controller):
-        if controller == 1:
-            self.cli.uri = self.uri_1
-        else:
-            self.cli.uri = self.uri_2
-        self._get_clients()
-
     def _as_admin(self):
         self.me = Role.admin
         self._get_clients()
@@ -212,38 +225,6 @@ class RemoteCliBaseTestCase(ssh_cli.ClientTestBase):
     def _as_tenant(self):
         self.me = Role.tenant
         self._get_clients()
-
-    @classmethod
-    def resource_cleanup(cls):
-        if CONF.service_available.neutron:
-
-            # TODO(team): security groups
-            # TODO(team): security group rules
-
-            # Clean up ports
-            for port in cls.ports:
-                cls._delete_port(port['id'])
-            cls.ports = []
-
-            # Clean up routers
-            for router in cls.routers:
-                cls.delete_router(router)
-            cls.routers = []
-
-            # Clean up subnets
-            for subnet in cls.subnets:
-                cls._delete_subnet(subnet['id'])
-            cls.subnets = []
-
-            # Clean up networks
-            for network in cls.networks:
-                cls._delete_network(network['id'])
-            cls.networks = []
-
-        cls.creds_client.delete_user(cls.user['id'])
-        cls.creds_client.delete_project(cls.project['id'])
-
-        super(RemoteCliBaseTestCase, cls).resource_cleanup()
 
     def create_network_with_args(self, *args):
         """Wrapper utility that returns a test network."""

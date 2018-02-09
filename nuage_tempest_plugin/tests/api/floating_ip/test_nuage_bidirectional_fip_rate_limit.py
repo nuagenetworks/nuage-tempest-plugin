@@ -1,19 +1,15 @@
 # Copyright 2015 Alcatel-Lucent
 # All Rights Reserved.
 
-from oslo_log import log as logging
-
-from tempest import config
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 
 import base_nuage_bidirectional_fip_rate_limit
 
-LOG = logging.getLogger(__name__)
-
-CONF = config.CONF
+LOG = Topology.get_logger(__name__)
 
 
 class TestNuageBidirectionalFipRateLimit(

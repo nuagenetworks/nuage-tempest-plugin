@@ -1,15 +1,12 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
 
-from oslo_log import log as logging
+from tempest.lib import decorators
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
-from tempest.lib import decorators
 
 
 class RouterAttachmentTest(NuageBaseTest):
-
-    LOG = logging.getLogger(__name__)
 
     @decorators.attr(type='smoke')
     def test_router_attachment_no_server(self):
@@ -26,7 +23,7 @@ class RouterAttachmentTest(NuageBaseTest):
         self.create_tenant_server(tenant_networks=[network])
         self.router_attach(router, subnet)
 
-    # TODO(FIXME) OPENSTACK-1880 - TAKING OUT OF SMOKE .....
+    # TODO(KRIS) OPENSTACK-1880 - TAKING OUT OF SMOKE .....
     # @decorators.attr(type='smoke')
     def test_router_attachment_add_server_before_attach(self):
         network = self.create_network()
@@ -49,6 +46,6 @@ class RouterAttachmentTest(NuageBaseTest):
         subnet = self.create_subnet(network)
         self.create_tenant_server(tenant_networks=[network])
 
-        # TODO(FIXME) - adding retry_on_router_delete fixes the above test
+        # TODO(KRIS) - adding retry_on_router_delete fixes the above test
         router = self.create_router(retry_on_router_delete=True)
         self.router_attach(router, subnet)

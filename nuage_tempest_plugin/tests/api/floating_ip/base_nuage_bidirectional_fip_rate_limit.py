@@ -1,17 +1,16 @@
 # Copyright 2015 Alcatel-Lucent
 # All Rights Reserved.
 
-from oslo_log import log as logging
-
 from tempest.api.network import base
 from tempest.common import utils
-from tempest import config
 from tempest.lib.common.utils import data_utils
 
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services import nuage_client
 
-CONF = config.CONF
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 class NuageBidirectionalFipRateLimitBase(base.BaseNetworkTest):
@@ -23,8 +22,6 @@ class NuageBidirectionalFipRateLimitBase(base.BaseNetworkTest):
 
         public_network_id which is the id for the external network present
     """
-
-    LOG = logging.getLogger(__name__)
 
     @classmethod
     def setup_clients(cls):
@@ -158,10 +155,10 @@ class NuageBidirectionalFipRateLimitBase(base.BaseNetworkTest):
                          self.ext_net_id)
         self.assertIn(created_floating_ip['fixed_ip_address'],
                       [ip['ip_address'] for ip in port['fixed_ips']])
-        self.LOG.info("Ingress FIP Rate limit %s",
-                      created_floating_ip['nuage_ingress_fip_rate_kbps'])
-        self.LOG.info("Egress FIP Rate limit %s",
-                      created_floating_ip['nuage_egress_fip_rate_kbps'])
+        LOG.info("Ingress FIP Rate limit %s",
+                 created_floating_ip['nuage_ingress_fip_rate_kbps'])
+        LOG.info("Egress FIP Rate limit %s",
+                 created_floating_ip['nuage_egress_fip_rate_kbps'])
         if ingress_rate_limit is not None:
             self.assertEqualFiprate(
                 created_floating_ip['nuage_ingress_fip_rate_kbps'],
@@ -213,10 +210,10 @@ class NuageBidirectionalFipRateLimitBase(base.BaseNetworkTest):
         self.assertEqual(1, len(qos))
         self.assertEqual(True, qos[0]['FIPRateLimitingActive'])
 
-        self.LOG.info("OpenStack Egress FIP Rate limit %s",
-                      qos[0]['FIPPeakInformationRate'])
-        self.LOG.info("OpenStack Ingress FIP Rate limit %s",
-                      qos[0]['EgressFIPPeakInformationRate'])
+        LOG.info("OpenStack Egress FIP Rate limit %s",
+                 qos[0]['FIPPeakInformationRate'])
+        LOG.info("OpenStack Ingress FIP Rate limit %s",
+                 qos[0]['EgressFIPPeakInformationRate'])
         if ingress_rate_limit is not None:
             self.assertEqualFiprate(
                 ingress_rate_limit,

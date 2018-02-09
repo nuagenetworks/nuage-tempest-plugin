@@ -11,28 +11,28 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 from netaddr import IPNetwork
 
 import testtools
 from testtools import matchers
 
-from tempest import config
 from tempest.lib.common.utils import data_utils
 
 from nuage_tempest_plugin.lib.mixins import l3
 from nuage_tempest_plugin.lib.mixins import net_topology as topology_mixin
 from nuage_tempest_plugin.lib.mixins import network as network_mixin
-from nuage_tempest_plugin.lib.topology import Topology as PluginTopology
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
-CONF = config.CONF
+CONF = Topology.get_conf()
 
 
-class Topology(object):
+class SriovTopology(object):
     def __init__(self, vsd_client, network, subnet, router, port, subnetv6,
                  l2domain=None):
-        super(Topology, self).__init__()
+        super(SriovTopology, self).__init__()
         self.vsd_client = vsd_client
         self.network = network
         self.subnet = subnet
@@ -349,7 +349,7 @@ class PortsDirectTest(network_mixin.NetworkMixin,
         kwargs = {
             'gateway_ip': None,
             'nuagenet': vsd_l2dom['ID'],
-            'net_partition': PluginTopology.def_netpartition
+            'net_partition': Topology.def_netpartition
         } if vsd_managed else {}
         subnet = self.create_subnet('10.20.30.0/24', network['id'], **kwargs)
         assert subnet
@@ -369,8 +369,8 @@ class PortsDirectTest(network_mixin.NetworkMixin,
                                           subnet_id=subnetv6['id'])
         if with_port:
             port = self.create_port(network['id'])
-        return Topology(self.vsd_client, network,
-                        subnet, router, port, subnetv6, vsd_l2dom)
+        return SriovTopology(self.vsd_client, network,
+                             subnet, router, port, subnetv6, vsd_l2dom)
 
     def _test_direct_port(self, topology, update=False):
         create_data = {'binding:vnic_type': 'direct',
@@ -448,9 +448,9 @@ class PortsDirectTest(network_mixin.NetworkMixin,
     def _validate_dhcp_option(self, topology):
         self.assertThat(topology.vsd_direct_dhcp_opts,
                         matchers.HasLength(2))
-
         DHCP_ROUTER_OPT = 3
         DHCP_SERVER_NAME_OPT = 66
+
         for dhcp_opt in topology.vsd_direct_dhcp_opts:
             if dhcp_opt['actualType'] == DHCP_ROUTER_OPT:
                 self.assertThat(dhcp_opt['actualValues'][0],

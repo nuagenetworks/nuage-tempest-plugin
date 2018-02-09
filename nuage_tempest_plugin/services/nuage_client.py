@@ -8,12 +8,10 @@
 #
 
 import netaddr
-from oslo_log import log as logging
 import re
 import six
 import time
 
-from tempest import config
 from tempest.lib.common.utils import test_utils as misc_utils
 from tempest.lib import exceptions
 
@@ -22,11 +20,13 @@ from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.lib.utils import exceptions as n_exceptions
 from nuage_tempest_plugin.lib.utils import restproxy
 
-CONF = config.CONF
 SERVERSSL = True
 SERVERTIMEOUT = 30
 RESPONSECHOICE = '?responseChoice=1'
 CMS_ID = None
+
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 # convert a structure into a string safely
@@ -43,28 +43,25 @@ def safe_body(body, maxlen=5000):
 
 
 class NuageRestClient(object):
-    LOG = logging.getLogger(__name__)
 
     def __init__(self):
-        server = CONF.nuage.nuage_vsd_server
+        server = Topology.vsd_server
         self.def_netpart_name = (
-            CONF.nuage.nuage_default_netpartition
+            Topology.def_netpartition
         )
         global CMS_ID
-        CMS_ID = CONF.nuage.nuage_cms_id
+        CMS_ID = Topology.cms_id
         if not CMS_ID:
             raise exceptions.InvalidConfiguration("Missing cms_id in "
                                                   "configuration.")
-        base_uri = CONF.nuage.nuage_base_uri
-        auth_resource = CONF.nuage.nuage_auth_resource
-        serverauth = (CONF.nuage.nuage_vsd_user + ":" +
-                      CONF.nuage.nuage_vsd_password)
-        nuage_vsd_org = CONF.nuage.nuage_vsd_org
+        base_uri = Topology.base_uri
+        auth_resource = Topology.auth_resource
+        server_auth = Topology.server_auth
+        vsd_org = Topology.vsd_org
 
         self.restproxy = restproxy.RESTProxyServer(server, base_uri, SERVERSSL,
-                                                   serverauth, auth_resource,
-                                                   nuage_vsd_org,
-                                                   SERVERTIMEOUT)
+                                                   server_auth, auth_resource,
+                                                   vsd_org, SERVERTIMEOUT)
         self.restproxy.generate_nuage_auth()
 
     @staticmethod
@@ -106,8 +103,8 @@ class NuageRestClient(object):
         caller_name = misc_utils.find_test_caller()
         trace_regex = CONF.debug.trace_requests
         if trace_regex and re.search(trace_regex, caller_name):
-            self.LOG.debug('Starting Request (%s): %s %s',
-                           caller_name, method, req_url)
+            LOG.debug('Starting Request (%s): %s %s',
+                      caller_name, method, req_url)
 
     def _log_request_full(self, method, req_url, resp,
                           secs="", req_headers=None,
@@ -122,7 +119,7 @@ class NuageRestClient(object):
             Response - Headers: %s
                 Body: %s"""
 
-        self.LOG.debug(
+        LOG.debug(
             log_fmt, caller_name, resp.status, method, req_url, secs,
             str(req_headers), safe_body(req_body),
             resp.headers,
@@ -145,7 +142,7 @@ class NuageRestClient(object):
         caller_name = misc_utils.find_test_caller()
         if secs:
             secs = " %.3fs" % secs
-        self.LOG.info(
+        LOG.info(
             'Request (%s): %s %s %s%s', caller_name, resp.status, method,
             req_url, secs, extra=extra)
 
@@ -642,8 +639,8 @@ class NuageRestClient(object):
                    'modified or deleted.' not in str(e):
                     raise
                 else:
-                    self.LOG.error('Got {} (attempt {})'.format(str(e),
-                                                                attempt + 1))
+                    LOG.error('Got {} (attempt {})'.format(str(e),
+                                                           attempt + 1))
                     time.sleep(1)
 
     def get_l2domain(self, filters=None, filter_value=None, netpart_name=None):

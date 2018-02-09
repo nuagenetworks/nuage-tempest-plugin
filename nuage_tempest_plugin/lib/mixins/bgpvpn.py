@@ -11,6 +11,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 import contextlib
 
 from tempest.common.utils import data_utils
@@ -50,22 +51,22 @@ class BGPVPNMixin(base.BaseMixin):
                 client.delete_bgpvpn(bgpvpn['id'])
 
     @contextlib.contextmanager
-    def router_assocation(self, router_id, bgpvpn_id, do_delete=True,
-                          as_admin=False, **kwargs):
+    def router_association(self, router_id, bgpvpn_id, do_delete=True,
+                           as_admin=False, **kwargs):
         client = (self.rtr_assoc_client_admin if as_admin
                   else self.rtr_assoc_client)
         rtr_assoc = {'router_id': router_id}
         rtr_assoc.update(kwargs)
-        rtr_assoc = client.create_router_assocation(bgpvpn_id, **rtr_assoc)
+        rtr_assoc = client.create_router_association(bgpvpn_id, **rtr_assoc)
         try:
             yield rtr_assoc
         finally:
             if do_delete:
-                client.delete_router_assocation(rtr_assoc['id'], bgpvpn_id)
+                client.delete_router_association(rtr_assoc['id'], bgpvpn_id)
 
     @contextlib.contextmanager
-    def network_assocation(self, network_id, bgpvpn_id, do_delete=True,
-                           as_admin=False, **kwargs):
+    def network_association(self, network_id, bgpvpn_id, do_delete=True,
+                            as_admin=False, **kwargs):
         client = (self.net_assoc_client_admin if as_admin
                   else self.net_assoc_client)
         net_assoc = {'network_id': network_id}

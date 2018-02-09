@@ -1,10 +1,6 @@
 import functools
 import re
 
-from tempest import config
-
-CONF = config.CONF
-
 
 @functools.total_ordering
 class Release(object):
@@ -49,7 +45,7 @@ class Release(object):
         return equal
 
     def __ne__(self, other):
-        return not self.__eq__(other)
+        return not self == other
 
     def __lt__(self, other):
         """__lt__
@@ -78,21 +74,14 @@ class Release(object):
         if other.major_list and self.major_list:
             comparison = cmp(other.major_list, self.major_list)
             if comparison == 0:
-                if self.labelled:
-                    if other.labelled:
-                        return cmp(other.sub_list, self.sub_list) > 0
-                    else:
-                        return True
-                else:
-                    if other.labelled:
-                        return False
-                    else:
-                        return cmp(other.sub_list, self.sub_list) > 0
-
+                return cmp(other.sub_list, self.sub_list) > 0
             return comparison > 0
         else:
             if self.sub_release == other.sub_release:
                 return self._openstack_release is None
+
+    def __gt__(self, other):
+        return not self < other
 
     def __str__(self):
         if self.labelled:
@@ -108,3 +97,9 @@ class Release(object):
 
     def __repr__(self):
         return self.__str__()
+
+    def nuage_part(self):
+        return ("%s%s" % (self.major_release or "",
+                          (str(self.sub_release))
+                          if self.sub_release != '' else "")
+                ).strip()

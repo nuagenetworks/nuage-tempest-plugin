@@ -1,8 +1,6 @@
 from netaddr import IPNetwork
-from oslo_log import log as logging
 import time
 
-from tempest import config
 from tempest.lib import exceptions as lib_exec
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
@@ -15,14 +13,12 @@ from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 from testtools.matchers import Contains
 
-CONF = config.CONF
+CONF = Topology.get_conf()
 
 
 class NuageSfc(NuageBaseTest):
     _interface = 'json'
     image_profile = 'advanced'
-
-    LOG = logging.getLogger(__name__)
 
     @classmethod
     def setup_clients(cls):
@@ -30,11 +26,6 @@ class NuageSfc(NuageBaseTest):
         cls.nuage_vsd_client = NuageRestClient()
         cls.client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
-            CONF.network.catalog_type,
-            CONF.network.region or CONF.identity.region,
-            endpoint_type=CONF.network.endpoint_type,
-            build_interval=CONF.network.build_interval,
-            build_timeout=CONF.network.build_timeout,
             **cls.os_primary.default_params)
         cls.nsfc_client = nsfc(
             cls.os_primary.auth_provider,

@@ -13,10 +13,8 @@
 #    under the License.
 #
 
-from oslo_log import log as logging
 import uuid
 
-from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.lib.utils import exceptions
@@ -25,15 +23,11 @@ from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
 from tempest.api.network import base
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib.common.utils.data_utils import rand_name
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
-
-external_id_release = Release(n_constants.EXTERNALID_RELEASE)
-current_release = Release(Topology.nuage_release)
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 class BaseNuageGatewayTest(base.BaseAdminNetworkTest):
@@ -96,20 +90,10 @@ class BaseNuageGatewayTest(base.BaseAdminNetworkTest):
         # for nuage specific extensions support
         cls.client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
-            CONF.network.catalog_type,
-            CONF.network.region or CONF.identity.region,
-            endpoint_type=CONF.network.endpoint_type,
-            build_interval=CONF.network.build_interval,
-            build_timeout=CONF.network.build_timeout,
             **cls.os_primary.default_params)
         # initialize admin client
         cls.admin_client = NuageNetworkClientJSON(
             cls.os_admin.auth_provider,
-            CONF.network.catalog_type,
-            CONF.network.region or CONF.identity.region,
-            endpoint_type=CONF.network.endpoint_type,
-            build_interval=CONF.network.build_interval,
-            build_timeout=CONF.network.build_timeout,
             **cls.os_admin.default_params)
 
     @classmethod
@@ -259,7 +243,7 @@ class BaseNuageGatewayTest(base.BaseAdminNetworkTest):
         self.assertEqual(actual_vlan['userMnemonic'],
                          expected_vlan['usermnemonic'])
         self.assertEqual(actual_vlan['value'], expected_vlan['value'])
-        if external_id_release <= current_release and verify_ext:
+        if Topology.within_ext_id_release() and verify_ext:
             external_id = (expected_vlan['gatewayport'] + "." +
                            str(expected_vlan['value']))
             self.assertEqual(actual_vlan['externalID'],
@@ -270,7 +254,7 @@ class BaseNuageGatewayTest(base.BaseAdminNetworkTest):
         self.assertEqual(actual_vport['ID'], expected_vport['id'])
         self.assertEqual(actual_vport['type'], expected_vport['type'])
         self.assertEqual(actual_vport['name'], expected_vport['name'])
-        if external_id_release <= current_release:
+        if Topology.within_ext_id_release():
             if expected_vport['type'] == n_constants.BRIDGE_VPORT:
                 self.assertEqual(actual_vport['externalID'],
                                  self.nuage_vsd_client.get_vsd_external_id(

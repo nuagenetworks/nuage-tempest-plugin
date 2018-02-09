@@ -16,17 +16,15 @@
 from netaddr import IPNetwork
 
 from tempest.api.network import base
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions as lib_exc
 from tempest.scenario import manager
 
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services import nuage_client
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
-
-CONF = config.CONF
 
 # default values for shared L2/L3 networks
 VSD_L2_SHARED_MGD_CIDR = IPNetwork('20.20.20.0/24')
@@ -45,16 +43,11 @@ class BaseVSDManagedNetwork(base.BaseAdminNetworkTest,
         cls.nuage_vsd_client = nuage_client.NuageRestClient()
         cls.nuage_network_client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
-            CONF.network.catalog_type,
-            CONF.network.region or CONF.identity.region,
-            endpoint_type=CONF.network.endpoint_type,
-            build_interval=CONF.network.build_interval,
-            build_timeout=CONF.network.build_timeout,
             **cls.os_primary.default_params)
 
     @classmethod
     def resource_setup(cls):
-        if CONF.nuage_sut.nuage_plugin_mode == 'ml2':
+        if Topology.is_ml2:
             # create default net_partition if it is not there
             net_partition_name = cls.nuage_vsd_client.def_netpart_name
             net_partition = cls.nuage_vsd_client.get_net_partition(

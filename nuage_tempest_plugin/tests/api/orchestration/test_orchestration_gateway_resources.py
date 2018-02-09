@@ -10,19 +10,17 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import logging
 import uuid
 
 from tempest.common import utils
-from tempest import config
 from tempest.lib.common.utils import data_utils
 
 import nuage_base
 
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.services import nuage_client
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+LOG = Topology.get_logger(__name__)
 
 
 class NeutronGatewayResourcesTest(nuage_base.NuageBaseOrchestrationTest):

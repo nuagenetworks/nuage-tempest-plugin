@@ -1,29 +1,28 @@
 # Copyright 2017 NOKIA
 # All Rights Reserved.
+
 import testtools
 
-from oslo_log import log as logging
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest import test
 
-from nuage_tempest_plugin.lib import features
+from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
     import ExternalId
 
-CONF = config.CONF
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
-    LOG = logging.getLogger(__name__)
 
     @classmethod
     def skip_checks(cls):
         super(NuageBaseTest, cls).skip_checks()
-        if not features.NUAGE_FEATURES.route_to_underlay:
+        if not NUAGE_FEATURES.route_to_underlay:
             msg = "Route to underlay not enabled"
             raise cls.skipException(msg)
 
@@ -115,7 +114,7 @@ class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
             ('snat', False, 'off', False, 'DISABLED', 'DISABLED'),
             ('route', None, 'off', False, 'DISABLED', 'DISABLED'),
             ('route', False, 'off', False, 'DISABLED', 'DISABLED'),
-            ('off', None, 'off', False, 'DISABLED', 'DISABLED'),
+            ('off', None, 'off', False, 'DISABLED', 'DISABLED')
         ]
         for conf in configs:
             self._router_update_check_vsd(conf[0], conf[1], conf[2], conf[3],
@@ -147,7 +146,7 @@ class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
                    ('route', False, 'DISABLED', 'ENABLED', None, False),
                    ('snat', None, 'ENABLED', 'ENABLED', None, False),
                    ('off', None, 'DISABLED', 'DISABLED', None, False),
-                   ('route', None, 'DISABLED', 'ENABLED', None, False),
+                   ('route', None, 'DISABLED', 'ENABLED', None, False)
                    ]
         for conf in configs:
             self._router_no_op_update_check_no_change(conf[0], conf[1],
@@ -206,9 +205,9 @@ class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
                                  nuage_router.underlay_enabled,
                                  nuage_underlay,
                                  enable_snat))
-        self.LOG.debug("Verified for nuage_underlay={} ,"
-                       "ext_gw_info.enable_snat={}".format(nuage_underlay,
-                                                           enable_snat))
+        LOG.debug("Verified for nuage_underlay={} ,"
+                  "ext_gw_info.enable_snat={}".format(nuage_underlay,
+                                                      enable_snat))
 
     def _router_update_check_vsd(self, nuage_underlay,
                                  enable_snat, update_nuage_underlay,
@@ -257,9 +256,9 @@ class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
                                  nuage_router.underlay_enabled,
                                  nuage_underlay,
                                  enable_snat))
-        self.LOG.debug("Verified for nuage_underlay={} ,"
-                       "ext_gw_info.enable_snat={}".format(nuage_underlay,
-                                                           enable_snat))
+        LOG.debug("Verified for nuage_underlay={} ,"
+                  "ext_gw_info.enable_snat={}".format(nuage_underlay,
+                                                      enable_snat))
 
     def _router_update_check_exception(self, nuage_underlay, enable_snat,
                                        update_nuage_underlay,
@@ -282,8 +281,8 @@ class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
             enable_snat=update_enable_snat,
             external_gateway_info_on=update_enable_snat is not None,
             nuage_underlay=update_nuage_underlay)
-        self.LOG.debug("Verified for nuage_underlay={}, "
-                       "enable_snat={}".format(nuage_underlay, enable_snat))
+        LOG.debug("Verified for nuage_underlay={}, "
+                  "enable_snat={}".format(nuage_underlay, enable_snat))
 
     def _router_name_update_check_no_change(self, nuage_underlay, enable_snat,
                                             pat_enabled, underlay_enabled):
@@ -328,9 +327,9 @@ class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
                                  nuage_router.underlay_enabled,
                                  nuage_underlay,
                                  enable_snat))
-        self.LOG.debug("Verified for nuage_underlay={} ,"
-                       "ext_gw_info.enable_snat={}".format(nuage_underlay,
-                                                           enable_snat))
+        LOG.debug("Verified for nuage_underlay={} ,"
+                  "ext_gw_info.enable_snat={}".format(nuage_underlay,
+                                                      enable_snat))
 
     def _router_no_op_update_check_no_change(self, nuage_underlay,
                                              enable_snat,
@@ -379,6 +378,6 @@ class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
                                  nuage_router.underlay_enabled,
                                  nuage_underlay,
                                  enable_snat))
-        self.LOG.debug("Verified for nuage_underlay={} ,"
-                       "ext_gw_info.enable_snat={}".format(nuage_underlay,
-                                                           enable_snat))
+        LOG.debug("Verified for nuage_underlay={} ,"
+                  "ext_gw_info.enable_snat={}".format(nuage_underlay,
+                                                      enable_snat))

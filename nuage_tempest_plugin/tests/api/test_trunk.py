@@ -19,12 +19,9 @@ from nuage_tempest_plugin.services.nuage_network_client \
 
 from tempest.api.network import base
 from tempest.common import utils
-from tempest import config
 from tempest.lib.common.utils import test_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions as lib_exc
-
-CONF = config.CONF
 
 
 def trunks_cleanup(client, trunks):
@@ -61,11 +58,6 @@ class TrunkTestJSONBase(base.BaseAdminNetworkTest):
         super(TrunkTestJSONBase, cls).setup_clients()
         cls.client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
-            CONF.network.catalog_type,
-            CONF.network.region or CONF.identity.region,
-            endpoint_type=CONF.network.endpoint_type,
-            build_interval=CONF.network.build_interval,
-            build_timeout=CONF.network.build_timeout,
             **cls.os_primary.default_params)
 
     def _create_trunk_with_network_and_parent(self, subports,

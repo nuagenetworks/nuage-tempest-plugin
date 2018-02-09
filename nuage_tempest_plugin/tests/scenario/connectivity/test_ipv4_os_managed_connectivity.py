@@ -4,7 +4,6 @@
 import testtools
 
 from netaddr import IPNetwork
-from oslo_log import log as logging
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
@@ -13,8 +12,6 @@ from tempest.lib import decorators
 
 
 class Ipv4ConnectivityTest(NuageBaseTest):
-
-    LOG = logging.getLogger(__name__)
 
     @testtools.skipIf(not Topology.access_to_l2_supported(),
                       'Access to vm\'s in l2 networks is unsupported.')

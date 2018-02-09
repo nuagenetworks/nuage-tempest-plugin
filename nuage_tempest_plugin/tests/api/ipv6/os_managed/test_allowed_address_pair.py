@@ -13,21 +13,21 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
 from netaddr import IPAddress
-from oslo_log import log as logging
 
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.tests.api.ipv6.test_allowed_address_pair \
     import BaseAllowedAddressPair
 
 from tempest.api.network import test_allowed_address_pair as base_tempest
-from tempest import config
 from tempest.lib import decorators
 from tempest.lib import exceptions as tempest_exceptions
 
-LOG = logging.getLogger(__name__)
-CONF = config.CONF
+from nuage_tempest_plugin.lib.topology import Topology
+
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
+
 VALID_MAC_ADDRESS = 'fa:fa:3e:e8:e8:01'
 MSG_INVALID_IP_ADDRESS_FOR_SUBNET = "IP address %s is not a valid IP for " \
                                     "the specified subnet."

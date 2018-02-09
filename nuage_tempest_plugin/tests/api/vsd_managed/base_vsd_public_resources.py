@@ -16,17 +16,18 @@
 from netaddr import IPAddress
 from netaddr import IPNetwork
 
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_networks
 
-CONF = config.CONF
+CONF = Topology.get_conf()
 
 OS_FULL_CIDR24_RANGE = 254  # .256 -1 (.0) -1 (.255)
+
 VSD_L2_SHARED_MGD_OPT3_CIDR = IPNetwork('21.21.21.0/24')
 VSD_L2_SHARED_MGD_OPT3_GW = '21.21.21.1'
 VSD_L2_SHARED_MGD_OPT3 = '21.21.21.121'
@@ -79,7 +80,7 @@ class BaseVSDPublicResourcesTest(
     def resource_cleanup(cls):
         super(BaseVSDPublicResourcesTest, cls).resource_cleanup()
 
-    def _given_vsdl2sharedunmgd_linkedto_vsdl2domunmgd(self):
+    def _given_vsdl2sharedunmgd_lnkd_to_vsdl2domunmgd(self):
         if not self.vsd_l2_shared_unmanaged:
             self.vsd_l2_shared_unmanaged = \
                 self.create_vsd_shared_l2domain_unmanaged()
@@ -94,7 +95,7 @@ class BaseVSDPublicResourcesTest(
             self.vsd_l2_shared_unmanaged[0]['ID']
         return vsd_l2_dom_unmgd_l2_shared_unmgd
 
-    def _given_vsdl2sharedmgd_linkedto_vsdl2domunmgd(self):
+    def _given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd(self):
         if not self.vsd_l2_shared_managed:
             self.vsd_l2_shared_managed = \
                 self.create_vsd_shared_l2domain_managed()
@@ -110,7 +111,7 @@ class BaseVSDPublicResourcesTest(
             self.vsd_l2_shared_managed[0]['ID']
         return vsd_l2_dom_unmgd_l2_shared_mgd
 
-    def _given_vsdl2sharedmgdopt3_linkedto_vsdl2domunmgd(self, dhcp_option_3):
+    def _given_vsdl2sharedmgdopt3_linked_to_vsdl2domunmgd(self, dhcp_option_3):
         if not self.vsd_l2_shared_managed_opt3:
             kwargs = {
                 'cidr': VSD_L2_SHARED_MGD_OPT3_CIDR,
@@ -137,7 +138,7 @@ class BaseVSDPublicResourcesTest(
             self.vsd_l2_shared_managed_opt3[0]['ID']
         return vsd_l2_dom_unmgd_l2_shared_mgd_opt3
 
-    def _given_vsdl3sharedmgd_linkedto_vsdl2subnetunmgd(self):
+    def _given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd(self):
         if not self.vsd_l3_shared_mgd:
             self.vsd_l3_shared_mgd = self.create_vsd_shared_l3domain_managed()
         vsd_l3_domain = self.create_vsd_l3domain(
@@ -157,8 +158,8 @@ class BaseVSDPublicResourcesTest(
                 zone_id=public_zone[0]['ID'], **kwargs)
         return vsd_l3_subnet_publiczone_unmgd_l3_shared_mngd
 
-    def _given_vsdl3sharedmgdopt3_linkedto_vsdl3subnetunmgd(self,
-                                                            dhcp_option_3):
+    def _given_vsdl3sharedmgdopt3_linked_to_vsdl3subnetunmgd(self,
+                                                             dhcp_option_3):
         if not self.vsd_l3_shared_mgd_opt3:
             kwargs = {
                 'cidr': VSD_L3_SHARED_MGD_OPT3_CIDR,
@@ -191,7 +192,7 @@ class BaseVSDPublicResourcesTest(
                 extra_params=extra_params)
         return vsd_l3_subnet_publiczone_unmgd_l3_shared_mngd_opt3
 
-    def _given_vsdl3sharedmgdopt3_0000_linkedto_vsdl3subnetunmgd(self):
+    def _given_vsdl3sharedmgdopt3_0000_linked_to_vsdl3subnetunmgd(self):
         if not self.vsd_l3_shared_mgd_opt3:
             kwargs = {
                 'cidr': VSD_L3_SHARED_MGD_OPT3_CIDR,
@@ -291,9 +292,9 @@ class BaseVSDPublicResourcesTest(
             cidr = cidr or IPNetwork(CONF.network.tenant_network_cidr)
             mask_bits = mask_bits or CONF.network.tenant_network_mask_bits
         elif ip_version == 6:
-            cidr = (
-                cidr or IPNetwork(CONF.network.tenant_network_v6_cidr))
-            mask_bits = mask_bits or CONF.network.tenant_network_v6_mask_bits
+            cidr = cidr or IPNetwork(CONF.network.tenant_network_v6_cidr)
+            mask_bits = (mask_bits or
+                         CONF.network.tenant_network_v6_mask_bits)
         # Find a cidr that is not in use yet and create a subnet with it
         for subnet_cidr in cidr.subnet(mask_bits):
             if gateway_not_set:
@@ -374,7 +375,7 @@ class BaseVSDPublicResourcesTest(
             'enable_dhcp': enable_dhcp,
             'cidr': cidr,
             'mask_bits': cidr.prefixlen,
-            'net_partition': CONF.nuage.nuage_default_netpartition,
+            'net_partition': Topology.def_netpartition,
             'nuagenet': vsd_l2dom_unmgd[0]['ID']
         }
         if gateway_ip is not '':
@@ -446,7 +447,7 @@ class BaseVSDPublicResourcesTest(
             'enable_dhcp': enable_dhcp,
             'cidr': cidr,
             'mask_bits': cidr.prefixlen,
-            'net_partition': CONF.nuage.nuage_default_netpartition,
+            'net_partition': Topology.def_netpartition,
             'nuagenet': vsd_l3_dom_subnet[0]['ID']
         }
         if gateway_ip is not '':

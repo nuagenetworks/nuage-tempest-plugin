@@ -1,5 +1,22 @@
+# Copyright 2014 OpenStack Foundation
+# All Rights Reserved.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
 
-from nuage_tempest_plugin.lib.release import Release
+from tempest.api.network import base
+from tempest.lib.common.utils.data_utils import rand_name
+from tempest.test import decorators
+
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.lib.utils import exceptions
@@ -7,19 +24,7 @@ from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
-from oslo_log import log as logging
-
-from tempest.api.network import base
-from tempest import config
-from tempest.lib.common.utils.data_utils import rand_name
-from tempest.test import decorators
-
-
-CONF = config.CONF
-external_id_release = Release(n_constants.EXTERNALID_RELEASE)
-current_release = Release(Topology.nuage_release)
-
-LOG = logging.getLogger(__name__)
+LOG = Topology.get_logger(__name__)
 
 
 class NetPartitionTestJSON(base.BaseNetworkTest):
@@ -30,11 +35,6 @@ class NetPartitionTestJSON(base.BaseNetworkTest):
         super(NetPartitionTestJSON, cls).setup_clients()
         cls.client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
-            CONF.network.catalog_type,
-            CONF.network.region or CONF.identity.region,
-            endpoint_type=CONF.network.endpoint_type,
-            build_interval=CONF.network.build_interval,
-            build_timeout=CONF.network.build_timeout,
             **cls.os_primary.default_params)
         cls.nuageclient = NuageRestClient()
 
@@ -75,7 +75,7 @@ class NetPartitionTestJSON(base.BaseNetworkTest):
         self.assertEqual('201', body.response['status'])
         netpart = body['net_partition']
         self.assertEqual(name, netpart['name'])
-        if external_id_release <= current_release:
+        if Topology.within_ext_id_release():
             net_partition = self.nuageclient.get_global_resource(
                 resource=n_constants.NET_PARTITION,
                 filters='externalID',

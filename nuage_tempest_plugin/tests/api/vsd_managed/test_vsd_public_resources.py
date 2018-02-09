@@ -15,7 +15,6 @@
 
 from netaddr import IPNetwork
 
-from tempest import config
 from tempest.lib import exceptions
 from tempest.test import decorators
 
@@ -26,8 +25,6 @@ from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_networks
 from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_public_resources
-
-CONF = config.CONF
 
 OS_FULL_CIDR24_RANGE = 254  # .256 -1 (.0) -1 (.255)
 VSD_L2_SHARED_MGD_OPT3_CIDR = IPNetwork('21.21.21.0/24')
@@ -70,7 +67,7 @@ class VSDPublicResourcesTest(
         # Given  I have a VSD -L2-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
         # And  these are linked
-        vsd_l2dom_unmgd = self._given_vsdl2sharedunmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom_unmgd = self._given_vsdl2sharedunmgd_lnkd_to_vsdl2domunmgd()
         self._check_vsd_l2_shared_l2_unmgd(
             vsd_l2dom_unmgd=vsd_l2dom_unmgd,
             # When I create an OS subnet with
@@ -98,7 +95,7 @@ class VSDPublicResourcesTest(
         # Given  I have a VSD -L2-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
         # And  these are linked
-        vsd_l2dom_unmgd = self._given_vsdl2sharedunmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom_unmgd = self._given_vsdl2sharedunmgd_lnkd_to_vsdl2domunmgd()
         self._check_vsd_l2_shared_l2_unmgd(
             vsd_l2dom_unmgd=vsd_l2dom_unmgd,
             # When I create an OS subnet with
@@ -126,7 +123,7 @@ class VSDPublicResourcesTest(
         # Given  I have a VSD -L2-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
         # And these are linked
-        vsd_l2dom_unmgd = self._given_vsdl2sharedunmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom_unmgd = self._given_vsdl2sharedunmgd_lnkd_to_vsdl2domunmgd()
         self._check_vsd_l2_shared_l2_unmgd(
             vsd_l2dom_unmgd=vsd_l2dom_unmgd,
             # When I create an OS subnet with
@@ -155,7 +152,7 @@ class VSDPublicResourcesTest(
         # Given  I have a VSD -L2-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
         # And  these are linked
-        vsd_l2dom_unmgd = self._given_vsdl2sharedmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom_unmgd = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
         self._check_vsd_l2_shared_l2_unmgd(
             vsd_l2dom_unmgd=vsd_l2dom_unmgd,
             #  When I create an OS subnet with
@@ -184,7 +181,7 @@ class VSDPublicResourcesTest(
         # "Given  I have a VSD -L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # And these are linked
-        vsd_l2dom_unmgd = self._given_vsdl2sharedmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom_unmgd = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_GATEWAY_IP_MISMATCH,
@@ -204,7 +201,7 @@ class VSDPublicResourcesTest(
         # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # And these are linked
-        vsd_l2dom_unmgd = self._given_vsdl2sharedmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom_unmgd = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
         self._check_vsd_l2_shared_l2_unmgd(
             vsd_l2dom_unmgd=vsd_l2dom_unmgd,
             # When I create an OS subnet with
@@ -236,7 +233,7 @@ class VSDPublicResourcesTest(
         # with DHCP-option 3 set
         # And these are linked
         vsd_l2_dom_unmgd = \
-            self._given_vsdl2sharedmgdopt3_linkedto_vsdl2domunmgd(
+            self._given_vsdl2sharedmgdopt3_linked_to_vsdl2domunmgd(
                 VSD_L2_SHARED_MGD_OPT3)
         self._check_vsd_l2_shared_l2_unmgd(
             vsd_l2_dom_unmgd,
@@ -269,7 +266,7 @@ class VSDPublicResourcesTest(
         # with DHCP-option 3 set
         # And  these are linked
         vsd_l2dom_unmgd = \
-            self._given_vsdl2sharedmgdopt3_linkedto_vsdl2domunmgd(
+            self._given_vsdl2sharedmgdopt3_linked_to_vsdl2domunmgd(
                 VSD_L2_SHARED_MGD_OPT3)
         self._check_vsd_l2_shared_l2_unmgd(
             vsd_l2dom_unmgd=vsd_l2dom_unmgd,
@@ -305,7 +302,7 @@ class VSDPublicResourcesTest(
         # Then I expect a failure from OS
         # Supported only when dhcp_option-3 is NOT set
         vsd_l2dom_unmgd = \
-            self._given_vsdl2sharedmgdopt3_linkedto_vsdl2domunmgd(
+            self._given_vsdl2sharedmgdopt3_linked_to_vsdl2domunmgd(
                 VSD_L2_SHARED_MGD_OPT3)
         self.assertRaisesRegex(
             exceptions.BadRequest,
@@ -334,7 +331,7 @@ class VSDPublicResourcesTest(
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgd_linkedto_vsdl2subnetunmgd()
+            self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self._check_vsd_l3_shared_l2_unmgd(
             # When I create an OS subnet with
             #   enable_dhcp == True
@@ -367,7 +364,7 @@ class VSDPublicResourcesTest(
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgd_linkedto_vsdl2subnetunmgd()
+            self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self._check_vsd_l3_shared_l2_unmgd(
             vsd_l3_dom_subnet=vsd_l3_unmgd_subnet,
             os_shared_network=False,
@@ -401,7 +398,7 @@ class VSDPublicResourcesTest(
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgd_linkedto_vsdl2subnetunmgd()
+            self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_GATEWAY_IP_MISMATCH,
@@ -440,7 +437,7 @@ class VSDPublicResourcesTest(
         # (i.e. Managed) with DHCP option 3
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgdopt3_linkedto_vsdl3subnetunmgd(
+            self._given_vsdl3sharedmgdopt3_linked_to_vsdl3subnetunmgd(
                 VSD_L3_SHARED_MGD_OPT3)
         self._check_vsd_l3_shared_l2_unmgd(
             vsd_l3_dom_subnet=vsd_l3_unmgd_subnet,
@@ -475,7 +472,7 @@ class VSDPublicResourcesTest(
         # with DHCP-options-3
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgdopt3_linkedto_vsdl3subnetunmgd(
+            self._given_vsdl3sharedmgdopt3_linked_to_vsdl3subnetunmgd(
                 VSD_L3_SHARED_MGD_OPT3)
         self._check_vsd_l3_shared_l2_unmgd(
             vsd_l3_dom_subnet=vsd_l3_unmgd_subnet,
@@ -511,7 +508,7 @@ class VSDPublicResourcesTest(
         # with DHCP-options-3
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgdopt3_linkedto_vsdl3subnetunmgd(
+            self._given_vsdl3sharedmgdopt3_linked_to_vsdl3subnetunmgd(
                 VSD_L3_SHARED_MGD_OPT3)
         self.assertRaisesRegex(
             exceptions.BadRequest,
@@ -555,7 +552,7 @@ class VSDPublicResourcesTest(
         # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
         # And these are linked
-        vsd_l2dom = self._given_vsdl2sharedunmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom = self._given_vsdl2sharedunmgd_lnkd_to_vsdl2domunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_DHCP_ENABLE_FALSE,
@@ -583,7 +580,7 @@ class VSDPublicResourcesTest(
         # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
         # And these are linked
-        vsd_l2dom = self._given_vsdl2sharedunmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom = self._given_vsdl2sharedunmgd_lnkd_to_vsdl2domunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_DHCP_ENABLE_FALSE,
@@ -611,7 +608,7 @@ class VSDPublicResourcesTest(
         # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
         # And these are linked
-        vsd_l2dom = self._given_vsdl2sharedunmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom = self._given_vsdl2sharedunmgd_lnkd_to_vsdl2domunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_DHCP_ENABLE_FALSE,
@@ -639,7 +636,7 @@ class VSDPublicResourcesTest(
         # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         #     And these are linked
-        vsd_l2dom = self._given_vsdl2sharedmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_DHCP_ENABLE_TRUE,
@@ -665,7 +662,7 @@ class VSDPublicResourcesTest(
         # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         #     And these are linked
-        vsd_l2dom = self._given_vsdl2sharedmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_DHCP_ENABLE_TRUE,
@@ -692,7 +689,7 @@ class VSDPublicResourcesTest(
         # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         #     And these are linked
-        vsd_l2dom = self._given_vsdl2sharedmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_DHCP_ENABLE_TRUE,
@@ -719,7 +716,7 @@ class VSDPublicResourcesTest(
         # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # And these are linked
-        vsd_l2dom = self._given_vsdl2sharedmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_DO_NOT_MATCH,  # EXPECT_CIDR_IN_RANGE,
@@ -745,7 +742,7 @@ class VSDPublicResourcesTest(
         # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # And these are linked
-        vsd_l2dom = self._given_vsdl2sharedmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_DO_NOT_MATCH,  # EXPECT_CIDR_IN_RANGE,
@@ -772,7 +769,7 @@ class VSDPublicResourcesTest(
         # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # And these are linked
-        vsd_l2dom = self._given_vsdl2sharedmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_DO_NOT_MATCH,  # EXPECT_CIDR_IN_RANGE,
@@ -801,7 +798,7 @@ class VSDPublicResourcesTest(
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # with DHCP-option 3 set
         # And these are linked
-        vsd_l2dom = self._given_vsdl2sharedmgdopt3_linkedto_vsdl2domunmgd(
+        vsd_l2dom = self._given_vsdl2sharedmgdopt3_linked_to_vsdl2domunmgd(
             VSD_L2_SHARED_MGD_OPT3)
         self.assertRaisesRegex(
             exceptions.BadRequest,
@@ -830,7 +827,7 @@ class VSDPublicResourcesTest(
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # with DHCP-option 3 set
         # And these are linked
-        vsd_l2dom = self._given_vsdl2sharedmgdopt3_linkedto_vsdl2domunmgd(
+        vsd_l2dom = self._given_vsdl2sharedmgdopt3_linked_to_vsdl2domunmgd(
             VSD_L2_SHARED_MGD_OPT3)
         self.assertRaisesRegex(
             exceptions.BadRequest,
@@ -859,7 +856,7 @@ class VSDPublicResourcesTest(
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # with DHCP-option 3 set
         # And these are linked
-        vsd_l2dom = self._given_vsdl2sharedmgdopt3_linkedto_vsdl2domunmgd(
+        vsd_l2dom = self._given_vsdl2sharedmgdopt3_linked_to_vsdl2domunmgd(
             VSD_L2_SHARED_MGD_OPT3)
         self.assertRaisesRegex(
             exceptions.BadRequest,
@@ -887,7 +884,7 @@ class VSDPublicResourcesTest(
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # with DHCP-option 3 set
         # And these are linked
-        vsd_l2dom = self._given_vsdl2sharedmgdopt3_linkedto_vsdl2domunmgd(
+        vsd_l2dom = self._given_vsdl2sharedmgdopt3_linked_to_vsdl2domunmgd(
             VSD_L2_SHARED_MGD_OPT3)
         self.assertRaisesRegex(
             exceptions.BadRequest,
@@ -915,7 +912,7 @@ class VSDPublicResourcesTest(
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # with DHCP-option 3 set
         # And these are linked
-        vsd_l2dom = self._given_vsdl2sharedmgdopt3_linkedto_vsdl2domunmgd(
+        vsd_l2dom = self._given_vsdl2sharedmgdopt3_linked_to_vsdl2domunmgd(
             VSD_L2_SHARED_MGD_OPT3)
         self.assertRaisesRegex(
             exceptions.BadRequest,
@@ -944,7 +941,7 @@ class VSDPublicResourcesTest(
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # with DHCP-option 3 set
         # And these are linked
-        vsd_l2dom = self._given_vsdl2sharedmgdopt3_linkedto_vsdl2domunmgd(
+        vsd_l2dom = self._given_vsdl2sharedmgdopt3_linked_to_vsdl2domunmgd(
             VSD_L2_SHARED_MGD_OPT3)
         self.assertRaisesRegex(
             exceptions.BadRequest,
@@ -974,7 +971,7 @@ class VSDPublicResourcesTest(
         # with dhcp options 3
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgd_linkedto_vsdl2subnetunmgd()
+            self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_DHCP_ENABLE_TRUE,
@@ -1002,7 +999,7 @@ class VSDPublicResourcesTest(
         # with dhcp options 3
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgd_linkedto_vsdl2subnetunmgd()
+            self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_DHCP_ENABLE_TRUE,
@@ -1031,7 +1028,7 @@ class VSDPublicResourcesTest(
         # with dhcp options 3
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgd_linkedto_vsdl2subnetunmgd()
+            self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_DHCP_ENABLE_TRUE,
@@ -1061,7 +1058,7 @@ class VSDPublicResourcesTest(
         # with dhcp options 3
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgdopt3_linkedto_vsdl3subnetunmgd(
+            self._given_vsdl3sharedmgdopt3_linked_to_vsdl3subnetunmgd(
                 VSD_L3_SHARED_MGD_OPT3)
         self.assertRaisesRegex(
             exceptions.BadRequest,
@@ -1090,7 +1087,7 @@ class VSDPublicResourcesTest(
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgdopt3_linkedto_vsdl3subnetunmgd(
+            self._given_vsdl3sharedmgdopt3_linked_to_vsdl3subnetunmgd(
                 VSD_L3_SHARED_MGD_OPT3)
         self.assertRaisesRegex(
             exceptions.BadRequest,
@@ -1120,7 +1117,7 @@ class VSDPublicResourcesTest(
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgdopt3_linkedto_vsdl3subnetunmgd(
+            self._given_vsdl3sharedmgdopt3_linked_to_vsdl3subnetunmgd(
                 VSD_L3_SHARED_MGD_OPT3)
         self.assertRaisesRegex(
             exceptions.BadRequest,
@@ -1150,7 +1147,7 @@ class VSDPublicResourcesTest(
         # with dhcp options 3
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgd_linkedto_vsdl2subnetunmgd()
+            self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_DO_NOT_MATCH,  # EXPECT_CIDR_IN_RANGE,
@@ -1178,7 +1175,7 @@ class VSDPublicResourcesTest(
         # with dhcp options 3
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgd_linkedto_vsdl2subnetunmgd()
+            self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_DO_NOT_MATCH,  # EXPECT_CIDR_IN_RANGE,
@@ -1207,7 +1204,7 @@ class VSDPublicResourcesTest(
         # with dhcp options 3
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgd_linkedto_vsdl2subnetunmgd()
+            self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_DO_NOT_MATCH,  # EXPECT_CIDR_IN_RANGE,
@@ -1236,7 +1233,7 @@ class VSDPublicResourcesTest(
         # with dhcp options 3
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgd_linkedto_vsdl2subnetunmgd()
+            self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_GATEWAY_IN_CIDR,
@@ -1277,7 +1274,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # Given  I have a VSD -L2-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
         # And  these are linked
-        vsd_l2dom_unmgd = self._given_vsdl2sharedunmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom_unmgd = self._given_vsdl2sharedunmgd_lnkd_to_vsdl2domunmgd()
         self._check_vsd_l2_shared_l2_unmgd(
             vsd_l2dom_unmgd=vsd_l2dom_unmgd,
             os_shared_network=True,
@@ -1305,7 +1302,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # Given  I have a VSD -L2-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
         # And  these are linked
-        vsd_l2dom_unmgd = self._given_vsdl2sharedunmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom_unmgd = self._given_vsdl2sharedunmgd_lnkd_to_vsdl2domunmgd()
         self._check_vsd_l2_shared_l2_unmgd(
             vsd_l2dom_unmgd=vsd_l2dom_unmgd,
             # When I create an OS subnet with
@@ -1333,7 +1330,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # Given  I have a VSD -L2-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
         # And  these are linked
-        vsd_l2dom_unmgd = self._given_vsdl2sharedunmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom_unmgd = self._given_vsdl2sharedunmgd_lnkd_to_vsdl2domunmgd()
         self._check_vsd_l2_shared_l2_unmgd(
             vsd_l2dom_unmgd=vsd_l2dom_unmgd,
             # When I create an OS subnet with
@@ -1361,7 +1358,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # Given  I have a VSD -L2-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
         # And these are linked
-        vsd_l2dom_unmgd = self._given_vsdl2sharedunmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom_unmgd = self._given_vsdl2sharedunmgd_lnkd_to_vsdl2domunmgd()
         self._check_vsd_l2_shared_l2_unmgd(
             vsd_l2dom_unmgd=vsd_l2dom_unmgd,
             # When I create an OS subnet with
@@ -1390,7 +1387,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # Given  I have a VSD -L2-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
         # And  these are linked
-        vsd_l2dom_unmgd = self._given_vsdl2sharedmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom_unmgd = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
         self._check_vsd_l2_shared_l2_unmgd(
             vsd_l2dom_unmgd=vsd_l2dom_unmgd,
             #  When I create an OS subnet with
@@ -1419,7 +1416,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # "Given  I have a VSD -L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # And these are linked
-        vsd_l2dom_unmgd = self._given_vsdl2sharedmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom_unmgd = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_GATEWAY_IP_MISMATCH,
@@ -1439,7 +1436,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # And these are linked
-        vsd_l2dom_unmgd = self._given_vsdl2sharedmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom_unmgd = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
         self._check_vsd_l2_shared_l2_unmgd(
             vsd_l2dom_unmgd=vsd_l2dom_unmgd,
             # When I create an OS subnet with
@@ -1471,7 +1468,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # with DHCP-option 3 set
         # And these are linked
         vsd_l2_dom_unmgd = \
-            self._given_vsdl2sharedmgdopt3_linkedto_vsdl2domunmgd(
+            self._given_vsdl2sharedmgdopt3_linked_to_vsdl2domunmgd(
                 VSD_L2_SHARED_MGD_OPT3)
         self._check_vsd_l2_shared_l2_unmgd(
             vsd_l2_dom_unmgd,
@@ -1504,7 +1501,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # with DHCP-option 3 set
         # And  these are linked
         vsd_l2dom_unmgd = \
-            self._given_vsdl2sharedmgdopt3_linkedto_vsdl2domunmgd(
+            self._given_vsdl2sharedmgdopt3_linked_to_vsdl2domunmgd(
                 VSD_L2_SHARED_MGD_OPT3)
         self._check_vsd_l2_shared_l2_unmgd(
             vsd_l2dom_unmgd=vsd_l2dom_unmgd,
@@ -1540,7 +1537,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # Then I expect a failure from OS
         # Supported only when dhcp_option-3 is NOT set
         vsd_l2dom_unmgd = \
-            self._given_vsdl2sharedmgdopt3_linkedto_vsdl2domunmgd(
+            self._given_vsdl2sharedmgdopt3_linked_to_vsdl2domunmgd(
                 VSD_L2_SHARED_MGD_OPT3)
 
         # TODO(TEAM) test name does not correspond to what is done
@@ -1572,7 +1569,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgd_linkedto_vsdl2subnetunmgd()
+            self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self._check_vsd_l3_shared_l2_unmgd(
             # When I create an OS subnet with
             #   enable_dhcp == True
@@ -1605,7 +1602,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgd_linkedto_vsdl2subnetunmgd()
+            self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self._check_vsd_l3_shared_l2_unmgd(
             vsd_l3_dom_subnet=vsd_l3_unmgd_subnet,
             os_shared_network=True,
@@ -1639,7 +1636,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgd_linkedto_vsdl2subnetunmgd()
+            self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_GATEWAY_IP_MISMATCH,
@@ -1678,7 +1675,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # with DHCP option 3
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgdopt3_linkedto_vsdl3subnetunmgd(
+            self._given_vsdl3sharedmgdopt3_linked_to_vsdl3subnetunmgd(
                 VSD_L3_SHARED_MGD_OPT3)
         self._check_vsd_l3_shared_l2_unmgd(
             vsd_l3_dom_subnet=vsd_l3_unmgd_subnet,
@@ -1713,7 +1710,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # with DHCP-options-3
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgdopt3_linkedto_vsdl3subnetunmgd(
+            self._given_vsdl3sharedmgdopt3_linked_to_vsdl3subnetunmgd(
                 VSD_L3_SHARED_MGD_OPT3)
         self._check_vsd_l3_shared_l2_unmgd(
             vsd_l3_dom_subnet=vsd_l3_unmgd_subnet,
@@ -1749,7 +1746,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # with DHCP-options-3
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgdopt3_linkedto_vsdl3subnetunmgd(
+            self._given_vsdl3sharedmgdopt3_linked_to_vsdl3subnetunmgd(
                 VSD_L3_SHARED_MGD_OPT3)
         self.assertRaisesRegex(
             exceptions.BadRequest,
@@ -1794,7 +1791,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
         # And these are linked
-        vsd_l2dom = self._given_vsdl2sharedunmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom = self._given_vsdl2sharedunmgd_lnkd_to_vsdl2domunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_DHCP_ENABLE_FALSE,
@@ -1822,7 +1819,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
         # And these are linked
-        vsd_l2dom = self._given_vsdl2sharedunmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom = self._given_vsdl2sharedunmgd_lnkd_to_vsdl2domunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_DHCP_ENABLE_FALSE,
@@ -1850,7 +1847,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
         # And these are linked
-        vsd_l2dom = self._given_vsdl2sharedunmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom = self._given_vsdl2sharedunmgd_lnkd_to_vsdl2domunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_DHCP_ENABLE_FALSE,
@@ -1878,7 +1875,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         #     And these are linked
-        vsd_l2dom = self._given_vsdl2sharedmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_DHCP_ENABLE_TRUE,
@@ -1904,7 +1901,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         #     And these are linked
-        vsd_l2dom = self._given_vsdl2sharedmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_DHCP_ENABLE_TRUE,
@@ -1931,7 +1928,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         #     And these are linked
-        vsd_l2dom = self._given_vsdl2sharedmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_DHCP_ENABLE_TRUE,
@@ -1958,7 +1955,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # And these are linked
-        vsd_l2dom = self._given_vsdl2sharedmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_DO_NOT_MATCH,  # EXPECT_CIDR_IN_RANGE,
@@ -1984,7 +1981,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # And these are linked
-        vsd_l2dom = self._given_vsdl2sharedmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_DO_NOT_MATCH,  # EXPECT_CIDR_IN_RANGE,
@@ -2011,7 +2008,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # And these are linked
-        vsd_l2dom = self._given_vsdl2sharedmgd_linkedto_vsdl2domunmgd()
+        vsd_l2dom = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_DO_NOT_MATCH,  # EXPECT_CIDR_IN_RANGE,
@@ -2040,7 +2037,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # with DHCP-option 3 set
         # And these are linked
-        vsd_l2dom = self._given_vsdl2sharedmgdopt3_linkedto_vsdl2domunmgd(
+        vsd_l2dom = self._given_vsdl2sharedmgdopt3_linked_to_vsdl2domunmgd(
             VSD_L2_SHARED_MGD_OPT3)
         self.assertRaisesRegex(
             exceptions.BadRequest,
@@ -2069,7 +2066,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # with DHCP-option 3 set
         # And these are linked
-        vsd_l2dom = self._given_vsdl2sharedmgdopt3_linkedto_vsdl2domunmgd(
+        vsd_l2dom = self._given_vsdl2sharedmgdopt3_linked_to_vsdl2domunmgd(
             VSD_L2_SHARED_MGD_OPT3)
         self.assertRaisesRegex(
             exceptions.BadRequest,
@@ -2098,7 +2095,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # with DHCP-option 3 set
         # And these are linked
-        vsd_l2dom = self._given_vsdl2sharedmgdopt3_linkedto_vsdl2domunmgd(
+        vsd_l2dom = self._given_vsdl2sharedmgdopt3_linked_to_vsdl2domunmgd(
             VSD_L2_SHARED_MGD_OPT3)
         self.assertRaisesRegex(
             exceptions.BadRequest,
@@ -2126,7 +2123,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # with DHCP-option 3 set
         # And these are linked
-        vsd_l2dom = self._given_vsdl2sharedmgdopt3_linkedto_vsdl2domunmgd(
+        vsd_l2dom = self._given_vsdl2sharedmgdopt3_linked_to_vsdl2domunmgd(
             VSD_L2_SHARED_MGD_OPT3)
         self.assertRaisesRegex(
             exceptions.BadRequest,
@@ -2154,7 +2151,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # with DHCP-option 3 set
         # And these are linked
-        vsd_l2dom = self._given_vsdl2sharedmgdopt3_linkedto_vsdl2domunmgd(
+        vsd_l2dom = self._given_vsdl2sharedmgdopt3_linked_to_vsdl2domunmgd(
             VSD_L2_SHARED_MGD_OPT3)
         self.assertRaisesRegex(
             exceptions.BadRequest,
@@ -2184,7 +2181,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # with DHCP-option 3 set
         # And these are linked
         vsd_l2dom = \
-            self._given_vsdl2sharedmgdopt3_linkedto_vsdl2domunmgd(
+            self._given_vsdl2sharedmgdopt3_linked_to_vsdl2domunmgd(
                 VSD_L2_SHARED_MGD_OPT3)
         self.assertRaisesRegex(
             exceptions.BadRequest,
@@ -2214,7 +2211,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # with dhcp options 3
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgd_linkedto_vsdl2subnetunmgd()
+            self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_DHCP_ENABLE_TRUE,
@@ -2242,7 +2239,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # with dhcp options 3
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgd_linkedto_vsdl2subnetunmgd()
+            self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_DHCP_ENABLE_TRUE,
@@ -2271,7 +2268,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # with dhcp options 3
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgd_linkedto_vsdl2subnetunmgd()
+            self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_DHCP_ENABLE_TRUE,
@@ -2301,7 +2298,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # with dhcp options 3
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgdopt3_linkedto_vsdl3subnetunmgd(
+            self._given_vsdl3sharedmgdopt3_linked_to_vsdl3subnetunmgd(
                 VSD_L3_SHARED_MGD_OPT3)
         self.assertRaisesRegex(
             exceptions.BadRequest,
@@ -2330,7 +2327,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgdopt3_linkedto_vsdl3subnetunmgd(
+            self._given_vsdl3sharedmgdopt3_linked_to_vsdl3subnetunmgd(
                 VSD_L3_SHARED_MGD_OPT3)
         self.assertRaisesRegex(
             exceptions.BadRequest,
@@ -2360,7 +2357,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgdopt3_linkedto_vsdl3subnetunmgd(
+            self._given_vsdl3sharedmgdopt3_linked_to_vsdl3subnetunmgd(
                 VSD_L3_SHARED_MGD_OPT3)
         self.assertRaisesRegex(
             exceptions.BadRequest,
@@ -2390,7 +2387,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # with dhcp options 3
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgd_linkedto_vsdl2subnetunmgd()
+            self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_DO_NOT_MATCH,  # EXPECT_CIDR_IN_RANGE,
@@ -2418,7 +2415,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # with dhcp options 3
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgd_linkedto_vsdl2subnetunmgd()
+            self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_DO_NOT_MATCH,  # EXPECT_CIDR_IN_RANGE,
@@ -2447,7 +2444,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # with dhcp options 3
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgd_linkedto_vsdl2subnetunmgd()
+            self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_DO_NOT_MATCH,  # EXPECT_CIDR_IN_RANGE,
@@ -2476,7 +2473,7 @@ class VSDPublicResourcesSharedNetworksTest(
         # with dhcp options 3
         # And  these are linked
         vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgd_linkedto_vsdl2subnetunmgd()
+            self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
             exceptions.BadRequest,
             EXPECT_GATEWAY_IN_CIDR,

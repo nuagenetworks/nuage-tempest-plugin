@@ -14,15 +14,14 @@
 #    under the License.
 
 from netaddr import IPAddress
-from oslo_log import log as logging
 
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.test import decorators
 
+from nuage_tempest_plugin.lib.cli import client_testcase
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
-from nuage_tempest_plugin.lib.remote_cli import remote_cli_base_testcase
 from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 
 from nuage_tempest_plugin.tests.api.vsd_managed \
@@ -30,8 +29,7 @@ from nuage_tempest_plugin.tests.api.vsd_managed \
 from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_port_attributes
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+LOG = Topology.get_logger(__name__)
 
 # Constants used in this file
 SEVERAL_REDIRECT_TARGETS = 3
@@ -46,7 +44,7 @@ VALID_MAC_ADDRESS = 'fa:fa:3e:e8:e8:c0'
 
 
 class VSDManagedRedirectTargetCliTest(
-        remote_cli_base_testcase.RemoteCliBaseTestCase,
+        client_testcase.CLIClientTestCase,
         base_vsd_managed_port_attributes.BaseVSDManagedPortAttributes):
 
     @classmethod
@@ -88,7 +86,7 @@ class VSDManagedRedirectTargetCliTest(
         self.assertNotEmpty(vsd_redirect_target,
                             "Redirect target not present on VSD")
 
-        # When I associate a port to the redirectict-target
+        # When I associate a port to the redirect-target
         rtport = self.create_port(cli_network)
         self._cli_associate_rt_port(rtport, nuage_redirect_target)
         # Then I expect the port in the show redirect-target response
@@ -139,7 +137,7 @@ class VSDManagedRedirectTargetCliTest(
             vsd_redirect_target[0]['ID'], cli_subnet)
         self.assertTrue(my_rt_found,
                         "Did not find my redirect-target in the list")
-        # When I associate a port to the redirectict-target
+        # When I associate a port to the redirect-target
         rtport = self.create_port(cli_network)
         self._cli_associate_rt_port(rtport, redirect_target)
         # Then I expect the port in the show redirect-target response
@@ -148,7 +146,7 @@ class VSDManagedRedirectTargetCliTest(
         message = "Associated port not present in show nuage redirect " \
                   "target response"
         self.assertTrue(port_present, message)
-        # When I disassociate the red0rect-target from the port
+        # When I disassociate the redirect-target from the port
         self._cli_disassociate_rt_port(rtport, redirect_target)
         # I expect the port to be gone from the show redirect-target response
         port_present = self._cli_check_port_in_show_redirect_target(
@@ -206,7 +204,7 @@ class VSDManagedRedirectTargetCliTest(
         #
         for i in range(SEVERAL_REDIRECT_TARGETS):
             rtport = self.create_port(cli_network)
-            # When I associate a port to the redirectict-target
+            # When I associate a port to the redirect-target
             self._cli_associate_rt_port(rtport, os_redirect_targets[i])
             # Then I expect the port in the show redirect-target response
             port_present = self._cli_check_port_in_show_redirect_target(
@@ -260,10 +258,10 @@ class VSDManagedRedirectTargetCliTest(
         vsd_l3_subnet, vsd_l3_domain = self._create_vsd_l3_managed_subnet()
         cli_network, cli_subnet = self._cli_create_os_l3_vsd_managed_subnet(
             vsd_l3_subnet)
-        #  When I create a redirection-target in the VSD-L3-Managed-Subnet
+        #  When I create a redirect-target in the VSD-L3-Managed-Subnet
         os_redirect_target = \
             self._cli_create_nuage_redirect_target_in_l3_subnet(cli_subnet)
-        # Then I expect the redirection-target in my list
+        # Then I expect the redirect-target in my list
         my_rt_found = self._cli_find_redirect_target_in_list(
             os_redirect_target['id'], cli_subnet)
         self.assertTrue(my_rt_found,
@@ -320,12 +318,12 @@ class VSDManagedRedirectTargetCliTest(
         # through the test
         redirect_target = self.show_nuage_redirect_target(
             vsd_redirect_target[0]['ID'])
-        # Then I expect the redirection-target in my list
+        # Then I expect the redirect-target in my list
         my_rt_found = self._cli_find_redirect_target_in_list(
             vsd_redirect_target[0]['ID'], cli_subnet)
         self.assertTrue(my_rt_found,
                         "Did not find my redirect-target in the list")
-        # When I associate a port to the redirectict-target
+        # When I associate a port to the redirect-target
         rtport = self.create_port(cli_network)
         self._cli_associate_rt_port(rtport, redirect_target)
         # Then I expect the port in the show redirect-target response
@@ -334,7 +332,7 @@ class VSDManagedRedirectTargetCliTest(
         message = "Associated port not present in show nuage redirect " \
                   "target response"
         self.assertTrue(port_present, message)
-        # When I disassociate the red0rect-target from the port
+        # When I disassociate the redirect-target from the port
         self._cli_disassociate_rt_port(rtport, redirect_target)
         # I expect the port to be gone from the show redirect-target response
         port_present = self._cli_check_port_in_show_redirect_target(
@@ -393,7 +391,7 @@ class VSDManagedRedirectTargetCliTest(
         #
         for i in range(SEVERAL_REDIRECT_TARGETS):
             rtport = self.create_port(cli_network)
-            # When I associate a port to the redirectict-target
+            # When I associate a port to the redirect-target
             self._cli_associate_rt_port(rtport, os_redirect_targets[i])
             # Then I expect the port in the show redirect-target response
             port_present = self._cli_check_port_in_show_redirect_target(
@@ -401,7 +399,7 @@ class VSDManagedRedirectTargetCliTest(
             self.assertTrue(port_present,
                             "Associated port not present in show nuage "
                             "redirect target response")
-            # When I disassociate the red0rect-target from the port
+            # When I disassociate the redirect-target from the port
             self._cli_disassociate_rt_port(rtport, os_redirect_targets[i])
             # Then I expect the port to be gone from the show
             # redirect-target response
@@ -495,7 +493,7 @@ class VSDManagedRedirectTargetCliTest(
         vsd_l2_subnet, l2dom_template = self._create_vsd_l2_managed_subnet()
         cli_network, cli_subnet = self._cli_create_os_l2_vsd_managed_subnet(
             vsd_l2_subnet)
-        #  And I have created a redirection-target in the VSD-L2-Managed-Subnet
+        #  And I have created a redirect-target in the VSD-L2-Managed-Subnet
         name = data_utils.rand_name("rt-same-name")
         os_redirect_target = \
             self._cli_create_nuage_redirect_target_in_l2_subnet(
@@ -521,7 +519,7 @@ class VSDManagedRedirectTargetCliTest(
         vsd_l2_subnet, l2dom_template = self._create_vsd_l2_managed_subnet()
         cli_network, cli_subnet = self._cli_create_os_l2_vsd_managed_subnet(
             vsd_l2_subnet)
-        #  And I have created a redirection-target in the VSD-L2-Managed-Subnet
+        #  And I have created a redirect-target in the VSD-L2-Managed-Subnet
         os_redirect_target = \
             self._cli_create_nuage_redirect_target_in_l2_subnet(cli_subnet)
         self.addCleanup(self.nuage_network_client.delete_redirection_target,
@@ -535,7 +533,7 @@ class VSDManagedRedirectTargetCliTest(
         self.assertTrue(port_present,
                         "Associated port not present in show nuage "
                         "redirect target response")
-        # When I disassociate the red0rect-target from the port
+        # When I disassociate the redirect-target from the port
         # When I try to create associate another port to the same
         # redirect target, which has redundancy disabled (l2)ml
         # I expect this to fail
@@ -543,7 +541,7 @@ class VSDManagedRedirectTargetCliTest(
         msg = "Cannot have more than 1 vPort under a redirectiontarget with " \
               "redundancy disabled"
         if NUAGE_FEATURES.ml2_limited_exceptions:
-            if CONF.nuage_sut.openstack_version == 'kilo':
+            if Topology.at_openstack('kilo'):
                 msg = "update_port_postcommit failed"
             else:
                 msg = "update_port_precommit failed"
@@ -637,7 +635,7 @@ class VSDManagedRedirectTargetCliTest(
         rtport = self.create_port(cli_network)
         msg = 'Bad request: Multiple redirect targets on a port not supported'
         if NUAGE_FEATURES.ml2_limited_exceptions:
-            if CONF.nuage_sut.openstack_version == 'kilo':
+            if Topology.at_openstack('kilo'):
                 msg = "update_port_postcommit failed"
             else:
                 msg = "update_port_precommit failed"
@@ -656,7 +654,7 @@ class VSDManagedRedirectTargetCliTest(
 
 
 class VSDManagedPolicyGroupsCLITest(
-        remote_cli_base_testcase.RemoteCliBaseTestCase,
+        client_testcase.CLIClientTestCase,
         base_vsd_managed_port_attributes.BaseVSDManagedPortAttributes):
 
     @classmethod
@@ -740,7 +738,7 @@ class VSDManagedPolicyGroupsCLITest(
         for i in range(SEVERAL_PORTS):
             show_port = self.show_port(ports[i]['id'])
             # Then I expect all policy groups in the response
-            if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+            if not Topology.is_ml2:
                 all_pg_present = \
                     self._cli_check_all_policy_groups_in_show_port(
                         pg_id_list, show_port)
@@ -762,9 +760,9 @@ class VSDManagedPolicyGroupsCLITest(
             # Then I do NOT expect the policy Groups in the show port response
             show_port = self.show_port(ports[i]['id'])
 
-            if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+            if not Topology.is_ml2:
                 self.assertEmpty(show_port['nuage_policy_groups'],
-                                 "Port-show list disassociated ports")
+                                 "Port-show lists disassociated ports")
 
             # And I do not expect this port in any of the policy groups
             for j in range(SEVERAL_POLICY_GROUPS):
@@ -774,7 +772,6 @@ class VSDManagedPolicyGroupsCLITest(
                                  'disassociated port (%s) still present in '
                                  'policy group(%s)' %
                                  (ports[i]['id'], policy_groups[j][0]['ID']))
-        pass
 
     @nuage_test.header()
     def test_cli_list_l2_policy_groups_subnet_only(self):
@@ -924,7 +921,7 @@ class VSDManagedPolicyGroupsCLITest(
         for i in range(SEVERAL_PORTS):
             show_port = self.show_port(ports[i]['id'])
             # Then I expect all policy groups in the response
-            if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+            if not Topology.is_ml2:
                 all_pg_present = \
                     self._cli_check_all_policy_groups_in_show_port(
                         pg_id_list, show_port)
@@ -947,7 +944,7 @@ class VSDManagedPolicyGroupsCLITest(
 
             # Then I do NOT expect the policy Groups in the show port response
             show_port = self.show_port(ports[i]['id'])
-            if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+            if not Topology.is_ml2:
                 self.assertEmpty(show_port['nuage_policy_groups'],
                                  "Port-show list disassociated ports")
 
@@ -1013,7 +1010,7 @@ class VSDManagedPolicyGroupsCLITest(
 
 
 class VSDManagedAllowedAddresPairsCLITest(
-        remote_cli_base_testcase.RemoteCliBaseTestCase,
+        client_testcase.CLIClientTestCase,
         base_vsd_managed_port_attributes.BaseVSDManagedPortAttributes):
 
     @classmethod
@@ -1221,7 +1218,7 @@ class VSDManagedAllowedAddresPairsCLITest(
 
 
 class VSDManagedAssociateFIPCLITest(
-        remote_cli_base_testcase.RemoteCliBaseTestCase,
+        client_testcase.CLIClientTestCase,
         base_vsd_managed_port_attributes.BaseVSDManagedPortAttributes):
 
     @classmethod
@@ -1259,7 +1256,7 @@ class VSDManagedAssociateFIPCLITest(
         self.cli_associate_fip_to_port(claimed_fip[0]['ID'], port['id'])
 
         # Then I expect the claimed floating ip in the port show response
-        if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+        if not Topology.is_ml2:
             fip_present = self.cli_check_fip_in_port_show(
                 claimed_fip[0]['ID'], port['id'])
             self.assertTrue(fip_present,
@@ -1271,7 +1268,7 @@ class VSDManagedAssociateFIPCLITest(
         self.cli_disassociate_fip_from_port(port['id'])
         # Then I no longer expect the claimed floating ip in the
         # port show response
-        if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+        if not Topology.is_ml2:
             fip_present = self.cli_check_fip_in_port_show(
                 claimed_fip[0]['ID'], port['id'])
             self.assertFalse(fip_present,
@@ -1314,7 +1311,7 @@ class VSDManagedAssociateFIPCLITest(
                 claimed_fips[i][0]['ID'], ports[i]['id'])
         for i in range(SEVERAL_VSD_CLAIMED_FIPS):
             # Then I expect the claimed floating ip in the port show response
-            if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+            if not Topology.is_ml2:
                 fip_present = self.cli_check_fip_in_port_show(
                     claimed_fips[i][0]['ID'], ports[i]['id'])
                 self.assertTrue(fip_present,
@@ -1327,7 +1324,7 @@ class VSDManagedAssociateFIPCLITest(
             # Then I no longer expect the claimed floating ip in the
             # port show response
 
-            if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+            if not Topology.is_ml2:
                 fip_present = self.cli_check_fip_in_port_show(
                     claimed_fips[i][0]['ID'], ports[i]['id'])
                 self.assertFalse(fip_present,
@@ -1543,7 +1540,7 @@ class VSDManagedAssociateFIPCLITest(
         self.cli_associate_fip_to_port(claimed_fip[0]['ID'], port_1['id'])
 
         # Then I expect the claimed floating ip in the port show response
-        if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+        if not Topology.is_ml2:
             fip_present = self.cli_check_fip_in_port_show(
                 claimed_fip[0]['ID'], port_1['id'])
             self.assertTrue(fip_present,
@@ -1557,7 +1554,7 @@ class VSDManagedAssociateFIPCLITest(
         msg = 'Bad request: Floating IP %s is already in use' % \
               claimed_fip[0]['address']
         if NUAGE_FEATURES.ml2_limited_exceptions:
-            if CONF.nuage_sut.openstack_version == 'kilo':
+            if Topology.at_openstack('kilo'):
                 msg = "update_port_postcommit failed"
             else:
                 msg = "update_port_precommit failed"

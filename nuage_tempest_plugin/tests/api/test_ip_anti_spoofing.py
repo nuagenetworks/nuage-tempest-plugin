@@ -4,18 +4,16 @@
 from collections import namedtuple
 from enum import Enum
 from netaddr import IPNetwork
-from oslo_log import log as logging
 
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest import test
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.test.vsd_helper import VsdHelper
+from nuage_tempest_plugin.lib.topology import Topology
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+LOG = Topology.get_logger(__name__)
 
 
 # Enum for the IP MAC anti spoofing or VIP creation actions
@@ -30,7 +28,7 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
     @classmethod
     def resource_setup(cls):
         super(IpAntiSpoofingTestBase, cls).resource_setup()
-        cls.def_net_partition = CONF.nuage.nuage_default_netpartition
+        cls.def_net_partition = Topology.def_netpartition
         cls.vip_action = Action
         cls.vip_param = namedtuple(
             "VIP_Params", ["full_cidr", "diff_mac", "same_ip", "same_subn"])
@@ -1429,7 +1427,7 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         raise cls.skipException(
             'TODO(KRIS) : IpAntiSpoofingCliTests need more work.')
 
-    def_net_partition = CONF.nuage.nuage_default_netpartition
+    def_net_partition = Topology.def_netpartition
 
     def _create_and_verify_ntw_port_with_sec_value(self, ntw_name, port_name,
                                                    ntw_security=None,

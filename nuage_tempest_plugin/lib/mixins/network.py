@@ -16,14 +16,11 @@ import contextlib
 import netaddr
 
 from tempest.common.utils import data_utils
-from tempest import config
 from tempest.lib import exceptions
 
 from nuage_tempest_plugin.lib.mixins import base
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
-
-CONF = config.CONF
 
 
 class NetworkMixin(base.BaseMixin):
@@ -37,11 +34,6 @@ class NetworkMixin(base.BaseMixin):
             cls.ports_client = cls.os_primary.ports_client
             cls.plugin_network_client = NuageNetworkClientJSON(
                 cls.os_primary.auth_provider,
-                CONF.network.catalog_type,
-                CONF.network.region or CONF.identity.region,
-                endpoint_type=CONF.network.endpoint_type,
-                build_interval=CONF.network.build_interval,
-                build_timeout=CONF.network.build_timeout,
                 **cls.os_primary.default_params)
 
         if cls.has_admin:
@@ -50,11 +42,6 @@ class NetworkMixin(base.BaseMixin):
             cls.ports_client_admin = cls.os_admin.ports_client
             cls.plugin_network_client_admin = NuageNetworkClientJSON(
                 cls.os_admin.auth_provider,
-                CONF.network.catalog_type,
-                CONF.network.region or CONF.identity.region,
-                endpoint_type=CONF.network.endpoint_type,
-                build_interval=CONF.network.build_interval,
-                build_timeout=CONF.network.build_timeout,
                 **cls.os_admin.default_params)
 
     # ---------- Networks ----------

@@ -1,30 +1,27 @@
 # Copyright 2015 Alcatel-Lucent
 # All Rights Reserved.
 
-from oslo_log import log as logging
-
 from tempest.common import utils
-from tempest import config
 from tempest.lib.common.utils import data_utils
 
-from nuage_tempest_plugin.lib.remote_cli.remote_cli_base_testcase \
-    import RemoteCliBaseTestCase
-from nuage_tempest_plugin.lib.remote_cli.remote_cli_base_testcase import Role
+from nuage_tempest_plugin.lib.cli.client_testcase \
+    import CLIClientTestCase
+from nuage_tempest_plugin.lib.cli.client_testcase import Role
 from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services import nuage_client
 
-CONF = config.CONF
+CONF = Topology.get_conf()
 
 
-class TestNuageDomainTunnelTypeCli(RemoteCliBaseTestCase):
+class TestNuageDomainTunnelTypeCli(CLIClientTestCase):
 
     # TODO(waelj) don't want to have a dedicated parent class for CLI
 
     """DomainTunnelType tests using Neutron CLI client.
 
     """
-    LOG = logging.getLogger(__name__)
 
     @classmethod
     def setup_clients(cls):
@@ -34,10 +31,6 @@ class TestNuageDomainTunnelTypeCli(RemoteCliBaseTestCase):
     @classmethod
     def skip_checks(cls):
         super(TestNuageDomainTunnelTypeCli, cls).skip_checks()
-        if not CONF.service_available.neutron:
-            msg = "Skipping all Neutron cli tests because it is not available"
-            raise cls.skipException(msg)
-
         if not utils.is_extension_enabled('nuage-router', 'network'):
             msg = "Extension nuage_floatingip not enabled."
             raise cls.skipException(msg)
@@ -180,7 +173,7 @@ class TestNuageDomainTunnelTypeCli(RemoteCliBaseTestCase):
             get_data_center_default_domain_tunnel_type)
 
 
-class TestNuageDomainTunnelTypeAsTenantCli(RemoteCliBaseTestCase):
+class TestNuageDomainTunnelTypeAsTenantCli(CLIClientTestCase):
 
     """DomainTunnelType tests using Neutron CLI client.
 
@@ -188,7 +181,7 @@ class TestNuageDomainTunnelTypeAsTenantCli(RemoteCliBaseTestCase):
 
     def setUp(self):
         super(TestNuageDomainTunnelTypeAsTenantCli, self).setUp()
-        if CONF.nuage_sut.openstack_version >= 'liberty':
+        if Topology.from_openstack('liberty'):
             self.CREATE_POLICY_ERROR = "disallowed by policy"
             self.UPDATE_POLICY_ERROR = "disallowed by policy"
         else:

@@ -11,16 +11,16 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-from netaddr import IPNetwork
-from oslo_log import log as logging
 
-from tempest import config
+from netaddr import IPNetwork
+
 from tempest.lib import exceptions
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageAdminNetworksTest
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+from nuage_tempest_plugin.lib.topology import Topology
+
+LOG = Topology.get_logger(__name__)
 
 
 class SubnetsTest(NuageAdminNetworksTest):

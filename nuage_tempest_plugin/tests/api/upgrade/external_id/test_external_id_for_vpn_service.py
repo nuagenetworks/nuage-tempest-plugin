@@ -13,16 +13,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo_log import log as logging
-
 from tempest.api.network import base
 from tempest.common import utils
-from tempest import config
 from tempest.lib.common.utils import data_utils
 
 from external_id import ExternalId
 
-from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
@@ -32,8 +28,8 @@ from nuage_tempest_plugin.services.vpnaas.vpnaas_mixins import VPNMixin
 
 import upgrade_external_id_with_cms_id as upgrade_script
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 class ExternalIdForVpnServiceTest(VPNMixin, base.BaseNetworkTest):
@@ -95,9 +91,7 @@ class ExternalIdForVpnServiceTest(VPNMixin, base.BaseNetworkTest):
     @classmethod
     def setUpClass(cls):
         super(ExternalIdForVpnServiceTest, cls).setUpClass()
-        external_id_release = Release('4.0R5')
-        current_release = Release(Topology.nuage_release)
-        cls.test_upgrade = external_id_release > current_release
+        cls.test_upgrade = not Topology.within_ext_id_release()
 
     @classmethod
     def setup_clients(cls):
@@ -113,15 +107,13 @@ class ExternalIdForVpnServiceTest(VPNMixin, base.BaseNetworkTest):
         dummy router and subnet created by plugin
         """
 
-        # get public network
-        ext_net_id = CONF.network.public_network_id
-
         # Create a network 1
         network_a1 = self.create_network(
             network_name=data_utils.rand_name('networkA1'))
         subnet_a1 = self.create_subnet(network_a1)
-        router_a1 = self.create_router(data_utils.rand_name('routerA1'),
-                                       external_network_id=ext_net_id)
+        router_a1 = self.create_router(
+            data_utils.rand_name('routerA1'),
+            external_network_id=CONF.network.public_network_id)
         self.create_router_interface(router_a1['id'], subnet_a1['id'])
 
         # Creating the vpn service

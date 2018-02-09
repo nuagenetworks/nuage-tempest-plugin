@@ -1,20 +1,18 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
 
+from tempest.lib import decorators
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.test import tags
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as nuage_constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
     import ExternalId
-from tempest import config
-from tempest.lib import decorators
 
-
-CONF = config.CONF
-net_partition_name = CONF.nuage.nuage_default_netpartition
+net_partition_name = Topology.def_netpartition
 
 
 @nuage_test.class_header(tags=[tags.ML2])
@@ -24,7 +22,7 @@ class VSDUserGroup(nuage_test.NuageBaseTest):
     @classmethod
     def skip_checks(cls):
         super(VSDUserGroup, cls).skip_checks()
-        if not NUAGE_FEATURES.project_name_in_user_group_description:
+        if not NUAGE_FEATURES.project_name_in_vsd:
             raise cls.skipException('Project name in user group is not'
                                     ' supported in this release')
 

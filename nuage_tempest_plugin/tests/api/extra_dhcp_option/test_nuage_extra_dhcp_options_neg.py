@@ -1,14 +1,13 @@
 # Copyright 2015 Alcatel-Lucent
 
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
 import base_nuage_extra_dhcp_options
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
-from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as constants
 
 VERY_LONG_STRING = '\
@@ -59,8 +58,6 @@ BAD_INTEGER_TYPE_VALUES = [
     VERY_BIG_NUMBER,
     'some_small string'
 ]
-
-CONF = config.CONF
 
 
 class NuageExtraDHCPOptionsNegativeTest(
@@ -709,8 +706,7 @@ class NuageExtraDHCPOptionsNegativeTest(
             {'opt_value': '19.20.30.44', 'opt_name': 'router'}
         ]
 
-        if Release(CONF.nuage_sut.openstack_version) >= Release('Newton') and \
-                CONF.nuage_sut.nuage_plugin_mode == 'ml2':
+        if Topology.from_openstack('Newton') and Topology.is_ml2:
             self.assertRaises(exceptions.Conflict,
                               self._create_port_with_dhcp_opts,
                               network_id,
@@ -732,8 +728,7 @@ class NuageExtraDHCPOptionsNegativeTest(
             {'opt_value': '19.20.30.44', 'opt_name': 'router'}
         ]
 
-        if Release(CONF.nuage_sut.openstack_version) >= Release('Newton') and \
-                CONF.nuage_sut.nuage_plugin_mode == 'ml2':
+        if Topology.from_openstack('Newton') and Topology.is_ml2:
             self.assertRaises(exceptions.Conflict,
                               self._update_port_with_dhcp_opts,
                               self.os_l2_port['id'],

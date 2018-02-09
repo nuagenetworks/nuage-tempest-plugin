@@ -1,17 +1,16 @@
 # Copyright 2015 Alcatel-Lucent
 # All Rights Reserved.
 
-from oslo_log import log as logging
-
 from tempest.api.network import base
 from tempest.common import utils
-from tempest import config
 from tempest.lib.common.utils import data_utils
 
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services import nuage_client
 
-CONF = config.CONF
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 def openstack_to_vsd(value):
@@ -37,8 +36,6 @@ class NuageFipRateLimitBase(base.BaseNetworkTest):
 
         public_network_id which is the id for the external network present
     """
-
-    LOG = logging.getLogger(__name__)
 
     @classmethod
     def setup_clients(cls):
@@ -121,8 +118,8 @@ class NuageFipRateLimitBase(base.BaseNetworkTest):
         self.assertIn(created_floating_ip['fixed_ip_address'],
                       [ip['ip_address'] for ip in port['fixed_ips']])
 
-        self.LOG.info("FIP Rate limit %s",
-                      created_floating_ip['nuage_egress_fip_rate_kbps'])
+        LOG.info("FIP Rate limit %s",
+                 created_floating_ip['nuage_egress_fip_rate_kbps'])
 
         cmp_with = str(float(default_rate_limit * 1000)
                        ) if default_rate_limit != -1 else "-1.0"
@@ -163,7 +160,7 @@ class NuageFipRateLimitBase(base.BaseNetworkTest):
         self.assertEqual(1, len(qos))
         self.assertEqual(True, qos[0]['FIPRateLimitingActive'])
 
-        self.LOG.info("FIP Rate limit %s", qos[0]['FIPPeakInformationRate'])
+        LOG.info("FIP Rate limit %s", qos[0]['FIPPeakInformationRate'])
         self.assertEqual(default_rate_limit, qos[0]['FIPPeakInformationRate'])
         self.assertEqual(self.nuage_vsd_client.get_vsd_external_id(
             created_floating_ip['id']), qos[0]['externalID'])

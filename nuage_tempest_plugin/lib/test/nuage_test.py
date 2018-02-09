@@ -13,11 +13,9 @@ import yaml
 from netaddr import IPAddress
 from netaddr import IPNetwork
 from netaddr import IPRange
-from oslo_log import log as oslo_logging
 
 from tempest.api.network import base
 from tempest.common import waiters
-from tempest import config
 from tempest.lib.common import rest_client
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions as lib_exc
@@ -33,9 +31,8 @@ from nuage_tempest_plugin.lib.test.tenant_server import TenantServer
 from nuage_tempest_plugin.lib.test import vsd_helper
 from nuage_tempest_plugin.lib.topology import Topology
 
-
-CONF = config.CONF
-LOG = oslo_logging.getLogger(__name__)
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 def skip_because(*args, **kwargs):
@@ -152,12 +149,8 @@ class NuageBaseTest(manager.NetworkScenarioTest):
     _ip_version = 4
 
     credentials = ['primary', 'admin']
-    default_netpartition_name = CONF.nuage.nuage_default_netpartition
+    default_netpartition_name = Topology.def_netpartition
     image_name_to_id_cache = {}
-
-    @classmethod
-    def setup_credentials(cls):
-        super(NuageBaseTest, cls).setup_credentials()
 
     @classmethod
     def setup_clients(cls):
@@ -198,7 +191,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
         cls.gateway6 = str(IPAddress(cls.cidr6) + 1)
 
-        cls.net_partition = CONF.nuage.nuage_default_netpartition
+        cls.net_partition = Topology.def_netpartition
 
         LOG.info("setup_network_resources: ipv4 config: {}"
                  .format(str(cls.cidr4)))
@@ -1079,12 +1072,6 @@ class NuageBaseOrchestrationTest(NuageBaseTest):
         cls.os = cls.get_client_manager(roles=[stack_owner_role])
 
     @classmethod
-    def skip_checks(cls):
-        super(NuageBaseOrchestrationTest, cls).skip_checks()
-        if not CONF.service_available.neutron:
-            raise cls.skipException("Neutron support is required")
-
-    @classmethod
     def setup_clients(cls):
         super(NuageBaseOrchestrationTest, cls).setup_clients()
 
@@ -1107,7 +1094,7 @@ class NuageBaseOrchestrationTest(NuageBaseTest):
         cls.build_timeout = CONF.heat_plugin.build_timeout
         cls.build_interval = CONF.heat_plugin.build_interval
 
-        cls.net_partition_name = CONF.nuage.nuage_default_netpartition
+        cls.net_partition_name = CONF.def_netpartition
         cls.private_net_name = data_utils.rand_name('heat-network-')
 
         cls.test_resources = {}

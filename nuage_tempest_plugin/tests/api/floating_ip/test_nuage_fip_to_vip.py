@@ -1,19 +1,15 @@
 # Copyright 2017 NOKIA
 # All Rights Reserved.
 
-from oslo_log import log as logging
-
-from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
-
-from tempest import config
 from tempest.test import decorators
 
-CONF = config.CONF
+from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.topology import Topology
+
+CONF = Topology.get_conf()
 
 
 class NuageFipToVip(NuageBaseTest):
-
-    LOG = logging.getLogger(__name__)
 
     @decorators.attr(type='smoke')
     def test_fip2vip_when_fip_preexists(self):

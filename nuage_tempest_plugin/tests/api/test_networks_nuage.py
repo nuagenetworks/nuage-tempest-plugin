@@ -16,23 +16,16 @@
 import netaddr
 import random
 
-from nuage_tempest_plugin.lib.release import Release
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants as n_constants
-from nuage_tempest_plugin.services.nuage_client import NuageRestClient
-
 from tempest.api.network import base
 from tempest.api.network import test_networks
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
-
-CONF = config.CONF
-external_id_release = Release(n_constants.EXTERNALID_RELEASE)
-current_release = Release(Topology.nuage_release)
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import constants as n_constants
+from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
 
 class NetworksTestJSONNuage(test_networks.NetworksTest):
@@ -61,7 +54,7 @@ class NetworksTestJSONNuage(test_networks.NetworksTest):
             self.assertEqual(self.convert_dec_hex(
                 subnet['gateway_ip'])[2:], nuage_dhcpopt[0]['value'])
             self.assertEqual(nuage_dhcpopt[0]['type'], "03")
-            if external_id_release <= current_release:
+            if Topology.within_ext_id_release():
                 self.assertEqual(nuage_dhcpopt[0]['externalID'],
                                  self.nuage_vsd_client.get_vsd_external_id(
                                      subnet.get('id')))
@@ -80,7 +73,7 @@ class NetworksTestJSONNuage(test_networks.NetworksTest):
 
             self.assertEqual(nuage_dhcpopt[2]['type'],
                              "79")
-            if external_id_release <= current_release:
+            if Topology.within_ext_id_release():
                 self.assertEqual(nuage_dhcpopt[2]['externalID'],
                                  self.nuage_vsd_client.get_vsd_external_id(
                                      subnet.get('id')))
@@ -89,7 +82,7 @@ class NetworksTestJSONNuage(test_networks.NetworksTest):
                 self.convert_dec_hex(
                     subnet['host_routes'][0]['nexthop'])[2:],
                 nuage_dhcpopt[2]['value'][-8:])
-            if external_id_release <= current_release:
+            if Topology.within_ext_id_release():
                 self.assertEqual(nuage_dhcpopt[2]['externalID'],
                                  self.nuage_vsd_client.get_vsd_external_id(
                                      subnet.get('id')))
@@ -127,7 +120,7 @@ class NetworksTestJSONNuage(test_networks.NetworksTest):
                 parent_id=nuage_l2dom[0]['ID'])
 
             self._verify_vsd_dhcp_options(nuage_dhcpopt, subnet)
-            if external_id_release <= current_release:
+            if Topology.within_ext_id_release():
                 self.assertEqual(len(permissions), 1)
                 self.assertEqual(permissions[0]['externalID'],
                                  self.nuage_vsd_client.get_vsd_external_id(

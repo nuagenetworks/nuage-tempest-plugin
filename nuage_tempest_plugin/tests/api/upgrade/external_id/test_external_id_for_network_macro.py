@@ -13,10 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo_log import log as logging
-
 from tempest.api.network import base as base
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib.common.utils import test_utils
 
@@ -25,8 +22,6 @@ import testtools
 from external_id import ExternalId
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
-
-from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
@@ -35,8 +30,7 @@ from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+LOG = Topology.get_logger(__name__)
 
 
 class ExternalIdForNetworkMacroTest(base.BaseAdminNetworkTest):
@@ -96,11 +90,6 @@ class ExternalIdForNetworkMacroTest(base.BaseAdminNetworkTest):
         cls.nuage_vsd_client = NuageRestClient()
         cls.nuage_network_client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
-            CONF.network.catalog_type,
-            CONF.network.region or CONF.identity.region,
-            endpoint_type=CONF.network.endpoint_type,
-            build_interval=CONF.network.build_interval,
-            build_timeout=CONF.network.build_timeout,
             **cls.os_primary.default_params)
 
     @classmethod
@@ -116,7 +105,7 @@ class ExternalIdForNetworkMacroTest(base.BaseAdminNetworkTest):
             netpartition['id'])
         return netpartition
 
-    @testtools.skipUnless(Release('4.0R5') <= Release(Topology.nuage_release),
+    @testtools.skipUnless(Topology.from_nuage('4.0R5'),
                           'No upgrade testing on network macro')
     @nuage_test.header()
     def test_network_macro_matches_to_enterprise(self):

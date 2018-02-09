@@ -11,17 +11,18 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 import abc
 import json
 import six
 import urllib
 
-from tempest import config
 from tempest.lib.common import rest_client
 from tempest.lib import exceptions as lib_exc
 
+from nuage_tempest_plugin.lib.topology import Topology
 
-CONF = config.CONF
+CONF = Topology.get_conf()
 
 
 @six.add_metaclass(abc.ABCMeta)

@@ -13,13 +13,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo_log import log as logging
-
 from tempest.api.network import base
-from tempest import config
 from tempest.lib.common.utils import data_utils
 
-from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
@@ -29,8 +25,8 @@ from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from external_id import ExternalId
 import upgrade_external_id_with_cms_id as upgrade_script
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 class ExternalIdForL3domainTest(base.BaseAdminNetworkTest):
@@ -314,10 +310,7 @@ class ExternalIdForL3domainTest(base.BaseAdminNetworkTest):
     @classmethod
     def skip_checks(cls):
         super(ExternalIdForL3domainTest, cls).skip_checks()
-
-        external_id_release = Release('4.0R5')
-        current_release = Release(Topology.nuage_release)
-        cls.test_upgrade = external_id_release > current_release
+        cls.test_upgrade = not Topology.within_ext_id_release()
 
     @classmethod
     def setup_clients(cls):

@@ -1,19 +1,16 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
 
-from tempest import config
-
 from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
 
 from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
 
 from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
     import NetworkTestCaseMixin
 from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
     import VsdTestCaseMixin
-
-CONF = config.CONF
 
 VALID_MAC_ADDRESS = 'fa:fa:3e:e8:e8:01'
 VALID_MAC_ADDRESS_2A = 'fa:fa:3e:e8:e8:2a'
@@ -79,7 +76,7 @@ class VSDManagedFloatingIpTest(NetworkTestCaseMixin, VsdTestCaseMixin):
         # self._associate_fip_to_port(port, claimed_fip[0]['ID'])
 
         # Then I expect the claimed floating ip in the port show response
-        if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+        if not Topology.is_ml2:
             fip_present = self._check_fip_in_port_show(
                 port['id'], fip1['ID'])
             self.assertTrue(fip_present,
@@ -91,7 +88,7 @@ class VSDManagedFloatingIpTest(NetworkTestCaseMixin, VsdTestCaseMixin):
         self._disassociate_fip_from_port(port)
         # Then I no longer expect the claimed floating ip in the
         # port show response
-        if CONF.nuage_sut.nuage_plugin_mode != 'ml2':
+        if not Topology.is_ml2:
             fip_present = self._check_fip_in_port_show(
                 port['id'], fip1[0]['ID'])
             self.assertFalse(fip_present,

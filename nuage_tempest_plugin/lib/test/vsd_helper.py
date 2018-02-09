@@ -2,16 +2,14 @@
 # All Rights Reserved.
 
 import importlib
-from oslo_log import log as logging
 import re
 
-from tempest import config
 from tempest.lib.common.utils import data_utils
 
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+LOG = Topology.get_logger(__name__)
 
 
 def fetch_by_name(fetcher, name):
@@ -32,18 +30,18 @@ class VsdHelper(object):
     CONST_ETHER_TYPE_IPV4 = "0x0800"
     CONST_ETHER_TYPE_IPV6 = "0x86DD"
 
-    cms_id = CONF.nuage.nuage_cms_id
-    default_netpartition_name = CONF.nuage.nuage_default_netpartition
+    cms_id = Topology.cms_id
+    default_netpartition_name = Topology.def_netpartition
 
     def __init__(self, vsd_server=None, user='csproot', password='csproot',
                  enterprise='csp', version=None):
-        self.vsd = vsd_server or CONF.nuage.nuage_vsd_server
+        self.vsd = vsd_server or Topology.vsd_server
         self.uri = 'https://{}'.format(self.vsd)
         self.user = user
         self.password = password
         self.enterprise = enterprise
         self.vspk = importlib.import_module('vspk.' + str(
-            version or self.base_uri_to_version(CONF.nuage.nuage_base_uri)))
+            version or self.base_uri_to_version(Topology.base_uri)))
         self._session = None
         self.default_enterprise = None
 
@@ -531,10 +529,10 @@ class VsdHelper(object):
 
         domain = enterprise.domains.get_first(
             filter='externalID == "{}"'.format(
-                router_id + "@" + CONF.nuage.nuage_cms_id))
+                router_id + "@" + Topology.cms_id))
         vport = domain.vports.get_first(
             filter='externalID == "{}"'.format(
-                vport_id + "@" + CONF.nuage.nuage_cms_id))
+                vport_id + "@" + Topology.cms_id))
         if vport:
             vip_port = vport.virtual_ips.get_first()
             return vip_port

@@ -13,17 +13,14 @@
 #    under the License.
 #
 
-from oslo_log import log as logging
 import uuid
 
 from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
 
-from tempest import config
 from tempest.lib import exceptions as lib_exec
 from tempest.test import decorators
 
-from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
@@ -31,13 +28,11 @@ from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
 
 import base_nuage_gateway as base
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
-
-current_release = Release(Topology.nuage_release)
+LOG = Topology.get_logger(__name__)
 
 
 class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
+
     @classmethod
     def resource_setup(cls):
         super(NuageGatewayTestJSON, cls).resource_setup()
@@ -287,7 +282,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         vlan_ent_permission = self.nuage_vsd_client.get_vlan_permission(
             n_constants.VLAN, vlan['id'], n_constants.ENTERPRISE_PERMS)
         self.assertEqual(vlan_ent_permission[0]['permittedEntityName'],
-                         CONF.nuage.nuage_default_netpartition)
+                         Topology.def_netpartition)
 
         vlan_permission = self.nuage_vsd_client.get_vlan_permission(
             n_constants.VLAN, vlan['id'], n_constants.PERMIT_ACTION)
@@ -667,7 +662,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         self.assertEqual(default_pg[0]['name'],
                          'defaultPG-VRSG-BRIDGE-' + vport['subnet'])
 
-        if current_release >= Release("4.0R6"):
+        if Topology.within_ext_id_release():
             # must have external ID as subnet@ cms_id
             self.assertThat(default_pg[0],
                             ContainsDict(
@@ -688,7 +683,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
             n_constants.DOMAIN,
             l3domain[0]['ID'])
 
-        if current_release >= Release("4.0R5"):
+        if Topology.within_ext_id_release():
             # must have external ID as router_id @ cms_id
             self.assertThat(nuage_eacl_template[0],
                             ContainsDict({'externalID':
@@ -704,7 +699,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
                 n_constants.EGRESS_ACL_TEMPLATE,
                 nuage_eacl_template[0]['ID'])
 
-        if current_release >= Release("4.0R6"):
+        if Topology.within_ext_id_release():
             # must have external ID as router_id @ cms_id
             self.assertThat(nuage_eacl_entrytemplate[0],
                             ContainsDict({'externalID':
@@ -717,7 +712,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         vport_tp_pg_mapping = False
         for nuage_eacl_entry in nuage_eacl_entrytemplate:
             if nuage_eacl_entry['locationID'] == default_pg[0]['ID']:
-                if current_release >= Release("4.0R6"):
+                if Topology.within_ext_id_release():
                     # must have external ID as ???
                     self.assertThat(nuage_eacl_entry,
                                     ContainsDict({'externalID':
@@ -744,7 +739,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
             n_constants.DOMAIN,
             l3domain[0]['ID'])
 
-        if current_release >= Release("4.0R5"):
+        if Topology.within_ext_id_release():
             # must have external ID as router_id @ cms_id
             self.assertThat(nuage_iacl_template[0],
                             ContainsDict({'externalID':
@@ -760,7 +755,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
                 n_constants.INGRESS_ACL_TEMPLATE,
                 nuage_iacl_template[0]['ID'])
 
-        if current_release >= Release("4.0R6"):
+        if Topology.within_ext_id_release():
             # must have external ID as router_id @ cms_id
             self.assertThat(nuage_iacl_entrytemplate[0],
                             ContainsDict({'externalID':
@@ -773,7 +768,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         vport_tp_pg_mapping = False
         for nuage_iacl_entry in nuage_iacl_entrytemplate:
             if nuage_iacl_entry['locationID'] == default_pg[0]['ID']:
-                if current_release >= Release("4.0R6"):
+                if Topology.within_ext_id_release():
                     # must have external ID as ???
                     self.assertThat(nuage_iacl_entry,
                                     ContainsDict({'externalID':

@@ -1,9 +1,8 @@
 # Copyright 2017 NOKIA
 # All Rights Reserved.
+
 import testtools
 
-from oslo_log import log as logging
-from tempest import config
 from tempest.lib import exceptions
 from tempest import test
 
@@ -13,11 +12,11 @@ from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
     import ExternalId
 
-CONF = config.CONF
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
-    LOG = logging.getLogger(__name__)
 
     @classmethod
     def skip_checks(cls):
@@ -39,11 +38,7 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
             external_network_id=CONF.network.public_network_id)
         self.assertIsNotNone(router, "Unable to create router")
         # Possible invalid configurations for l3 subnet
-        configs = ['snat',
-                   'route',
-                   'off',
-                   'inherited',
-                   ]
+        configs = ['snat', 'route', 'off', 'inherited', ]
         for conf in configs:
             self._subnet_update_legacy(conf, router, network)
 
@@ -56,11 +51,7 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
         self.assertIsNotNone(network, "Unable to create network")
         # Possible configurations
         # nuage_underlay PATEnabled UnderlayEnabled
-        configs = ['snat',
-                   'route',
-                   'off',
-                   'inherited',
-                   ]
+        configs = ['snat', 'route', 'off', 'inherited', ]
         for conf in configs:
             self._subnet_create_check_exception(conf, network)
 
@@ -84,8 +75,7 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
                    ('route', 'DISABLED', 'ENABLED'),
                    ('inherited', 'INHERITED', 'INHERITED')]
         for conf in configs:
-            self._subnet_update_check_vsd(conf[0], conf[1],
-                                          conf[2],
+            self._subnet_update_check_vsd(conf[0], conf[1], conf[2],
                                           router, network)
 
     @test.attr(type='smoke')
@@ -97,11 +87,7 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
         self.assertIsNotNone(network, "Unable to create network")
 
         # Possible invalid configurations for l2 subnet
-        configs = ['snat',
-                   'route',
-                   'off',
-                   'inherited',
-                   ]
+        configs = ['snat', 'route', 'off', 'inherited', ]
         for conf in configs:
             self._subnet_update_check_exception(conf, network)
 
@@ -123,8 +109,7 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
                    (None, 'INHERITED', 'INHERITED'),
                    ('inherited', 'INHERITED', 'INHERITED')]
         for conf in configs:
-            self._subnet_name_update_check_no_change(conf[0], conf[1],
-                                                     conf[2],
+            self._subnet_name_update_check_no_change(conf[0], conf[1], conf[2],
                                                      router, network)
 
     @test.attr(type='smoke')
@@ -152,8 +137,7 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
                    ('snat', 'ENABLED', 'ENABLED', 'snat'),
                    ('off', 'DISABLED', 'DISABLED', 'off'),
                    ('route', 'DISABLED', 'ENABLED', 'route'),
-                   ('inherited', 'INHERITED', 'INHERITED', 'inherited'),
-                   ]
+                   ('inherited', 'INHERITED', 'INHERITED', 'inherited')]
         for conf in configs:
             self._subnet_no_op_update_check_no_change(conf[0], conf[1],
                                                       conf[2], conf[3],
@@ -176,13 +160,13 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
             self.assertIsNotNone(nuage_subnet,
                                  "Unable to retrieve L3 subnet from VSD")
             self.assertEqual(pat_enabled, nuage_subnet.pat_enabled,
-                             "PATEnabled excpected to be: {}, but was {}."
+                             "PATEnabled expected to be: {}, but was {}."
                              "for nuage_underlay={}"
                              .format(pat_enabled,
                                      nuage_subnet.pat_enabled,
                                      nuage_underlay))
             self.assertEqual(underlay_enabled, nuage_subnet.underlay_enabled,
-                             "UnderlayEnabled excpected to be: {}, but was {}."
+                             "UnderlayEnabled expected to be: {}, but was {}."
                              "For nuage_underlay={}"
                              .format(underlay_enabled,
                                      nuage_subnet.underlay_enabled,
@@ -190,7 +174,7 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
         finally:
             self.router_detach(router, subnet)
             self.delete_subnet(subnet=subnet)
-        self.LOG.debug("Verified for nuage_underlay={}".format(nuage_underlay))
+        LOG.debug("Verified for nuage_underlay={}".format(nuage_underlay))
 
     def _subnet_no_op_update_check_no_change(self, nuage_underlay,
                                              pat_enabled, underlay_enabled,
@@ -211,13 +195,13 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
             self.assertIsNotNone(nuage_subnet,
                                  "Unable to retrieve L3 subnet from VSD")
             self.assertEqual(pat_enabled, nuage_subnet.pat_enabled,
-                             "PATEnabled excpected to be: {}, but was {}."
+                             "PATEnabled expected to be: {}, but was {}."
                              "for nuage_underlay={}"
                              .format(pat_enabled,
                                      nuage_subnet.pat_enabled,
                                      no_op_nuage_underlay))
             self.assertEqual(underlay_enabled, nuage_subnet.underlay_enabled,
-                             "UnderlayEnabled excpected to be: {}, but was {}."
+                             "UnderlayEnabled expected to be: {}, but was {}."
                              "For nuage_underlay={}"
                              .format(underlay_enabled,
                                      nuage_subnet.underlay_enabled,
@@ -225,8 +209,8 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
         finally:
             self.router_detach(router, subnet)
             self.delete_subnet(subnet=subnet)
-        self.LOG.debug("Verified no-op for nuage_underlay={}"
-                       .format(nuage_underlay))
+        LOG.debug("Verified no-op for nuage_underlay={}"
+                  .format(nuage_underlay))
 
     def _subnet_create_check_exception(self, nuage_underlay, network):
         self.assertRaises(
@@ -245,8 +229,8 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
                               nuage_underlay=nuage_underlay)
         finally:
             self.delete_subnet(subnet=subnet)
-        self.LOG.debug("Verified failure for nuage_underlay={}"
-                       .format(nuage_underlay))
+        LOG.debug("Verified failure for nuage_underlay={}"
+                  .format(nuage_underlay))
 
     def _subnet_update_legacy(self, nuage_underlay, router, network):
         subnet = self.create_subnet(network, cleanup=False)
@@ -259,8 +243,8 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
         finally:
             self.router_detach(router, subnet)
             self.delete_subnet(subnet=subnet)
-        self.LOG.debug("Verified failure for nuage_underlay={}"
-                       .format(nuage_underlay))
+        LOG.debug("Verified failure for nuage_underlay={}"
+                  .format(nuage_underlay))
 
     def _subnet_update_check_vsd(self, nuage_underlay,
                                  pat_enabled, underlay_enabled,
@@ -277,13 +261,13 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
             self.assertIsNotNone(nuage_subnet,
                                  "Unable to retrieve L3 subnet from VSD")
             self.assertEqual(pat_enabled, nuage_subnet.pat_enabled,
-                             "PATEnabled excpected to be: {}, but was {}."
+                             "PATEnabled expected to be: {}, but was {}."
                              "for nuage_underlay={}"
                              .format(pat_enabled,
                                      nuage_subnet.pat_enabled,
                                      nuage_underlay))
             self.assertEqual(underlay_enabled, nuage_subnet.underlay_enabled,
-                             "UnderlayEnabled excpected to be: {}, but was {}."
+                             "UnderlayEnabled expected to be: {}, but was {}."
                              "For nuage_underlay={}"
                              .format(underlay_enabled,
                                      nuage_subnet.underlay_enabled,
@@ -291,5 +275,4 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
         finally:
             self.router_detach(router, subnet)
             self.delete_subnet(subnet=subnet)
-        self.LOG.debug("Verified for nuage_underlay={}"
-                       .format(nuage_underlay))
+        LOG.debug("Verified for nuage_underlay={}".format(nuage_underlay))

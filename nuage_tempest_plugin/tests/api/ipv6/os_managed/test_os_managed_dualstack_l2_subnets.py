@@ -5,7 +5,6 @@ from netaddr import IPAddress
 from netaddr import IPNetwork
 from netaddr import IPRange
 
-from tempest import config
 from tempest.lib import decorators
 from tempest.lib import exceptions as tempest_exceptions
 
@@ -20,8 +19,6 @@ from nuage_tempest_plugin.lib.utils import constants as nuage_constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
     import ExternalId
-
-CONF = config.CONF
 
 MSG_IP_ADDRESS_INVALID_OR_RESERVED = "IP Address %s is not valid " \
                                      "or cannot be in reserved address space"

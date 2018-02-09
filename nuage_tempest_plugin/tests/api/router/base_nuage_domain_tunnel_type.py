@@ -1,13 +1,13 @@
 # Copyright 2015 Alcatel-Lucent
 # All Rights Reserved.
 
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest import test
 
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.services import nuage_client
 
-CONF = config.CONF
+CONF = Topology.get_conf()
 
 
 class NuageDomainTunnelTypeBase(test.BaseTestCase):

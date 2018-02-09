@@ -1,28 +1,26 @@
 # Copyright 2017 NOKIA
 # All Rights Reserved.
+
 import testtools
 
-from oslo_log import log as logging
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest import test
 
-from nuage_tempest_plugin.lib import features
-from nuage_tempest_plugin.lib.remote_cli.remote_cli_base_testcase \
-    import RemoteCliBaseTestCase
-from nuage_tempest_plugin.lib.remote_cli.remote_cli_base_testcase import Role
+from nuage_tempest_plugin.lib.cli.client_testcase \
+    import CLIClientTestCase
+from nuage_tempest_plugin.lib.cli.client_testcase import Role
+from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 
-CONF = config.CONF
+CONF = Topology.get_conf()
 
 
-class TestNuageUnderlayCli(RemoteCliBaseTestCase):
+class TestNuageUnderlayCli(CLIClientTestCase):
 
     """Nuage Underlay tests using Neutron CLI client.
 
     """
-    LOG = logging.getLogger(__name__)
 
     @classmethod
     def setup_clients(cls):
@@ -30,8 +28,8 @@ class TestNuageUnderlayCli(RemoteCliBaseTestCase):
 
     @classmethod
     def skip_checks(cls):
-        super(RemoteCliBaseTestCase, cls).skip_checks()
-        if not features.NUAGE_FEATURES.route_to_underlay:
+        super(CLIClientTestCase, cls).skip_checks()
+        if not NUAGE_FEATURES.route_to_underlay:
             msg = "Route to underlay not enabled"
             raise cls.skipException(msg)
 

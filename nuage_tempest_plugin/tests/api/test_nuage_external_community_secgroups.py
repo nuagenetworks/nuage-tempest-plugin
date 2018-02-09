@@ -13,13 +13,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo_log import log as logging
-
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
-from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as constants
 from nuage_tempest_plugin.services import nuage_client
@@ -27,24 +23,17 @@ from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 from nuage_tempest_plugin.tests.api import test_security_groups_nuage
 
-CONF = config.CONF
-external_id_release = Release(constants.EXTERNALID_RELEASE)
-current_release = Release(Topology.nuage_release)
-LOG = logging.getLogger(__name__)
+LOG = Topology.get_logger(__name__)
 
 
 class NuageExtSecGroup(test_security_groups_nuage.SecGroupTestNuageBase):
+
     @classmethod
     def setup_clients(cls):
         super(NuageExtSecGroup, cls).setup_clients()
         cls.nuageclient = nuage_client.NuageRestClient()
         cls.client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
-            CONF.network.catalog_type,
-            CONF.network.region or CONF.identity.region,
-            endpoint_type=CONF.network.endpoint_type,
-            build_interval=CONF.network.build_interval,
-            build_timeout=CONF.network.build_timeout,
             **cls.os_primary.default_params)
 
     @classmethod
@@ -157,7 +146,7 @@ class NuageExtSecGroup(test_security_groups_nuage.SecGroupTestNuageBase):
         self._verify_external_secgroup_properties(
             show_resp['nuage_external_security_group'],
             show_vsd_resp[0])
-        if external_id_release <= current_release:
+        if Topology.within_ext_id_release():
             self.assertEqual(self.nuage_vsd_client.get_vsd_external_id(
                 esg_router['id']), show_vsd_resp[0]['externalID'])
         # list_external_security_group
@@ -213,13 +202,13 @@ class NuageExtSecGroup(test_security_groups_nuage.SecGroupTestNuageBase):
         self._verify_external_secgroup_rule_properties(
             list_resp['nuage_external_security_group_rules'][0],
             list_vsd_resp[0], sec_group)
-        if external_id_release <= current_release:
+        if Topology.within_ext_id_release():
             self.assertEqual(self.nuage_vsd_client.get_vsd_external_id(
                 esg_router['id']), list_vsd_resp[0]['externalID'])
         self._verify_external_secgroup_rule_properties(
             list_resp['nuage_external_security_group_rules'][1],
             list_vsd_resp[1], sec_group)
-        if external_id_release <= current_release:
+        if Topology.within_ext_id_release():
             self.assertEqual(self.nuage_vsd_client.get_vsd_external_id(
                 esg_router['id']), list_vsd_resp[1]['externalID'])
 
@@ -246,7 +235,7 @@ class NuageExtSecGroup(test_security_groups_nuage.SecGroupTestNuageBase):
         self._verify_external_secgroup_properties(
             show_resp['nuage_external_security_group'],
             show_vsd_resp[0])
-        if external_id_release <= current_release:
+        if Topology.within_ext_id_release():
             self.assertEqual(self.nuage_vsd_client.get_vsd_external_id(
                 esg_subnet['id']), show_vsd_resp[0]['externalID'])
         # list_external_security_group
@@ -265,7 +254,7 @@ class NuageExtSecGroup(test_security_groups_nuage.SecGroupTestNuageBase):
         body = self.routers_client.create_router(name=router_name)
         esg_router = body['router']
         self.addCleanup(self.routers_client.delete_router, esg_router['id'])
-        body, name = self._create_security_group()
+        self._create_security_group()
         name = data_utils.rand_name('esg-')
         # Missing pararmeter: external_communtiy_tag in input
         kwargs = {'name': name,

@@ -17,11 +17,12 @@ import json
 import six
 import urllib
 
-from tempest import config
 from tempest.lib.common import rest_client
 from tempest.lib import exceptions as lib_exc
 
-CONF = config.CONF
+from nuage_tempest_plugin.lib.topology import Topology
+
+CONF = Topology.get_conf()
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -164,21 +165,21 @@ class BGPVPNRouterAssociationClient(BaseNeutronResourceClient):
             auth_provider, 'router_association', parent='bgpvpns',
             path_prefix='bgpvpn')
 
-    def create_router_assocation(self, bgpvpn_id, **kwargs):
+    def create_router_association(self, bgpvpn_id, **kwargs):
         return super(BGPVPNRouterAssociationClient, self).create(
             parent=bgpvpn_id, **kwargs)
 
-    def show_router_assocation(self, id, bgpvpn_id, fields=None):
+    def show_router_association(self, id, bgpvpn_id, fields=None):
         return super(BGPVPNRouterAssociationClient, self).show(
             id, parent=bgpvpn_id, fields=fields)
 
-    def list_router_assocations(self, bgpvpn_id, **filters):
+    def list_router_associations(self, bgpvpn_id, **filters):
         return super(BGPVPNRouterAssociationClient, self).list(
             parent=bgpvpn_id, **filters)
 
-    def update_router_assocation(self, id, bgpvpn_id, **kwargs):
+    def update_router_association(self, id, bgpvpn_id, **kwargs):
         return super(BGPVPNRouterAssociationClient, self).update(
             id, parent=bgpvpn_id, **kwargs)
 
-    def delete_router_assocation(self, id, bgpvpn_id):
+    def delete_router_association(self, id, bgpvpn_id):
         super(BGPVPNRouterAssociationClient, self).delete(id, parent=bgpvpn_id)

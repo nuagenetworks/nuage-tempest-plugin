@@ -4,7 +4,6 @@
 from netaddr import IPAddress
 from netaddr import IPNetwork
 
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions as tempest_exceptions
@@ -12,17 +11,15 @@ from tempest.lib import exceptions as tempest_exceptions
 from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
 
-from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.test import tags
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import exceptions as nuage_exceptions
 
 from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
     import NetworkTestCaseMixin
 from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
     import VsdTestCaseMixin
-
-CONF = config.CONF
 
 MSG_INVALID_GATEWAY = "Invalid IPv6 network gateway"
 MSG_INVALID_IPV6_ADDRESS = "Invalid network IPv6 address"
@@ -78,7 +75,7 @@ class VSDManagedDualStackSubnetL3Test(NetworkTestCaseMixin, VsdTestCaseMixin):
             enable_dhcp=True,
             mask_bits=IPNetwork(subnet_cidr).prefixlen,
             nuagenet=vsd_l3domain_subnet['ID'],
-            net_partition=CONF.nuage.nuage_default_netpartition)
+            net_partition=Topology.def_netpartition)
         self.assertEqual(ipv4_subnet['cidr'], str(subnet_cidr))
 
         # create Openstack IPv6 subnet on Openstack based on VSD l3dom subnet
@@ -90,7 +87,7 @@ class VSDManagedDualStackSubnetL3Test(NetworkTestCaseMixin, VsdTestCaseMixin):
             mask_bits=IPNetwork(vsd_l3domain_subnet['IPv6Address']).prefixlen,
             enable_dhcp=False,
             nuagenet=vsd_l3domain_subnet['ID'],
-            net_partition=CONF.nuage.nuage_default_netpartition)
+            net_partition=Topology.def_netpartition)
 
         self.assertEqual(
             ipv6_subnet['cidr'], vsd_l3domain_subnet['IPv6Address'])
@@ -222,7 +219,7 @@ class VSDManagedDualStackSubnetL3Test(NetworkTestCaseMixin, VsdTestCaseMixin):
 
         # shall not create Openstack IPv6 subnet on Openstack based on
         # VSD l3domain subnet with type IPV4
-        if Release(CONF.nuage_sut.openstack_version) >= Release('Newton'):
+        if Topology.from_openstack('Newton'):
             expected_exception = tempest_exceptions.BadRequest
             expected_message = "Subnet with ip_version 6 can't be linked to " \
                                "vsd subnet with IPType IPV4"
@@ -241,7 +238,7 @@ class VSDManagedDualStackSubnetL3Test(NetworkTestCaseMixin, VsdTestCaseMixin):
             mask_bits=subnet_ipv6_cidr.prefixlen,
             enable_dhcp=False,
             nuagenet=vsd_l3domain_subnet['ID'],
-            net_partition=CONF.nuage.nuage_default_netpartition)
+            net_partition=Topology.def_netpartition)
 
     @decorators.attr(type='smoke')
     def test_create_ipv4_subnet_without_dhcp_in_vsd_managed_l3domain(self):
@@ -274,7 +271,7 @@ class VSDManagedDualStackSubnetL3Test(NetworkTestCaseMixin, VsdTestCaseMixin):
         network = self.create_network(network_name=net_name)
 
         # create Openstack IPv4 subnet on Openstack based on VSD l3dom subnet
-        if Release(CONF.nuage_sut.openstack_version) >= Release('Newton'):
+        if Topology.from_openstack('Newton'):
             expected_exception = tempest_exceptions.BadRequest
             expected_message = "enable_dhcp in subnet must be True"
         else:
@@ -291,7 +288,7 @@ class VSDManagedDualStackSubnetL3Test(NetworkTestCaseMixin, VsdTestCaseMixin):
             mask_bits=subnet_cidr.prefixlen,
             enable_dhcp=False,
             nuagenet=vsd_l3domain_subnet['ID'],
-            net_partition=CONF.nuage.nuage_default_netpartition)
+            net_partition=Topology.def_netpartition)
 
     # see VSD-18779 (CLOSED) - VSD should not allow creation of a l3 subnet
     # with IPType=IPV6
