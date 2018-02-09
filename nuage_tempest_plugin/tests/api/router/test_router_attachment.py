@@ -2,6 +2,7 @@
 # All Rights Reserved.
 
 from tempest.lib import decorators
+from tempest.lib import exceptions as tempest_exceptions
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 
@@ -49,3 +50,19 @@ class RouterAttachmentTest(NuageBaseTest):
         # TODO(KRIS) - adding retry_on_router_delete fixes the above test
         router = self.create_router(retry_on_router_delete=True)
         self.router_attach(router, subnet)
+
+    def test_router_attachment_with_ports(self):
+        network = self.create_network()
+        subnet = self.create_subnet(network)
+        router1 = self.create_router()
+        router2 = self.create_router()
+        port1 = self.create_port(network, cleanup=False)
+        port2 = self.create_port(network)
+        self.router_attach_with_port_id(router1, port1)
+        msg = 'Cannot attach Subnet %s to multiple routers. ' \
+              'Router-IF add failed' % subnet['id']
+        self.assertRaisesRegex(tempest_exceptions.BadRequest,
+                               msg,
+                               self.router_attach_with_port_id,
+                               router2,
+                               port2)

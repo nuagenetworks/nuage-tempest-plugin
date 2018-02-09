@@ -820,6 +820,33 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         # unmark network as l3
         subnet['parent_network']['is_l3'] = False
 
+    def create_router_interface_with_port_id(self, router_id, port_id,
+                                             client=None, cleanup=True):
+        """Wrapper utility that creates a router interface."""
+        if not client:
+            client = self.manager
+        interface = client.routers_client.add_router_interface(
+            router_id, port_id=port_id)
+        if cleanup:
+            self.addCleanup(self.remove_router_interface_with_port_id,
+                            router_id, port_id, client)
+        return interface
+
+    def remove_router_interface_with_port_id(self, router_id,
+                                             port_id, client=None):
+        """Wrapper utility that removes a router interface."""
+        if not client:
+            client = self.manager
+        client.routers_client.remove_router_interface(
+            router_id, port_id=port_id)
+
+    def router_attach_with_port_id(self, router, port, cleanup=True):
+        self.create_router_interface_with_port_id(router['id'], port['id'],
+                                                  cleanup=cleanup)
+
+    def router_detach_with_port_id(self, router, port):
+        self.remove_router_interface_with_port_id(router['id'], port['id'])
+
     def _create_keypair(self, client=None):
         if not client:
             client = self.manager.keypairs_client
