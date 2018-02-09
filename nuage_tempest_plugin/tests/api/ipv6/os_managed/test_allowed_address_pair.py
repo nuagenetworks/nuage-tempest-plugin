@@ -15,25 +15,18 @@
 
 
 from netaddr import IPAddress
+from oslo_log import log as logging
 
-from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.utils import constants
-from nuage_tempest_plugin.services.nuage_client import NuageRestClient
-from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
-    import NetworkTestCaseMixin
+from nuage_tempest_plugin.tests.api.ipv6.test_allowed_address_pair \
+    import BaseAllowedAddressPair
 
 from tempest.api.network import test_allowed_address_pair as base_tempest
-from tempest.common import utils
-
 from tempest import config
-
 from tempest.lib import decorators
 from tempest.lib import exceptions as tempest_exceptions
 
-from testtools.matchers import ContainsDict
-from testtools.matchers import Equals
-
-
+LOG = logging.getLogger(__name__)
 CONF = config.CONF
 VALID_MAC_ADDRESS = 'fa:fa:3e:e8:e8:01'
 MSG_INVALID_IP_ADDRESS_FOR_SUBNET = "IP address %s is not a valid IP for " \
@@ -59,9 +52,8 @@ class AllowedAddressPairIpV6NuageTest(
         cls.mac_address = port['mac_address']
 
 
-class AllowedAddressPairIpV6OSManagedTest(NuageBaseTest, NetworkTestCaseMixin):
+class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
     _ip_version = 6
-
     """Tests the Neutron Allowed Address Pair API extension
 
     The following API operations are tested with this extension:
@@ -82,94 +74,14 @@ class AllowedAddressPairIpV6OSManagedTest(NuageBaseTest, NetworkTestCaseMixin):
     @classmethod
     def setup_clients(cls):
         super(AllowedAddressPairIpV6OSManagedTest, cls).setup_clients()
-        cls.nuage_vsd_client = NuageRestClient()
 
     @classmethod
     def skip_checks(cls):
         super(AllowedAddressPairIpV6OSManagedTest, cls).skip_checks()
-        if not utils.is_extension_enabled('allowed-address-pairs', 'network'):
-            msg = "Allowed Address Pairs extension not enabled."
-            raise cls.skipException(msg)
 
     @classmethod
     def resource_setup(cls):
         super(AllowedAddressPairIpV6OSManagedTest, cls).resource_setup()
-
-    def _verify_port_by_id(self, port_id):
-        body = self.osc_list_ports()
-        ports = body['ports']
-        port = [p for p in ports if p['id'] == port_id]
-        msg = 'Created port not found in list of ports returned by Neutron'
-        self.assertTrue(port, msg)
-
-    def _verify_l2_vport_by_id(self, port, expected_behaviour,
-                               subnet4=None, subnet6=None):
-        subnet = subnet6 if subnet4 is None else subnet4
-        subnet_ext_id = self.nuage_vsd_client.get_vsd_external_id(subnet['id'])
-        port_ext_id = self.nuage_vsd_client.get_vsd_external_id(port['id'])
-
-        vsd_l2_domain = self.nuage_vsd_client.get_l2domain(
-            filters='externalID',
-            filter_value=subnet_ext_id)
-
-        nuage_vports = self.nuage_vsd_client.get_vport(
-            constants.L2_DOMAIN, vsd_l2_domain[0]['ID'],
-            filters='externalID', filter_value=port_ext_id)
-        self.assertEqual(
-            len(nuage_vports), 1,
-            'Must find one VPort matching port: %s' % port['name'])
-        nuage_vport = nuage_vports[0]
-        self.assertThat(nuage_vport, ContainsDict(
-            {'addressSpoofing': Equals(expected_behaviour)}))
-
-    def _verify_l3_vport_by_id(self, router, port, expected_behaviour,
-                               subnet4=None, subnet6=None):
-        subnet = subnet6 if subnet4 is None else subnet4
-        nuage_domain = self.nuage_vsd_client.get_l3domain(
-            filters='externalID',
-            filter_value=self.nuage_vsd_client.get_vsd_external_id(
-                router['id']))
-        subnet_ext_id = (
-            self.nuage_vsd_client.get_vsd_external_id(
-                subnet['id'])
-        )
-
-        vsd_subnet = (
-            self.nuage_vsd_client.get_domain_subnet(
-                'domains', nuage_domain[0]['ID'], filters='externalID',
-                filter_value=subnet_ext_id)
-        )
-        port_ext_id = self.nuage_vsd_client.get_vsd_external_id(port['id'])
-        nuage_vports = self.nuage_vsd_client.get_vport(
-            constants.SUBNETWORK,
-            vsd_subnet[0]['ID'],
-            filters='externalID',
-            filter_value=port_ext_id)
-        self.assertEqual(
-            len(nuage_vports), 1,
-            'Must find one VPort matching port: %s' % port['name'])
-        nuage_vport = nuage_vports[0]
-        self.assertThat(nuage_vport, ContainsDict(
-            {'addressSpoofing': Equals(expected_behaviour)}))
-        self._verify_vip(nuage_vport, port)
-
-    def _verify_vip(self, nuage_vport, port):
-        for aap in port['allowed_address_pairs']:
-            ip_address = aap['ip_address']
-            nuage_vip = self.nuage_vsd_client.get_virtual_ip(
-                constants.VPORT,
-                nuage_vport['ID'],
-                filters='virtualIP',
-                filter_value=str(ip_address))
-            self._verify_port_allowed_address_fields(
-                aap, nuage_vip[0]['virtualIP'], nuage_vip[0]['MAC'])
-
-    def _verify_port_allowed_address_fields(self, aap,
-                                            addrpair_ip, addrpair_mac):
-        ip_address = aap['ip_address']
-        mac_address = aap['mac_address']
-        self.assertEqual(ip_address, addrpair_ip)
-        self.assertEqual(mac_address, addrpair_mac)
 
     @decorators.attr(type='smoke')
     def test_create_port_with_aap_ipv6_moving_from_l2_to_l3_validation(self):
@@ -220,15 +132,13 @@ class AllowedAddressPairIpV6OSManagedTest(NuageBaseTest, NetworkTestCaseMixin):
     @decorators.attr(type='smoke')
     def test_create_port_with_aap_ipv4_moving_from_l2_to_l3_validation(self):
         network = self.create_network()
-        # Create port with allowed address pair attribute
         subnet4 = self.create_subnet(
             network, ip_version=4, enable_dhcp=True)
-
         subnet6 = self.create_subnet(
             network, ip_version=6, enable_dhcp=False)
         router = self.create_router()
-        self.assertIsNotNone(router)
-        self.router_attach(router, subnet4)
+
+        self.create_router_interface(router['id'], subnet4['id'])
 
         port_args = {'fixed_ips': [{'subnet_id': subnet4['id'],
                      'ip_address': str(IPAddress(self.cidr4.first) + 10)}],
@@ -247,13 +157,9 @@ class AllowedAddressPairIpV6OSManagedTest(NuageBaseTest, NetworkTestCaseMixin):
 
     @decorators.attr(type='smoke')
     def test_create_port_with_invalid_address_formats_neg_l2_and_l3(self):
-        # Provision OpenStack network
         network = self.create_network()
-        # When I create an IPv4 subnet
         subnet4 = self.create_subnet(
             network, ip_version=4, enable_dhcp=True)
-        self.assertIsNotNone(subnet4)
-        # When I add an IPv6 subnet
         subnet6 = self.create_subnet(
             network, ip_version=6, enable_dhcp=False)
 
@@ -310,7 +216,6 @@ class AllowedAddressPairIpV6OSManagedTest(NuageBaseTest, NetworkTestCaseMixin):
     def test_fip2ipv6vip(self):
         # Base resources
         network = self.create_network()
-        # Create port with allowed address pair attribute
         subnet4 = self.create_subnet(
             network, ip_version=4, enable_dhcp=True)
         subnet6 = self.create_subnet(
@@ -318,17 +223,22 @@ class AllowedAddressPairIpV6OSManagedTest(NuageBaseTest, NetworkTestCaseMixin):
 
         router = self.create_router(
             admin_state_up=True,
-            external_network_id=CONF.network.public_network_id,
-            cleanup=True)
+            external_network_id=CONF.network.public_network_id)
         self.assertIsNotNone(router, "Unable to create router")
         self.create_router_interface(router_id=router["id"],
                                      subnet_id=subnet4["id"])
 
         # Create VIP_port
-        fixed_ips = [{'subnet_id': subnet6['id'],
-                      'ip_address': str(IPAddress(self.cidr6.first) + 11)}]
-        vip_port = self.create_port(network=network, device_owner="nuage:vip",
-                                    fixed_ips=fixed_ips)
+        port_args = {
+            'allowed_address_pairs': [
+                {'ip_address': str(IPAddress(self.cidr4.first) + 7)},
+                {'ip_address': str(IPAddress(self.cidr6.first) + 7)}
+            ],
+            'fixed_ips': [
+                {'subnet_id': subnet6['id'],
+                 'ip_address': str(IPAddress(self.cidr6.first) + 11)}],
+            'device_owner': "nuage:vip"}
+        vip_port = self.create_port(network=network, **port_args)
         self.assertIsNotNone(vip_port, "Unable to create vip port")
 
         # Create floating ip and attach to VIP_PORT
@@ -341,3 +251,58 @@ class AllowedAddressPairIpV6OSManagedTest(NuageBaseTest, NetworkTestCaseMixin):
                                self.update_floatingip,
                                floatingip=floating_ip,
                                port_id=vip_port['id'])
+
+    @decorators.attr(type='smoke')
+    def test_provision_ports_without_address_pairs_in_l2_subnet_unmanaged(
+            self):
+        network = self.create_network()
+        subnet4 = self.create_subnet(
+            network, ip_version=4, enable_dhcp=True)
+        subnet6 = self.create_subnet(
+            network, ip_version=6, enable_dhcp=False)
+
+        subnet_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+            subnet4['id'])
+
+        vsd_l2_domain = self.nuage_vsd_client.get_l2domain(
+            filters='externalID',
+            filter_value=subnet_ext_id)
+        for scenario, port_config in self.port_configs.iteritems():
+            LOG.info("TESTCASE scenario {}".format(scenario))
+            self._check_crud_port(scenario, network, subnet4, subnet6,
+                                  vsd_l2_domain[0], constants.L2_DOMAIN)
+
+    @decorators.attr(type='smoke')
+    def test_provision_ports_with_address_pairs_in_l3_subnet(self):
+        network = self.create_network()
+        subnet4 = self.create_subnet(
+            network, ip_version=4, enable_dhcp=True)
+        subnet6 = self.create_subnet(
+            network, ip_version=6, enable_dhcp=False)
+        router = self.create_router()
+        self.create_router_interface(router['id'], subnet4['id'])
+        router_ext_id = (
+            self.nuage_vsd_client.get_vsd_external_id(
+                router['id'])
+        )
+
+        domain = (
+            self.nuage_vsd_client.get_l3domain(
+                filters='externalID', filter_value=router_ext_id)
+        )
+
+        subnet_ext_id = (
+            self.nuage_vsd_client.get_vsd_external_id(
+                subnet4['id'])
+        )
+
+        vsd_subnet = (
+            self.nuage_vsd_client.get_domain_subnet(
+                'domains', domain[0]['ID'], filters='externalID',
+                filter_value=subnet_ext_id)
+        )
+
+        for scenario, port_config in self.port_configs.iteritems():
+            LOG.info("TESTCASE scenario {}".format(scenario))
+            self._check_crud_port(scenario, network, subnet4, subnet6,
+                                  vsd_subnet[0], constants.SUBNETWORK)
