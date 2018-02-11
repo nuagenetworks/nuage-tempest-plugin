@@ -107,7 +107,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
     @classmethod
     def delete_router(cls, router):
         # TODO(TEAM: FOLLOW UP ON THIS) - VSD-21337
-        for attempt in (1, NBR_RETRIES_ON_ROUTER_DELETE):
+        for attempt in range(1, NBR_RETRIES_ON_ROUTER_DELETE):
             try:
                 super(NuageRoutersTest, cls).delete_router(router)
                 return
@@ -656,7 +656,7 @@ class NuageRoutersAdminTest(base.BaseAdminNetworkTest):
     @classmethod
     def delete_router(cls, router):
         # TODO(TEAM: FOLLOW UP ON THIS) - VSD-21337
-        for attempt in (1, NBR_RETRIES_ON_ROUTER_DELETE):
+        for attempt in range(1, NBR_RETRIES_ON_ROUTER_DELETE):
             try:
                 super(NuageRoutersAdminTest, cls).delete_router(router)
                 return

@@ -489,7 +489,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         if not client:
             client = self.manager
         if retry_on_router_delete:
-            for attempt in (1, NBR_RETRIES_ON_ROUTER_DELETE):
+            for attempt in range(1, NBR_RETRIES_ON_ROUTER_DELETE):
                 try:
                     client.routers_client.delete_router(router['id'])
                     return
