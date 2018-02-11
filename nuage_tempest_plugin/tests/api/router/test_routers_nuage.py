@@ -706,7 +706,7 @@ class NuageRoutersAdminTest(base.BaseAdminNetworkTest):
     @utils.requires_ext(extension='ext-gw-mode', service='network')
     @testtools.skipIf(Topology.new_route_to_underlay_model_enabled(),
                       'Skipping test as new route-to-UL model is enabled')
-    @testtools.skipIf(NUAGE_FEATURES.current_release >= Release('5.2.2'),
+    @testtools.skipIf(NUAGE_FEATURES.current_release >= Release('5.2'),
                       'Skipping test as relying on OS-911 bug')
     @decorators.attr(type='smoke')
     def test_create_router_with_default_snat_value(self):

@@ -185,7 +185,7 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
         else:
             # OPENSTACK-981: mismatch between OS and VSD; OK for PLM in dev ?
             # This is an Schwarzenegger solution: I'll be back
-            if NUAGE_FEATURES.current_release >= Release('5.2.2'):
+            if NUAGE_FEATURES.current_release >= Release('5.2'):
                 pat_value = False
                 expected_vsd_pat = constants.NUAGE_PAT_VSD_DISABLED
             else:
@@ -577,7 +577,7 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
             vsd_flag = constants.NUAGE_PAT_VSD_ENABLED
         else:
             # OPENSTACK-981: mismatch between OS and VSD
-            if NUAGE_FEATURES.current_release >= Release('5.2.2'):
+            if NUAGE_FEATURES.current_release >= Release('5.2'):
                 compare_snat_str = '"enable_snat": false'
                 vsd_flag = constants.NUAGE_PAT_VSD_DISABLED
             else:
@@ -847,7 +847,7 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
                             expected_vsd_pat = constants.NUAGE_PAT_VSD_ENABLED
                         else:
                             if NUAGE_FEATURES.current_release >= Release(
-                                    '5.2.2'):
+                                    '5.2'):
                                 compare_snat_str = '"enable_snat": false'
                                 expected_vsd_pat = (
                                     constants.NUAGE_PAT_VSD_DISABLED)

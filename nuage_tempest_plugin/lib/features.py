@@ -53,9 +53,9 @@ class NuageFeatures(object):
                 self._from('5.1') and self.ipv6_enabled)
             self.project_name_in_user_group_description = self._from('5.1')
             self.vsd_shared_infrastructure = True
-            self.stateless_securitygroups = self._from('5.2.2')
-            self.multi_linked_vsdmgd_subnets = self._from('5.2.2')
-            self.route_to_underlay = self.current_release >= Release('5.2.2')
+            self.stateless_securitygroups = self._from('5.2')
+            self.multi_linked_vsdmgd_subnets = self._from('5.2')
+            self.route_to_underlay = self.current_release >= Release('5.2')
 
     def _from(self, release):
         return self.current_release >= Release(release)
