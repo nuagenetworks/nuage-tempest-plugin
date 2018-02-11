@@ -335,16 +335,18 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
     def create_l3_vsd_managed_subnet(self, network, vsd_subnet,
                                      dhcp_managed=True, ip_version=4,
-                                     no_gateway=False,
+                                     gateway=None,
                                      **subnet_kwargs):
         if not isinstance(vsd_subnet, self.vsd.vspk.NUSubnet):
             self.fail("Must have an VSD L3 subnet")
 
         if ip_version == 4:
             cidr = IPNetwork(vsd_subnet.address + "/" + vsd_subnet.netmask)
-            gateway = None if no_gateway else vsd_subnet.gateway
+            gateway = (None if gateway and gateway == ''
+                       else gateway if gateway else vsd_subnet.gateway)
         elif ip_version == 6:
-            gateway = None if no_gateway else vsd_subnet.ipv6_gateway
+            gateway = (None if gateway and gateway == ''
+                       else gateway if gateway else vsd_subnet.ipv6_gateway)
             cidr = IPNetwork(vsd_subnet.ipv6_address)
         else:
             self.fail("IP version {} is not supported".format(ip_version))

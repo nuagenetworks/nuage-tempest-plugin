@@ -98,9 +98,11 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
             self.assert_ping6(server1, server2, network, should_pass=False)
 
     def icmp_connectivity_l3_vsd_managed(
-            self, cidr4, cidr6=None, no_gateway=False, pool4=None, pool6=None,
+            self, cidr4, vsd_gateway4=None, gateway4=None,
+            cidr6=None, vsd_gateway6=None, gateway6=None,
+            pool4=None, pool6=None,
             vsd_domain=None, vsd_subnet=None,
-            skip_server2_and_ping_tests=False,
+            skip_server1=False, skip_server2_and_ping_tests=False,
             server2_pre_set_up=None, incl_negative_ping_test=False):
 
         if not vsd_domain:
@@ -119,15 +121,21 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
                     zone=vsd_zone,
                     ip_type="DUALSTACK",
                     cidr4=cidr4,
-                    gateway4=str(IPAddress(cidr4) + 1),
+                    gateway4=(vsd_gateway4 if vsd_gateway4
+                              else gateway4 if gateway4
+                              else str(IPAddress(cidr4) + 1)),
                     cidr6=cidr6,
-                    gateway6=str(IPAddress(cidr6) + 1))
+                    gateway6=(vsd_gateway6 if vsd_gateway6
+                              else gateway6 if gateway6
+                              else str(IPAddress(cidr6) + 1)))
             else:
                 vsd_subnet = self.vsd.create_subnet(
                     zone=vsd_zone,
                     ip_type="IPV4",
                     cidr4=cidr4,
-                    gateway4=str(IPAddress(cidr4) + 1))
+                    gateway4=(vsd_gateway4 if vsd_gateway4
+                              else gateway4 if gateway4
+                              else str(IPAddress(cidr4) + 1)))
             self.addCleanup(vsd_subnet.delete)
 
             self.vsd.define_any_to_any_acl(vsd_domain,
@@ -138,13 +146,19 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
         network = self.create_network()
 
         # v4
-        if pool4:
-            kwargs = {'allocation_pools': [pool4]}
-        else:
-            kwargs = {}
-        ipv4_subnet = self.create_l3_vsd_managed_subnet(
-            network, vsd_subnet, no_gateway=no_gateway, **kwargs)
-        self.assertIsNotNone(ipv4_subnet)
+        if cidr4:  # which currently would be always
+            if pool4:
+                kwargs = {'allocation_pools': [pool4]}
+            else:
+                kwargs = {}
+            ipv4_subnet = self.create_l3_vsd_managed_subnet(
+                network, vsd_subnet, gateway=gateway4, **kwargs)
+            self.assertIsNotNone(ipv4_subnet)
+            self.assertEqual(str(cidr4), ipv4_subnet['cidr'])
+            if pool6:
+                subnet_pool4 = ipv4_subnet['allocation_pools']
+                self.assertEqual(1, len(subnet_pool4))
+                self.assertEqual(pool4, subnet_pool4[0])
 
         # v6
         if cidr6:
@@ -154,10 +168,18 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
                 kwargs = {}
             ipv6_subnet = self.create_l3_vsd_managed_subnet(
                 network, vsd_subnet, dhcp_managed=False, ip_version=6,
-                no_gateway=no_gateway, **kwargs)
+                gateway=gateway6, **kwargs)
             self.assertIsNotNone(ipv6_subnet)
+            self.assertEqual(str(cidr6), ipv6_subnet['cidr'])
+            if pool6:
+                subnet_pool6 = ipv6_subnet['allocation_pools']
+                self.assertEqual(1, len(subnet_pool6))
+                self.assertEqual(pool6, subnet_pool6[0])
         else:
             ipv6_subnet = None
+
+        if skip_server1:
+            return vsd_domain, vsd_subnet, None
 
         # Launch tenant servers in OpenStack network
         server1 = self.create_tenant_server(tenant_networks=[network])
@@ -224,19 +246,41 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
 
         return vsd_domain, vsd_subnet, server1
 
+    @decorators.attr(type='smoke')
+    def test_l3_vsd_managed_dualstack_networks(self):
+        self.icmp_connectivity_l3_vsd_managed(
+            cidr4=IPNetwork('10.10.100.0/24'),
+            pool4={'start': '10.10.100.100', 'end': '10.10.100.109'},
+            cidr6=IPNetwork('cafe:babe::/64'),
+            pool6={'start': 'cafe:babe::100', 'end': 'cafe:babe::109'},
+            skip_server1=True, skip_server2_and_ping_tests=True)
+
+    @decorators.attr(type='smoke')
+    def test_l3_vsd_managed_dualstack_syntactically_different_v6_gw(self):
+        self.icmp_connectivity_l3_vsd_managed(
+            cidr4=IPNetwork('10.10.100.0/24'),
+            vsd_gateway4='10.10.100.1', gateway4='10.10.100.1',  # same
+            pool4={'start': '10.10.100.100', 'end': '10.10.100.109'},
+            cidr6=IPNetwork('cafe:babe::/64'),
+            vsd_gateway6='cafe:babe:0:0:0:0:0:1',
+            gateway6='cafe:babe::1',  # not same
+            pool6={'start': 'cafe:babe::100', 'end': 'cafe:babe::109'},
+            skip_server1=True, skip_server2_and_ping_tests=True)
+
     @testtools.skipIf(not Topology.run_connectivity_tests(),
                       'Connectivity tests are disabled.')
     @decorators.attr(type='smoke')
     def test_icmp_connectivity_l3_vsd_managed(self):
         self.icmp_connectivity_l3_vsd_managed(
-            self.cidr4, self.cidr6)  # FIXME(Kris) incl_negative_ping_test=True
+            cidr4=self.cidr4, cidr6=self.cidr6)
+        # FIXME(Kris) incl_negative_ping_test=True
 
     @testtools.skipIf(not Topology.run_connectivity_tests(),
                       'Connectivity tests are disabled.')
     @decorators.attr(type='smoke')
     def test_icmp_connectivity_l3_vsd_managed_no_gw(self):
         self.icmp_connectivity_l3_vsd_managed(
-            self.cidr4, self.cidr6, no_gateway=True)
+            cidr4=self.cidr4, gateway4='', cidr6=self.cidr6, gateway6='')
 
     @testtools.skipIf(not Topology.run_connectivity_tests(),
                       'Connectivity tests are disabled.')
