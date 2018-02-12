@@ -12,6 +12,7 @@ from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions as lib_exc
 from tempest import test
 
+from testtools.matchers._basic import _FlippedEquals
 from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
 
@@ -45,6 +46,20 @@ class BaseNuageNetworksTestCase(test.BaseTestCase):
     @classmethod
     def resource_setup(cls):
         NuageBaseTest.setup_network_resources(cls)
+
+    def expectEqual(self, expected, observed, message=''):
+        """Expect that 'expected' is equal to 'observed'.
+
+        Nature of 'expect', opposed to Assert, is that tests don't fail
+        immediately. As this is missing in BaseTestCases, added here..
+        It can be useful in debugging.
+
+        :param expected: The expected value.
+        :param observed: The observed value.
+        :param message: An optional message to include in the error.
+        """
+        matcher = _FlippedEquals(expected)
+        self.expectThat(observed, matcher, message)
 
 
 ############################################################
@@ -167,50 +182,49 @@ class VsdTestCaseMixin(test.BaseTestCase):
                 self.fail('Invalid ip_type')
 
             if cidr4:
-                self.assertThat(l2domain_template,
-                                ContainsDict({'address':
-                                              Equals(str(cidr4.ip))}))
+                self.assertThat(
+                    l2domain_template,
+                    ContainsDict({'address': Equals(str(cidr4.ip))}))
                 if "netmask" not in kwargs:
                     netmask = str(cidr4.netmask)
-                    self.assertThat(l2domain_template,
-                                    ContainsDict({'netmask':
-                                                  Equals(netmask)}))
-
+                    self.assertThat(
+                        l2domain_template,
+                        ContainsDict({'netmask': Equals(netmask)}))
                 if "gateway" not in kwargs:
                     gateway_ip = str(IPAddress(cidr4) + 1)
-                    self.assertThat(l2domain_template,
-                                    ContainsDict({'gateway':
-                                                  Equals(gateway_ip)}))
+                    self.assertThat(
+                        l2domain_template,
+                        ContainsDict({'gateway': Equals(gateway_ip)}))
             else:
                 self.assertIsNone(l2domain_template['address'])
                 self.assertIsNone(l2domain_template['gateway'])
                 self.assertIsNone(l2domain_template['netmask'])
 
             if cidr6:
-                self.assertThat(l2domain_template,
-                                ContainsDict({'IPv6Address':
-                                              Equals(str(cidr6))}))
+                self.assertThat(
+                    l2domain_template,
+                    ContainsDict({'IPv6Address': Equals(str(cidr6))}))
                 if "IPv6Gateway" not in kwargs:
                     gateway_ip = str(IPAddress(cidr6) + 1)
-                    self.assertThat(l2domain_template,
-                                    ContainsDict({'IPv6Gateway':
-                                                  Equals(gateway_ip)}))
+                    self.assertThat(
+                        l2domain_template,
+                        ContainsDict({'IPv6Gateway': Equals(gateway_ip)}))
         else:
             self.assertThat(l2domain_template,
                             ContainsDict({'DHCPManaged': Equals(False)}))
 
         # verify all other kwargs as attributes (key,value) pairs
         for key, value in kwargs.iteritems():
-            self.assertThat(l2domain_template,
-                            ContainsDict({key: Equals(value)}))
+            self.assertThat(
+                l2domain_template, ContainsDict({key: Equals(value)}))
 
         self.assertIsNone(l2domain_template['externalID'])
 
     def _verify_vsd_l2domain_with_template(self, l2domain, l2domain_template):
 
-        self.assertThat(l2domain,
-                        ContainsDict({'templateID':
-                                      Equals(l2domain_template['ID'])}))
+        self.assertThat(
+            l2domain,
+            ContainsDict({'templateID': Equals(l2domain_template['ID'])}))
         self.assertIsNone(l2domain_template['externalID'])
 
         # matching values
@@ -238,11 +252,7 @@ class VsdTestCaseMixin(test.BaseTestCase):
 
     def _given_vsd_l2domain(self, cidr4=None, cidr6=None, dhcp_managed=False,
                             **kwargs):
-        if cidr6:
-            ip_type = "DUALSTACK"
-        else:
-            ip_type = "IPV4"
-
+        ip_type = "DUALSTACK" if cidr6 else "IPV4"
         vsd_l2domain_template = self.create_vsd_l2domain_template(
             ip_type=ip_type, dhcp_managed=dhcp_managed,
             cidr4=cidr4,
@@ -303,7 +313,6 @@ class VsdTestCaseMixin(test.BaseTestCase):
                                    gateway6=None,
                                    ip_type=None):
         params = {}
-
         if cidr:
             net_address = str(cidr.ip)
             net_mask = str(cidr.netmask)
@@ -559,6 +568,9 @@ class NetworkTestCaseMixin(BaseNuageNetworksTestCase):
         return body['port']
 
     def _verify_port(self, port, subnet4=None, subnet6=None, **kwargs):
+        testcase = kwargs.pop('testcase', 'unknown')
+        message = 'testcase: %s' % testcase
+
         has_ipv4_ip = False
         has_ipv6_ip = False
 
@@ -568,14 +580,14 @@ class NetworkTestCaseMixin(BaseNuageNetworksTestCase):
                 start_ip_address = subnet4['allocation_pools'][0]['start']
                 end_ip_address = subnet4['allocation_pools'][0]['end']
                 ip_range = IPRange(start_ip_address, end_ip_address)
-                self.assertIn(ip_address, ip_range)
+                self.assertIn(ip_address, ip_range, message=message)
                 has_ipv4_ip = True
 
             if subnet6 and fixed_ip['subnet_id'] == subnet6['id']:
                 start_ip_address = subnet6['allocation_pools'][0]['start']
                 end_ip_address = subnet6['allocation_pools'][0]['end']
                 ip_range = IPRange(start_ip_address, end_ip_address)
-                self.assertIn(ip_address, ip_range)
+                self.assertIn(ip_address, ip_range, message=message)
                 has_ipv6_ip = True
 
         if subnet4:
@@ -604,7 +616,7 @@ class NetworkTestCaseMixin(BaseNuageNetworksTestCase):
     def _given_network_linked_to_vsd_subnet(self, vsd_subnet, cidr4=None,
                                             cidr6=None, enable_dhcp=True,
                                             net_partition=None):
-        # create Openstack IPv4 subnet on Openstack based on VSD l3dom subnet
+        # create OpenStack IPv4 subnet on OpenStack based on VSD l3dom subnet
         net_name = data_utils.rand_name('network-')
         network = self.create_network(network_name=net_name)
 
@@ -621,7 +633,7 @@ class NetworkTestCaseMixin(BaseNuageNetworksTestCase):
             nuagenet=vsd_subnet['ID'],
             net_partition=actual_net_partition)
 
-        # create Openstack IPv6 subnet on Openstack based on VSD l3dom subnet
+        # create OpenStack IPv6 subnet on OpenStack based on VSD l3dom subnet
         subnet6 = None
         if cidr6:
             subnet6 = self.create_subnet(
@@ -639,10 +651,12 @@ class NetworkTestCaseMixin(BaseNuageNetworksTestCase):
         if name is None:
             name = data_utils.rand_name('os-l3-rt')
         # parameters for nuage redirection target
-        post_body = {'insertion_mode': 'L3',
-                     'redundancy_enabled': 'False',
-                     'subnet_id': l3subnet['id'],
-                     'name': name}
+        post_body = {
+            'insertion_mode': 'L3',
+            'redundancy_enabled': 'False',
+            'subnet_id': l3subnet['id'],
+            'name': name
+        }
         redirect_target = self.nuage_network_client.create_redirection_target(
             **post_body)
         return redirect_target
