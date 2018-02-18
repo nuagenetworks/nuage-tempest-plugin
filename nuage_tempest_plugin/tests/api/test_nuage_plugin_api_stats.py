@@ -90,6 +90,23 @@ class NuagePluginApiStats(base.BaseAdminNetworkTest):
              'delete_network': 0
              },
 
+        'queens':
+            {'create_network': 0,
+             'create_subnet': 12,
+             'create_security_group': 0,
+             'create_port': 17,
+             'create_subsequent_port': 6,
+             'create_router': 12,
+             'create_router_interface': 15,
+             'remove_router_interface': 21,
+             'delete_router': 3,
+             'delete_port': 6,
+             'delete_last_port': 5,
+             'delete_security_group': 2,
+             'delete_subnet': 6,
+             'delete_network': 0
+             },
+
         'master':
             {'create_network': 0,
              'create_subnet': 12,

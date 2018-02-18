@@ -15,6 +15,7 @@
 
 from netaddr import IPNetwork
 from oslo_log import log as logging
+import random
 import re
 
 from tempest.api.network import base
@@ -129,6 +130,11 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
         else:
             self.assertRaisesRegex(exceptions.SSHExecCommandFailed, message,
                                    fun, *args, **kwds)
+
+    @staticmethod
+    def randomized_cidr():
+        return '99.%s.%s.0/24' % (random.randint(0, 255),
+                                  random.randint(0, 255))
 
     # Taken from test_external_network_extensions.py,trying to avoid issues
     # with the cli client

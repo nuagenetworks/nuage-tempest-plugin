@@ -31,6 +31,8 @@ class Topology(object):
     def_netpartition = CONF.nuage.nuage_default_netpartition
     public_network_id = CONF.network.public_network_id
 
+    nbr_retries_for_test_robustness = 10
+
     @staticmethod
     def is_devstack():
         return CONF.nuage_sut.sut_deployment.lower() == 'devstack'

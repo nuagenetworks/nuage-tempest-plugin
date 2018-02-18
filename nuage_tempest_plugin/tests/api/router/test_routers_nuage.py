@@ -47,8 +47,6 @@ current_release = Release(Topology.nuage_release)
 NUAGE_PAT_ENABLED = 'ENABLED'
 NUAGE_PAT_DISABLED = 'DISABLED'
 
-NBR_RETRIES_ON_ROUTER_DELETE = 10
-
 
 class NuageRoutersTest(base.BaseNetworkTest):
 
@@ -107,7 +105,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
     @classmethod
     def delete_router(cls, router):
         # TODO(TEAM: FOLLOW UP ON THIS) - VSD-21337
-        for attempt in range(1, NBR_RETRIES_ON_ROUTER_DELETE):
+        for attempt in range(Topology.nbr_retries_for_test_robustness):
             try:
                 super(NuageRoutersTest, cls).delete_router(router)
                 return
@@ -115,7 +113,8 @@ class NuageRoutersTest(base.BaseNetworkTest):
                 if 'Nuage API: vPort has VMInterface network interfaces ' \
                    'associated with it.' not in str(e):
                     raise e
-                LOG.error('VSD-21337: Domain deletion failed! (%d)', attempt)
+                LOG.error('VSD-21337: Domain deletion failed! (%d)',
+                          attempt + 1)
                 time.sleep(1)
 
         super(NuageRoutersTest, cls).delete_router(router)
@@ -656,7 +655,7 @@ class NuageRoutersAdminTest(base.BaseAdminNetworkTest):
     @classmethod
     def delete_router(cls, router):
         # TODO(TEAM: FOLLOW UP ON THIS) - VSD-21337
-        for attempt in range(1, NBR_RETRIES_ON_ROUTER_DELETE):
+        for attempt in range(Topology.nbr_retries_for_test_robustness):
             try:
                 super(NuageRoutersAdminTest, cls).delete_router(router)
                 return
@@ -664,7 +663,8 @@ class NuageRoutersAdminTest(base.BaseAdminNetworkTest):
                 if 'Nuage API: vPort has VMInterface network interfaces ' \
                    'associated with it.' not in str(e):
                     raise e
-                LOG.error('VSD-21337: Domain deletion failed! (%d)', attempt)
+                LOG.error('VSD-21337: Domain deletion failed! (%d)',
+                          attempt + 1)
                 time.sleep(1)
 
         super(NuageRoutersAdminTest, cls).delete_router(router)

@@ -37,8 +37,6 @@ from nuage_tempest_plugin.lib.topology import Topology
 CONF = config.CONF
 LOG = oslo_logging.getLogger(__name__)
 
-NBR_RETRIES_ON_ROUTER_DELETE = 10
-
 
 def skip_because(*args, **kwargs):
     """A decorator useful to skip tests hitting known bugs
@@ -489,7 +487,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         if not client:
             client = self.manager
         if retry_on_router_delete:
-            for attempt in range(1, NBR_RETRIES_ON_ROUTER_DELETE):
+            for attempt in range(Topology.nbr_retries_for_test_robustness):
                 try:
                     client.routers_client.delete_router(router['id'])
                     return
@@ -498,7 +496,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                             'associated with it.' not in str(e)):
                         raise e
                     LOG.error('VSD-21337: Domain deletion failed (%d)',
-                              attempt)
+                              attempt + 1)
                     self.sleep(msg='Give time for VSD-21337')
 
         client.routers_client.delete_router(router['id'])
@@ -910,8 +908,8 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         address2 = server2.get_server_ip_in_network(
             network['name'], ip_type)
         ping_pass = None  # keeps pycharm happy
-        for attempt in range(1, 6):
-            LOG.info('assert_ping: ping attempt %d start', attempt)
+        for attempt in range(Topology.nbr_retries_for_test_robustness):
+            LOG.info('assert_ping: ping attempt %d start', attempt + 1)
 
             ping_result = server1.ping(address2, ping_count, interface,
                                        ip_type, should_pass)

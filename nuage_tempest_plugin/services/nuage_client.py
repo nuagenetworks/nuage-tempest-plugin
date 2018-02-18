@@ -17,6 +17,7 @@ from tempest import config
 from tempest.lib.common.utils import test_utils as misc_utils
 from tempest.lib import exceptions
 
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.lib.utils import exceptions as n_exceptions
 from nuage_tempest_plugin.lib.utils import restproxy
@@ -569,7 +570,20 @@ class NuageRestClient(object):
                                  filters, filter_value, netpart_name)
 
     def delete_l2domaintemplate(self, l2dom_tid):
-        return self.delete_resource(constants.L2_DOMAIN_TEMPLATE, l2dom_tid)
+        # though as we added robustness to l2domain already, this should just
+        # always be fine, adding robustness to l2dom template deletion as well
+        for attempt in range(Topology.nbr_retries_for_test_robustness):
+            try:
+                return self.delete_resource(constants.L2_DOMAIN_TEMPLATE,
+                                            l2dom_tid)
+            except Exception as e:
+                if 'l2domain is in use and its properties can neither be ' \
+                   'modified or deleted.' not in str(e):
+                    raise
+                else:
+                    self.LOG.error('Got {} (attempt {})'.format(str(e),
+                                                                attempt + 1))
+                    time.sleep(1)
 
     def apply_l2domaintemplate_policies(self, l2dom_tid):
         data = {"command": "APPLY_POLICY_CHANGES"}
@@ -620,7 +634,7 @@ class NuageRestClient(object):
         return self.put(res_path, data)
 
     def delete_l2domain(self, l2dom_id):
-        for attempt in range(1, 6):
+        for attempt in range(Topology.nbr_retries_for_test_robustness):
             try:
                 return self.delete_resource(constants.L2_DOMAIN, l2dom_id)
             except Exception as e:
@@ -629,7 +643,7 @@ class NuageRestClient(object):
                     raise
                 else:
                     self.LOG.error('Got {} (attempt {})'.format(str(e),
-                                                                attempt))
+                                                                attempt + 1))
                     time.sleep(1)
 
     def get_l2domain(self, filters=None, filter_value=None, netpart_name=None):

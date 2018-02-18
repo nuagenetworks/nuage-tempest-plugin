@@ -155,12 +155,12 @@ class TestNuagePatUnderlay(base_nuage_pat_underlay.NuagePatUnderlayBase):
         Should fail, as PAT is only for OS managed networks
         """
         name = data_utils.rand_name('vsd-l2domain-')
-        cidr = IPNetwork('10.10.100.0/24')
+        cidr = IPNetwork(self.randomized_cidr())
         params = {
             'DHCPManaged': True,
             'address': str(cidr.ip),
             'netmask': str(cidr.netmask),
-            'gateway': '10.10.100.1'
+            'gateway': str(cidr.cidr[1])
         }
         vsd_l2dom_template = self.nuage_vsd_client.create_l2domaintemplate(
             name=name + '-template',
@@ -230,10 +230,10 @@ class TestNuagePatUnderlay(base_nuage_pat_underlay.NuagePatUnderlayBase):
 
         Must succeed
         """
-        cidr = IPNetwork('10.10.9.0/24')
+        cidr = IPNetwork(self.randomized_cidr())
         enable_snat_states = [False, True]
         for enable_snat in enable_snat_states:
-            # create an  external network
+            # create an external network
             post_body = {'name': data_utils.rand_name('external-network'),
                          'router:external': True}
             body = self.admin_networks_client.create_network(**post_body)

@@ -165,7 +165,7 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
             if NUAGE_FEATURES.os_managed_dualstack_subnets:
                 self.test.assertEqual(
                     2, len(vsd_ingress_security_policy_entries),
-                    "Should find exact 2 matches for inress policy entries")
+                    "Should find exact 2 matches for ingress policy entries")
             else:
                 self.test.assertEqual(
                     1, len(vsd_ingress_security_policy_entries),
