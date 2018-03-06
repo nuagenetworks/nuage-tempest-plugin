@@ -578,8 +578,8 @@ class NuageRestClient(object):
                    'modified or deleted.' not in str(e):
                     raise
                 else:
-                    self.LOG.error('Got {} (attempt {})'.format(str(e),
-                                                                attempt + 1))
+                    LOG.error('Got {} (attempt {})'.format(str(e),
+                                                           attempt + 1))
                     time.sleep(1)
 
     def apply_l2domaintemplate_policies(self, l2dom_tid):
