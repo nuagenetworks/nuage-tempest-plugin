@@ -586,7 +586,8 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
         # create subnet on OS with nuagenet param set to subnet UUID
         net_name = data_utils.rand_name('network-')
         network = self.create_network(network_name=net_name)
-        if Topology.from_openstack('Newton') and Topology.is_ml2:
+        if (Topology.from_openstack('Newton') and Topology.is_ml2 and
+                Topology.before_nuage('5.2')):
             subnet = self.create_subnet(
                 network,
                 cidr=IPNetwork('10.10.100.0/24'),
@@ -596,6 +597,7 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
             self.assertEqual(subnet['cidr'], str(cidr))
             self.assertTrue(self._verify_vm_ip(network['id'], net_name))
         else:
+            # since 5.2.2 we correctly check gw
             self.assertRaises(
                 self.failure_type,
                 self.create_subnet,
