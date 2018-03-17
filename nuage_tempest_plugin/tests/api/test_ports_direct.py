@@ -256,15 +256,115 @@ class PortsDirectTest(network_mixin.NetworkMixin,
         topology = self._create_topology(with_router=False, dualstack=True)
         self._test_direct_port(topology, update=True)
 
+    def test_direct_port_l3_create_with_port_security(self):
+        topology = self._create_topology(with_router=True)
+        self._test_direct_port(topology, update=False, with_port_security=True)
+
+    def test_direct_port_l3_update_with_port_security(self):
+        topology = self._create_topology(with_router=True)
+        self._test_direct_port(topology, update=True, with_port_security=True)
+
+    def test_direct_port_l3_ipv6_create_with_port_security(self):
+        topology = self._create_topology(with_router=True, dualstack=True)
+        self._test_direct_port(topology, update=False, with_port_security=True)
+
+    def test_direct_port_l3_ipv6_update_with_port_security(self):
+        topology = self._create_topology(with_router=True, dualstack=True)
+        self._test_direct_port(topology, update=True, with_port_security=True)
+
+    def test_direct_port_l2_create_with_port_security(self):
+        topology = self._create_topology(with_router=False)
+        self._test_direct_port(topology, update=False, with_port_security=True)
+
+    def test_direct_port_l2_update_with_port_security(self):
+        topology = self._create_topology(with_router=False)
+        self._test_direct_port(topology, update=True, with_port_security=True)
+
+    def test_direct_port_l2_ipv6_create_with_port_security(self):
+        topology = self._create_topology(with_router=False, dualstack=True)
+        self._test_direct_port(topology, update=False, with_port_security=True)
+
+    def test_direct_port_l2_ipv6_update_with_port_security(self):
+        topology = self._create_topology(with_router=False, dualstack=True)
+        self._test_direct_port(topology, update=True, with_port_security=True)
+
+    def test_direct_port_l3_create_with_port_security_and_aap(self):
+        topology = self._create_topology(with_router=True)
+        self._test_direct_port(topology, update=False,
+                               with_port_security=True,
+                               aap=True)
+
+    def test_direct_port_l3_update_with_port_security_and_aap(self):
+        topology = self._create_topology(with_router=True)
+        self._test_direct_port(topology, update=True,
+                               with_port_security=True,
+                               aap=True)
+
+    def test_direct_port_l3_ipv6_create_with_port_security_and_aap(self):
+        topology = self._create_topology(with_router=True, dualstack=True)
+        self._test_direct_port(topology, update=False, with_port_security=True,
+                               aap=True)
+
+    def test_direct_port_l3_ipv6_update_with_port_security_and_aap(self):
+        topology = self._create_topology(with_router=True, dualstack=True)
+        self._test_direct_port(topology, update=True, with_port_security=True,
+                               aap=True)
+
+    def test_direct_port_l2_create_with_port_security_and_aap(self):
+        topology = self._create_topology(with_router=False)
+        self._test_direct_port(topology, update=False,
+                               with_port_security=True,
+                               aap=True)
+
+    def test_direct_port_l2_update_with_port_security_and_aap(self):
+        topology = self._create_topology(with_router=False)
+        self._test_direct_port(topology, update=True,
+                               with_port_security=True,
+                               aap=True)
+
+    def test_direct_port_l2_ipv6_create_with_port_security_and_aap(self):
+        topology = self._create_topology(with_router=False, dualstack=True)
+        self._test_direct_port(topology, update=False, with_port_security=True,
+                               aap=True)
+
+    def test_direct_port_l2_ipv6_update_with_port_security_and_aap(self):
+        topology = self._create_topology(with_router=False, dualstack=True)
+        self._test_direct_port(topology, update=True, with_port_security=True,
+                               aap=True)
+
+    def test_direct_port_multi_ips_l3_create_with_port_security_and_aap(self):
+        topology = self._create_topology(with_router=True)
+        self._test_direct_port(topology, update=False,
+                               with_port_security=True,
+                               aap=True, multi_ips=True)
+
+    def test_direct_port_multi_ips_l3_update_with_port_security_and_aap(self):
+        topology = self._create_topology(with_router=True)
+        self._test_direct_port(topology, update=True,
+                               with_port_security=True,
+                               aap=True, multi_ips=True)
+
+    def test_direct_port_multi_ips_l2_create_with_port_security_and_aap(self):
+        topology = self._create_topology(with_router=False)
+        self._test_direct_port(topology, update=False,
+                               with_port_security=True,
+                               aap=True, multi_ips=True)
+
+    def test_direct_port_multi_ips_l2_update_with_port_security_and_aap(self):
+        topology = self._create_topology(with_router=False)
+        self._test_direct_port(topology, update=True,
+                               with_port_security=True,
+                               aap=True, multi_ips=True)
+
     # vsd managed
 
     def test_vsd_mgd_direct_port_l2_create(self):
         topology = self._create_topology(vsd_managed=True)
-        self._test_direct_port(topology)
+        self._test_direct_port(topology, aap=True)
 
     def test_vsd_mgd_direct_port_l2_update(self):
         topology = self._create_topology(vsd_managed=True)
-        self._test_direct_port(topology)
+        self._test_direct_port(topology, aap=True)
 
     # l3 .. skipped
 
@@ -372,9 +472,28 @@ class PortsDirectTest(network_mixin.NetworkMixin,
         return SriovTopology(self.vsd_client, network,
                              subnet, router, port, subnetv6, vsd_l2dom)
 
-    def _test_direct_port(self, topology, update=False):
-        create_data = {'binding:vnic_type': 'direct',
-                       'security_groups': []}
+    def _test_direct_port(self, topology, update=False,
+                          with_port_security=False, aap=False,
+                          multi_ips=False):
+        create_data = {'binding:vnic_type': 'direct'}
+        if not with_port_security:
+            create_data['security_groups'] = []
+        if aap:
+            create_data['allowed_address_pairs'] = [
+                {'ip_address': '30.30.0.0/24',
+                 'mac_address': 'fe:a0:36:4b:c8:70'}]
+        if multi_ips:
+            create_data['fixed_ips'] = [
+                {
+                    "ip_address": "10.20.30.4",
+                    "subnet_id": topology.subnet["id"]
+                },
+                {
+                    "ip_address": "10.20.30.5",
+                    "subnet_id": topology.subnet["id"]
+                }
+
+            ]
         mapping = {'switch_id': self.gateway['systemID'],
                    'port_id': self.gw_port['physicalName'],
                    'host_id': 'host-hierarchical',
