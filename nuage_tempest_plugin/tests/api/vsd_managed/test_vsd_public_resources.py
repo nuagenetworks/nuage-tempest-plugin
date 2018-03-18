@@ -48,25 +48,25 @@ EXPECT_DO_NOT_MATCH = "do not match"
 
 
 @nuage_test.class_header(tags=[tags.VSD_MANAGED, tags.MONOLITHIC])
-class VSDPublicResourcesTest(
-        base_vsd_public_resources.BaseVSDPublicResourcesTest):
+class MonolithicPluginVSDPublicResourcesTest(
+        base_vsd_public_resources.BaseVSDPublicResources):
 
     @classmethod
     def resource_setup(cls):
-        super(VSDPublicResourcesTest, cls).resource_setup()
+        super(MonolithicPluginVSDPublicResourcesTest, cls).resource_setup()
 
     @classmethod
     # As i understand all these tests were written for monolithic plugin
     def skip_checks(cls):
-        super(VSDPublicResourcesTest, cls).skip_checks()
+        super(MonolithicPluginVSDPublicResourcesTest, cls).skip_checks()
         if Topology.is_ml2:
             raise cls.skipException('Skipping monolithic tests for ml2')
 
     @nuage_test.header()
-    def test_vsd_l2_shared_unmgd_l2_unmgd_without_gateway_ip(self):
-        # Given  I have a VSD -L2-domain without IPAM (i.e. UnManaged)
+    def test_vsd_l2_shared_unmgd_l2_unmgd_without_gw_ip(self):
+        # Given I have a VSD-L2-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
-        # And  these are linked
+        # and these are linked
         vsd_l2dom_unmgd = self._given_vsdl2sharedunmgd_lnkd_to_vsdl2domunmgd()
         self._check_vsd_l2_shared_l2_unmgd(
             vsd_l2dom_unmgd=vsd_l2dom_unmgd,
@@ -85,16 +85,16 @@ class VSDPublicResourcesTest(
             expect_network_dhcp_nuage_port=False,
             expected_gateway_ip=None,
             # When I spin a VM in this network
-            # Then the OS  VM-IPaddress is in the valid CIDR range
-            # And the VMinterface-IPaddress in the VSD-L2-domain is empty
+            # Then the OS VM-IP-address is in the valid CIDR range
+            # And the VM-interface-IP-address in the VSD-L2-domain is empty
             expect_vm_ip_addresses_equal=''
         )
 
     @nuage_test.header()
-    def test_vsd_l2_shared_unmgd_l2_unmgd_with_gateway_ip(self):
-        # Given  I have a VSD -L2-domain without IPAM (i.e. UnManaged)
+    def test_vsd_l2_shared_unmgd_l2_unmgd_with_gw_ip(self):
+        # Given I have a VSD-L2-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
-        # And  these are linked
+        # and these are linked
         vsd_l2dom_unmgd = self._given_vsdl2sharedunmgd_lnkd_to_vsdl2domunmgd()
         self._check_vsd_l2_shared_l2_unmgd(
             vsd_l2dom_unmgd=vsd_l2dom_unmgd,
@@ -113,14 +113,14 @@ class VSDPublicResourcesTest(
             expect_network_dhcp_nuage_port=False,
             expected_gateway_ip=None,
             # When I spin a VM in this network
-            # Then the OS  VM-IPaddress is in the valid CIDR range
-            # And the VMinterface-IPaddress in the VSD-L2-domain is empty
+            # Then the OS VM-IP-address is in the valid CIDR range
+            # And the VM-interface-IP-address in the VSD-L2-domain is empty
             expect_vm_ip_addresses_equal=''
         )
 
     @nuage_test.header()
     def test_vsd_l2_shared_unmgd_l2_unmgd_no_gateway(self):
-        # Given  I have a VSD -L2-domain without IPAM (i.e. UnManaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
         # And these are linked
         vsd_l2dom_unmgd = self._given_vsdl2sharedunmgd_lnkd_to_vsdl2domunmgd()
@@ -142,16 +142,16 @@ class VSDPublicResourcesTest(
             expect_network_dhcp_nuage_port=False,
             expected_gateway_ip=None,
             # When I spin a VM in this network
-            # Then the OS  VM-IPaddress is in the valid CIDR range
-            # And the VMinterface-IPaddress in the VSD-L2-domain is empty
+            # Then the OS VM-IP-address is in the valid CIDR range
+            # And the VM-interface-IP-address in the VSD-L2-domain is empty
             expect_vm_ip_addresses_equal=''
         )
 
     @nuage_test.header()
     def test_vsd_l2_shared_mgd_l2_unmgd_without_gateway(self):
-        # Given  I have a VSD -L2-domain without IPAM (i.e. UnManaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
-        # And  these are linked
+        # and these are linked
         vsd_l2dom_unmgd = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
         self._check_vsd_l2_shared_l2_unmgd(
             vsd_l2dom_unmgd=vsd_l2dom_unmgd,
@@ -170,15 +170,15 @@ class VSDPublicResourcesTest(
             expect_network_dhcp_nuage_port=True,
             expected_gateway_ip=None,
             # When I spin a VM in this network
-            # Then the OS  VM-IPaddress is in the valid CIDR range
-            # And the VMinterface-IPaddress in the VSD-L2-domain is empty
+            # Then the OS VM-IP-address is in the valid CIDR range
+            # And the VM-interface-IP-address in the VSD-L2-domain is empty
             expect_vm_ip_addresses_equal=True
         )
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l2_shared_mgd_l2_unmgd_with_gateway_neg(self):
-        # "Given  I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+    def test_vsd_l2_shared_mgd_l2_unmgd_with_gw_neg(self):
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # And these are linked
         vsd_l2dom_unmgd = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
@@ -198,7 +198,7 @@ class VSDPublicResourcesTest(
 
     @nuage_test.header()
     def test_vsd_l2_shared_mgd_l2_unmgd_no_gateway(self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # And these are linked
         vsd_l2dom_unmgd = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
@@ -220,15 +220,15 @@ class VSDPublicResourcesTest(
             expect_network_dhcp_nuage_port=True,
             expected_gateway_ip=None,
             # When I spin a VM in this network
-            # Then the OS  VM-IPaddress is in the CIDR range
-            # And the VMinterface-IPaddress in the VSD-L2-domain equals
-            # the OS VM-IPaddress
+            # Then the OS VM-IP-address is in the CIDR range
+            # And the VM-interface-IP-address in the VSD-L2-domain equals
+            # the OS VM-IP-address
             expect_vm_ip_addresses_equal=True
         )
 
     @nuage_test.header()
     def test_vsd_l2_shared_mgd_opt3_l2_unmgd_without_gateway(self):
-        # Given  I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # with DHCP-option 3 set
         # And these are linked
@@ -253,18 +253,18 @@ class VSDPublicResourcesTest(
             expect_network_dhcp_nuage_port=True,
             expected_gateway_ip=VSD_L2_SHARED_MGD_OPT3,
             # When I spin a VM in this network
-            # Then the OS  VM-IPaddress is in the CIDR range
-            # And the VMinterface-IPaddress in the VSD-L2-domain equals the
-            # OS VM-IPaddress
+            # Then the OS VM-IP-address is in the CIDR range
+            # And the VM-interface-IP-address in the VSD-L2-domain equals the
+            # OS VM-IP-address
             expect_vm_ip_addresses_equal=True
         )
 
     @nuage_test.header()
     def test_vsd_l2_shared_mgd_opt3_l2_unmgd_with_gateway(self):
-        # Given  I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # with DHCP-option 3 set
-        # And  these are linked
+        # and these are linked
         vsd_l2dom_unmgd = \
             self._given_vsdl2sharedmgdopt3_linked_to_vsdl2domunmgd(
                 VSD_L2_SHARED_MGD_OPT3)
@@ -286,19 +286,19 @@ class VSDPublicResourcesTest(
             expect_network_dhcp_nuage_port=True,
             expected_gateway_ip=VSD_L2_SHARED_MGD_OPT3,
             # When I spin a VM in this network
-            # Then the OS  VM-IPaddress is in the CIDR range
-            # And the VMinterface-IPaddress in the VSD-L2-domain equals the
-            # OS VM-IPaddress
+            # Then the OS VM-IP-address is in the CIDR range
+            # And the VM-interface-IP-address in the VSD-L2-domain equals the
+            # OS VM-IP-address
             expect_vm_ip_addresses_equal=True
         )
 
     @nuage_test.header()
     @decorators.attr(type=['negative'])
     def test_vsd_l2_shared_mgd_opt3_l2_unmgd_no_gateway_neg(self):
-        # Given  I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # with DHCP-option 3 set
-        # And  these are linked
+        # and these are linked
         # Then I expect a failure from OS
         # Supported only when dhcp_option-3 is NOT set
         vsd_l2dom_unmgd = \
@@ -326,10 +326,10 @@ class VSDPublicResourcesTest(
 
     @nuage_test.header()
     def test_vsd_l3_shared_mgd_l3_unmgd_without_gateway(self):
-        # Given  I have a VSD -L3-domain in a public zone
+        # Given I have a VSD-L3-domain in a public zone
         # (i.e. without IPAM (/ UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self._check_vsd_l3_shared_l2_unmgd(
@@ -350,19 +350,19 @@ class VSDPublicResourcesTest(
             expect_network_dhcp_nuage_port=True,
             expected_gateway_ip=base_vsd_managed_networks.VSD_L3_SHARED_MGD_GW,
             # When I spin a VM in this network
-            # Then the OS  VM-IPaddress is in the  CIDR range
-            # And the VM_interface-IPaddress in the VSD-L3-domain equals the
-            # OS VM-IPaddress
-            # And the VM_interface-IPaddress is different from the
+            # Then the OS VM-IP-address is in the  CIDR range
+            # And the VM-interface-IP-address in the VSD-L3-domain equals the
+            # OS VM-IP-address
+            # And the VM-interface-IP-address is different from the
             # gateway_ip address
             expect_vm_ip_addresses_equal=True
         )
 
     @nuage_test.header()
     def test_vsd_l3_shared_mgd_l3_unmgd_with_gateway(self):
-        # Given  I have a VSD -L3-domain without IPAM (i.e. UnManaged)
+        # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self._check_vsd_l3_shared_l2_unmgd(
@@ -384,19 +384,19 @@ class VSDPublicResourcesTest(
             expect_network_dhcp_nuage_port=True,
             expected_gateway_ip=base_vsd_managed_networks.VSD_L3_SHARED_MGD_GW,
             # When I spin a VM in this network
-            # Then the OS  VM-IPaddress is in the CIDR range
-            # And the VM_interface-IPaddress in the VSD-L3-domain equals the
-            # OS VM-IPaddress
-            # And the OS VM-IPaddress is different from the gateway-ip
+            # Then the OS VM-IP-address is in the CIDR range
+            # And the VM-interface-IP-address in the VSD-L3-domain equals the
+            # OS VM-IP-address
+            # And the OS VM-IP-address is different from the gateway-ip
             expect_vm_ip_addresses_equal=True
         )
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
     def test_vsd_l3_shared_mgd_l3_unmgd_no_gateway_neg(self):
-        # Given  I have a VSD -L3-domain without IPAM (i.e. UnManaged)
+        # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
@@ -422,20 +422,20 @@ class VSDPublicResourcesTest(
             expect_network_dhcp_nuage_port=True,
             expected_gateway_ip=base_vsd_managed_networks.VSD_L3_SHARED_MGD_GW,
             # When I spin a VM in this network
-            # Then the OS  VM-IPaddress is in the CIDR range
-            # And the VM_interface-IPaddress in the VSD-L3-domain equals the
-            # OS VM-IPaddress
-            # And the OS VM-IPaddress is different from the gateway-ip
+            # Then the OS VM-IP-address is in the CIDR range
+            # And the VM-interface-IP-address in the VSD-L3-domain equals the
+            # OS VM-IP-address
+            # And the OS VM-IP-address is different from the gateway-ip
             expect_vm_ip_addresses_equal=True
         )
 
     @nuage_test.header()
     def test_vsd_l3_shared_mgd_opt3_l3_unmgd_without_gateway(self):
-        # Given  I have a VSD -L3-domain in a public zone
+        # Given I have a VSD-L3-domain in a public zone
         # (i.e. without IPAM (/ UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM
         # (i.e. Managed) with DHCP option 3
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgdopt3_linked_to_vsdl3subnetunmgd(
                 VSD_L3_SHARED_MGD_OPT3)
@@ -457,20 +457,20 @@ class VSDPublicResourcesTest(
             expect_network_dhcp_nuage_port=True,
             expected_gateway_ip=VSD_L3_SHARED_MGD_OPT3_GW,
             # When I spin a VM in this network
-            # Then the OS  VM-IPaddress is in the  CIDR range
-            # And the VM_interface-IPaddress in the VSD-L3-domain equals the
-            # OS VM-IPaddress
-            # And the VM_interface-IPaddress is different from the
+            # Then the OS VM-IP-address is in the  CIDR range
+            # And the VM-interface-IP-address in the VSD-L3-domain equals the
+            # OS VM-IP-address
+            # And the VM-interface-IP-address is different from the
             # gateway_ip address
             expect_vm_ip_addresses_equal=True
         )
 
     @nuage_test.header()
     def test_vsd_l3_shared_mgd_opt3_l3_unmgd_with_gateway(self):
-        # Given  I have a VSD -L3-domain without IPAM (i.e. UnManaged)
+        # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # with DHCP-options-3
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgdopt3_linked_to_vsdl3subnetunmgd(
                 VSD_L3_SHARED_MGD_OPT3)
@@ -493,20 +493,20 @@ class VSDPublicResourcesTest(
             expect_network_dhcp_nuage_port=True,
             expected_gateway_ip=VSD_L3_SHARED_MGD_OPT3_GW,
             # When I spin a VM in this network
-            # Then the OS  VM-IPaddress is in the CIDR range
-            # And the VM_interface-IPaddress in the VSD-L3-domain equals the
-            # OS VM-IPaddress
-            # And the OS VM-IPaddress is different from the gateway-ip
+            # Then the OS VM-IP-address is in the CIDR range
+            # And the VM-interface-IP-address in the VSD-L3-domain equals the
+            # OS VM-IP-address
+            # And the OS VM-IP-address is different from the gateway-ip
             expect_vm_ip_addresses_equal=True
         )
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
     def test_vsd_l3_shared_mgd_opt3_l3_subnet_unmgd_no_gateway_neg(self):
-        # Given  I have a VSD -L3-domain without IPAM (i.e. UnManaged)
+        # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # with DHCP-options-3
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgdopt3_linked_to_vsdl3subnetunmgd(
                 VSD_L3_SHARED_MGD_OPT3)
@@ -533,10 +533,10 @@ class VSDPublicResourcesTest(
             expect_network_dhcp_nuage_port=True,
             expected_gateway_ip=VSD_L3_SHARED_MGD_OPT3_GW,
             # When I spin a VM in this network
-            # Then the OS  VM-IPaddress is in the CIDR range
-            # And the VM_interface-IPaddress in the VSD-L3-domain equals the
-            # OS VM-IPaddress
-            # And the OS VM-IPaddress is different from the gateway-ip
+            # Then the OS VM-IP-address is in the CIDR range
+            # And the VM-interface-IP-address in the VSD-L3-domain equals the
+            # OS VM-IP-address
+            # And the OS VM-IP-address is different from the gateway-ip
             expect_vm_ip_addresses_equal=True
         )
 
@@ -547,9 +547,9 @@ class VSDPublicResourcesTest(
     ###########################################################################
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l2_shared_unmgd_l2_unmgd_wo_gw_enable_dhcp_not_false_neg(
+    def test_vsd_l2_shared_unmgd_l2_unmgd_wo_gw_enable_dhcp_neg(
             self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
         # And these are linked
         vsd_l2dom = self._given_vsdl2sharedunmgd_lnkd_to_vsdl2domunmgd()
@@ -563,7 +563,7 @@ class VSDPublicResourcesTest(
             #   enable_dhcp == True
             #   CIDR == CIDR of VSD-L3-Shared-domain
             #   nuagenet == UUID of VSD-L3-domain
-            # Then I expect a failure from OS indicating enable_dhcp to be
+            # Then I expect an OS failure indicating enable_dhcp to be
             # False
             enable_dhcp=True,
             cidr=VALID_CIDR,
@@ -575,9 +575,9 @@ class VSDPublicResourcesTest(
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l2_shared_unmgd_l2_unmgd_with_gw_enable_dhcp_not_false_neg(
+    def test_vsd_l2_shared_unmgd_l2_unmgd_with_gw_enable_dhcp_neg(
             self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
         # And these are linked
         vsd_l2dom = self._given_vsdl2sharedunmgd_lnkd_to_vsdl2domunmgd()
@@ -592,7 +592,7 @@ class VSDPublicResourcesTest(
             #   CIDR == CIDR of VSD-L3-Shared-domain
             #   nuagenet == UUID of VSD-L3-domain
             #   gateway_ip in CIDR
-            # Then I expect a failure from OS indicating enable_dhcp to be True
+            # Then I expect an OS failure indicating enable_dhcp to be True
             enable_dhcp=True,
             cidr=base_vsd_managed_networks.VSD_L2_SHARED_MGD_CIDR,
             gateway_ip=base_vsd_managed_networks.VSD_L2_SHARED_MGD_GW,
@@ -603,9 +603,9 @@ class VSDPublicResourcesTest(
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l2_shared_unmgd_l2_unmgd_no_gw_enable_dhcp_not_false_neg(
+    def test_vsd_l2_shared_unmgd_l2_unmgd_no_gw_enable_dhcp_neg(
             self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
         # And these are linked
         vsd_l2dom = self._given_vsdl2sharedunmgd_lnkd_to_vsdl2domunmgd()
@@ -620,8 +620,7 @@ class VSDPublicResourcesTest(
             #   CIDR == CIDR of VSD-L3-Shared-domain
             #   nuagenet == UUID of VSD-L3-domain
             #   no gateway
-            # Then I expect a failure from OS indicating enable_dhcp to be
-            # False
+            # Then I expect an OS failure indicating enable_dhcp to be False
             enable_dhcp=True,
             cidr=base_vsd_managed_networks.VSD_L2_SHARED_MGD_CIDR,
             gateway_ip=None,
@@ -632,8 +631,8 @@ class VSDPublicResourcesTest(
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l2_shared_mgd_l2_unmgd_wo_gw_enable_dhcp_not_false_neg(self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+    def test_vsd_l2_shared_mgd_l2_unmgd_wo_gw_enable_dhcp_neg(self):
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         #     And these are linked
         vsd_l2dom = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
@@ -647,7 +646,7 @@ class VSDPublicResourcesTest(
             #   enable_dhcp == True
             #   CIDR == CIDR of VSD-L3-Shared-domain
             #   nuagenet == UUID of VSD-L3-domain
-            # Then I expect a failure from OS indicating enable_dhcp to be True
+            # Then I expect an OS failure indicating enable_dhcp to be True
             enable_dhcp=False,
             cidr=base_vsd_managed_networks.VSD_L2_SHARED_MGD_CIDR,
             gateway_ip='',
@@ -658,8 +657,8 @@ class VSDPublicResourcesTest(
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l2_shared_mgd_l2_unmgd_with_gw_enable_dhcp_false_neg(self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+    def test_vsd_l2_shared_mgd_l2_unmgd_with_gw_no_dhcp_neg(self):
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         #     And these are linked
         vsd_l2dom = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
@@ -674,7 +673,7 @@ class VSDPublicResourcesTest(
             #   CIDR == CIDR of VSD-L3-Shared-domain
             #   nuagenet == UUID of VSD-L3-domain
             #   gateway_ip in CIDR
-            # Then I expect a failure from OS indicating enable_dhcp to be True
+            # Then I expect an OS failure indicating enable_dhcp to be True
             enable_dhcp=False,
             cidr=base_vsd_managed_networks.VSD_L2_SHARED_MGD_CIDR,
             gateway_ip=base_vsd_managed_networks.VSD_L2_SHARED_MGD_GW,
@@ -685,8 +684,8 @@ class VSDPublicResourcesTest(
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l2_shared_mgd_l2_unmgd_no_gw_enable_dhcp_false_neg(self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+    def test_vsd_l2_shared_mgd_l2_unmgd_no_gw_no_dhcp_neg(self):
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         #     And these are linked
         vsd_l2dom = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
@@ -701,7 +700,7 @@ class VSDPublicResourcesTest(
             #   CIDR == CIDR of VSD-L3-Shared-domain
             #   nuagenet == UUID of VSD-L3-domain
             #   no gateway
-            # Then I expect a failure from OS indicating enable_dhcp to be True
+            # Then I expect an OS failure indicating enable_dhcp to be True
             enable_dhcp=False,
             cidr=base_vsd_managed_networks.VSD_L2_SHARED_MGD_CIDR,
             gateway_ip=None,
@@ -713,7 +712,7 @@ class VSDPublicResourcesTest(
     @decorators.attr(type=['negative'])
     @nuage_test.header()
     def test_vsd_l2_shared_mgd_l2_unmgd_wo_gw_cidr_mismatch_neg(self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # And these are linked
         vsd_l2dom = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
@@ -727,7 +726,7 @@ class VSDPublicResourcesTest(
             #   enable_dhcp == True
             #   CIDR != CIDR of VSD-L2-Shared-domain
             #   nuagenet == UUID of VSD-L3-domain
-            # Then I expect a failure  indicating CIDR mismatch
+            # Then I expect a failure indicating CIDR mismatch
             enable_dhcp=True,
             cidr=VALID_CIDR,
             gateway_ip='',
@@ -739,7 +738,7 @@ class VSDPublicResourcesTest(
     @decorators.attr(type=['negative'])
     @nuage_test.header()
     def test_vsd_l2_shared_mgd_l2_unmgd_with_gw_cidr_mismatch_neg(self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # And these are linked
         vsd_l2dom = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
@@ -754,7 +753,7 @@ class VSDPublicResourcesTest(
             #   CIDR != CIDR of VSD-L2-Shared-domain
             #   nuagenet == UUID of VSD-L3-domain
             #   gateway ip in the wrong CIDR
-            # Then I expect a failure  indicating CIDR mismatch
+            # Then I expect a failure indicating CIDR mismatch
             enable_dhcp=True,
             cidr=VALID_CIDR,
             gateway_ip=VALID_CIDR_GW,
@@ -766,7 +765,7 @@ class VSDPublicResourcesTest(
     @decorators.attr(type=['negative'])
     @nuage_test.header()
     def test_vsd_l2_shared_mgd_l2_no_gw_unmgd_cidr_mismatch_neg(self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # And these are linked
         vsd_l2dom = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
@@ -781,7 +780,7 @@ class VSDPublicResourcesTest(
             #   CIDR != CIDR of VSD-L2-Shared-domain
             #   nuagenet == UUID of VSD-L3-domain
             #   no gateway
-            # Then I expect a failure  indicating CIDR mismatch
+            # Then I expect a failure indicating CIDR mismatch
             enable_dhcp=True,
             cidr=VALID_CIDR,
             gateway_ip=None,
@@ -792,9 +791,9 @@ class VSDPublicResourcesTest(
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l2_shared_mgd_opt3_l2_unmgd_wo_gw_enable_dhcp_not_true_neg(
+    def test_vsd_l2_shared_mgd_opt3_l2_unmgd_wo_gw_no_dhcp_neg(
             self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # with DHCP-option 3 set
         # And these are linked
@@ -810,7 +809,7 @@ class VSDPublicResourcesTest(
             #   enable_dhcp == False
             #   CIDR == CIDR of VSD-L3-Shared-domain
             #   nuagenet == UUID of VSD-L3-domain
-            # Then I expect a failure from OS indicating enable_dhcp to be True
+            # Then I expect an OS failure indicating enable_dhcp to be True
             enable_dhcp=False,
             cidr=VSD_L2_SHARED_MGD_OPT3_CIDR,
             gateway_ip='',
@@ -821,9 +820,9 @@ class VSDPublicResourcesTest(
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l2_shared_mgd_opt_3_l2_unmgd_with_gw_enable_dhcp_not_true_neg(
+    def test_vsd_l2_shared_mgd_opt_3_l2_unmgd_with_gw_no_dhcp_neg(
             self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # with DHCP-option 3 set
         # And these are linked
@@ -850,9 +849,9 @@ class VSDPublicResourcesTest(
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l2_shared_mgd_opt_3_l2_unmgd_no_gw_enable_dhcp_not_true_neg(
+    def test_vsd_l2_shared_mgd_opt_3_l2_unmgd_no_gw_no_dhcp_neg(
             self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # with DHCP-option 3 set
         # And these are linked
@@ -880,7 +879,7 @@ class VSDPublicResourcesTest(
     @decorators.attr(type=['negative'])
     @nuage_test.header()
     def test_vsd_l2_shared_mgd_opt_3_l2_unmgd_wo_gw_cidr_mismatch_neg(self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # with DHCP-option 3 set
         # And these are linked
@@ -896,7 +895,7 @@ class VSDPublicResourcesTest(
             #   enable_dhcp == True
             #   CIDR != CIDR of VSD-L2-Shared-domain
             #   nuagenet == UUID of VSD-L3-domain
-            # Then I expect a failure  indicating CIDR mismatch
+            # Then I expect a failure indicating CIDR mismatch
             enable_dhcp=True,
             cidr=VALID_CIDR,
             gateway_ip='',
@@ -908,7 +907,7 @@ class VSDPublicResourcesTest(
     @decorators.attr(type=['negative'])
     @nuage_test.header()
     def test_vsd_l2_shared_mgd_opt_3_l2_unmgd_with_gw_cidr_mismatch_neg(self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # with DHCP-option 3 set
         # And these are linked
@@ -925,7 +924,7 @@ class VSDPublicResourcesTest(
             #   CIDR != CIDR of VSD-L2-Shared-domain
             #   nuagenet == UUID of VSD-L3-domain
             #   gateway ip in the wrong CIDR
-            # Then I expect a failure  indicating CIDR mismatch
+            # Then I expect a failure indicating CIDR mismatch
             enable_dhcp=True,
             cidr=VALID_CIDR,
             gateway_ip=VALID_CIDR_GW,
@@ -937,7 +936,7 @@ class VSDPublicResourcesTest(
     @decorators.attr(type=['negative'])
     @nuage_test.header()
     def test_vsd_l2_shared_mgd_opt_3_l2_unmgd_no_gw_cidr_mismatch_neg(self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # with DHCP-option 3 set
         # And these are linked
@@ -954,7 +953,7 @@ class VSDPublicResourcesTest(
             #   CIDR != CIDR of VSD-L2-Shared-domain
             #   nuagenet == UUID of VSD-L3-domain
             #   no gateway
-            # Then I expect a failure  indicating CIDR mismatch
+            # Then I expect a failure indicating CIDR mismatch
             enable_dhcp=True,
             cidr=VALID_CIDR,
             gateway_ip=None,
@@ -965,11 +964,11 @@ class VSDPublicResourcesTest(
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l3_shared_mgd_l3_unmgd_wo_gw_enable_dhcp_not_true_neg(self):
-        # Given  I have a VSD -L3-domain without IPAM (i.e. UnManaged)
+    def test_vsd_l3_shared_mgd_l3_unmgd_wo_gw_no_dhcp_neg(self):
+        # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # with dhcp options 3
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
@@ -993,11 +992,11 @@ class VSDPublicResourcesTest(
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l3_shared_mgd_l3_unmgd_with_gw_enable_dhcp_not_true_neg(self):
-        # Given  I have a VSD -L3-domain without IPAM (i.e. UnManaged)
+    def test_vsd_l3_shared_mgd_l3_unmgd_with_gw_no_dhcp_neg(self):
+        # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # with dhcp options 3
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
@@ -1022,11 +1021,11 @@ class VSDPublicResourcesTest(
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l3_shared_mgd_l3_unmgd_no_gw_enable_dhcp_not_true_neg(self):
-        # Given  I have a VSD -L3-domain without IPAM (i.e. UnManaged)
+    def test_vsd_l3_shared_mgd_l3_unmgd_no_gw_no_dhcp_neg(self):
+        # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # with dhcp options 3
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
@@ -1051,12 +1050,12 @@ class VSDPublicResourcesTest(
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l3_shared_mgd_opt3_l3_unmgd_wo_gw_enable_dhcp_not_true_neg(
+    def test_vsd_l3_shared_mgd_opt3_l3_unmgd_wo_gw_no_dhcp_neg(
             self):
-        # Given  I have a VSD -L3-domain without IPAM (i.e. UnManaged)
+        # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # with dhcp options 3
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgdopt3_linked_to_vsdl3subnetunmgd(
                 VSD_L3_SHARED_MGD_OPT3)
@@ -1081,11 +1080,11 @@ class VSDPublicResourcesTest(
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l3_shared_mgd_opt3_l3_unmgd_with_gw_enable_dhcp_not_true_neg(
+    def test_vsd_l3_shared_mgd_opt3_l3_unmgd_with_gw_no_dhcp_neg(
             self):
-        # Given  I have a VSD -L3-domain without IPAM (i.e. UnManaged)
+        # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgdopt3_linked_to_vsdl3subnetunmgd(
                 VSD_L3_SHARED_MGD_OPT3)
@@ -1111,11 +1110,11 @@ class VSDPublicResourcesTest(
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l3_shared_mgd_opt3_l3_unmgd_no_gw_enable_dhcp_not_true_neg(
+    def test_vsd_l3_shared_mgd_opt3_l3_unmgd_no_gw_no_dhcp_neg(
             self):
-        # Given  I have a VSD -L3-domain without IPAM (i.e. UnManaged)
+        # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgdopt3_linked_to_vsdl3subnetunmgd(
                 VSD_L3_SHARED_MGD_OPT3)
@@ -1142,10 +1141,10 @@ class VSDPublicResourcesTest(
     @decorators.attr(type=['negative'])
     @nuage_test.header()
     def test_vsd_l3_shared_mgd_l3_unmgd_wo_gw_cidr_mismatch_neg(self):
-        # Given  I have a VSD -L3-domain without IPAM (i.e. UnManaged)
+        # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # with dhcp options 3
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
@@ -1170,10 +1169,10 @@ class VSDPublicResourcesTest(
     @decorators.attr(type=['negative'])
     @nuage_test.header()
     def test_vsd_l3_shared_mgd_l3_unmgd_with_gw_cidr_mismatch_neg(self):
-        # Given  I have a VSD -L3-domain without IPAM (i.e. UnManaged)
+        # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # with dhcp options 3
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
@@ -1199,10 +1198,10 @@ class VSDPublicResourcesTest(
     @decorators.attr(type=['negative'])
     @nuage_test.header()
     def test_vsd_l3_shared_mgd_l3_unmgd_no_gw_cidr_mismatch_neg(self):
-        # Given  I have a VSD -L3-domain without IPAM (i.e. UnManaged)
+        # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # with dhcp options 3
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
@@ -1228,10 +1227,10 @@ class VSDPublicResourcesTest(
     @decorators.attr(type=['negative'])
     @nuage_test.header()
     def test_vsd_l3_shared_mgd_l3_unmgd_with_gw_gw_mismatch_neg(self):
-        # Given  I have a VSD -L3-domain without IPAM (i.e. UnManaged)
+        # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # with dhcp options 3
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
@@ -1256,7 +1255,7 @@ class VSDPublicResourcesTest(
 
 
 class VSDPublicResourcesSharedNetworksTest(
-        base_vsd_public_resources.BaseVSDPublicResourcesTest):
+        base_vsd_public_resources.BaseVSDPublicResources):
 
     @classmethod
     # As i understand all these tests were written for monolithic plugin
@@ -1270,10 +1269,10 @@ class VSDPublicResourcesSharedNetworksTest(
         super(VSDPublicResourcesSharedNetworksTest, cls).resource_setup()
 
     @nuage_test.header()
-    def test_os_shared_vsd_l2_shared_unmgd_l2_unmgd_without_gateway_ip(self):
-        # Given  I have a VSD -L2-domain without IPAM (i.e. UnManaged)
+    def test_os_shared_vsd_l2_shared_unmgd_l2_unmgd_without_gw_ip(self):
+        # Given I have a VSD-L2-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
-        # And  these are linked
+        # and these are linked
         vsd_l2dom_unmgd = self._given_vsdl2sharedunmgd_lnkd_to_vsdl2domunmgd()
         self._check_vsd_l2_shared_l2_unmgd(
             vsd_l2dom_unmgd=vsd_l2dom_unmgd,
@@ -1292,16 +1291,16 @@ class VSDPublicResourcesSharedNetworksTest(
             expect_network_dhcp_nuage_port=False,
             expected_gateway_ip=None,
             # When I spin a VM in this network
-            # Then the OS  VM-IPaddress is in the valid CIDR range
-            # And the VMinterface-IPaddress in the VSD-L2-domain is empty
+            # Then the OS VM-IP-address is in the valid CIDR range
+            # And the VM-interface-IP-address in the VSD-L2-domain is empty
             expect_vm_ip_addresses_equal=''
         )
 
     @nuage_test.header()
-    def test_vsd_l2_shared_unmgd_l2_unmgd_without_gateway_ip(self):
-        # Given  I have a VSD -L2-domain without IPAM (i.e. UnManaged)
+    def test_vsd_l2_shared_unmgd_l2_unmgd_without_gw_ip(self):
+        # Given I have a VSD-L2-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
-        # And  these are linked
+        # and these are linked
         vsd_l2dom_unmgd = self._given_vsdl2sharedunmgd_lnkd_to_vsdl2domunmgd()
         self._check_vsd_l2_shared_l2_unmgd(
             vsd_l2dom_unmgd=vsd_l2dom_unmgd,
@@ -1320,16 +1319,16 @@ class VSDPublicResourcesSharedNetworksTest(
             expect_network_dhcp_nuage_port=False,
             expected_gateway_ip=None,
             # When I spin a VM in this network
-            # Then the OS  VM-IPaddress is in the valid CIDR range
-            # And the VMinterface-IPaddress in the VSD-L2-domain is empty
+            # Then the OS VM-IP-address is in the valid CIDR range
+            # And the VM-interface-IP-address in the VSD-L2-domain is empty
             expect_vm_ip_addresses_equal=''
         )
 
     @nuage_test.header()
-    def test_vsd_l2_shared_unmgd_l2_unmgd_with_gateway_ip(self):
-        # Given  I have a VSD -L2-domain without IPAM (i.e. UnManaged)
+    def test_vsd_l2_shared_unmgd_l2_unmgd_with_gw_ip(self):
+        # Given I have a VSD-L2-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
-        # And  these are linked
+        # and these are linked
         vsd_l2dom_unmgd = self._given_vsdl2sharedunmgd_lnkd_to_vsdl2domunmgd()
         self._check_vsd_l2_shared_l2_unmgd(
             vsd_l2dom_unmgd=vsd_l2dom_unmgd,
@@ -1348,14 +1347,14 @@ class VSDPublicResourcesSharedNetworksTest(
             expect_network_dhcp_nuage_port=False,
             expected_gateway_ip=None,
             # When I spin a VM in this network
-            # Then the OS  VM-IPaddress is in the valid CIDR range
-            # And the VMinterface-IPaddress in the VSD-L2-domain is empty
+            # Then the OS VM-IP-address is in the valid CIDR range
+            # And the VM-interface-IP-address in the VSD-L2-domain is empty
             expect_vm_ip_addresses_equal=''
         )
 
     @nuage_test.header()
     def test_vsd_l2_shared_unmgd_l2_unmgd_no_gateway(self):
-        # Given  I have a VSD -L2-domain without IPAM (i.e. UnManaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
         # And these are linked
         vsd_l2dom_unmgd = self._given_vsdl2sharedunmgd_lnkd_to_vsdl2domunmgd()
@@ -1377,16 +1376,16 @@ class VSDPublicResourcesSharedNetworksTest(
             expect_network_dhcp_nuage_port=False,
             expected_gateway_ip=None,
             # When I spin a VM in this network
-            # Then the OS  VM-IPaddress is in the valid CIDR range
-            # And the VMinterface-IPaddress in the VSD-L2-domain is empty
+            # Then the OS VM-IP-address is in the valid CIDR range
+            # And the VM-interface-IP-address in the VSD-L2-domain is empty
             expect_vm_ip_addresses_equal=''
         )
 
     @nuage_test.header()
     def test_vsd_l2_shared_mgd_l2_unmgd_without_gateway(self):
-        # Given  I have a VSD -L2-domain without IPAM (i.e. UnManaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
-        # And  these are linked
+        # and these are linked
         vsd_l2dom_unmgd = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
         self._check_vsd_l2_shared_l2_unmgd(
             vsd_l2dom_unmgd=vsd_l2dom_unmgd,
@@ -1405,15 +1404,15 @@ class VSDPublicResourcesSharedNetworksTest(
             expect_network_dhcp_nuage_port=True,
             expected_gateway_ip=None,
             # When I spin a VM in this network
-            # Then the OS  VM-IPaddress is in the valid CIDR range
-            # And the VMinterface-IPaddress in the VSD-L2-domain is empty
+            # Then the OS VM-IP-address is in the valid CIDR range
+            # And the VM-interface-IP-address in the VSD-L2-domain is empty
             expect_vm_ip_addresses_equal=True
         )
 
     @nuage_test.header()
     @decorators.attr(type=['negative'])
-    def test_vsd_l2_shared_mgd_l2_unmgd_with_gateway_neg(self):
-        # "Given  I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+    def test_vsd_l2_shared_mgd_l2_unmgd_with_gw_neg(self):
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # And these are linked
         vsd_l2dom_unmgd = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
@@ -1433,7 +1432,7 @@ class VSDPublicResourcesSharedNetworksTest(
 
     @nuage_test.header()
     def test_vsd_l2_shared_mgd_l2_unmgd_no_gateway(self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # And these are linked
         vsd_l2dom_unmgd = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
@@ -1455,15 +1454,15 @@ class VSDPublicResourcesSharedNetworksTest(
             expect_network_dhcp_nuage_port=True,
             expected_gateway_ip=None,
             # When I spin a VM in this network
-            # Then the OS  VM-IPaddress is in the CIDR range
-            # And the VMinterface-IPaddress in the VSD-L2-domain equals the
-            # OS VM-IPaddress
+            # Then the OS VM-IP-address is in the CIDR range
+            # And the VM-interface-IP-address in the VSD-L2-domain equals the
+            # OS VM-IP-address
             expect_vm_ip_addresses_equal=True
         )
 
     @nuage_test.header()
     def test_vsd_l2_shared_mgd_opt3_l2_unmgd_without_gateway(self):
-        # Given  I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # with DHCP-option 3 set
         # And these are linked
@@ -1488,18 +1487,18 @@ class VSDPublicResourcesSharedNetworksTest(
             expect_network_dhcp_nuage_port=True,
             expected_gateway_ip=VSD_L2_SHARED_MGD_OPT3,
             # When I spin a VM in this network
-            # Then the OS  VM-IPaddress is in the CIDR range
-            # And the VMinterface-IPaddress in the VSD-L2-domain equals the
-            # OS VM-IPaddress
+            # Then the OS VM-IP-address is in the CIDR range
+            # And the VM-interface-IP-address in the VSD-L2-domain equals the
+            # OS VM-IP-address
             expect_vm_ip_addresses_equal=True
         )
 
     @nuage_test.header()
     def test_vsd_l2_shared_mgd_opt3_l2_unmgd_with_gateway(self):
-        # Given  I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # with DHCP-option 3 set
-        # And  these are linked
+        # and these are linked
         vsd_l2dom_unmgd = \
             self._given_vsdl2sharedmgdopt3_linked_to_vsdl2domunmgd(
                 VSD_L2_SHARED_MGD_OPT3)
@@ -1521,19 +1520,19 @@ class VSDPublicResourcesSharedNetworksTest(
             expect_network_dhcp_nuage_port=True,
             expected_gateway_ip=VSD_L2_SHARED_MGD_OPT3,
             # When I spin a VM in this network
-            # Then the OS  VM-IPaddress is in the CIDR range
-            # And the VMinterface-IPaddress in the VSD-L2-domain equals
-            # the OS VM-IPaddress
+            # Then the OS VM-IP-address is in the CIDR range
+            # And the VM-interface-IP-address in the VSD-L2-domain equals
+            # the OS VM-IP-address
             expect_vm_ip_addresses_equal=True
         )
 
     @nuage_test.header()
     @decorators.attr(type=['negative'])
     def test_vsd_l2_shared_mgd_opt3_l2_unmgd_no_gateway_neg(self):
-        # Given  I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # with DHCP-option 3 set
-        # And  these are linked
+        # and these are linked
         # Then I expect a failure from OS
         # Supported only when dhcp_option-3 is NOT set
         vsd_l2dom_unmgd = \
@@ -1564,10 +1563,10 @@ class VSDPublicResourcesSharedNetworksTest(
 
     @nuage_test.header()
     def test_vsd_l3_shared_mgd_l3_unmgd_without_gateway(self):
-        # Given  I have a VSD -L3-domain in a public zone
+        # Given I have a VSD-L3-domain in a public zone
         # (i.e. without IPAM (/ UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self._check_vsd_l3_shared_l2_unmgd(
@@ -1588,19 +1587,19 @@ class VSDPublicResourcesSharedNetworksTest(
             expect_network_dhcp_nuage_port=True,
             expected_gateway_ip=base_vsd_managed_networks.VSD_L3_SHARED_MGD_GW,
             # When I spin a VM in this network
-            # Then the OS  VM-IPaddress is in the  CIDR range
-            # And the VM_interface-IPaddress in the VSD-L3-domain equals the
-            # OS VM-IPaddress
-            # And the VM_interface-IPaddress is different from the
+            # Then the OS VM-IP-address is in the  CIDR range
+            # And the VM-interface-IP-address in the VSD-L3-domain equals the
+            # OS VM-IP-address
+            # And the VM-interface-IP-address is different from the
             # gateway_ip address
             expect_vm_ip_addresses_equal=True
         )
 
     @nuage_test.header()
     def test_vsd_l3_shared_mgd_l3_unmgd_with_gateway(self):
-        # Given  I have a VSD -L3-domain without IPAM (i.e. UnManaged)
+        # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self._check_vsd_l3_shared_l2_unmgd(
@@ -1622,19 +1621,19 @@ class VSDPublicResourcesSharedNetworksTest(
             expect_network_dhcp_nuage_port=True,
             expected_gateway_ip=base_vsd_managed_networks.VSD_L3_SHARED_MGD_GW,
             # When I spin a VM in this network
-            # Then the OS  VM-IPaddress is in the CIDR range
-            # And the VM_interface-IPaddress in the VSD-L3-domain equals the
-            # OS VM-IPaddress
-            # And the OS VM-IPaddress is different from the gateway-ip
+            # Then the OS VM-IP-address is in the CIDR range
+            # And the VM-interface-IP-address in the VSD-L3-domain equals the
+            # OS VM-IP-address
+            # And the OS VM-IP-address is different from the gateway-ip
             expect_vm_ip_addresses_equal=True
         )
 
     @nuage_test.header()
     @decorators.attr(type=['negative'])
     def test_vsd_l3_shared_mgd_l3_unmgd_no_gateway_neg(self):
-        # Given  I have a VSD -L3-domain without IPAM (i.e. UnManaged)
+        # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
@@ -1660,20 +1659,20 @@ class VSDPublicResourcesSharedNetworksTest(
             expect_network_dhcp_nuage_port=True,
             expected_gateway_ip=base_vsd_managed_networks.VSD_L3_SHARED_MGD_GW,
             # When I spin a VM in this network
-            # Then the OS  VM-IPaddress is in the CIDR range
-            # And the VM_interface-IPaddress in the VSD-L3-domain equals the
-            # OS VM-IPaddress
-            # And the OS VM-IPaddress is different from the gateway-ip
+            # Then the OS VM-IP-address is in the CIDR range
+            # And the VM-interface-IP-address in the VSD-L3-domain equals the
+            # OS VM-IP-address
+            # And the OS VM-IP-address is different from the gateway-ip
             expect_vm_ip_addresses_equal=True
         )
 
     @nuage_test.header()
     def test_vsd_l3_shared_mgd_opt3_l3_unmgd_without_gateway(self):
-        # Given  I have a VSD -L3-domain in a public zone
+        # Given I have a VSD-L3-domain in a public zone
         # (i.e. without IPAM (/ UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # with DHCP option 3
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgdopt3_linked_to_vsdl3subnetunmgd(
                 VSD_L3_SHARED_MGD_OPT3)
@@ -1695,20 +1694,20 @@ class VSDPublicResourcesSharedNetworksTest(
             expect_network_dhcp_nuage_port=True,
             expected_gateway_ip=VSD_L3_SHARED_MGD_OPT3_GW,
             # When I spin a VM in this network
-            # Then the OS  VM-IPaddress is in the  CIDR range
-            # And the VM_interface-IPaddress in the VSD-L3-domain equals the
-            # OS VM-IPaddress
-            # And the VM_interface-IPaddress is different from the
+            # Then the OS VM-IP-address is in the  CIDR range
+            # And the VM-interface-IP-address in the VSD-L3-domain equals the
+            # OS VM-IP-address
+            # And the VM-interface-IP-address is different from the
             # gateway_ip address
             expect_vm_ip_addresses_equal=True
         )
 
     @nuage_test.header()
     def test_vsd_l3_shared_mgd_opt3_l3_unmgd_with_gateway(self):
-        # Given  I have a VSD -L3-domain without IPAM (i.e. UnManaged)
+        # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # with DHCP-options-3
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgdopt3_linked_to_vsdl3subnetunmgd(
                 VSD_L3_SHARED_MGD_OPT3)
@@ -1731,50 +1730,10 @@ class VSDPublicResourcesSharedNetworksTest(
             expect_network_dhcp_nuage_port=True,
             expected_gateway_ip=VSD_L3_SHARED_MGD_OPT3_GW,
             # When I spin a VM in this network
-            # Then the OS  VM-IPaddress is in the CIDR range
-            # And the VM_interface-IPaddress in the VSD-L3-domain equals the
-            # OS VM-IPaddress
-            # And the OS VM-IPaddress is different from the gateway-ip
-            expect_vm_ip_addresses_equal=True
-        )
-
-    @decorators.attr(type=['negative'])
-    @nuage_test.header()
-    def test_vsd_l3_shared_mgd_opt3_l3_unmgd_no_gateway_neg(self):
-        # Given  I have a VSD -L3-domain without IPAM (i.e. UnManaged)
-        # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
-        # with DHCP-options-3
-        # And  these are linked
-        vsd_l3_unmgd_subnet = \
-            self._given_vsdl3sharedmgdopt3_linked_to_vsdl3subnetunmgd(
-                VSD_L3_SHARED_MGD_OPT3)
-        self.assertRaisesRegex(
-            exceptions.BadRequest,
-            EXPECT_GATEWAY_IP_MISMATCH,
-            self._check_vsd_l3_shared_l2_unmgd,
-            vsd_l3_dom_subnet=vsd_l3_unmgd_subnet,
-            os_shared_network=True,
-            # When I try to create an OS subnet with
-            #   enable_dhcp == True
-            #   CIDR == CIDR of VSD-L3-Shared-domain
-            #   nuagenet == UUID of VSD-L3-domain
-            #   no-gateway
-            # Then I expect a failure indicating gateway IP mismatch
-            enable_dhcp=True,
-            cidr=VSD_L3_SHARED_MGD_OPT3_CIDR,
-            gateway_ip=None,
-            # Then the OS subnet has
-            #   a  neutron port device_owner:network:dhcp:nuage
-            #   an OS allocation pool covering the full CIDR range
-            #   (except the GW-ip)
-            #   gateway_ip equal to gateway-ip of VSD-L3-Shared-domain
-            expect_network_dhcp_nuage_port=True,
-            expected_gateway_ip=VSD_L3_SHARED_MGD_OPT3_GW,
-            # When I spin a VM in this network
-            # Then the OS  VM-IPaddress is in the CIDR range
-            # And the VM_interface-IPaddress in the VSD-L3-domain equals the
-            # OS VM-IPaddress
-            # And the OS VM-IPaddress is different from the gateway-ip
+            # Then the OS VM-IP-address is in the CIDR range
+            # And the VM-interface-IP-address in the VSD-L3-domain equals the
+            # OS VM-IP-address
+            # And the OS VM-IP-address is different from the gateway-ip
             expect_vm_ip_addresses_equal=True
         )
 
@@ -1786,9 +1745,9 @@ class VSDPublicResourcesSharedNetworksTest(
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l2_shared_unmgd_l2_unmgd_wo_gw_enable_dhcp_not_false_neg(
+    def test_vsd_l2_shared_unmgd_l2_unmgd_wo_gw_enable_dhcp_neg(
             self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
         # And these are linked
         vsd_l2dom = self._given_vsdl2sharedunmgd_lnkd_to_vsdl2domunmgd()
@@ -1802,7 +1761,7 @@ class VSDPublicResourcesSharedNetworksTest(
             #   enable_dhcp == True
             #   CIDR == CIDR of VSD-L3-Shared-domain
             #   nuagenet == UUID of VSD-L3-domain
-            # Then I expect a failure from OS indicating enable_dhcp to be
+            # Then I expect an OS failure indicating enable_dhcp to be
             # False
             enable_dhcp=True,
             cidr=VALID_CIDR,
@@ -1814,9 +1773,9 @@ class VSDPublicResourcesSharedNetworksTest(
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l2_shared_unmgd_l2_unmgd_with_gw_enable_dhcp_not_false_neg(
+    def test_vsd_l2_shared_unmgd_l2_unmgd_with_gw_enable_dhcp_neg(
             self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
         # And these are linked
         vsd_l2dom = self._given_vsdl2sharedunmgd_lnkd_to_vsdl2domunmgd()
@@ -1831,7 +1790,7 @@ class VSDPublicResourcesSharedNetworksTest(
             #   CIDR == CIDR of VSD-L3-Shared-domain
             #   nuagenet == UUID of VSD-L3-domain
             #   gateway_ip in CIDR
-            # Then I expect a failure from OS indicating enable_dhcp to be True
+            # Then I expect an OS failure indicating enable_dhcp to be True
             enable_dhcp=True,
             cidr=base_vsd_managed_networks.VSD_L2_SHARED_MGD_CIDR,
             gateway_ip=base_vsd_managed_networks.VSD_L2_SHARED_MGD_GW,
@@ -1842,9 +1801,9 @@ class VSDPublicResourcesSharedNetworksTest(
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l2_shared_unmgd_l2_unmgd_no_gw_enable_dhcp_not_false_neg(
+    def test_vsd_l2_shared_unmgd_l2_unmgd_no_gw_enable_dhcp_neg(
             self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
         # And these are linked
         vsd_l2dom = self._given_vsdl2sharedunmgd_lnkd_to_vsdl2domunmgd()
@@ -1859,7 +1818,7 @@ class VSDPublicResourcesSharedNetworksTest(
             #   CIDR == CIDR of VSD-L3-Shared-domain
             #   nuagenet == UUID of VSD-L3-domain
             #   no gateway
-            # Then I expect a failure from OS indicating enable_dhcp to be
+            # Then I expect an OS failure indicating enable_dhcp to be
             # False
             enable_dhcp=True,
             cidr=base_vsd_managed_networks.VSD_L2_SHARED_MGD_CIDR,
@@ -1871,8 +1830,8 @@ class VSDPublicResourcesSharedNetworksTest(
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l2_shared_mgd_l2_unmgd_wo_gw_enable_dhcp_not_false_neg(self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+    def test_vsd_l2_shared_mgd_l2_unmgd_wo_gw_enable_dhcp_neg(self):
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         #     And these are linked
         vsd_l2dom = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
@@ -1886,7 +1845,7 @@ class VSDPublicResourcesSharedNetworksTest(
             #   enable_dhcp == True
             #   CIDR == CIDR of VSD-L3-Shared-domain
             #   nuagenet == UUID of VSD-L3-domain
-            # Then I expect a failure from OS indicating enable_dhcp to be True
+            # Then I expect an OS failure indicating enable_dhcp to be True
             enable_dhcp=False,
             cidr=base_vsd_managed_networks.VSD_L2_SHARED_MGD_CIDR,
             gateway_ip='',
@@ -1897,8 +1856,8 @@ class VSDPublicResourcesSharedNetworksTest(
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l2_shared_mgd_l2_unmgd_with_gw_enable_dhcp_false_neg(self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+    def test_vsd_l2_shared_mgd_l2_unmgd_with_gw_no_dhcp_neg(self):
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         #     And these are linked
         vsd_l2dom = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
@@ -1913,7 +1872,7 @@ class VSDPublicResourcesSharedNetworksTest(
             #   CIDR == CIDR of VSD-L3-Shared-domain
             #   nuagenet == UUID of VSD-L3-domain
             #   gateway_ip in CIDR
-            # Then I expect a failure from OS indicating enable_dhcp to be True
+            # Then I expect an OS failure indicating enable_dhcp to be True
             enable_dhcp=False,
             cidr=base_vsd_managed_networks.VSD_L2_SHARED_MGD_CIDR,
             gateway_ip=base_vsd_managed_networks.VSD_L2_SHARED_MGD_GW,
@@ -1924,8 +1883,8 @@ class VSDPublicResourcesSharedNetworksTest(
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l2_shared_mgd_l2_unmgd_no_gw_enable_dhcp_false_neg(self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+    def test_vsd_l2_shared_mgd_l2_unmgd_no_gw_no_dhcp_neg(self):
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         #     And these are linked
         vsd_l2dom = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
@@ -1940,7 +1899,7 @@ class VSDPublicResourcesSharedNetworksTest(
             #   CIDR == CIDR of VSD-L3-Shared-domain
             #   nuagenet == UUID of VSD-L3-domain
             #   no gateway
-            # Then I expect a failure from OS indicating enable_dhcp to be True
+            # Then I expect an OS failure indicating enable_dhcp to be True
             enable_dhcp=False,
             cidr=base_vsd_managed_networks.VSD_L2_SHARED_MGD_CIDR,
             gateway_ip=None,
@@ -1952,7 +1911,7 @@ class VSDPublicResourcesSharedNetworksTest(
     @decorators.attr(type=['negative'])
     @nuage_test.header()
     def test_vsd_l2_shared_mgd_l2_unmgd_wo_gw_cidr_mismatch_neg(self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # And these are linked
         vsd_l2dom = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
@@ -1966,7 +1925,7 @@ class VSDPublicResourcesSharedNetworksTest(
             #   enable_dhcp == True
             #   CIDR != CIDR of VSD-L2-Shared-domain
             #   nuagenet == UUID of VSD-L3-domain
-            # Then I expect a failure  indicating CIDR mismatch
+            # Then I expect a failure indicating CIDR mismatch
             enable_dhcp=True,
             cidr=VALID_CIDR,
             gateway_ip='',
@@ -1978,7 +1937,7 @@ class VSDPublicResourcesSharedNetworksTest(
     @decorators.attr(type=['negative'])
     @nuage_test.header()
     def test_vsd_l2_shared_mgd_l2_unmgd_with_gw_cidr_mismatch_neg(self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # And these are linked
         vsd_l2dom = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
@@ -1993,7 +1952,7 @@ class VSDPublicResourcesSharedNetworksTest(
             #   CIDR != CIDR of VSD-L2-Shared-domain
             #   nuagenet == UUID of VSD-L3-domain
             #   gateway ip in the wrong CIDR
-            # Then I expect a failure  indicating CIDR mismatch
+            # Then I expect a failure indicating CIDR mismatch
             enable_dhcp=True,
             cidr=VALID_CIDR,
             gateway_ip=VALID_CIDR_GW,
@@ -2005,7 +1964,7 @@ class VSDPublicResourcesSharedNetworksTest(
     @decorators.attr(type=['negative'])
     @nuage_test.header()
     def test_vsd_l2_shared_mgd_l2_no_gw_unmgd_cidr_mismatch_neg(self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # And these are linked
         vsd_l2dom = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
@@ -2020,7 +1979,7 @@ class VSDPublicResourcesSharedNetworksTest(
             #   CIDR != CIDR of VSD-L2-Shared-domain
             #   nuagenet == UUID of VSD-L3-domain
             #   no gateway
-            # Then I expect a failure  indicating CIDR mismatch
+            # Then I expect a failure indicating CIDR mismatch
             enable_dhcp=True,
             cidr=VALID_CIDR,
             gateway_ip=None,
@@ -2031,9 +1990,9 @@ class VSDPublicResourcesSharedNetworksTest(
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l2_shared_mgd_opt3_l2_unmgd_wo_gw_enable_dhcp_not_true_neg(
+    def test_vsd_l2_shared_mgd_opt3_l2_unmgd_wo_gw_no_dhcp_neg(
             self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # with DHCP-option 3 set
         # And these are linked
@@ -2049,7 +2008,7 @@ class VSDPublicResourcesSharedNetworksTest(
             #   enable_dhcp == False
             #   CIDR == CIDR of VSD-L3-Shared-domain
             #   nuagenet == UUID of VSD-L3-domain
-            # Then I expect a failure from OS indicating enable_dhcp to be True
+            # Then I expect an OS failure indicating enable_dhcp to be True
             enable_dhcp=False,
             cidr=VSD_L2_SHARED_MGD_OPT3_CIDR,
             gateway_ip='',
@@ -2060,9 +2019,9 @@ class VSDPublicResourcesSharedNetworksTest(
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l2_shared_mgd_opt_3_l2_unmgd_with_gw_enable_dhcp_not_true_neg(
+    def test_vsd_l2_shared_mgd_opt_3_l2_unmgd_with_gw_no_dhcp_neg(
             self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # with DHCP-option 3 set
         # And these are linked
@@ -2089,9 +2048,9 @@ class VSDPublicResourcesSharedNetworksTest(
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l2_shared_mgd_opt_3_l2_unmgd_no_gw_enable_dhcp_not_true_neg(
+    def test_vsd_l2_shared_mgd_opt_3_l2_unmgd_no_gw_no_dhcp_neg(
             self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # with DHCP-option 3 set
         # And these are linked
@@ -2119,7 +2078,7 @@ class VSDPublicResourcesSharedNetworksTest(
     @decorators.attr(type=['negative'])
     @nuage_test.header()
     def test_vsd_l2_shared_mgd_opt_3_l2_unmgd_wo_gw_cidr_mismatch_neg(self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # with DHCP-option 3 set
         # And these are linked
@@ -2135,7 +2094,7 @@ class VSDPublicResourcesSharedNetworksTest(
             #   enable_dhcp == True
             #   CIDR != CIDR of VSD-L2-Shared-domain
             #   nuagenet == UUID of VSD-L3-domain
-            # Then I expect a failure  indicating CIDR mismatch
+            # Then I expect a failure indicating CIDR mismatch
             enable_dhcp=True,
             cidr=VALID_CIDR,
             gateway_ip='',
@@ -2147,7 +2106,7 @@ class VSDPublicResourcesSharedNetworksTest(
     @decorators.attr(type=['negative'])
     @nuage_test.header()
     def test_vsd_l2_shared_mgd_opt_3_l2_unmgd_with_gw_cidr_mismatch_neg(self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # with DHCP-option 3 set
         # And these are linked
@@ -2164,7 +2123,7 @@ class VSDPublicResourcesSharedNetworksTest(
             #   CIDR != CIDR of VSD-L2-Shared-domain
             #   nuagenet == UUID of VSD-L3-domain
             #   gateway ip in the wrong CIDR
-            # Then I expect a failure  indicating CIDR mismatch
+            # Then I expect a failure indicating CIDR mismatch
             enable_dhcp=True,
             cidr=VALID_CIDR,
             gateway_ip=VALID_CIDR_GW,
@@ -2176,7 +2135,7 @@ class VSDPublicResourcesSharedNetworksTest(
     @decorators.attr(type=['negative'])
     @nuage_test.header()
     def test_vsd_l2_shared_mgd_opt_3_l2_unmgd_no_gw_cidr_mismatch_neg(self):
-        # Given I have a VSD -L2-domain without IPAM (i.e. unmanaged)
+        # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # with DHCP-option 3 set
         # And these are linked
@@ -2194,7 +2153,7 @@ class VSDPublicResourcesSharedNetworksTest(
             #   CIDR != CIDR of VSD-L2-Shared-domain
             #   nuagenet == UUID of VSD-L3-domain
             #   no gateway
-            # Then I expect a failure  indicating CIDR mismatch
+            # Then I expect a failure indicating CIDR mismatch
             enable_dhcp=True,
             cidr=VALID_CIDR,
             gateway_ip=None,
@@ -2205,11 +2164,30 @@ class VSDPublicResourcesSharedNetworksTest(
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l3_shared_mgd_l3_unmgd_wo_gw_enable_dhcp_not_true_neg(self):
-        # Given  I have a VSD -L3-domain without IPAM (i.e. UnManaged)
+    def test_vsd_l3_shared_mgd_opt3_l3_unmgd_no_gateway_neg(self):
+        # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
+        # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
+        # with DHCP-options-3
+        # and these are linked
+        vsd_l3_unmgd_subnet = \
+            self._given_vsdl3sharedmgdopt3_linked_to_vsdl3subnetunmgd(
+                VSD_L3_SHARED_MGD_OPT3)
+
+        self._create_vsd_mgd_subnet(
+            vsd_l3_unmgd_subnet,
+            os_shared_network=True,
+            enable_dhcp=True,
+            cidr=VSD_L3_SHARED_MGD_OPT3_CIDR,
+            gateway_ip=None,  # bad : must be VSD_L3_SHARED_MGD_OPT3
+            must_fail=True)
+
+    @decorators.attr(type=['negative'])
+    @nuage_test.header()
+    def test_vsd_l3_shared_mgd_l3_unmgd_wo_gw_no_dhcp_neg(self):
+        # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # with dhcp options 3
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
@@ -2233,11 +2211,11 @@ class VSDPublicResourcesSharedNetworksTest(
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l3_shared_mgd_l3_unmgd_with_gw_enable_dhcp_not_true_neg(self):
-        # Given  I have a VSD -L3-domain without IPAM (i.e. UnManaged)
+    def test_vsd_l3_shared_mgd_l3_unmgd_with_gw_no_dhcp_neg(self):
+        # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # with dhcp options 3
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
@@ -2262,11 +2240,11 @@ class VSDPublicResourcesSharedNetworksTest(
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l3_shared_mgd_l3_unmgd_no_gw_enable_dhcp_not_true_neg(self):
-        # Given  I have a VSD -L3-domain without IPAM (i.e. UnManaged)
+    def test_vsd_l3_shared_mgd_l3_unmgd_no_gw_no_dhcp_neg(self):
+        # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # with dhcp options 3
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
@@ -2291,12 +2269,12 @@ class VSDPublicResourcesSharedNetworksTest(
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l3_shared_mgd_opt3_l3_unmgd_wo_gw_enable_dhcp_not_true_neg(
+    def test_vsd_l3_shared_mgd_opt3_l3_unmgd_wo_gw_no_dhcp_neg(
             self):
-        # Given  I have a VSD -L3-domain without IPAM (i.e. UnManaged)
+        # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # with dhcp options 3
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgdopt3_linked_to_vsdl3subnetunmgd(
                 VSD_L3_SHARED_MGD_OPT3)
@@ -2321,11 +2299,11 @@ class VSDPublicResourcesSharedNetworksTest(
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l3_shared_mgd_opt3_l3_unmgd_with_gw_enable_dhcp_not_true_neg(
+    def test_vsd_l3_shared_mgd_opt3_l3_unmgd_with_gw_no_dhcp_neg(
             self):
-        # Given  I have a VSD -L3-domain without IPAM (i.e. UnManaged)
+        # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgdopt3_linked_to_vsdl3subnetunmgd(
                 VSD_L3_SHARED_MGD_OPT3)
@@ -2351,11 +2329,11 @@ class VSDPublicResourcesSharedNetworksTest(
 
     @decorators.attr(type=['negative'])
     @nuage_test.header()
-    def test_vsd_l3_shared_mgd_op3_l3_unmgd_no_gw_enable_dhcp_not_true_neg(
+    def test_vsd_l3_shared_mgd_op3_l3_unmgd_no_gw_no_dhcp_neg(
             self):
-        # Given  I have a VSD -L3-domain without IPAM (i.e. UnManaged)
+        # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgdopt3_linked_to_vsdl3subnetunmgd(
                 VSD_L3_SHARED_MGD_OPT3)
@@ -2382,10 +2360,10 @@ class VSDPublicResourcesSharedNetworksTest(
     @decorators.attr(type=['negative'])
     @nuage_test.header()
     def test_vsd_l3_shared_mgd_l3_unmgd_wo_gw_cidr_mismatch_neg(self):
-        # Given  I have a VSD -L3-domain without IPAM (i.e. UnManaged)
+        # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # with dhcp options 3
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
@@ -2410,10 +2388,10 @@ class VSDPublicResourcesSharedNetworksTest(
     @decorators.attr(type=['negative'])
     @nuage_test.header()
     def test_vsd_l3_shared_mgd_l3_unmgd_with_gw_cidr_mismatch_neg(self):
-        # Given  I have a VSD -L3-domain without IPAM (i.e. UnManaged)
+        # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # with dhcp options 3
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
@@ -2439,10 +2417,10 @@ class VSDPublicResourcesSharedNetworksTest(
     @decorators.attr(type=['negative'])
     @nuage_test.header()
     def test_vsd_l3_shared_mgd_l3_unmgd_no_gw_cidr_mismatch_neg(self):
-        # Given  I have a VSD -L3-domain without IPAM (i.e. UnManaged)
+        # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # with dhcp options 3
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(
@@ -2468,10 +2446,10 @@ class VSDPublicResourcesSharedNetworksTest(
     @decorators.attr(type=['negative'])
     @nuage_test.header()
     def test_vsd_l3_shared_mgd_l3_unmgd_with_gw_gw_mismatch_neg(self):
-        # Given  I have a VSD -L3-domain without IPAM (i.e. UnManaged)
+        # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # with dhcp options 3
-        # And  these are linked
+        # and these are linked
         vsd_l3_unmgd_subnet = \
             self._given_vsdl3sharedmgd_lnkd_to_vsdl2subnetunmgd()
         self.assertRaisesRegex(

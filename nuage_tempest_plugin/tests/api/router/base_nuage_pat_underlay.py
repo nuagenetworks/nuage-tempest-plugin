@@ -283,7 +283,7 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
                 constants.NUAGE_PAT_VSD_DISABLED)
 
     def _verify_update_router_with_gw_with_snat(self):
-        """_verify_update_router_with_gateway_with_snat
+        """_verify_update_router_with_gw_with_snat
 
         Update router with external gateway: change enable_snat value
 
@@ -435,7 +435,7 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
                 enable_snat)
 
     def _verify_list_router_with_gw_with_snat(self):
-        """_verify_list_router_with_gateway_with_snat
+        """_verify_list_router_with_gw_with_snat
 
         List routers with external gateway and enable_snat
 
@@ -780,7 +780,7 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
                         "PAT NOK: external_gateway_info is not null")
 
     def _cli_list_router_with_gw_with_snat(self):
-        """_cli_list_router_with_gateway_with_snat
+        """_cli_list_router_with_gw_with_snat
 
         List routers with external gateway with and without and enable_snat
 

@@ -360,12 +360,12 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
             vsd_unmanaged_shared_l2dom['DHCPManaged'])
 
     @nuage_test.header(tags=['smoke'])
-    def test_link_subnet_without_gateway_l2(self):
+    def test_link_subnet_without_gw_l2(self):
         # create l2domain on VSD
         pass
 
     @nuage_test.header(tags=['smoke'])
-    def test_link_subnet_with_incorrect_gateway_l2(self):
+    def test_link_subnet_with_incorrect_gw_l2(self):
         pass
 
     @nuage_test.header(tags=['smoke'])
@@ -562,7 +562,7 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
         self.assertTrue(self._verify_vm_ip(network['id'], net_name))
 
     @decorators.attr(type='smoke')
-    def test_link_subnet_with_incorrect_gateway_l3(self):
+    def test_link_subnet_with_incorrect_gw_l3(self):
         # create l3domain on VSD
         name = data_utils.rand_name('l3domain-')
         vsd_l3dom_tmplt = self.create_vsd_l3dom_template(name=name)

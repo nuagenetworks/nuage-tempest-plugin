@@ -692,24 +692,11 @@ class BaseVSDManagedPortAttributes(
         network = {'uuid': network_id}
         if port_id is not None:
             network['port'] = port_id
-
-        # create_kwargs = {
-        #     'networks': [
-        #         {'uuid': network_id},
-        #     ],
-        #     'key_name': keypair['name'],
-        #     'security_groups': security_groups,
-        # }
-        # if port_id is not None:
-        #     create_kwargs['networks'][0]['port'] = port_id
-        # server = self.create_server(name=name,
-        #                             **create_kwargs)
         server = self.create_server(
             name=name,
             networks=[network],
             key_name=keypair['name'],
-            security_groups=security_groups,
-            wait_until='ACTIVE')
+            security_groups=security_groups)
 
         return server
 
@@ -749,9 +736,7 @@ class BaseVSDManagedPortAttributes(
         create_kwargs['networks'][0]['port'] = port_1['id']
         create_kwargs['networks'][1]['port'] = port_2['id']
 
-        server = self.create_server(name=name,
-                                    wait_until='ACTIVE',
-                                    **create_kwargs)
+        server = self.create_server(name=name, **create_kwargs)
         return server
 
     def _create_connectivity_VM(self, public_network_id,
@@ -796,7 +781,7 @@ class BaseVSDManagedPortAttributes(
         self.floating_ips.append(result['floatingip'])
         floating_ip = result['floatingip']
 
-        # noew create the VM with 2 vnics
+        # now create the VM with 2 vnics
         server = self._create_2nic_server(
             name=data_utils.rand_name('IC-VM'),
             network_id_1=network['id'], port_1=port,

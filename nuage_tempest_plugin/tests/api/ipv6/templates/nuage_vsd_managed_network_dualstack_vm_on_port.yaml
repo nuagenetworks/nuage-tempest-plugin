@@ -26,7 +26,6 @@ parameters:
   maskbits4:
     type: string
     description: IPv4 net mask bits
-
   cidr6:
     type: string
     description: IPv6 network address (CIDR notation)
@@ -59,6 +58,7 @@ resources:
     properties:
       network_id: { get_resource: dualstack_net }
       cidr: { get_param: cidr4 }
+      gateway_ip: { get_param: gateway4 }
       enable_dhcp: { get_param: dhcp_managed }
       value_specs: { net_partition: { get_param: netpartition_name }, nuagenet: {get_param: vsd_subnet_id} }
 
@@ -68,11 +68,7 @@ resources:
     properties:
       network_id: { get_resource: dualstack_net }
       cidr: { get_param: cidr6 }
-      #    gateway_ip: {description: 'The gateway IP address. Set to any of [ null | ~ | "" ]
-      #    to create/update a subnet without a gateway. If omitted when creation, neutron
-      #    will assign the first free IP address within the subnet to the gateway automatically.
-      #    If remove this from template when update, the old gateway IP address will be detached.',
-      gateway_ip: null
+      gateway_ip: { get_param: gateway6 }
       enable_dhcp: false
       ip_version: 6
       allocation_pools:

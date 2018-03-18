@@ -14,7 +14,6 @@ from testtools.matchers import Equals
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.test import tags
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as nuage_constants
 from nuage_tempest_plugin.lib.utils import exceptions as nuage_exceptions
@@ -23,6 +22,10 @@ from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
     import NetworkTestCaseMixin
 from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
     import VsdTestCaseMixin
+
+from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.\
+    test_dualstack_subnet_l2_dhcp_unmanaged \
+    import VSDManagedDualStackCommonBase
 
 MSG_INVALID_GATEWAY = "Invalid network gateway"
 MSG_INVALID_ADDRESS = "Invalid network address"
@@ -40,7 +43,6 @@ MSG_INVALID_IP_ADDRESS_FOR_SUBNET = "IP address %s is not a valid IP for " \
                                     "the specified subnet."
 
 
-@nuage_test.class_header(tags=[tags.ML2])
 class VSDManagedDualStackL2DomainDHCPManagedTest(NetworkTestCaseMixin,
                                                  VsdTestCaseMixin):
 
@@ -242,8 +244,9 @@ class VSDManagedDualStackL2DomainDHCPManagedTest(NetworkTestCaseMixin,
                 IPv6Gateway=ipv6_gateway)
 
 
-class VSDManagedDualStackSubnetL2DHCPManagedTest(NetworkTestCaseMixin,
-                                                 VsdTestCaseMixin):
+class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
+
+    dhcp_managed = True
 
     def link_dualstack_net_l2(
             self,
@@ -603,6 +606,12 @@ class VSDManagedDualStackSubnetL2DHCPManagedTest(NetworkTestCaseMixin,
         self._verify_vport_in_l2_domain(port, vsd_l2domain)
 
     ###########################################################################
+    # From base class
+    ###########################################################################
+    def test_create_vsd_l2domain_template_dualstack_valid(self):
+        self._create_vsd_l2domain_template_dualstack_valid()
+
+    ###########################################################################
     # Special cases
     ###########################################################################
 
@@ -652,160 +661,6 @@ class VSDManagedDualStackSubnetL2DHCPManagedTest(NetworkTestCaseMixin,
     ########################################
     # minimal attributes - default values
     ########################################
-
-    ########################################
-    # IPv6 address formats
-    ########################################
-    @decorators.attr(type='smoke')
-    ###########################################################################
-    #
-    #  The author of this test clearly did not know that gateway in VSD
-    #  does not refer to gateway in case of L2.
-    #  For ipv6 moreover, as VSP doesn't support dhcpv6, the whole intent
-    #  of this test is missed.  So read it with that in mind please .....
-    #  We use it for other purpose though.
-    #
-    ###########################################################################
-    def test_create_vsd_l2domain_template_dualstack_valid(self):
-        # noinspection PyPep8
-        valid_ipv6 = [
-            ("2001:5f74:c4a5:b82e::/64",
-             "2001:5f74:c4a5:b82e:0000:0000:0000:0001"),
-            # valid address range, gateway full addressing - at first address
-            ("2001:5f74:c4a5:b82e::/64",
-             "2001:5f74:c4a5:b82e::1"),
-            # valid address range, gateway zero's compressed addressing
-            # - at first address
-            ("2001:5f74:c4a5:b82e::/64",
-             "2001:5f74:c4a5:b82e:0:000::1"),
-            # valid address range, gateway partly compressed addressing
-            # - at first address
-            ("2001:5f74:c4a5:b82e::/64",
-             "2001:5f74:c4a5:b82e:ffff:ffff:ffff:ffff"),
-            # valid address, gateway at last addres
-            ("2001:5f74:c4a5:b82e::/64",
-             "2001:5f74:c4a5:b82e:f483:3427:ab3e:bc21"),
-            # valid address, gateway at random address
-            ("2001:5F74:c4A5:B82e::/64",
-             "2001:5f74:c4a5:b82e:f483:3427:aB3E:bC21"),
-            # valid address, gateway at random address - mixed case
-            ("2001:5f74:c4a5:b82e::/64",
-             "2001:5f74:c4a5:b82e:f4:00::f"),
-            # valid address, gateway at random address - compressed
-            ("3ffe:0b00:0000:0001:5f74:0001:c4a5:b82e/64",
-             "3ffe:0b00:0000:0001:5f74:0001:c4a5:ffff"),
-            # prefix not matching bit mask
-        ]
-
-        for cidr6, gateway6 in valid_ipv6:
-
-            def do_test(ipv6_cidr, ipv6_gateway, use_allocation_pool=False):
-
-                testcase = "TC-({},{},{})".format(
-                    str(ipv6_cidr), str(ipv6_gateway), use_allocation_pool)
-
-                vsd_l2domain_template = self.create_vsd_l2domain_template(
-                    ip_type="DUALSTACK",
-                    cidr4=self.cidr4,
-                    dhcp_managed=True,
-                    IPv6Address=ipv6_cidr,
-                    IPv6Gateway=ipv6_gateway
-                )
-
-                self._verify_vsd_l2domain_template(vsd_l2domain_template,
-                                                   ip_type="DUALSTACK",
-                                                   dhcp_managed=True,
-                                                   cidr4=self.cidr4,
-                                                   IPv6Address=ipv6_cidr,
-                                                   IPv6Gateway=ipv6_gateway)
-
-                vsd_l2domain = self.create_vsd_l2domain(
-                    vsd_l2domain_template['ID'])
-                self._verify_vsd_l2domain_with_template(
-                    vsd_l2domain, vsd_l2domain_template)
-
-                # create OpenStack IPv6 subnet based on VSD l2dom subnet
-                net_name = data_utils.rand_name('network-')
-                network = self.create_network(network_name=net_name)
-
-                ipv6_network = IPNetwork(ipv6_cidr)
-                mask_bits = ipv6_network.prefixlen
-                kwargs = {
-                    'ip_version': 6,
-                    'cidr': ipv6_network,
-                    'mask_bits': mask_bits,
-                    # gateway is not set
-                    'enable_dhcp': False,
-                    'nuagenet': vsd_l2domain['ID'],
-                    'net_partition': self.net_partition
-                }
-                if use_allocation_pool:
-                    start6 = ipv6_network[10]
-                    end6 = ipv6_network[20]
-                    pool = {'start': start6, 'end': end6}
-                    kwargs['allocation_pools'] = [pool]
-                else:
-                    start6 = ipv6_network[2]  # gateway ip is cleared but
-                    # as it originally was set, allocation pool is not adjusted
-                    end6 = ipv6_network[-1]  # :ff:ff
-
-                ipv6_subnet = self.create_subnet(network, **kwargs)
-                self.assertEqual(ipv6_network, IPNetwork(ipv6_subnet['cidr']))
-                self.assertEqual(
-                    IPNetwork(ipv6_subnet['cidr']),
-                    IPNetwork(vsd_l2domain_template['IPv6Address']))
-                self.assertEqual(
-                    start6,
-                    IPAddress(ipv6_subnet['allocation_pools'][0]['start']),
-                    message='testcase: ' + testcase)
-                self.assertEqual(
-                    end6,
-                    IPAddress(ipv6_subnet['allocation_pools'][0]['end']),
-                    message='testcase: ' + testcase)
-
-                kwargs = {
-                    'cidr': self.cidr4,
-                    'mask_bits': self.mask_bits4_unsliced,
-                    # gateway is not set (which ~ to option 3 not set)
-                    'nuagenet': vsd_l2domain['ID'],
-                    'net_partition': self.net_partition
-                }
-                if use_allocation_pool:
-                    start4 = self.cidr4[10]
-                    end4 = self.cidr4[20]
-                    pool = {'start': start4, 'end': end4}
-                    kwargs['allocation_pools'] = [pool]
-                else:
-                    start4 = self.cidr4[2]  # .2 , as of dhcp port taking .1
-                    end4 = self.cidr4[-2]  # .254
-
-                # create OpenStack IPv4 subnet based on VSD l2domain
-                ipv4_subnet = self.create_subnet(network, **kwargs)
-                self.assertEqual(str(self.cidr4), ipv4_subnet['cidr'])
-                self.assertEqual(
-                    start4,
-                    IPAddress(ipv4_subnet['allocation_pools'][0]['start']),
-                    message='testcase: ' + testcase)
-                self.assertEqual(
-                    end4,
-                    IPAddress(ipv4_subnet['allocation_pools'][0]['end']),
-                    message='testcase: ' + testcase)
-
-                # create a port in the network - IPAM by OS
-                port = self.create_port(network)
-                self._verify_port(port, subnet4=None, subnet6=ipv6_subnet,
-                                  status='DOWN',
-                                  nuage_policy_groups=None,
-                                  nuage_redirect_targets=[],
-                                  nuage_floatingip=None,
-                                  testcase=testcase)
-                self._verify_vport_in_l2_domain(port, vsd_l2domain)
-
-            # first normal case
-            do_test(cidr6, gateway6)
-
-            # now make it more interesting with allocation pools
-            do_test(cidr6, gateway6, True)
 
     @nuage_test.skip_because(bug='VSD-18509')
     @decorators.attr(type='smoke')
