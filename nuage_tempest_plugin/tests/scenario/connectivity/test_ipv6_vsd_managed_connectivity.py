@@ -152,7 +152,7 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
                 network, vsd_subnet, gateway=gateway4, **kwargs)
             self.assertIsNotNone(ipv4_subnet)
             self.assertEqual(str(cidr4), ipv4_subnet['cidr'])
-            if pool6:
+            if pool4:
                 subnet_pool4 = ipv4_subnet['allocation_pools']
                 self.assertEqual(1, len(subnet_pool4))
                 self.assertEqual(pool4, subnet_pool4[0])
