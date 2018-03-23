@@ -20,9 +20,13 @@ from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
 
 class BaseVSDManagedNetworksTest(base.BaseNetworkTest):
+
+    credentials = ['primary', 'admin']
+
     @classmethod
     def setup_clients(cls):
         super(BaseVSDManagedNetworksTest, cls).setup_clients()
+        cls.admin_agents_client = cls.os_adm.network_agents_client
         cls.nuageclient = NuageRestClient()
 
     @classmethod
@@ -146,3 +150,17 @@ class BaseVSDManagedNetworksTest(base.BaseNetworkTest):
             'POST', '/sharednetworkresources', data)
         cls.vsd_shared_subnet.append(vsd_shared_subnet.data)
         return vsd_shared_subnet.data[0]
+
+    dhcp_agent_present = None
+
+    def is_dhcp_agent_present(self):
+        if self.dhcp_agent_present is None:
+            agents = self.admin_agents_client.list_agents().get('agents')
+            if agents:
+                self.dhcp_agent_present = any(
+                    agent for agent in agents if agent['alive'] and
+                    agent['binary'] == 'neutron-dhcp-agent')
+            else:
+                self.dhcp_agent_present = False
+
+        return self.dhcp_agent_present

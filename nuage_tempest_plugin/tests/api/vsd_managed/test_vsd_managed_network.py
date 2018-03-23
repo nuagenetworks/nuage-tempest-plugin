@@ -94,7 +94,7 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
     def link_subnet_l2(self, cidr=None, mask_bits=None, dhcp_port=None,
                        dhcp_option_3=None,
                        pool=None, vsd_l2dom=None,
-                       should_pass=True, create_server=False):
+                       should_pass=True, create_server=False, network=None):
         # create l2domain on VSD
         name = data_utils.rand_name('l2domain-')
         cidr = cidr or IPNetwork('10.10.100.0/24')
@@ -113,8 +113,9 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
                     vsd_l2dom['ID'], 3, [dhcp_option_3])
 
         # network
-        net_name = data_utils.rand_name('network-')
-        network = self.create_network(network_name=net_name)
+        if not network:
+            net_name = data_utils.rand_name('network-')
+            network = self.create_network(network_name=net_name)
 
         # subnet
         kwargs = {
@@ -717,6 +718,83 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
             subnet['enable_dhcp'],
             vsd_shared_l3dom_subnet['DHCPManaged'])
         self.assertTrue(self._verify_vm_ip(network['id'], net_name))
+
+    # Telenor scenario with multiple vsd managed subnets in a network
+    @nuage_test.header(tags=['smoke'])
+    def test_link_multi_l2domain_to_network(self):
+        net_name = data_utils.rand_name('shared-l3-network-')
+        network = self.create_network(network_name=net_name)
+
+        self.link_subnet_l2(network=network,
+                            cidr=IPNetwork('10.0.0.0/24'),
+                            dhcp_port='10.0.0.1')
+        if not self.is_dhcp_agent_present():
+            self.link_subnet_l2(network=network,
+                                cidr=IPNetwork('10.1.0.0/24'),
+                                dhcp_port='10.1.0.1')
+        else:
+            # Agent enabled, no multilinking allowed
+            self.assertRaises(
+                exceptions.BadRequest,
+                self.link_subnet_l2,
+                network=network,
+                cidr=IPNetwork('10.1.0.0/24'),
+                dhcp_port='10.1.0.1')
+
+        # Telenor scenario with multiple vsd managed subnets in a network
+    @nuage_test.header(tags=['smoke'])
+    def test_link_multi_l3domain_subnets_to_network(self):
+        name = data_utils.rand_name('l3domain-')
+        vsd_l3dom_tmplt = self.create_vsd_l3dom_template(name=name)
+        vsd_l3dom = self.create_vsd_l3domain(name=name,
+                                             tid=vsd_l3dom_tmplt[0]['ID'])
+
+        self.assertEqual(vsd_l3dom[0]['name'], name)
+        zone_name = data_utils.rand_name('l3dom-zone-')
+        vsd_zone = self.create_vsd_zone(name=zone_name,
+                                        domain_id=vsd_l3dom[0]['ID'])
+        self.assertEqual(vsd_zone[0]['name'], zone_name)
+        sub_name = data_utils.rand_name('l3dom-sub-')
+        cidr = IPNetwork('10.0.0.0/24')
+        vsd_domain_subnet1 = self.create_vsd_l3domain_subnet(
+            name=sub_name,
+            zone_id=vsd_zone[0]['ID'],
+            cidr=cidr,
+            gateway='10.0.0.1')[0]
+        sub_name = data_utils.rand_name('l3dom-sub-')
+        cidr = IPNetwork('10.1.0.0/24')
+        vsd_domain_subnet2 = self.create_vsd_l3domain_subnet(
+            name=sub_name,
+            zone_id=vsd_zone[0]['ID'],
+            cidr=cidr,
+            gateway='10.1.0.1')[0]
+
+        # create subnet on OS with nuagenet param set to subnet UUID
+        net_name = data_utils.rand_name('network-')
+        network = self.create_network(network_name=net_name)
+        self.create_subnet(
+            network,
+            cidr=IPNetwork('10.0.0.0/24'),
+            mask_bits=24, nuagenet=vsd_domain_subnet1['ID'],
+            gateway='10.0.0.1',
+            net_partition=Topology.def_netpartition)
+        if not self.is_dhcp_agent_present():
+            self.create_subnet(
+                network,
+                cidr=IPNetwork('10.1.0.0/24'),
+                mask_bits=24, nuagenet=vsd_domain_subnet2['ID'],
+                gateway='10.1.0.1',
+                net_partition=Topology.def_netpartition)
+        else:
+            # Agent enabled, no multilinking allowed
+            self.assertRaises(
+                exceptions.BadRequest,
+                self.create_subnet,
+                network,
+                cidr=IPNetwork('10.1.0.0/24'),
+                mask_bits=24, nuagenet=vsd_domain_subnet2['ID'],
+                gateway='10.1.0.1',
+                net_partition=Topology.def_netpartition)
 
 
 class VSDManagedAdminTestNetworks(base.BaseAdminNetworkTest):

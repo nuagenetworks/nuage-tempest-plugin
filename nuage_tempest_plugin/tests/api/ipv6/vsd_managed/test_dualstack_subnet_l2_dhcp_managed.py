@@ -1104,6 +1104,97 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
             self.assertRaisesRegex(exceptions.BadRequest, msg % ipv6,
                                    self.create_port, network, **port_args)
 
+    # Telenor scenario with multiple vsd managed subnets in a network
+    @nuage_test.header(tags=['smoke'])
+    def test_link_multi_l2domain_to_network_dualstack_neg(self):
+        net_name = data_utils.rand_name('multi-vsd-mgd-dualstack')
+        network = self.create_network(network_name=net_name)
+
+        vsd_l2domain_template1 = self.create_vsd_l2domain_template(
+            ip_type="DUALSTACK",
+            cidr4=IPNetwork('10.0.0.0/24'),
+            cidr6=IPNetwork('cafe:babe::/64'),
+            dhcp_managed=True
+        )
+        vsd_l2domain1 = self.create_vsd_l2domain(vsd_l2domain_template1['ID'])
+        vsd_l2domain_template2 = self.create_vsd_l2domain_template(
+            ip_type="DUALSTACK",
+            cidr4=IPNetwork('10.1.0.0/24'),
+            cidr6=IPNetwork('cbfe:babe::/64'),
+            dhcp_managed=True
+        )
+        vsd_l2domain2 = self.create_vsd_l2domain(vsd_l2domain_template2['ID'])
+
+        self.create_subnet(
+            network,
+            cidr=IPNetwork('10.0.0.0/24'),
+            mask_bits=24,
+            nuagenet=vsd_l2domain1['ID'],
+            net_partition=Topology.def_netpartition)
+        self.create_subnet(
+            network,
+            ip_version=6,
+            cidr=IPNetwork('cafe:babe::/64'),
+            mask_bits=self.mask_bits6,
+            nuagenet=vsd_l2domain1['ID'],
+            net_partition=Topology.def_netpartition)
+        self.assertRaises(
+            exceptions.BadRequest,
+            self.create_subnet,
+            network,
+            cidr=IPNetwork('10.1.0.0/24'),
+            mask_bits=24,
+            nuagenet=vsd_l2domain2['ID'],
+            net_partition=Topology.def_netpartition)
+        self.assertRaises(
+            exceptions.BadRequest,
+            self.create_subnet,
+            network,
+            ip_version=6,
+            cidr=IPNetwork('cbfe:babe::/64'),
+            mask_bits=64,
+            nuagenet=vsd_l2domain2['ID'],
+            net_partition=Topology.def_netpartition)
+
+    # Telenor scenario with multiple vsd managed subnets in a network
+    @nuage_test.header(tags=['smoke'])
+    def test_link_multi_l2domain_to_network_mix_dualstack_neg(self):
+        net_name = data_utils.rand_name('multi-vsd-mgd-dualstack')
+        network = self.create_network(network_name=net_name)
+
+        vsd_l2domain_template1 = self.create_vsd_l2domain_template(
+            ip_type="DUALSTACK",
+            cidr4=IPNetwork('10.0.0.0/24'),
+            cidr6=IPNetwork('cafe:babe::/64'),
+            dhcp_managed=True
+        )
+        vsd_l2domain1 = self.create_vsd_l2domain(
+            vsd_l2domain_template1['ID'])
+        vsd_l2domain_template2 = self.create_vsd_l2domain_template(
+            ip_type="DUALSTACK",
+            cidr4=IPNetwork('10.1.0.0/24'),
+            cidr6=IPNetwork('cbfe:babe::/64'),
+            dhcp_managed=True
+        )
+        vsd_l2domain2 = self.create_vsd_l2domain(
+            vsd_l2domain_template2['ID'])
+
+        self.create_subnet(
+            network,
+            cidr=IPNetwork('10.0.0.0/24'),
+            mask_bits=24,
+            nuagenet=vsd_l2domain1['ID'],
+            net_partition=Topology.def_netpartition)
+        self.assertRaises(
+            exceptions.BadRequest,
+            self.create_subnet,
+            network,
+            ip_version=6,
+            cidr=IPNetwork('cbfe:babe::/64'),
+            mask_bits=64,
+            nuagenet=vsd_l2domain2['ID'],
+            net_partition=Topology.def_netpartition)
+
     # TODO(team): shared VSD networks use case?
     # def test_create_vsd_shared_l2domain_dualstack_neg(self):
     #     # create l2domain on VSD
