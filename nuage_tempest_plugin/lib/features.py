@@ -50,6 +50,7 @@ class NuageFeatures(object):
             self.stateless_security_groups = Topology.from_nuage('5.2')
             self.multi_linked_vsd_mgd_subnets = Topology.from_nuage('5.2')
             self.route_to_underlay = Topology.from_nuage('5.2')
+            self.multi_linked_os_mgd_subnets = Topology.from_nuage('5.2.2')
 
     def _log_features(self):
         LOG.info('RELEASES:')
@@ -75,6 +76,8 @@ class NuageFeatures(object):
                  format(self.stateless_security_groups))
         LOG.info('multi_linked_vsd_mgd_subnets     : {}'.
                  format(self.multi_linked_vsd_mgd_subnets))
+        LOG.info('multi_linked_os_mgd_subnets     : {}'.
+                 format(self.multi_linked_vsd_mgd_subnets))
         LOG.info('route_to_underlay                : {}'.
                  format(self.route_to_underlay))
 
@@ -93,7 +96,7 @@ class NuageFeatures(object):
         self.stateless_security_groups = False
         self.route_to_underlay = False
         self.multi_linked_vsd_mgd_subnets = False
-
+        self.multi_linked_os_mgd_subnets = False
         self._set_features()
         self._log_features()
 

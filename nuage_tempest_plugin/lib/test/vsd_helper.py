@@ -738,6 +738,35 @@ class VsdHelper(object):
 
         return dhcp_options
 
+    def get_l2domain_dhcp_options(self, l2domain=None, vspk_filter=None):
+        """get_subnet_dhcp_options
+
+        @params: subnet object or
+                 subnet filter following vspk filter structure
+        @return: subnet dhcp_options object
+        @Example:
+        self.vsd.get_subnet_dhcp_options(subnet=subnet)
+        self.vsd.get_subnet_dhcp_options(
+            filter='externalID == "{}"'.format(subnet_externalID))
+        """
+        if not isinstance(l2domain, self.vspk.NUL2Domain):
+            if not vspk_filter:
+                LOG.error('a filter is required')
+                return None
+            l2domain = self.session().user.l2domain.get_first(
+                filter=vspk_filter)
+
+        dhcp_options = l2domain.dhcp_options.get()
+        if not dhcp_options:
+            if vspk_filter:
+                LOG.warning('could not fetch the dhcp options '
+                            'on the subnet matching the filter "{}"'
+                            .format(vspk_filter))
+            else:
+                LOG.error('could not fetch the dhcp options on the subnet')
+
+        return dhcp_options
+
     def get_vport(self, l2domain=None, subnet=None, vspk_filter=None,
                   by_port_id=None):
         """get_vport

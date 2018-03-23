@@ -577,3 +577,32 @@ class NuageNetworkClientJSON(service_client.RestClient):
         self.expected_success(200, resp.status)
         body = json.loads(body)
         return service_client.ResponseBody(resp, body)
+
+    def create_nuage_l2bridge(self, name, **kwargs):
+        name = name or data_utils.rand_name('test-l2bridge-')
+        post_body = {'nuage_l2bridge': kwargs}
+        post_body['nuage_l2bridge']['name'] = name
+        body = json.dumps(post_body)
+        uri = '%s/nuage-l2bridges' % self.uri_prefix
+        resp, body = self.post(uri, body)
+        self.expected_success(201, resp.status)
+        body = json.loads(body)
+        return service_client.ResponseBody(resp, body)
+
+    def get_nuage_l2bridge(self, l2bridge_id):
+        uri = '%s/nuage-l2bridges/%s' % (self.uri_prefix, l2bridge_id)
+        return self._get_request(uri)
+
+    def update_nuage_l2bridge(self, l2bridge_id, **kwargs):
+        put_body = {'nuage_l2bridge': kwargs}
+        body = json.dumps(put_body)
+        uri = '%s/nuage-l2bridges/%s' % (self.uri_prefix, l2bridge_id)
+        resp, body = self.put(uri, body)
+        self.expected_success(200, resp.status)
+        body = json.loads(body)
+        return service_client.ResponseBody(resp, body)
+
+    def delete_nuage_l2bridge(self, l2bridge_id):
+        uri = '%s/nuage-l2bridges/%s' % (self.uri_prefix, l2bridge_id)
+        resp, body = self.delete(uri)
+        self.expected_success(204, resp.status)

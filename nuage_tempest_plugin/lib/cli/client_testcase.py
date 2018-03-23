@@ -493,6 +493,41 @@ class CLIClientTestCase(test.BaseTestCase):
         return self.cli.neutron('floatingip-disassociate',
                                 params=floating_ip_id)
 
+    def create_nuage_l2bridge_cli(self, *args):
+        the_params = ''
+        for arg in args:
+            the_params += ' '
+            the_params += arg
+
+        return self.cli.neutron('nuage-l2bridge-create',
+                                params=the_params)
+
+    def show_nuage_l2bridge_cli(self, *args):
+        the_params = ''
+        for arg in args:
+            the_params += ' '
+            the_params += arg
+
+        return self.cli.neutron('nuage-l2bridge-show',
+                                params=the_params)
+
+    def delete_nuage_l2bridge_cli(self, id, name=None):
+        if name:
+            return self.cli.neutron('nuage-l2bridge-delete',
+                                    params=' ' + name)
+        else:
+            return self.cli.neutron('nuage-l2bridge-delete',
+                                    params=' ' + id)
+
+    def update_nuage_l2bridge_cli(self, *args):
+        the_params = ''
+        for arg in args:
+            the_params += ' '
+            the_params += arg
+
+        return self.cli.neutron('nuage-l2bridge-update',
+                                params=the_params)
+
     def create_security_group_with_args(self, *args):
         """Wrapper utility that returns a test security group."""
         the_params = ''

@@ -1,0 +1,51 @@
+heat_template_version: '2013-05-23'
+description: |
+  Template which creates OS managed duplex subnets
+parameters:
+  SubNetCidr:
+    type: string
+resources:
+  Network1:
+    type: OS::Neutron::Net
+    properties:
+      name: NewNetwork
+      value_specs: {segments: [
+                {
+                    'provider:network_type': 'vlan',
+                    'provider:segmentation_id': 50,
+                    'provider:physical_network': 'physnet1'},
+                {
+                    'provider:network_type': 'vxlan',
+                    'provider:physical_network': '',
+                    'provider:segmentation_id': 501
+                }
+            ]}
+  Network2:
+    type: OS::Neutron::Net
+    properties:
+      name: NewNetwork2
+      value_specs: {segments: [
+                {
+                    'provider:network_type': 'vlan',
+                    'provider:segmentation_id': 55,
+                    'provider:physical_network': 'physnet1'},
+                {
+                    'provider:network_type': 'vxlan',
+                    'provider:physical_network': '',
+                    'provider:segmentation_id': 502
+                }
+            ]}
+  Subnet1:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: {Ref: Network1}
+      name: NewSubnet1
+      ip_version: 4
+      cidr: { get_param: SubNetCidr }
+  Subnet2:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: {Ref: Network2}
+      name: NewSubnet2
+      ip_version: 4
+      cidr: { get_param: SubNetCidr}
