@@ -26,7 +26,6 @@ parameters:
   maskbits4:
     type: string
     description: IPv4 net mask bits
-
   cidr6:
     type: string
     description: IPv6 network address (CIDR notation)
@@ -52,6 +51,7 @@ resources:
     properties:
       network_id: { get_resource: dualstack_net }
       cidr: { get_param: cidr4 }
+      gateway_ip: { get_param: gateway4 }
       enable_dhcp: { get_param: dhcp_managed }
       value_specs: { net_partition: { get_param: netpartition_name }, nuagenet: {get_param: vsd_subnet_id} }
 
@@ -60,6 +60,7 @@ resources:
     properties:
       network_id: { get_resource: dualstack_net }
       cidr: { get_param: cidr6 }
+      gateway_ip: { get_param: gateway6 }
       enable_dhcp: false
       ip_version: 6
       value_specs: { net_partition: { get_param: netpartition_name }, nuagenet: {get_param: vsd_subnet_id} }

@@ -12,6 +12,11 @@ r5_2_1 = Release('5.2.1')
 r5_2_2 = Release('5.2.2')
 r5_3_1 = Release('5.3.1')
 
+kilo = Release('kilo')
+ocata = Release('ocata')
+queens = Release('queens')
+master = Release('master')
+
 
 class ReleaseUnitTest(testtools.TestCase):
 
@@ -24,6 +29,11 @@ class ReleaseUnitTest(testtools.TestCase):
         assert r5_2_1 < r5_2_2
         assert r5_2_2 > r5_2
         assert r5_2_2 > r5_2_1
+
+    @staticmethod
+    def test_os_flavor_comparison():
+        assert kilo < ocata < queens < master
+        assert master > queens > ocata > kilo
 
     @staticmethod
     def test_from_tock():

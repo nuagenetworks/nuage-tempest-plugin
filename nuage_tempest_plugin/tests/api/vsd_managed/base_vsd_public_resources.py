@@ -1,4 +1,4 @@
-# Copyright 2015 OpenStack Foundation
+# Copyright 2018 NOKIA
 # All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -47,11 +47,10 @@ EXPECT_CIDR_IN_RANGE = "Bad request: cidr in subnet must be"
 EXPECT_GATEWAY_IN_CIDR = "Bad request: Gateway IP outside of the subnet CIDR"
 
 
-class BaseVSDPublicResourcesTest(
-        base_vsd_managed_networks.BaseVSDManagedNetwork):
+class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
 
     def setUp(self):
-        super(BaseVSDPublicResourcesTest, self).setUp()
+        super(BaseVSDPublicResources, self).setUp()
         # Setup image and flavor the test instance
         # Support both configured and injected values
         if not hasattr(self, 'image_ref'):
@@ -61,7 +60,7 @@ class BaseVSDPublicResourcesTest(
 
     @classmethod
     def resource_setup(cls):
-        super(BaseVSDPublicResourcesTest, cls).resource_setup()
+        super(BaseVSDPublicResources, cls).resource_setup()
         cls.vsd_l2_unmgd_template = \
             cls.create_vsd_dhcpunmanaged_l2dom_template()
         cls.vsd_l3_dom_template = cls.create_vsd_l3dom_template()
@@ -78,7 +77,7 @@ class BaseVSDPublicResourcesTest(
 
     @classmethod
     def resource_cleanup(cls):
-        super(BaseVSDPublicResourcesTest, cls).resource_cleanup()
+        super(BaseVSDPublicResources, cls).resource_cleanup()
 
     def _given_vsdl2sharedunmgd_lnkd_to_vsdl2domunmgd(self):
         if not self.vsd_l2_shared_unmanaged:
@@ -347,28 +346,29 @@ class BaseVSDPublicResourcesTest(
         network = body['network']
         return network
 
-    @staticmethod
-    def _check_full_cidr_range(subnet, gateway_ip=None):
+    def _check_cidr_range(self, expected_cidr_range, subnet, user_passed_gw,
+                          scenario=None):
+        gateway_ip = subnet['gateway_ip']
+        if scenario:
+            scenario += " The subnet gateway ip is %s." % gateway_ip
         total_range = 0
         for pool in subnet['allocation_pools']:
+            if scenario:
+                scenario += " It has an allocation pool %s." % str(pool)
             # add range of this pool, + 1 to include the last one as well
             total_range += IPNetwork(pool['end']).last - \
                 IPNetwork(pool['start']).first + 1
             if gateway_ip:
                 if gateway_ip in pool:
                     break
-        # Add 1 (for the gateway) to the total to get the complete picture
-        if gateway_ip:
-            total_range += 1
-        # This should equal the full range
-        if total_range == OS_FULL_CIDR24_RANGE:
-            return True
-        else:
-            return False
 
-    def _check_vsd_l2_shared_l2_unmgd(self, vsd_l2dom_unmgd, os_shared_network,
-                                      enable_dhcp, gateway_ip, cidr,
-                                      **kwargs_expect):
+        if gateway_ip is not None or user_passed_gw is not None:
+            expected_cidr_range -= 1
+        self.assertEqual(expected_cidr_range, total_range,
+                         'Failure scenario: %s' % scenario if scenario else '')
+
+    def _create_vsd_mgd_subnet(self, vsd_entity, os_shared_network,
+                               enable_dhcp, gateway_ip, cidr, must_fail=False):
         network = self._create_shared_network(shared=os_shared_network)
         kwargs = {
             'network': network,
@@ -376,7 +376,7 @@ class BaseVSDPublicResourcesTest(
             'cidr': cidr,
             'mask_bits': cidr.prefixlen,
             'net_partition': Topology.def_netpartition,
-            'nuagenet': vsd_l2dom_unmgd[0]['ID']
+            'nuagenet': vsd_entity[0]['ID']
         }
         if gateway_ip is not '':
             kwargs['gateway'] = gateway_ip
@@ -384,7 +384,28 @@ class BaseVSDPublicResourcesTest(
         if os_shared_network:
             kwargs['client'] = self.admin_subnets_client
 
-        subnet = self._create_subnet(**kwargs)
+        if must_fail:
+            if Topology.before_openstack('Newton'):
+                failure_type = exceptions.ServerFault
+            else:
+                failure_type = exceptions.BadRequest
+
+            self.assertRaises(
+                failure_type,
+                self._create_subnet,
+                **kwargs)
+        else:
+            return network, self._create_subnet(**kwargs)
+
+    def _check_vsd_l2_shared_l2_unmgd(self, vsd_l2dom_unmgd, os_shared_network,
+                                      enable_dhcp, gateway_ip, cidr,
+                                      **kwargs_expect):
+        scenario = "Create OS-shared VSD-mgd network, bound to l2-unmanaged " \
+                   "domain; OS dhcp is %s, CIDR is %s, gateway is %s." % \
+                   (enable_dhcp, cidr, gateway_ip)
+        network, subnet = self._create_vsd_mgd_subnet(
+            vsd_l2dom_unmgd, os_shared_network, enable_dhcp, gateway_ip, cidr)
+
         # Then I expect a neutron port equal to
         # 'neutron_network_dhcp_nuage_port'
         network_dhcp_port_present = \
@@ -407,16 +428,10 @@ class BaseVSDPublicResourcesTest(
                                                      'expected_gateway_ip']))
 
         # And an OS allocation pool covering the full CIDR range except the
-        # gateway_ip
-        kwargs = {'subnet': subnet}
-        # if gateway_ip is not '':
-        # kwargs['gateway_ip'] = gateway_ip
-        if subnet['gateway_ip'] is not None:
-            kwargs['gateway_ip'] = subnet['gateway_ip']
-        cidr_range_ok = self._check_full_cidr_range(**kwargs)
-        self.assertEqual(cidr_range_ok, True,
-                         message="OS subnet cidr range (except gateway-ip) "
-                                 "not equal to FULL range")
+        # gateway_ip if any
+        self._check_cidr_range(OS_FULL_CIDR24_RANGE, subnet, gateway_ip,
+                               scenario)
+
         # When I spin a VM
         vm = self._create_server(name=data_utils.rand_name('vm-l2um-l2shum'),
                                  network_id=network['id'])
@@ -424,8 +439,8 @@ class BaseVSDPublicResourcesTest(
         vm_ip_addr = vm['addresses'][network['name']][0]['addr']
         self.assertEqual(IPAddress(vm_ip_addr) in cidr, True,
                          message="IP address is not in CIDR ranage")
-        # And the VMinterface-IPaddress in the VSD-L2-domain equals the
-        # OS VM-IPaddress
+        # And the VM-interface-IP-address in the VSD-L2-domain equals the
+        # OS VM-IP-address
         vm_interface_ip_address = self._get_l2dom_vm_interface_ip_address(
             vm, vsd_l2dom_unmgd[0]['ID'])
 
@@ -434,30 +449,21 @@ class BaseVSDPublicResourcesTest(
                 self.assertIsNone(vm_interface_ip_address)
             else:
                 self.assertEqual(str(vm_interface_ip_address), str(vm_ip_addr),
-                                 message="VMinterface-IPAddress different ()"
+                                 message="VM-interface-IP-address different ()"
                                          " from OS VM Ip address ()!")
 
     def _check_vsd_l3_shared_l2_unmgd(self, vsd_l3_dom_subnet,
                                       os_shared_network, enable_dhcp,
                                       gateway_ip, cidr,
                                       **kwargs_expect):
-        network = self._create_shared_network(shared=os_shared_network)
-        kwargs = {
-            'network': network,
-            'enable_dhcp': enable_dhcp,
-            'cidr': cidr,
-            'mask_bits': cidr.prefixlen,
-            'net_partition': Topology.def_netpartition,
-            'nuagenet': vsd_l3_dom_subnet[0]['ID']
-        }
-        if gateway_ip is not '':
-            kwargs['gateway'] = gateway_ip
+        scenario = "Create OS-shared VSD-mgd network, bound to VSD l3subnet;" \
+                   " OS dhcp is %s, CIDR is %s, gateway is %s." % \
+                   (enable_dhcp, cidr, gateway_ip)
+        network, subnet = self._create_vsd_mgd_subnet(
+            vsd_l3_dom_subnet,
+            os_shared_network, enable_dhcp, gateway_ip, cidr)
 
-        if os_shared_network:
-            kwargs['client'] = self.admin_subnets_client
-
-        subnet = self._create_subnet(**kwargs)
-        # Then I expect a neutron port equalt to
+        # Then I expect a neutron port equal to
         # 'neutron_network_dhcp_nuage_port'
         network_dhcp_port_present = \
             self._check_neutron_network_dhcp_nuage_port(network['id'])
@@ -481,16 +487,10 @@ class BaseVSDPublicResourcesTest(
                                                      'expected_gateway_ip']))
 
         # And an OS allocation pool covering the full CIDR range except the
-        # gateway_ip
-        kwargs = {'subnet': subnet}
-        # if gateway_ip is not '':
-        #     kwargs['gateway_ip'] = gateway_ip
-        if subnet['gateway_ip'] is not None:
-            kwargs['gateway_ip'] = subnet['gateway_ip']
-        cidr_range_ok = self._check_full_cidr_range(**kwargs)
-        self.assertEqual(cidr_range_ok, True,
-                         message="OS subnet cidr range (except gatway-ip) "
-                                 "not equal to FULL range")
+        # gateway_ip if any
+        self._check_cidr_range(OS_FULL_CIDR24_RANGE, subnet, gateway_ip,
+                               scenario)
+
         # When I spin a VM
         vm = self._create_server(name=data_utils.rand_name('vm-l2um-l2shum'),
                                  network_id=network['id'])
@@ -498,8 +498,8 @@ class BaseVSDPublicResourcesTest(
         vm_ip_addr = vm['addresses'][network['name']][0]['addr']
         self.assertEqual(IPAddress(vm_ip_addr) in cidr, True,
                          message="IP address is not in CIDR ranage")
-        # And the VMinterface-IPaddress in the VSD-L2-domain equals the
-        # OS VM-IPaddress
+        # And the VM-interface-IP-address in the VSD-L2-domain equals the
+        # OS VM-IP-address
         vm_interface_ip_address = self._get_l3_subnet_vm_interface_ip_address(
             vm, vsd_l3_dom_subnet[0]['ID'])
 
@@ -508,8 +508,8 @@ class BaseVSDPublicResourcesTest(
                 self.assertIsNone(vm_interface_ip_address)
             else:
                 self.assertEqual(str(vm_interface_ip_address), str(vm_ip_addr),
-                                 message="VMinterface-IPAddress different () "
-                                         "from OS VM Ip address ()!")
+                                 message="VM-interface-IP-address different ()"
+                                         " from OS VM Ip address ()!")
 
     # TODO(team) need to overrule security group creation
     # as the upstream _create_loginable_secgroup_rule includes IPv6 rules
@@ -628,8 +628,7 @@ class BaseVSDPublicResourcesTest(
         self.addCleanup(client.delete_keypair, name)
         return body['keypair']
 
-    def _create_server(self, name, network_id, port_id=None):
-
+    def _create_server(self, name, network_id):
         keypair = self.create_keypair()
         self.keypairs[keypair['name']] = keypair
         self.security_groups = self._create_security_group_for_nuage()
@@ -641,8 +640,7 @@ class BaseVSDPublicResourcesTest(
             flavor=self.flavor_ref,
             key_name=keypair['name'],
             security_groups=security_groups,
-            networks=[{'uuid': network_id}],
-            wait_until='ACTIVE')
+            networks=[{'uuid': network_id}])
 
         # self.verify_ssh(keypair)
         # self.servers_client.delete_server(self.instance['id'])
