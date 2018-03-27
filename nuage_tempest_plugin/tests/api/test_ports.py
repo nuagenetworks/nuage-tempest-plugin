@@ -252,6 +252,152 @@ class PortsTest(NuageAdminNetworksTest,
         valid_vips = ['10.0.0.3']
         vip_mismatch = False
         mac_mismatch = False
+        if valid_vips and not nuage_vport_vips:
+            vip_mismatch = True
+        for nuage_vport_vip in nuage_vport_vips:
+            if nuage_vport_vip['virtualIP'] not in valid_vips:
+                vip_mismatch = True
+            if nuage_vport_vip['MAC'] != port['mac_address']:
+                mac_mismatch = True
+        self.assertEqual(vip_mismatch, False)
+        self.assertEqual(mac_mismatch, False)
+
+    @decorators.attr(type='smoke')
+    def test_nuage_port_create_fixed_ips_same_subnet_l3_no_security(self):
+        # Set up resources
+        # Base resources
+        if self.is_dhcp_agent_present():
+            raise self.skipException(
+                'Cannot run this test case when DHCP agent is enabled')
+        network = self.create_network()
+        self.assertIsNotNone(network, "Unable to create network")
+
+        subnet = self.create_subnet(network, cidr=IPNetwork("10.0.0.0/24"),
+                                    mask_bits=28)
+        self.assertIsNotNone(subnet, "Unable to create subnet")
+        router = self.create_router(
+            admin_state_up=True,
+            external_network_id=CONF.network.public_network_id)
+        self.assertIsNotNone(router, "Unable to create router")
+        # Attach subnet
+        self.create_router_interface(router_id=router["id"],
+                                     subnet_id=subnet["id"])
+        fixed_ips = [
+            {
+                "ip_address": "10.0.0.3",
+                "subnet_id": subnet["id"]
+            },
+            {
+                "ip_address": "10.0.0.4",
+                "subnet_id": subnet["id"]
+            }
+
+        ]
+        port = self.create_port(network=network, fixed_ips=fixed_ips,
+                                port_security_enabled=False)
+        self.assertIsNotNone(port, "Unable to create port on network")
+        vsd_vport_parent = self.vsd_client.get_global_resource(
+            constants.SUBNETWORK,
+            filters='externalID',
+            filter_value=subnet['id'])[0]
+        nuage_vport = self.vsd_client.get_vport(
+            constants.SUBNETWORK,
+            vsd_vport_parent['ID'],
+            filters='externalID',
+            filter_value=port['id'])
+        self.assertEqual(constants.ENABLED,
+                         nuage_vport[0]['addressSpoofing'])
+        nuage_vport_vips = self.vsd_client.get_virtual_ip(
+            constants.VPORT,
+            nuage_vport[0]['ID'])
+        valid_vips = ['10.0.0.3']
+        vip_mismatch = False
+        mac_mismatch = False
+        if valid_vips and not nuage_vport_vips:
+            vip_mismatch = True
+        for nuage_vport_vip in nuage_vport_vips:
+            if nuage_vport_vip['virtualIP'] not in valid_vips:
+                vip_mismatch = True
+            if nuage_vport_vip['MAC'] != port['mac_address']:
+                mac_mismatch = True
+        self.assertEqual(vip_mismatch, False)
+        self.assertEqual(mac_mismatch, False)
+
+    @decorators.attr(type='smoke')
+    def test_nuage_port_update_fixed_ips_same_subnet_l3_no_security(self):
+        # Set up resources
+        # Base resources
+        if self.is_dhcp_agent_present():
+            raise self.skipException(
+                'Cannot run this test case when DHCP agent is enabled')
+        network = self.create_network()
+        self.assertIsNotNone(network, "Unable to create network")
+
+        subnet = self.create_subnet(network, cidr=IPNetwork("10.0.0.0/24"),
+                                    mask_bits=28)
+        self.assertIsNotNone(subnet, "Unable to create subnet")
+        router = self.create_router(
+            admin_state_up=True,
+            external_network_id=CONF.network.public_network_id)
+        self.assertIsNotNone(router, "Unable to create router")
+        # Attach subnet
+        self.create_router_interface(router_id=router["id"],
+                                     subnet_id=subnet["id"])
+        fixed_ips = [
+            {
+                "ip_address": "10.0.0.3",
+                "subnet_id": subnet["id"]
+            }
+        ]
+        allowed_address_pairs = [{'ip_address': '10.0.0.5',
+                                  'mac_address': 'fe:a0:36:4b:c8:70'}]
+        port = self.create_port(network=network,
+                                fixed_ips=fixed_ips,
+                                allowed_address_pairs=allowed_address_pairs)
+        self.assertIsNotNone(port, "Unable to create port on network")
+        vsd_vport_parent = self.vsd_client.get_global_resource(
+            constants.SUBNETWORK,
+            filters='externalID',
+            filter_value=subnet['id'])[0]
+        nuage_vport = self.vsd_client.get_vport(
+            constants.SUBNETWORK,
+            vsd_vport_parent['ID'],
+            filters='externalID',
+            filter_value=port['id'])
+        self.assertEqual(constants.INHERITED,
+                         nuage_vport[0]['addressSpoofing'])
+
+        # update within subnet should succeed
+        fixed_ips = [
+            {
+                "ip_address": "10.0.0.3",
+                "subnet_id": subnet["id"]
+            },
+            {
+                "ip_address": "10.0.0.4",
+                "subnet_id": subnet["id"]
+            }
+        ]
+        port = self.update_port(port=port, fixed_ips=fixed_ips,
+                                allowed_address_pairs=[],
+                                security_groups=[],
+                                port_security_enabled=False)
+        self.assertIsNotNone(port, "Unable to update port")
+        nuage_vport = self.vsd_client.get_vport(
+            constants.SUBNETWORK,
+            vsd_vport_parent['ID'],
+            filters='externalID',
+            filter_value=port['id'])
+        self.assertEqual(constants.ENABLED,
+                         nuage_vport[0]['addressSpoofing'])
+        nuage_vport_vips = self.vsd_client.get_virtual_ip(
+            constants.VPORT,
+            nuage_vport[0]['ID'])
+        valid_vips = ['10.0.0.3']
+        vip_mismatch = False
+        mac_mismatch = False
+        if valid_vips and not nuage_vport_vips:
+            vip_mismatch = True
         for nuage_vport_vip in nuage_vport_vips:
             if nuage_vport_vip['virtualIP'] not in valid_vips:
                 vip_mismatch = True
@@ -327,6 +473,8 @@ class PortsTest(NuageAdminNetworksTest,
         valid_vips = ['10.0.0.3']
         vip_mismatch = False
         mac_mismatch = False
+        if valid_vips and not nuage_vport_vips:
+            vip_mismatch = True
         for nuage_vport_vip in nuage_vport_vips:
             if nuage_vport_vip['virtualIP'] not in valid_vips:
                 vip_mismatch = True
@@ -488,6 +636,67 @@ class PortsTest(NuageAdminNetworksTest,
             nuage_vport[0]['ID'])
         valid_vips = ['10.0.0.3', allowed_address_pairs[0]['ip_address']]
         vip_mismatch = False
+        if valid_vips and not nuage_vport_vips:
+            vip_mismatch = True
+        for nuage_vport_vip in nuage_vport_vips:
+            if nuage_vport_vip['virtualIP'] not in valid_vips:
+                vip_mismatch = True
+            self.assertEqual(vip_mismatch, False)
+
+    @decorators.attr(type='smoke')
+    def test_nuage_port_create_fixed_ips_same_subnet_l3_with_aap_outside_cidr(
+        self):
+        # Set up resources
+        # Base resources
+        if self.is_dhcp_agent_present():
+            raise self.skipException(
+                'Cannot run this test case when DHCP agent is enabled')
+        network = self.create_network()
+        self.assertIsNotNone(network, "Unable to create network")
+
+        subnet = self.create_subnet(network, cidr=IPNetwork("10.0.0.0/24"),
+                                    mask_bits=28)
+        self.assertIsNotNone(subnet, "Unable to create subnet")
+        router = self.create_router(
+            admin_state_up=True,
+            external_network_id=CONF.network.public_network_id)
+        self.assertIsNotNone(router, "Unable to create router")
+        # Attach subnet
+        self.create_router_interface(router_id=router["id"],
+                                     subnet_id=subnet["id"])
+        fixed_ips = [
+            {
+                "ip_address": "10.0.0.3",
+                "subnet_id": subnet["id"]
+            },
+            {
+                "ip_address": "10.0.0.4",
+                "subnet_id": subnet["id"]
+            }
+        ]
+        allowed_address_pairs = [{'ip_address': '1.1.1.5',
+                                  'mac_address': 'fe:a0:36:4b:c8:70'}]
+        port = self.create_port(network=network, fixed_ips=fixed_ips,
+                                allowed_address_pairs=allowed_address_pairs)
+        self.assertIsNotNone(port, "Unable to create port on network")
+        vsd_vport_parent = self.vsd_client.get_global_resource(
+            constants.SUBNETWORK,
+            filters='externalID',
+            filter_value=subnet['id'])[0]
+        nuage_vport = self.vsd_client.get_vport(
+            constants.SUBNETWORK,
+            vsd_vport_parent['ID'],
+            filters='externalID',
+            filter_value=port['id'])
+        self.assertEqual(constants.ENABLED,
+                         nuage_vport[0]['addressSpoofing'])
+        nuage_vport_vips = self.vsd_client.get_virtual_ip(
+            constants.VPORT,
+            nuage_vport[0]['ID'])
+        valid_vips = ['10.0.0.3']
+        vip_mismatch = False
+        if valid_vips and not nuage_vport_vips:
+            vip_mismatch = True
         for nuage_vport_vip in nuage_vport_vips:
             if nuage_vport_vip['virtualIP'] not in valid_vips:
                 vip_mismatch = True
@@ -562,6 +771,8 @@ class PortsTest(NuageAdminNetworksTest,
             nuage_vport[0]['ID'])
         valid_vips = ['10.0.0.3', allowed_address_pairs[0]['ip_address']]
         vip_mismatch = False
+        if valid_vips and not nuage_vport_vips:
+            vip_mismatch = True
         for nuage_vport_vip in nuage_vport_vips:
             if nuage_vport_vip['virtualIP'] not in valid_vips:
                 vip_mismatch = True
@@ -619,6 +830,8 @@ class PortsTest(NuageAdminNetworksTest,
         valid_vips = [fixed_ips[0]["ip_address"],
                       allowed_address_pairs[0]['ip_address']]
         vip_mismatch = False
+        if valid_vips and not nuage_vport_vips:
+            vip_mismatch = True
         for nuage_vport_vip in nuage_vport_vips:
             if nuage_vport_vip['virtualIP'] not in valid_vips:
                 vip_mismatch = True
@@ -659,6 +872,8 @@ class PortsTest(NuageAdminNetworksTest,
                       allowed_address_pairs[0]['ip_address'],
                       allowed_address_pairs[1]['ip_address']]
         vip_mismatch = False
+        if valid_vips and not nuage_vport_vips:
+            vip_mismatch = True
         for nuage_vport_vip in nuage_vport_vips:
             if nuage_vport_vip['virtualIP'] not in valid_vips:
                 vip_mismatch = True
@@ -716,6 +931,8 @@ class PortsTest(NuageAdminNetworksTest,
         valid_vips = [fixed_ips[0]["ip_address"],
                       allowed_address_pairs[0]['ip_address']]
         vip_mismatch = False
+        if valid_vips and not nuage_vport_vips:
+            vip_mismatch = True
         for nuage_vport_vip in nuage_vport_vips:
             if nuage_vport_vip['virtualIP'] not in valid_vips:
                 vip_mismatch = True
@@ -756,6 +973,8 @@ class PortsTest(NuageAdminNetworksTest,
                       allowed_address_pairs[0]['ip_address'],
                       allowed_address_pairs[1]['ip_address']]
         vip_mismatch = False
+        if valid_vips and not nuage_vport_vips:
+            vip_mismatch = True
         for nuage_vport_vip in nuage_vport_vips:
             if nuage_vport_vip['virtualIP'] not in valid_vips:
                 vip_mismatch = True
@@ -814,6 +1033,8 @@ class PortsTest(NuageAdminNetworksTest,
         valid_vips = [fixed_ips[0]["ip_address"],
                       allowed_address_pairs[0]['ip_address']]
         vip_mismatch = False
+        if valid_vips and not nuage_vport_vips:
+            vip_mismatch = True
         for nuage_vport_vip in nuage_vport_vips:
             if nuage_vport_vip['virtualIP'] not in valid_vips:
                 vip_mismatch = True
@@ -866,6 +1087,8 @@ class PortsTest(NuageAdminNetworksTest,
                     constants.VPORT,
                     nuage_vport[0]['ID'])
                 vip_mismatch = False
+                if valid_vips and not nuage_vport_vips:
+                    vip_mismatch = True
                 for nuage_vport_vip in nuage_vport_vips:
                     if nuage_vport_vip['virtualIP'] not in valid_vips:
                         vip_mismatch = True
@@ -930,6 +1153,8 @@ class PortsTest(NuageAdminNetworksTest,
                       allowed_address_pairs[0]['ip_address']]
         vip_mismatch = False
         mac_mismatch = False
+        if valid_vips and not nuage_vport_vips:
+            vip_mismatch = True
         for nuage_vport_vip in nuage_vport_vips:
             if nuage_vport_vip['virtualIP'] not in valid_vips:
                 vip_mismatch = True
@@ -990,6 +1215,8 @@ class PortsTest(NuageAdminNetworksTest,
         valid_vips = [fixed_ips[0]["ip_address"],
                       allowed_address_pairs[0]['ip_address']]
         vip_mismatch = False
+        if valid_vips and not nuage_vport_vips:
+            vip_mismatch = True
         for nuage_vport_vip in nuage_vport_vips:
             if nuage_vport_vip['virtualIP'] not in valid_vips:
                 vip_mismatch = True
@@ -1021,6 +1248,8 @@ class PortsTest(NuageAdminNetworksTest,
                       allowed_address_pairs[0]['ip_address']]
         vip_mismatch = False
         mac_mismatch = False
+        if valid_vips and not nuage_vport_vips:
+            vip_mismatch = True
         for nuage_vport_vip in nuage_vport_vips:
             if nuage_vport_vip['virtualIP'] not in valid_vips:
                 vip_mismatch = True
@@ -1090,6 +1319,8 @@ class PortsTest(NuageAdminNetworksTest,
             nuage_vport[0]['ID'])
         valid_vips = ['10.0.0.3', allowed_address_pairs[0]['ip_address']]
         vip_mismatch = False
+        if valid_vips and not nuage_vport_vips:
+            vip_mismatch = True
         for nuage_vport_vip in nuage_vport_vips:
             if nuage_vport_vip['virtualIP'] not in valid_vips:
                 vip_mismatch = True
@@ -1172,6 +1403,8 @@ class PortsTest(NuageAdminNetworksTest,
             constants.VPORT,
             nuage_vport[0]['ID'])
         vip_mismatch = False
+        if valid_vips and not nuage_vport_vips:
+            vip_mismatch = True
         for nuage_vport_vip in nuage_vport_vips:
             if nuage_vport_vip['virtualIP'] not in valid_vips:
                 vip_mismatch = True
