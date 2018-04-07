@@ -42,7 +42,39 @@ class PortsTest(NuageAdminNetworksTest,
             wait_until='ACTIVE')
         return server
 
-    @decorators.attr(type='smoke')
+    def test_nuage_port_create_fixed_ips_negative(self):
+        # Set up resources
+        # Base resources
+        if self.is_dhcp_agent_present():
+            raise self.skipException(
+                'Cannot run this test case when DHCP agent is enabled')
+        network = self.create_network()
+        self.assertIsNotNone(network, "Unable to create network")
+
+        subnet = self.create_subnet(network, cidr=IPNetwork("10.0.0.0/24"),
+                                    mask_bits=28)
+        self.assertIsNotNone(subnet, "Unable to create subnet")
+        subnet2 = self.create_subnet(network, cidr=IPNetwork("20.0.0.0/24"),
+                                     mask_bits=28)
+        self.assertIsNotNone(subnet2, "Unable to create second subnet")
+
+        fixed_ips = [
+            {
+                "ip_address": "10.0.0.3",
+                "subnet_id": subnet["id"]
+            },
+            {
+                "ip_address": "20.0.0.3",
+                "subnet_id": subnet2["id"]
+            }
+        ]
+        # Fail
+        msg = "Port can't have multiple IPv4 IPs of different subnets"
+        self.assertRaisesRegex(exceptions.BadRequest,
+                               msg,
+                               self.create_port,
+                               network=network, fixed_ips=fixed_ips)
+
     def test_nuage_port_update_fixed_ips_negative(self):
         if self.is_dhcp_agent_present():
             raise self.skipException(
