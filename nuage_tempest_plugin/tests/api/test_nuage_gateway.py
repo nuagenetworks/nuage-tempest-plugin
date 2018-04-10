@@ -619,7 +619,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
             if nuage_eacl_entry['locationID'] == default_pg[pg_num]['ID']:
                 self.assertEqual(
                     nuage_eacl_entry['networkType'],
-                    'ENDPOINT_DOMAIN')
+                    'ANY')
                 self.assertEqual(
                     nuage_eacl_entry['locationType'],
                     'POLICYGROUP')
@@ -725,7 +725,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
 
                 self.assertEqual(
                     nuage_eacl_entry['networkType'],
-                    'ENDPOINT_DOMAIN')
+                    'ANY')
                 self.assertEqual(
                     nuage_eacl_entry['locationType'],
                     'POLICYGROUP')
@@ -781,7 +781,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
 
                 self.assertEqual(
                     nuage_iacl_entry['networkType'],
-                    'ENDPOINT_DOMAIN')
+                    'ANY')
                 self.assertEqual(
                     nuage_iacl_entry['locationType'],
                     'POLICYGROUP')
@@ -843,7 +843,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
             if nuage_eacl_entry['locationID'] == default_pg[pg_num]['ID']:
                 self.assertEqual(
                     nuage_eacl_entry['networkType'],
-                    'ENDPOINT_DOMAIN')
+                    'ANY')
                 self.assertEqual(
                     nuage_eacl_entry['locationType'],
                     'POLICYGROUP')
@@ -900,7 +900,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
             if nuage_eacl_entry['locationID'] == default_pg[0]['ID']:
                 self.assertEqual(
                     nuage_eacl_entry['networkType'],
-                    'ENDPOINT_DOMAIN')
+                    'ANY')
                 self.assertEqual(
                     nuage_eacl_entry['locationType'],
                     'POLICYGROUP')
