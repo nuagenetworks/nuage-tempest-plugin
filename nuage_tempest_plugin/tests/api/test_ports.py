@@ -43,12 +43,10 @@ class PortsTest(NuageAdminNetworksTest,
             wait_until='ACTIVE')
         return server
 
+    @decorators.attr(type='smoke')
     def test_nuage_port_update_fixed_ips_negative(self):
         # Set up resources
         # Base resources
-        if self.is_dhcp_agent_present():
-            raise self.skipException(
-                'Cannot run this test case when DHCP agent is enabled')
         network = self.create_network()
         self.assertIsNotNone(network, "Unable to create network")
 
@@ -151,9 +149,6 @@ class PortsTest(NuageAdminNetworksTest,
     def test_nuage_port_update_fixed_ips_same_subnet_l2(self):
         # Set up resources
         # Base resources
-        if self.is_dhcp_agent_present():
-            raise self.skipException(
-                'Cannot run this test case when DHCP agent is enabled')
         network = self.create_network()
         self.assertIsNotNone(network, "Unable to create network")
 
@@ -206,9 +201,6 @@ class PortsTest(NuageAdminNetworksTest,
     def test_nuage_port_create_fixed_ips_same_subnet_l3(self):
         # Set up resources
         # Base resources
-        if self.is_dhcp_agent_present():
-            raise self.skipException(
-                'Cannot run this test case when DHCP agent is enabled')
         network = self.create_network()
         self.assertIsNotNone(network, "Unable to create network")
 
@@ -266,9 +258,6 @@ class PortsTest(NuageAdminNetworksTest,
     def test_nuage_port_create_fixed_ips_same_subnet_l3_no_security(self):
         # Set up resources
         # Base resources
-        if self.is_dhcp_agent_present():
-            raise self.skipException(
-                'Cannot run this test case when DHCP agent is enabled')
         network = self.create_network()
         self.assertIsNotNone(network, "Unable to create network")
 
@@ -327,9 +316,6 @@ class PortsTest(NuageAdminNetworksTest,
     def test_nuage_port_update_fixed_ips_same_subnet_l3_no_security(self):
         # Set up resources
         # Base resources
-        if self.is_dhcp_agent_present():
-            raise self.skipException(
-                'Cannot run this test case when DHCP agent is enabled')
         network = self.create_network()
         self.assertIsNotNone(network, "Unable to create network")
 
@@ -410,9 +396,6 @@ class PortsTest(NuageAdminNetworksTest,
     def test_nuage_port_update_fixed_ips_same_subnet_l3(self):
         # Set up resources
         # Base resources
-        if self.is_dhcp_agent_present():
-            raise self.skipException(
-                'Cannot run this test case when DHCP agent is enabled')
         network = self.create_network()
         self.assertIsNotNone(network, "Unable to create network")
 
@@ -487,9 +470,6 @@ class PortsTest(NuageAdminNetworksTest,
     def test_nuage_port_create_fixed_ips_same_subnet_l2_with_aap(self):
         # Set up resources
         # Base resources
-        if self.is_dhcp_agent_present():
-            raise self.skipException(
-                'Cannot run this test case when DHCP agent is enabled')
         network = self.create_network()
         self.assertIsNotNone(network, "Unable to create network")
 
@@ -529,9 +509,6 @@ class PortsTest(NuageAdminNetworksTest,
     def test_nuage_port_update_fixed_ips_same_subnet_l2_with_aap(self):
         # Set up resources
         # Base resources
-        if self.is_dhcp_agent_present():
-            raise self.skipException(
-                'Cannot run this test case when DHCP agent is enabled')
         network = self.create_network()
         self.assertIsNotNone(network, "Unable to create network")
 
@@ -588,9 +565,6 @@ class PortsTest(NuageAdminNetworksTest,
     def test_nuage_port_create_fixed_ips_same_subnet_l3_with_aap(self):
         # Set up resources
         # Base resources
-        if self.is_dhcp_agent_present():
-            raise self.skipException(
-                'Cannot run this test case when DHCP agent is enabled')
         network = self.create_network()
         self.assertIsNotNone(network, "Unable to create network")
 
@@ -648,9 +622,6 @@ class PortsTest(NuageAdminNetworksTest,
         self):
         # Set up resources
         # Base resources
-        if self.is_dhcp_agent_present():
-            raise self.skipException(
-                'Cannot run this test case when DHCP agent is enabled')
         network = self.create_network()
         self.assertIsNotNone(network, "Unable to create network")
 
@@ -706,9 +677,6 @@ class PortsTest(NuageAdminNetworksTest,
     def test_nuage_port_update_fixed_ips_same_subnet_l3_with_aap(self):
         # Set up resources
         # Base resources
-        if self.is_dhcp_agent_present():
-            raise self.skipException(
-                'Cannot run this test case when DHCP agent is enabled')
         network = self.create_network()
         self.assertIsNotNone(network, "Unable to create network")
 
@@ -782,9 +750,6 @@ class PortsTest(NuageAdminNetworksTest,
     def test_nuage_port_update_fixed_ips_same_subnet_l3_with_aap_with_vm(self):
         # Set up resources
         # Base resources
-        if self.is_dhcp_agent_present():
-            raise self.skipException(
-                'Cannot run this test case when DHCP agent is enabled')
         network = self.create_network()
         self.assertIsNotNone(network, "Unable to create network")
 
@@ -883,9 +848,6 @@ class PortsTest(NuageAdminNetworksTest,
     def test_nuage_port_update_app_to_fixed_ips_l3_with_vm(self):
         # Set up resources
         # Base resources
-        if self.is_dhcp_agent_present():
-            raise self.skipException(
-                'Cannot run this test case when DHCP agent is enabled')
         network = self.create_network()
         self.assertIsNotNone(network, "Unable to create network")
 
@@ -985,9 +947,6 @@ class PortsTest(NuageAdminNetworksTest,
         self):
         # Set up resources
         # Base resources
-        if self.is_dhcp_agent_present():
-            raise self.skipException(
-                'Cannot run this test case when DHCP agent is enabled')
         network = self.create_network()
         self.assertIsNotNone(network, "Unable to create network")
 
@@ -1104,9 +1063,6 @@ class PortsTest(NuageAdminNetworksTest,
     def test_nuage_port_create_fixed_ip_same_as_aap(self):
         # Set up resources
         # Base resources
-        if self.is_dhcp_agent_present():
-            raise self.skipException(
-                'Cannot run this test case when DHCP agent is enabled')
         network = self.create_network()
         self.assertIsNotNone(network, "Unable to create network")
 
@@ -1167,9 +1123,6 @@ class PortsTest(NuageAdminNetworksTest,
     def test_nuage_port_update_fixed_ips_same_as_aap(self):
         # Set up resources
         # Base resources
-        if self.is_dhcp_agent_present():
-            raise self.skipException(
-                'Cannot run this test case when DHCP agent is enabled')
         network = self.create_network()
         self.assertIsNotNone(network, "Unable to create network")
 
@@ -1264,9 +1217,6 @@ class PortsTest(NuageAdminNetworksTest,
         self):
         # Set up resources
         # Base resources
-        if self.is_dhcp_agent_present():
-            raise self.skipException(
-                'Cannot run this test case when DHCP agent is enabled')
         network = self.create_network()
         self.assertIsNotNone(network, "Unable to create network")
 
@@ -1338,9 +1288,6 @@ class PortsTest(NuageAdminNetworksTest,
         self):
         # Set up resources
         # Base resources
-        if self.is_dhcp_agent_present():
-            raise self.skipException(
-                'Cannot run this test case when DHCP agent is enabled')
         network = self.create_network()
         self.assertIsNotNone(network, "Unable to create network")
 
