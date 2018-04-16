@@ -18,7 +18,6 @@ LOG = Topology.get_logger(__name__)
 
 class PortsTest(NuageAdminNetworksTest,
                 manager.NetworkScenarioTest):
-
     @classmethod
     def setup_clients(cls):
         super(PortsTest, cls).setup_clients()
@@ -45,6 +44,10 @@ class PortsTest(NuageAdminNetworksTest,
 
     @decorators.attr(type='smoke')
     def test_nuage_port_update_fixed_ips_negative(self):
+        if self.is_dhcp_agent_present():
+            raise self.skipException(
+                'Multiple subnets in a network not supported when DHCP agent '
+                'is enabled.')
         # Set up resources
         # Base resources
         network = self.create_network()
@@ -619,7 +622,7 @@ class PortsTest(NuageAdminNetworksTest,
 
     @decorators.attr(type='smoke')
     def test_nuage_port_create_fixed_ips_same_subnet_l3_with_aap_outside_cidr(
-        self):
+            self):
         # Set up resources
         # Base resources
         network = self.create_network()
@@ -944,7 +947,7 @@ class PortsTest(NuageAdminNetworksTest,
 
     @decorators.attr(type='smoke')
     def test_nuage_port_update_fixed_ip_with_vm_and_conflict_with_aap_neg(
-        self):
+            self):
         # Set up resources
         # Base resources
         network = self.create_network()
@@ -1214,7 +1217,7 @@ class PortsTest(NuageAdminNetworksTest,
 
     @decorators.attr(type='smoke')
     def test_nuage_port_create_fixed_ips_same_subnet_with_aap_router_attach(
-        self):
+            self):
         # Set up resources
         # Base resources
         network = self.create_network()
@@ -1285,7 +1288,7 @@ class PortsTest(NuageAdminNetworksTest,
 
     @decorators.attr(type='smoke')
     def test_nuage_port_update_fixed_ips_same_subnet_with_aap_router_detach(
-        self):
+            self):
         # Set up resources
         # Base resources
         network = self.create_network()
