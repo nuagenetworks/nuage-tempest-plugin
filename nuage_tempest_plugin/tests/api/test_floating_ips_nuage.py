@@ -13,6 +13,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from netaddr import IPAddress
+from netaddr import IPNetwork
 import uuid
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
@@ -21,12 +23,15 @@ from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
 from tempest.api.network import test_floating_ips
+from tempest.common.utils import net_utils
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
 from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
+
+CONF = Topology.get_conf()
 
 
 class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
@@ -331,6 +336,29 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
             created_floating_ip, self.router['id'], None, None, False)
 
     @decorators.attr(type='smoke')
+    def test_create_update_floatingip_with_port_multiple_ip_address(self):
+        # TODO(Team) Adapt once we are on 5.3.2
+        # Find out ips that can be used for tests
+        list_ips = net_utils.get_unused_ip_addresses(
+            self.ports_client,
+            self.subnets_client,
+            self.subnet['network_id'],
+            self.subnet['id'],
+            2)
+        fixed_ips = [{'ip_address': list_ips[0]}, {'ip_address': list_ips[1]}]
+        # Create port
+        body = self.ports_client.create_port(network_id=self.network['id'],
+                                             fixed_ips=fixed_ips)
+        port = body['port']
+        self.addCleanup(self.ports_client.delete_port, port['id'])
+        # Create floating ip
+        self.assertRaises(exceptions.BadRequest,
+                          self.floating_ips_client.create_floatingip,
+                          floating_network_id=self.ext_net_id,
+                          port_id=port['id'],
+                          fixed_ip_address=list_ips[0])
+
+    @decorators.attr(type='smoke')
     def test_create_floatingip_with_rate_limiting(self):
         rate_limit = 10
         # Create port
@@ -468,3 +496,62 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
             if vsd_fip['address'] == fip['floating_ip_address']:
                 self.fail("No cleanup happened. Floatingip still exists on "
                           "VSD and not in Neutron.")
+
+    @decorators.attr(type='smoke')
+    def test_fip_on_multiple_ip_port(self):
+        network = self.create_network()
+        self.assertIsNotNone(network, "Unable to create network")
+        subnet = self.create_subnet(network)
+        self.assertIsNotNone(subnet, "Unable to create subnet")
+        router = self.create_router(
+            admin_state_up=True,
+            external_network_id=CONF.network.public_network_id)
+        self.assertIsNotNone(router, "Unable to create router")
+        self.create_router_interface(router_id=router["id"],
+                                     subnet_id=subnet["id"])
+        # 1. Assigning fip to port with multiple ip address
+        cidr4 = IPNetwork(CONF.network.project_network_cidr)
+        port_args = {
+            'fixed_ips': [
+                {'subnet_id': subnet['id'],
+                 'ip_address': str(IPAddress(cidr4.first) + 3)},
+                {'subnet_id': subnet['id'],
+                 'ip_address': str(IPAddress(cidr4.first) + 4)},
+                {'subnet_id': subnet['id'],
+                 'ip_address': str(IPAddress(cidr4.first) + 5)},
+                {'subnet_id': subnet['id'],
+                 'ip_address': str(IPAddress(cidr4.first) + 6)}],
+        }
+        port = self.create_port(network=network, **port_args)
+        floating_ip = self.create_floatingip(
+            external_network_id=CONF.network.public_network_id)
+        self.assertIsNotNone(floating_ip, "Unabe to create floating ip")
+        msg = 'floating ip cannot be associated to port %s ' \
+              'because it has multiple ipv4 or multiple ipv6ips' % port['id']
+        self.assertRaisesRegex(exceptions.BadRequest,
+                               msg,
+                               self.floating_ips_client.update_floatingip,
+                               floating_ip['id'],
+                               port_id=port['id'])
+        # 2. Assigning multiple ip address to a port with fip
+        port = self.create_port(network=network)
+        floating_ip = self.create_floatingip(
+            external_network_id=CONF.network.public_network_id)
+        self.assertIsNotNone(floating_ip, "Unable to create floating ip")
+
+        self.floating_ips_client.update_floatingip(
+            floating_ip['id'], port_id=port['id'])
+
+        port_args = {
+            'fixed_ips': [
+                {'subnet_id': subnet['id'],
+                 'ip_address': str(IPAddress(cidr4.first) + 7)},
+                {'subnet_id': subnet['id'],
+                 'ip_address': str(IPAddress(cidr4.first) + 8)}]}
+        msg = ("It is not possible to add multiple ipv4 or multiple ipv6"
+               " addresses on port {} since it has fip {} associated"
+               "to it.").format(port['id'], floating_ip['id'])
+        self.assertRaisesRegex(exceptions.BadRequest,
+                               msg,
+                               self.update_port,
+                               port=port, **port_args)
