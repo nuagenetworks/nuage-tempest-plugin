@@ -27,6 +27,8 @@ from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
+CONF = Topology.get_conf()
+
 
 class NetworksTestJSONNuage(test_networks.NetworksTest):
     _interface = 'json'
@@ -46,6 +48,11 @@ class NetworksTestJSONNuage(test_networks.NetworksTest):
             "".join([(hex(int(x))[2:].zfill(2))
                      for x in ip_address.split('.')])
         return ip_address_hex
+
+    @classmethod
+    def delete_router_interface(cls, router_id, subnet_id):
+        cls.routers_client.remove_router_interface(
+            router_id, subnet_id=subnet_id)
 
     def _verify_vsd_dhcp_options(self, nuage_dhcpopt, subnet):
         # VSD validation
@@ -275,20 +282,9 @@ class NetworksTestJSONNuage(test_networks.NetworksTest):
                                          'dns_nameservers',
                                          'allocation_pools']))
         subnet_id = subnet['id']
-        nuage_l2dom = None
-
-        if self._ip_version == 6:
-            # TODO(KRIS) I DONT UNDERSTAND THIS
-            # VSD validation; validate l2dom in vsd is created with the correct
-            # dhcp options
-            nuage_l2dom = self.nuage_vsd_client.get_l2domain(
-                filters='externalID', filter_value=subnet['id'])
-            nuage_dhcpopt = self.nuage_vsd_client.get_dhcpoption(
-                n_constants.L2_DOMAIN, nuage_l2dom[0]['ID'])
-            self._verify_vsd_dhcp_options(nuage_dhcpopt, subnet)
-
         new_gateway = str(netaddr.IPAddress(
                           self._subnet_data[self._ip_version]['gateway']) + 1)
+
         # Verify subnet update
         new_host_routes = self._subnet_data[self._ip_version][
             'new_host_routes']
@@ -305,16 +301,54 @@ class NetworksTestJSONNuage(test_networks.NetworksTest):
         updated_subnet = body['subnet']
         kwargs['name'] = new_name
 
+        self.assertEqual(sorted(updated_subnet['dns_nameservers']),
+                         sorted(kwargs['dns_nameservers']))
+        del subnet['dns_nameservers'], kwargs['dns_nameservers']
+
+        self._compare_resource_attrs(updated_subnet, kwargs)
+
+    @decorators.attr(type='smoke')
+    def test_update_routed_subnet_gw_dns_host_routes(self):
+
         if self._ip_version == 6:
-            # TODO(KRIS) I DONT UNDERSTAND THIS
-            # VSD validation check params got updated in VSD
-            update_dhcpopt = self.nuage_vsd_client.get_dhcpoption(
-                n_constants.L2_DOMAIN, nuage_l2dom[0]['ID'])
-            self._verify_vsd_dhcp_options(update_dhcpopt, updated_subnet)
+            # this test does not make much sense to my view for ipv6 as
+            # we don't support dhcp options on v6
+            self.skipTest('Skipped for ipv6.')
+
+        router = self.create_router(
+            external_network_id=CONF.network.public_network_id)
+        network = self.create_network()
+        subnet_args = self.subnet_dict(['gateway', 'host_routes',
+                                        'dns_nameservers',
+                                        'allocation_pools'])
+        subnet = self.create_subnet(network, **subnet_args)
+        self.create_router_interface(router['id'], subnet['id'])
+
+        subnet_id = subnet['id']
+
+        # Verify subnet update
+        new_host_routes = self._subnet_data[self._ip_version][
+            'new_host_routes']
+
+        new_dns_nameservers = self._subnet_data[self._ip_version][
+            'new_dns_nameservers']
+        kwargs = {'host_routes': new_host_routes,
+                  'dns_nameservers': new_dns_nameservers}
+
+        new_name = "New_subnet"
+        body = self.subnets_client.update_subnet(subnet_id, name=new_name,
+                                                 **kwargs)
+        updated_subnet = body['subnet']
+        kwargs['name'] = new_name
 
         self.assertEqual(sorted(updated_subnet['dns_nameservers']),
                          sorted(kwargs['dns_nameservers']))
         del subnet['dns_nameservers'], kwargs['dns_nameservers']
+
+        self._compare_resource_attrs(updated_subnet, kwargs)
+
+        # cleanup router itf ...
+        self.delete_router_interface(router['id'], subnet['id'])
 
     @decorators.attr(type='smoke')
     def test_create_delete_subnet_all_attributes(self):

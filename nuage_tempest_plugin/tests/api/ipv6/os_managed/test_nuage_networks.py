@@ -35,6 +35,11 @@ class NuageNetworksIpV6Test(tempest_test_networks.NetworksIpV6Test):
             raise cls.skipException(
                 'OS Managed Dual Stack is not supported in this release')
 
+    @classmethod
+    def delete_router_interface(cls, router_id, subnet_id):
+        cls.routers_client.remove_router_interface(
+            router_id, subnet_id=subnet_id)
+
     @decorators.attr(type='smoke')
     def test_create_delete_subnet_with_dhcp_enabled(self):
         self._create_verify_delete_subnet()
@@ -44,24 +49,18 @@ class NuageNetworksIpV6Test(tempest_test_networks.NetworksIpV6Test):
         self._create_verify_delete_subnet(
             **self.subnet_dict(['gateway', 'host_routes', 'dns_nameservers']))
 
+    @decorators.attr(type='smoke')
     def test_update_subnet_gw_dns_host_routes_dhcp(self):
         network = self.create_network()
-
-        ipv4_subnet = self.create_subnet(network,
-                                         ip_version=4,
-                                         gateway=None)
-
-        self.assertIsNotNone(ipv4_subnet)
         subnet_args = self.subnet_dict(['gateway', 'host_routes',
                                         'dns_nameservers',
                                         'allocation_pools'])
-
-        subnet = self.create_subnet(
-            network, **subnet_args)
+        subnet = self.create_subnet(network, **subnet_args)
 
         subnet_id = subnet['id']
         new_gateway = str(netaddr.IPAddress(
             self._subnet_data[self._ip_version]['gateway']) + 1)
+
         # Verify subnet update
         new_host_routes = self._subnet_data[self._ip_version][
             'new_host_routes']
@@ -83,6 +82,43 @@ class NuageNetworksIpV6Test(tempest_test_networks.NetworksIpV6Test):
         del subnet['dns_nameservers'], kwargs['dns_nameservers']
 
         self._compare_resource_attrs(updated_subnet, kwargs)
+
+    @decorators.attr(type='smoke')
+    def test_update_routed_subnet_dns_host_routes(self):
+        router = self.create_router(
+            external_network_id=CONF.network.public_network_id)
+        network = self.create_network()
+        subnet_args = self.subnet_dict(['gateway', 'host_routes',
+                                        'dns_nameservers',
+                                        'allocation_pools'])
+        subnet = self.create_subnet(network, **subnet_args)
+        self.create_router_interface(router['id'], subnet['id'])
+
+        subnet_id = subnet['id']
+
+        # Verify subnet update
+        new_host_routes = self._subnet_data[self._ip_version][
+            'new_host_routes']
+
+        new_dns_nameservers = self._subnet_data[self._ip_version][
+            'new_dns_nameservers']
+
+        kwargs = {'host_routes': new_host_routes,
+                  'dns_nameservers': new_dns_nameservers}
+
+        new_name = "New_subnet"
+        body = self.subnets_client.update_subnet(subnet_id, name=new_name,
+                                                 **kwargs)
+        updated_subnet = body['subnet']
+        kwargs['name'] = new_name
+        self.assertEqual(sorted(updated_subnet['dns_nameservers']),
+                         sorted(kwargs['dns_nameservers']))
+        del subnet['dns_nameservers'], kwargs['dns_nameservers']
+
+        self._compare_resource_attrs(updated_subnet, kwargs)
+
+        # cleanup router itf ...
+        self.delete_router_interface(router['id'], subnet['id'])
 
 
 class NuageNetworksIpV6TestAttrs(tempest_test_networks.NetworksIpV6TestAttrs):
