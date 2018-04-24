@@ -141,6 +141,7 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
     def test_cli_l2_create_port_with_nuage_policygroup(self):
         # Given I have a VSD-L2-Managed-Subnet in openstack with a
         # VSD created policy group
+        self._as_admin()
         cidr4 = IPNetwork('1.1.20.0/24')
         cidr6 = IPNetwork("2001:5f74:c4a5:b82e::/64")
         vsd_l2_subnet = self._given_vsd_l2domain(
