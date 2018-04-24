@@ -162,7 +162,9 @@ class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
         configs = [('off', False,
                     None, True),
                    ('snat', False,
-                    'off', True)]
+                    'off', True),
+                   ('off', False,
+                    'GARBAGE', None)]
         for conf in configs:
             self._router_update_check_exception(conf[0], conf[1],
                                                 conf[2], conf[3])
@@ -282,7 +284,8 @@ class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
             external_gateway_info_on=update_enable_snat is not None,
             nuage_underlay=update_nuage_underlay)
         LOG.debug("Verified for nuage_underlay={}, "
-                  "enable_snat={}".format(nuage_underlay, enable_snat))
+                  "enable_snat={}".format(update_nuage_underlay,
+                                          update_enable_snat))
 
     def _router_name_update_check_no_change(self, nuage_underlay, enable_snat,
                                             pat_enabled, underlay_enabled):
