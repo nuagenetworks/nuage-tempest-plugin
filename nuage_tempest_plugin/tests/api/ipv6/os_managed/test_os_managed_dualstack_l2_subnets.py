@@ -42,6 +42,14 @@ MSG_INVALID_GATEWAY_FOR_IP_TYPE = "Invalid input for operation: gateway_ip " \
                                   "'%s' does not match the ip_version '6'"
 
 
+def _is_v4_ip(ip):
+    return (IPAddress(ip['ip_address']).version == 4)
+
+
+def _is_v6_ip(ip):
+    return (IPAddress(ip['ip_address']).version == 6)
+
+
 @nuage_test.class_header(tags=[tags.ML2])
 class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
                                       nuage_test.NuageAdminNetworksTest):
@@ -616,21 +624,69 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
     ###########################################################################
     @decorators.attr(type='negative')
     @nuage_test.header()
-    def test_os_managed_dual_stack_subnet_ipv6_only_port_neg(self):
-        # Provision OpenStack network
+    def test_os_managed_dual_stack_create_ipv6_only_port_neg(self):
         network = self.create_network()
 
-        # When I add an IPv6 subnet
-        ipv6_subnet = self.create_subnet(
-            network, ip_version=6, enable_dhcp=False)
-        self.assertIsNotNone(ipv6_subnet)
+        self.create_subnet(network, ip_version=6, enable_dhcp=False)
 
-        # When I create a port in the network, it should fail with BadRequest
         self.assertRaisesRegex(
             tempest_exceptions.BadRequest,
             "Port can't be a pure ipv6 port. Need ipv4 fixed ip.",
             self.create_port,
             network)
+
+        port_args = {
+            'fixed_ips': [{'ip_address': IPAddress(self.cidr6.first + 10)},
+                          {'ip_address': IPAddress(self.cidr6.first + 11)}]}
+
+        self.assertRaisesRegex(
+            tempest_exceptions.BadRequest,
+            "Port can't be a pure ipv6 port. Need ipv4 fixed ip.",
+            self.create_port,
+            network,
+            **port_args)
+
+    @decorators.attr(type='negative')
+    @nuage_test.header()
+    def test_os_managed_dual_stack_update_port_to_ipv6_only_neg(self):
+        network = self.create_network()
+
+        self.create_subnet(network)
+        self.create_subnet(network, ip_version=6, enable_dhcp=False)
+
+        port = self.create_port(network)
+
+        # 1. remove the v4 ip from the port (must fail)
+        v4_ip = next((ip for ip in port['fixed_ips'] if _is_v4_ip(ip)), None)
+        v4_ip_a = IPAddress(v4_ip['ip_address'])
+        v6_ip = next((ip for ip in port['fixed_ips'] if _is_v6_ip(ip)), None)
+        v6_ip_a = IPAddress(v6_ip['ip_address'])
+
+        f_ips = {'fixed_ips': [{'ip_address': v6_ip_a}]}
+
+        self.assertRaisesRegex(
+            tempest_exceptions.BadRequest,
+            "Port can't be a pure ipv6 port. Need ipv4 fixed ip.",
+            self.update_port,
+            port,
+            **f_ips)
+
+        # 2. add 2nd v6 ip (must succeed)
+        f_ips = {'fixed_ips': [{'ip_address': v4_ip_a},
+                               {'ip_address': v6_ip_a},
+                               {'ip_address': v6_ip_a + 1}]}
+        self.update_port(port, **f_ips)
+
+        # 3. now remove v4 again (must fail)
+        f_ips = {'fixed_ips': [{'ip_address': v6_ip_a},
+                               {'ip_address': v6_ip_a + 1}]}
+
+        self.assertRaisesRegex(
+            tempest_exceptions.BadRequest,
+            "Port can't be a pure ipv6 port. Need ipv4 fixed ip.",
+            self.update_port,
+            port,
+            **f_ips)
 
     @decorators.attr(type='negative')
     @nuage_test.header()
@@ -775,7 +831,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
 
     @decorators.attr(type='negative')
     @nuage_test.header()
-    def test_delete_ipv4_subnet__with_port_from_dual_stack_subnets_neg(self):
+    def test_delete_ipv4_subnet_with_port_from_dual_stack_subnets_neg(self):
         # Provision OpenStack network
         network = self.create_network()
 
