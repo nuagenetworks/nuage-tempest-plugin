@@ -58,7 +58,8 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
         body = self.ports_client.create_port(**post_body)
         self.addCleanup(self.ports_client.delete_port, body['port']['id'])
 
-    def _verify_vsd_policy_grp(self, remote_group_id, nuage_domain=None):
+    def _verify_vsd_policy_grp(self, remote_group_id, nuage_domain=None,
+                               name=None):
         if not nuage_domain:
             nuage_domain = self.nuage_any_domain
         nuage_policy_grps = self.nuage_vsd_client.get_policygroup(
@@ -71,6 +72,12 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
             if ExternalId(remote_group_id).at_cms_id() == \
                     nuage_policy_grp['externalID']:
                 found = True
+                if name and name != nuage_policy_grp['description']:
+                    found = False
+                    self.assertTrue(found,
+                                    "Must have nuage policy group"
+                                    " with matching security group name")
+                    break
                 break
 
         self.assertTrue(found,
@@ -182,7 +189,9 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
         self._create_nuage_port_with_security_group(
             group_create_body['security_group']['id'], self.network['id'])
         # Verify vsd.
-        self._verify_vsd_policy_grp(group_create_body['security_group']['id'])
+        self._verify_vsd_policy_grp(
+            group_create_body['security_group']['id'],
+            name=group_create_body['security_group']['name'])
         new_name = data_utils.rand_name('security-')
         new_description = data_utils.rand_name('security-description')
         update_body = self.security_groups_client.update_security_group(
@@ -199,6 +208,9 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
         self.assertEqual(show_body['security_group']['name'], new_name)
         self.assertEqual(show_body['security_group']['description'],
                          new_description)
+        self._verify_vsd_policy_grp(
+            group_create_body['security_group']['id'],
+            name=new_name)
 
     def _test_create_show_delete_security_group_rule(self):
         group_create_body, _ = self._create_security_group()
