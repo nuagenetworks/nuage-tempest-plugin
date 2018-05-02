@@ -187,6 +187,19 @@ class StatelessSecuritygroupTest(network_mixin.NetworkMixin,
             self.assertRaises(lib_exc.BadRequest, self.create_security_group,
                               **create_data)
 
+    @decorators.attr(type=['smoke'])
+    def test_stateless_update_securitygroup_in_use_with_same_data(self):
+        topology = self._create_topology(with_router=False,
+                                         stateless_sg=False)
+        port_create_data = {'security_groups': [topology.securitygroup['id']]}
+        with self.port(topology.network['id'], **port_create_data) as port:
+            topology.port = port
+            update_data = {'stateful': True}
+            self.update_security_group(topology.securitygroup['id'],
+                                       **update_data)
+            self._validate_os(topology, stateless=False)
+            self._validate_vsd(topology, stateless=False)
+
     @decorators.attr(type=['negative', 'smoke'])
     def test_stateless_fail_update_securitygroup_in_use(self):
         topology = self._create_topology(with_router=False,
