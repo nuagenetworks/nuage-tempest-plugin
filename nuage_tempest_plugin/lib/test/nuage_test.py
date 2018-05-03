@@ -528,6 +528,14 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                             fip['id'])
         return fip
 
+    def delete_floatingip(self, floatingip_id=None,
+                          client=None):
+        """Wrapper utility that deletes a floating IP."""
+        if not client:
+            client = self.manager
+        client.floating_ips_client.delete_floatingip(
+            floatingip_id)
+
     def create_associate_vsd_managed_floating_ip(self, server, port_id=None,
                                                  vsd_domain=None,
                                                  vsd_subnet=None,
