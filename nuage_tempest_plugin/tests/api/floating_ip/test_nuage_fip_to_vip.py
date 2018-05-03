@@ -135,6 +135,7 @@ class NuageFipToVip(NuageBaseTest):
             nuage_vport.associated_floating_ip_id,
             "Floating ip not correctly attached to the vport.")
 
+    @decorators.attr(type='smoke')
     def test_fip2vip_dualstack_port(self):
         # openstack-2192
         network = self.create_network()
@@ -197,6 +198,7 @@ class NuageFipToVip(NuageBaseTest):
                           "No floating ip should be associated to the "
                           "VIP port after floating ip delete.")
 
+    @decorators.attr(type='smoke')
     def test_fip2vip_dualstack_port_with_fip_first_then_vip(self):
         # openstack-2192
         network = self.create_network()
