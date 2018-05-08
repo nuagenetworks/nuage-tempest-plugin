@@ -85,21 +85,6 @@ class BaremetalTest(network_mixin.NetworkMixin,
                      "switch_info": self.gateway['systemID']}]
             }}
 
-    dhcp_agent_present = None
-
-    def is_dhcp_agent_present(self):
-        if self.dhcp_agent_present is None:
-            agents = self.os_admin.network_agents_client.list_agents()\
-                .get('agents')
-            if agents:
-                self.dhcp_agent_present = any(
-                    agent for agent in agents if agent['alive'] and
-                    agent['binary'] == 'neutron-dhcp-agent')
-            else:
-                self.dhcp_agent_present = False
-
-        return self.dhcp_agent_present
-
     def test_baremetal_port_l3_create(self):
         topology = self._create_topology(with_router=True)
         self._test_baremetal_port(topology, update=False)

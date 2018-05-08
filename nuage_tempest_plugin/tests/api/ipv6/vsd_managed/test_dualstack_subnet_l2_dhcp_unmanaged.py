@@ -4,14 +4,12 @@
 from netaddr import IPAddress
 from netaddr import IPNetwork
 
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
+    import BaseVSDManagedNetworksIPv6Test
+
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions as tempest_exceptions
-
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
-    import NetworkTestCaseMixin
-from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
-    import VsdTestCaseMixin
 
 MSG_INVALID_GATEWAY = "Invalid IPv6 network gateway"
 MSG_INVALID_IPV6_ADDRESS = "Invalid network IPv6 address"
@@ -24,8 +22,7 @@ MSG_INVALID_IP_ADDRESS_FOR_SUBNET = "IP address %s is not a valid IP " \
                                     "for the specified subnet."
 
 
-class VSDManagedDualStackCommonBase(NetworkTestCaseMixin,
-                                    VsdTestCaseMixin):
+class VSDManagedDualStackCommonBase(BaseVSDManagedNetworksIPv6Test):
 
     dhcp_managed = False
 
@@ -197,6 +194,11 @@ class VSDManagedDualStackCommonBase(NetworkTestCaseMixin,
 
 
 class VSDManagedDualStackL2DHCPUnmanagedTest(VSDManagedDualStackCommonBase):
+
+    @classmethod
+    def resource_setup(cls):
+        super(VSDManagedDualStackL2DHCPUnmanagedTest, cls).resource_setup()
+        cls.net_partition = cls.net_partition[0]['name']
 
     def test_create_ipv6_subnet_in_vsd_managed_l2domain_dhcp_unmanaged(self):
         """test_create_ipv6_subnet_in_vsd_managed_l2domain_dhcp_unmanaged

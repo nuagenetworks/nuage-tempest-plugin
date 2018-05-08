@@ -12,16 +12,29 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+from netaddr import IPNetwork
+import time
 
 from tempest.api.network import base
+from tempest.lib import exceptions as lib_exc
 
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
+
+LOG = Topology.get_logger(__name__)
+
+# default values for shared L2/L3 networks
+VSD_L2_SHARED_MGD_CIDR = IPNetwork('20.20.20.0/24')
+VSD_L2_SHARED_MGD_GW = '20.20.20.1'
+
+VSD_L3_SHARED_MGD_CIDR = IPNetwork('30.30.30.0/24')
+VSD_L3_SHARED_MGD_GW = '30.30.30.1'
 
 
 class BaseVSDManagedNetworksTest(base.BaseNetworkTest):
 
     credentials = ['primary', 'admin']
+    dhcp_agent_present = None
 
     @classmethod
     def setup_clients(cls):
@@ -75,6 +88,47 @@ class BaseVSDManagedNetworksTest(base.BaseNetworkTest):
             resource = ('/sharednetworkresources/%s?responseChoice=1' %
                         vsd_shared_subnet[0]['ID'])
             cls.nuageclient.restproxy.rest_call('DELETE', resource, '')
+
+    @classmethod
+    def is_dhcp_agent_present(cls):
+        if cls.dhcp_agent_present is None:
+            agents = cls.admin_agents_client.list_agents().get('agents')
+            if agents:
+                cls.dhcp_agent_present = any(
+                    agent for agent in agents if agent['alive'] and
+                    agent['binary'] == 'neutron-dhcp-agent')
+            else:
+                cls.dhcp_agent_present = False
+
+        return cls.dhcp_agent_present
+
+    @classmethod
+    def create_subnet(cls, network, gateway='', cidr=None, mask_bits=None,
+                      ip_version=None, client=None, **kwargs):
+        subnet = super(BaseVSDManagedNetworksTest, cls).create_subnet(
+            network, gateway, cidr, mask_bits, ip_version, client, **kwargs)
+        dhcp_enabled = subnet['enable_dhcp']
+        current_time = time.time()
+        if cls.is_dhcp_agent_present() and dhcp_enabled:
+            LOG.info("Waiting for dhcp port resolution")
+            dhcp_subnets = []
+            while subnet['id'] not in dhcp_subnets:
+                if time.time() - current_time > 30:
+                    raise lib_exc.NotFound("DHCP port not resolved within"
+                                           " allocated time.")
+                time.sleep(0.5)
+                filters = {
+                    'device_owner': 'network:dhcp',
+                    'network_id': subnet['network_id']
+                }
+                dhcp_ports = cls.ports_client.list_ports(**filters)['ports']
+                if not dhcp_ports:
+                    time.sleep(0.5)
+                    continue
+                dhcp_port = dhcp_ports[0]
+                dhcp_subnets = [x['subnet_id'] for x in dhcp_port['fixed_ips']]
+            LOG.info("DHCP port resolved")
+        return subnet
 
     @classmethod
     def create_vsd_dhcpmanaged_l2dom_template(cls, **kwargs):
@@ -150,17 +204,3 @@ class BaseVSDManagedNetworksTest(base.BaseNetworkTest):
             'POST', '/sharednetworkresources', data)
         cls.vsd_shared_subnet.append(vsd_shared_subnet.data)
         return vsd_shared_subnet.data[0]
-
-    dhcp_agent_present = None
-
-    def is_dhcp_agent_present(self):
-        if self.dhcp_agent_present is None:
-            agents = self.admin_agents_client.list_agents().get('agents')
-            if agents:
-                self.dhcp_agent_present = any(
-                    agent for agent in agents if agent['alive'] and
-                    agent['binary'] == 'neutron-dhcp-agent')
-            else:
-                self.dhcp_agent_present = False
-
-        return self.dhcp_agent_present

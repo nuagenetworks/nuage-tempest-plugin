@@ -8,6 +8,7 @@ import os.path
 from oslo_utils import excutils
 import pymysql
 import testtools
+import time
 import yaml
 
 from netaddr import IPAddress
@@ -151,6 +152,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
     credentials = ['primary', 'admin']
     default_netpartition_name = Topology.def_netpartition
     image_name_to_id_cache = {}
+    dhcp_agent_present = None
 
     @classmethod
     def setup_clients(cls):
@@ -197,6 +199,20 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                  .format(str(cls.cidr4)))
         LOG.info("setup_network_resources: ipv6 config: {}"
                  .format(str(cls.cidr6)))
+
+    @classmethod
+    def is_dhcp_agent_present(cls):
+        if cls.dhcp_agent_present is None:
+            agents = cls.os_admin.network_agents_client.list_agents() \
+                .get('agents')
+            if agents:
+                cls.dhcp_agent_present = any(
+                    agent for agent in agents if agent['alive'] and
+                    agent['binary'] == 'neutron-dhcp-agent')
+            else:
+                cls.dhcp_agent_present = False
+
+        return cls.dhcp_agent_present
 
     @staticmethod
     def sleep(seconds=1, msg=None):
@@ -282,6 +298,26 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             raise ValueError(message)
 
         subnet = body['subnet']
+        dhcp_enabled = subnet['enable_dhcp']
+        if self.is_dhcp_agent_present() and dhcp_enabled:
+            current_time = time.time()
+            LOG.info("Waiting for dhcp port resolution")
+            dhcp_subnets = []
+            while subnet['id'] not in dhcp_subnets:
+                if time.time() - current_time > 30:
+                    raise lib_exc.NotFound("DHCP port not resolved within"
+                                           " allocated time.")
+                time.sleep(0.5)
+                filters = {
+                    'device_owner': 'network:dhcp',
+                    'network_id': subnet['network_id']
+                }
+                dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+                if not dhcp_ports:
+                    continue
+                dhcp_port = dhcp_ports[0]
+                dhcp_subnets = [x['subnet_id'] for x in dhcp_port['fixed_ips']]
+            LOG.info("DHCP port resolved")
 
         if cleanup:
             self.addCleanup(client.subnets_client.delete_subnet, subnet['id'])
@@ -1230,14 +1266,15 @@ class NuageAdminNetworksTest(base.BaseAdminNetworkTest):
 
     dhcp_agent_present = None
 
-    def is_dhcp_agent_present(self):
-        if self.dhcp_agent_present is None:
-            agents = self.admin_agents_client.list_agents().get('agents')
+    @classmethod
+    def is_dhcp_agent_present(cls):
+        if cls.dhcp_agent_present is None:
+            agents = cls.admin_agents_client.list_agents().get('agents')
             if agents:
-                self.dhcp_agent_present = any(
+                cls.dhcp_agent_present = any(
                     agent for agent in agents if agent['alive'] and
                     agent['binary'] == 'neutron-dhcp-agent')
             else:
-                self.dhcp_agent_present = False
+                cls.dhcp_agent_present = False
 
-        return self.dhcp_agent_present
+        return cls.dhcp_agent_present

@@ -3,11 +3,6 @@
 
 from netaddr import IPAddress
 from netaddr import IPNetwork
-
-from tempest.lib.common.utils import data_utils
-from tempest.lib import decorators
-from tempest.lib import exceptions as tempest_exceptions
-
 from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
 
@@ -15,11 +10,12 @@ from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.test import tags
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import exceptions as nuage_exceptions
+from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
+    import BaseVSDManagedNetworksIPv6Test
 
-from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
-    import NetworkTestCaseMixin
-from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
-    import VsdTestCaseMixin
+from tempest.lib.common.utils import data_utils
+from tempest.lib import decorators
+from tempest.lib import exceptions as tempest_exceptions
 
 MSG_INVALID_GATEWAY = "Invalid IPv6 network gateway"
 MSG_INVALID_IPV6_ADDRESS = "Invalid network IPv6 address"
@@ -28,7 +24,7 @@ MSG_IP_ADDRESS_INVALID_OR_RESERVED = "IP Address is not valid or cannot be " \
 
 
 @nuage_test.class_header(tags=[tags.ML2])
-class VSDManagedDualStackSubnetL3Test(NetworkTestCaseMixin, VsdTestCaseMixin):
+class VSDManagedDualStackSubnetL3Test(BaseVSDManagedNetworksIPv6Test):
 
     ###########################################################################
     # Typical cases

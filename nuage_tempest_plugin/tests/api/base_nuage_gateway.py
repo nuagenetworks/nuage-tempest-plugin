@@ -12,7 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
-
+import time
 import uuid
 
 from nuage_tempest_plugin.lib.topology import Topology
@@ -25,6 +25,7 @@ from nuage_tempest_plugin.services.nuage_network_client \
 from tempest.api.network import base
 from tempest.lib.common.utils import data_utils
 from tempest.lib.common.utils.data_utils import rand_name
+from tempest.lib import exceptions as lib_exc
 
 CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
@@ -32,6 +33,7 @@ LOG = Topology.get_logger(__name__)
 
 class BaseNuageGatewayTest(base.BaseAdminNetworkTest):
     _interface = 'json'
+    dhcp_agent_present = None
 
     @classmethod
     def create_gateway(cls, type):
@@ -227,6 +229,47 @@ class BaseNuageGatewayTest(base.BaseAdminNetworkTest):
 
         if has_exception:
             raise exceptions.TearDownException()
+
+    @classmethod
+    def is_dhcp_agent_present(cls):
+        if cls.dhcp_agent_present is None:
+            agents = cls.admin_agents_client.list_agents().get('agents')
+            if agents:
+                cls.dhcp_agent_present = any(
+                    agent for agent in agents if agent['alive'] and
+                    agent['binary'] == 'neutron-dhcp-agent')
+            else:
+                cls.dhcp_agent_present = False
+
+        return cls.dhcp_agent_present
+
+    @classmethod
+    def create_subnet(cls, network, gateway='', cidr=None, mask_bits=None,
+                      ip_version=None, client=None, **kwargs):
+        subnet = super(base.BaseAdminNetworkTest, cls).create_subnet(
+            network, gateway, cidr, mask_bits, ip_version, client, **kwargs)
+        dhcp_enabled = subnet['enable_dhcp']
+        current_time = time.time()
+        if cls.is_dhcp_agent_present() and dhcp_enabled:
+            LOG.info("Waiting for dhcp port resolution")
+            dhcp_subnets = []
+            while subnet['id'] not in dhcp_subnets:
+                if time.time() - current_time > 30:
+                    raise lib_exc.NotFound("DHCP port not resolved within"
+                                           " allocated time.")
+                time.sleep(0.5)
+                filters = {
+                    'device_owner': 'network:dhcp',
+                    'network_id': subnet['network_id']
+                }
+                dhcp_ports = cls.ports_client.list_ports(**filters)['ports']
+                if not dhcp_ports:
+                    time.sleep(0.5)
+                    continue
+                dhcp_port = dhcp_ports[0]
+                dhcp_subnets = [x['subnet_id'] for x in dhcp_port['fixed_ips']]
+            LOG.info("DHCP port resolved")
+        return subnet
 
     def verify_gateway_properties(self, actual_gw, expected_gw):
         self.assertEqual(actual_gw['ID'], expected_gw['id'])

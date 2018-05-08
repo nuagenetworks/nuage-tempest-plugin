@@ -6,6 +6,7 @@ from netaddr import IPNetwork
 from netaddr import IPRange
 
 import random
+import time
 
 from tempest import exceptions
 from tempest.lib.common.utils import data_utils
@@ -25,14 +26,18 @@ from nuage_tempest_plugin.services.nuage_network_client \
 
 # TODO(TEAM) - make inherit from NuageBaseTest ?
 
+LOG = Topology.get_logger(__name__)
 
-class BaseNuageNetworksTestCase(test.BaseTestCase):
+
+class BaseNuageNetworksIpv6TestCase(test.BaseTestCase):
     # Default to ipv4.
     _ip_version = 4
+    credentials = ['primary', 'admin']
+    dhcp_agent_present = None
 
     @classmethod
     def setup_clients(cls):
-        super(BaseNuageNetworksTestCase, cls).setup_clients()
+        super(BaseNuageNetworksIpv6TestCase, cls).setup_clients()
         client_manager = cls.get_client_manager()
 
         cls.networks_client = client_manager.networks_client
@@ -46,6 +51,20 @@ class BaseNuageNetworksTestCase(test.BaseTestCase):
     @classmethod
     def resource_setup(cls):
         NuageBaseTest.setup_network_resources(cls)
+
+    @classmethod
+    def is_dhcp_agent_present(cls):
+        if cls.dhcp_agent_present is None:
+            agents = cls.os_admin.network_agents_client.list_agents() \
+                .get('agents')
+            if agents:
+                cls.dhcp_agent_present = any(
+                    agent for agent in agents if agent['alive'] and
+                    agent['binary'] == 'neutron-dhcp-agent')
+            else:
+                cls.dhcp_agent_present = False
+
+        return cls.dhcp_agent_present
 
     def expectEqual(self, expected, observed, message=''):
         """Expect that 'expected' is equal to 'observed'.
@@ -61,22 +80,215 @@ class BaseNuageNetworksTestCase(test.BaseTestCase):
         matcher = _FlippedEquals(expected)
         self.expectThat(observed, matcher, message)
 
+    def create_network(self, network_name=None, **kwargs):
+        """Wrapper utility that returns a test network."""
+        network_name = network_name or data_utils.rand_name('test-network')
+
+        body = self.networks_client.create_network(name=network_name, **kwargs)
+        network = body['network']
+        self.addCleanup(self.networks_client.delete_network, network['id'])
+        return network
+
+    def create_subnet(self, network, gateway='', cidr=None, mask_bits=None,
+                      ip_version=None, client=None, **kwargs):
+        """Wrapper utility that returns a test subnet."""
+        # allow tests to use admin client
+        if not client:
+            client = self.subnets_client
+
+        # The cidr and mask_bits depend on the ip version.
+        ip_version = ip_version if ip_version is not None else self._ip_version
+        gateway_not_set = gateway == ''
+        if ip_version == 4:
+            cidr = cidr or IPNetwork(self.cidr)
+            if mask_bits is None:
+                mask_bits = self.mask_bits4
+        elif ip_version == 6:
+            cidr = (cidr or
+                    IPNetwork(self.cidr6))
+            if mask_bits is None:
+                mask_bits = self.mask_bits6
+        # Find a cidr that is not in use yet and create a subnet with it
+        for subnet_cidr in cidr.subnet(mask_bits):
+            if gateway_not_set:
+                gateway_ip = str(IPAddress(subnet_cidr) + 1)
+            else:
+                gateway_ip = gateway
+            try:
+                body = client.create_subnet(
+                    network_id=network['id'],
+                    cidr=str(subnet_cidr),
+                    ip_version=ip_version,
+                    gateway_ip=gateway_ip,
+                    **kwargs)
+                break
+            except lib_exc.BadRequest as e:
+                is_overlapping_cidr = 'overlaps with another subnet' in str(e)
+                if not is_overlapping_cidr:
+                    raise
+        else:
+            message = 'Available CIDR for subnet creation could not be found'
+            raise exceptions.BuildErrorException(message)
+        subnet = body['subnet']
+
+        dhcp_enabled = subnet['enable_dhcp']
+        if self.is_dhcp_agent_present() and dhcp_enabled:
+            current_time = time.time()
+            LOG.info("Waiting for dhcp port resolution")
+            dhcp_subnets = []
+            while subnet['id'] not in dhcp_subnets:
+                if time.time() - current_time > 30:
+                    raise lib_exc.NotFound("DHCP port not resolved within"
+                                           " allocated time.")
+                time.sleep(0.5)
+                filters = {
+                    'device_owner': 'network:dhcp',
+                    'network_id': subnet['network_id']
+                }
+                dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+                if not dhcp_ports:
+                    time.sleep(0.5)
+                    continue
+                dhcp_port = dhcp_ports[0]
+                dhcp_subnets = [x['subnet_id'] for x in dhcp_port['fixed_ips']]
+            LOG.info("DHCP port resolved")
+
+        self.addCleanup(client.delete_subnet, subnet['id'])
+        return subnet
+
+    def create_port(self, network, cleanup=True, **kwargs):
+        """Wrapper utility that returns a test port."""
+        body = self.ports_client.create_port(network_id=network['id'],
+                                             **kwargs)
+        port = body['port']
+        if cleanup:
+            self.addCleanup(self.ports_client.delete_port, port['id'])
+        return port
+
+    def create_and_forget_port(self, network, **kwargs):
+        """Wrapper utility that returns a test port."""
+        body = self.ports_client.create_port(network_id=network['id'],
+                                             **kwargs)
+        port = body['port']
+        # no cleanup !
+        return port
+
+    def update_port(self, port, **kwargs):
+        """Wrapper utility that updates a test port."""
+        body = self.ports_client.update_port(port['id'],
+                                             **kwargs)
+        return body['port']
+
+    def _verify_port(self, port, subnet4=None, subnet6=None, **kwargs):
+        testcase = kwargs.pop('testcase', 'unknown')
+        message = 'testcase: %s' % testcase
+
+        has_ipv4_ip = False
+        has_ipv6_ip = False
+
+        for fixed_ip in port['fixed_ips']:
+            ip_address = fixed_ip['ip_address']
+            if subnet4 and fixed_ip['subnet_id'] == subnet4['id']:
+                start_ip_address = subnet4['allocation_pools'][0]['start']
+                end_ip_address = subnet4['allocation_pools'][0]['end']
+                ip_range = IPRange(start_ip_address, end_ip_address)
+                self.assertIn(ip_address, ip_range, message=message)
+                has_ipv4_ip = True
+
+            if subnet6 and fixed_ip['subnet_id'] == subnet6['id']:
+                start_ip_address = subnet6['allocation_pools'][0]['start']
+                end_ip_address = subnet6['allocation_pools'][0]['end']
+                ip_range = IPRange(start_ip_address, end_ip_address)
+                self.assertIn(ip_address, ip_range, message=message)
+                has_ipv6_ip = True
+
+        if subnet4:
+            self.assertTrue(
+                has_ipv4_ip,
+                "Must have an IPv4 ip in subnet: %s" % subnet4['id'])
+
+        if subnet6:
+            self.assertTrue(
+                has_ipv6_ip,
+                "Must have an IPv6 ip in subnet: %s" % subnet6['id'])
+
+        self.assertIsNotNone(port['mac_address'])
+
+        # verify all other kwargs as attributes (key,value) pairs
+        for key, value in kwargs.iteritems():
+            if isinstance(value, dict):
+                # compare dict
+                raise NotImplementedError
+            if isinstance(value, list):
+                # self.assertThat(port, ContainsDict({key: Equals(value)}))
+                self.assertItemsEqual(port[key], value)
+            else:
+                self.assertThat(port, ContainsDict({key: Equals(value)}))
+
+    def _given_network_linked_to_vsd_subnet(self, vsd_subnet, cidr4=None,
+                                            cidr6=None, enable_dhcp=True,
+                                            net_partition=None):
+        # create OpenStack IPv4 subnet on OpenStack based on VSD l3dom subnet
+        net_name = data_utils.rand_name('network-')
+        network = self.create_network(network_name=net_name)
+
+        if net_partition:
+            actual_net_partition = net_partition
+        else:
+            actual_net_partition = self.net_partition
+
+        subnet4 = self.create_subnet(
+            network,
+            cidr=cidr4,
+            enable_dhcp=enable_dhcp,
+            mask_bits=cidr4.prefixlen,
+            nuagenet=vsd_subnet['ID'],
+            net_partition=actual_net_partition)
+
+        # create OpenStack IPv6 subnet on OpenStack based on VSD l3dom subnet
+        subnet6 = None
+        if cidr6:
+            subnet6 = self.create_subnet(
+                network,
+                ip_version=6,
+                cidr=cidr6,
+                mask_bits=IPNetwork(cidr6).prefixlen,
+                enable_dhcp=False,
+                nuagenet=vsd_subnet['ID'],
+                net_partition=actual_net_partition)
+
+        return network, subnet4, subnet6
+
+    def _create_redirect_target_in_l3_subnet(self, l3subnet, name=None):
+        if name is None:
+            name = data_utils.rand_name('os-l3-rt')
+        # parameters for nuage redirection target
+        post_body = {
+            'insertion_mode': 'L3',
+            'redundancy_enabled': 'False',
+            'subnet_id': l3subnet['id'],
+            'name': name
+        }
+        redirect_target = self.nuage_network_client.create_redirection_target(
+            **post_body)
+        return redirect_target
+
 
 ############################################################
 # VSD resources
 ############################################################
 
-class VsdTestCaseMixin(test.BaseTestCase):
+class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
     VSD_FIP_POOL_CIDR_BASE = '130.%s.%s.0/24'
 
     @classmethod
     def setup_clients(cls):
-        super(VsdTestCaseMixin, cls).setup_clients()
+        super(BaseVSDManagedNetworksIPv6Test, cls).setup_clients()
         cls.nuage_vsd_client = NuageRestClient()
 
     @classmethod
     def resource_setup(cls):
-        super(VsdTestCaseMixin, cls).resource_setup()
+        super(BaseVSDManagedNetworksIPv6Test, cls).resource_setup()
 
         if Topology.is_ml2:
             # create default net_partition if it is not there
@@ -91,7 +303,7 @@ class VsdTestCaseMixin(test.BaseTestCase):
 
     @classmethod
     def resource_cleanup(cls):
-        super(VsdTestCaseMixin, cls).resource_cleanup()
+        super(BaseVSDManagedNetworksIPv6Test, cls).resource_cleanup()
 
     @classmethod
     def link_l2domain_to_shared_domain(cls, domain_id, shared_domain_id):
@@ -483,180 +695,3 @@ class VsdTestCaseMixin(test.BaseTestCase):
             if show_port['port']['nuage_floatingip']['id'] == claimed_fip_id:
                 fip_found = True
         return fip_found
-
-
-############################################################
-# Neutron resources
-############################################################
-class NetworkTestCaseMixin(BaseNuageNetworksTestCase):
-
-    def create_network(self, network_name=None, **kwargs):
-        """Wrapper utility that returns a test network."""
-        network_name = network_name or data_utils.rand_name('test-network')
-
-        body = self.networks_client.create_network(name=network_name, **kwargs)
-        network = body['network']
-        self.addCleanup(self.networks_client.delete_network, network['id'])
-        return network
-
-    def create_subnet(self, network, gateway='', cidr=None, mask_bits=None,
-                      ip_version=None, client=None, **kwargs):
-        """Wrapper utility that returns a test subnet."""
-        # allow tests to use admin client
-        if not client:
-            client = self.subnets_client
-
-        # The cidr and mask_bits depend on the ip version.
-        ip_version = ip_version if ip_version is not None else self._ip_version
-        gateway_not_set = gateway == ''
-        if ip_version == 4:
-            cidr = cidr or IPNetwork(self.cidr)
-            if mask_bits is None:
-                mask_bits = self.mask_bits4
-        elif ip_version == 6:
-            cidr = (cidr or
-                    IPNetwork(self.cidr6))
-            if mask_bits is None:
-                mask_bits = self.mask_bits6
-        # Find a cidr that is not in use yet and create a subnet with it
-        for subnet_cidr in cidr.subnet(mask_bits):
-            if gateway_not_set:
-                gateway_ip = str(IPAddress(subnet_cidr) + 1)
-            else:
-                gateway_ip = gateway
-            try:
-                body = client.create_subnet(
-                    network_id=network['id'],
-                    cidr=str(subnet_cidr),
-                    ip_version=ip_version,
-                    gateway_ip=gateway_ip,
-                    **kwargs)
-                break
-            except lib_exc.BadRequest as e:
-                is_overlapping_cidr = 'overlaps with another subnet' in str(e)
-                if not is_overlapping_cidr:
-                    raise
-        else:
-            message = 'Available CIDR for subnet creation could not be found'
-            raise exceptions.BuildErrorException(message)
-        subnet = body['subnet']
-
-        self.addCleanup(client.delete_subnet, subnet['id'])
-        return subnet
-
-    def create_port(self, network, cleanup=True, **kwargs):
-        """Wrapper utility that returns a test port."""
-        body = self.ports_client.create_port(network_id=network['id'],
-                                             **kwargs)
-        port = body['port']
-        if cleanup:
-            self.addCleanup(self.ports_client.delete_port, port['id'])
-        return port
-
-    def create_and_forget_port(self, network, **kwargs):
-        """Wrapper utility that returns a test port."""
-        body = self.ports_client.create_port(network_id=network['id'],
-                                             **kwargs)
-        port = body['port']
-        # no cleanup !
-        return port
-
-    def update_port(self, port, **kwargs):
-        """Wrapper utility that updates a test port."""
-        body = self.ports_client.update_port(port['id'],
-                                             **kwargs)
-        return body['port']
-
-    def _verify_port(self, port, subnet4=None, subnet6=None, **kwargs):
-        testcase = kwargs.pop('testcase', 'unknown')
-        message = 'testcase: %s' % testcase
-
-        has_ipv4_ip = False
-        has_ipv6_ip = False
-
-        for fixed_ip in port['fixed_ips']:
-            ip_address = fixed_ip['ip_address']
-            if subnet4 and fixed_ip['subnet_id'] == subnet4['id']:
-                start_ip_address = subnet4['allocation_pools'][0]['start']
-                end_ip_address = subnet4['allocation_pools'][0]['end']
-                ip_range = IPRange(start_ip_address, end_ip_address)
-                self.assertIn(ip_address, ip_range, message=message)
-                has_ipv4_ip = True
-
-            if subnet6 and fixed_ip['subnet_id'] == subnet6['id']:
-                start_ip_address = subnet6['allocation_pools'][0]['start']
-                end_ip_address = subnet6['allocation_pools'][0]['end']
-                ip_range = IPRange(start_ip_address, end_ip_address)
-                self.assertIn(ip_address, ip_range, message=message)
-                has_ipv6_ip = True
-
-        if subnet4:
-            self.assertTrue(
-                has_ipv4_ip,
-                "Must have an IPv4 ip in subnet: %s" % subnet4['id'])
-
-        if subnet6:
-            self.assertTrue(
-                has_ipv6_ip,
-                "Must have an IPv6 ip in subnet: %s" % subnet6['id'])
-
-        self.assertIsNotNone(port['mac_address'])
-
-        # verify all other kwargs as attributes (key,value) pairs
-        for key, value in kwargs.iteritems():
-            if isinstance(value, dict):
-                # compare dict
-                raise NotImplementedError
-            if isinstance(value, list):
-                # self.assertThat(port, ContainsDict({key: Equals(value)}))
-                self.assertItemsEqual(port[key], value)
-            else:
-                self.assertThat(port, ContainsDict({key: Equals(value)}))
-
-    def _given_network_linked_to_vsd_subnet(self, vsd_subnet, cidr4=None,
-                                            cidr6=None, enable_dhcp=True,
-                                            net_partition=None):
-        # create OpenStack IPv4 subnet on OpenStack based on VSD l3dom subnet
-        net_name = data_utils.rand_name('network-')
-        network = self.create_network(network_name=net_name)
-
-        if net_partition:
-            actual_net_partition = net_partition
-        else:
-            actual_net_partition = self.net_partition
-
-        subnet4 = self.create_subnet(
-            network,
-            cidr=cidr4,
-            enable_dhcp=enable_dhcp,
-            mask_bits=cidr4.prefixlen,
-            nuagenet=vsd_subnet['ID'],
-            net_partition=actual_net_partition)
-
-        # create OpenStack IPv6 subnet on OpenStack based on VSD l3dom subnet
-        subnet6 = None
-        if cidr6:
-            subnet6 = self.create_subnet(
-                network,
-                ip_version=6,
-                cidr=cidr6,
-                mask_bits=IPNetwork(cidr6).prefixlen,
-                enable_dhcp=False,
-                nuagenet=vsd_subnet['ID'],
-                net_partition=actual_net_partition)
-
-        return network, subnet4, subnet6
-
-    def _create_redirect_target_in_l3_subnet(self, l3subnet, name=None):
-        if name is None:
-            name = data_utils.rand_name('os-l3-rt')
-        # parameters for nuage redirection target
-        post_body = {
-            'insertion_mode': 'L3',
-            'redundancy_enabled': 'False',
-            'subnet_id': l3subnet['id'],
-            'name': name
-        }
-        redirect_target = self.nuage_network_client.create_redirection_target(
-            **post_body)
-        return redirect_target

@@ -3,18 +3,15 @@
 
 from netaddr import IPNetwork
 
-from tempest.lib import decorators
-
+from base_nuage_networks_cli import BaseNuageNetworksCliTestCase
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
-
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
-from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
-    import VsdTestCaseMixin
-
-from base_nuage_networks_cli import BaseNuageNetworksCliTestCase
+from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
+    import BaseVSDManagedNetworksIPv6Test
+from tempest.lib import decorators
 
 LOG = Topology.get_logger(__name__)
 
@@ -36,7 +33,7 @@ VALID_MAC_ADDRESS = 'fa:fa:3e:e8:e8:c0'
 ###############################################################################
 ###############################################################################
 class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
-                                    VsdTestCaseMixin):
+                                    BaseVSDManagedNetworksIPv6Test):
 
     @classmethod
     def setup_clients(cls):

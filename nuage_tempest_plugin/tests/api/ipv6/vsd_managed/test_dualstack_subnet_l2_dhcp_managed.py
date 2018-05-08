@@ -4,11 +4,6 @@
 from netaddr import IPAddress
 from netaddr import IPNetwork
 import testtools
-
-from tempest.lib.common.utils import data_utils
-from tempest.lib import decorators
-from tempest.lib import exceptions as exceptions
-
 from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
 
@@ -17,15 +12,15 @@ from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as nuage_constants
 from nuage_tempest_plugin.lib.utils import exceptions as nuage_exceptions
-
-from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
-    import NetworkTestCaseMixin
-from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
-    import VsdTestCaseMixin
-
-from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.\
+from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
+    import BaseVSDManagedNetworksIPv6Test
+from nuage_tempest_plugin.tests.api.ipv6.vsd_managed. \
     test_dualstack_subnet_l2_dhcp_unmanaged \
     import VSDManagedDualStackCommonBase
+
+from tempest.lib.common.utils import data_utils
+from tempest.lib import decorators
+from tempest.lib import exceptions as exceptions
 
 MSG_INVALID_GATEWAY = "Invalid network gateway"
 MSG_INVALID_ADDRESS = "Invalid network address"
@@ -43,8 +38,8 @@ MSG_INVALID_IP_ADDRESS_FOR_SUBNET = "IP address %s is not a valid IP for " \
                                     "the specified subnet."
 
 
-class VSDManagedDualStackL2DomainDHCPManagedTest(NetworkTestCaseMixin,
-                                                 VsdTestCaseMixin):
+class VSDManagedDualStackL2DomainDHCPManagedTest(
+        BaseVSDManagedNetworksIPv6Test):
 
     @decorators.attr(type='smoke')
     def test_create_vsd_managed_l2domain_dhcp_managed_ipv4(self):
@@ -247,6 +242,11 @@ class VSDManagedDualStackL2DomainDHCPManagedTest(NetworkTestCaseMixin,
 class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
 
     dhcp_managed = True
+
+    @classmethod
+    def resource_setup(cls):
+        super(VSDManagedDualStackL2DHCPManagedTest, cls).resource_setup()
+        cls.net_partition = cls.net_partition[0]['name']
 
     def link_dualstack_net_l2(
             self,
