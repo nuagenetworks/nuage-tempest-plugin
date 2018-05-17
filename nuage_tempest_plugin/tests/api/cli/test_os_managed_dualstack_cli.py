@@ -3,19 +3,15 @@
 
 from netaddr import IPNetwork
 
-from tempest.lib.common.utils import data_utils
-from tempest.lib import decorators
-
+from base_nuage_networks_cli import BaseNuageNetworksCliTestCase
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
-
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
-from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
-    import VsdTestCaseMixin
 
-from base_nuage_networks_cli import BaseNuageNetworksCliTestCase
+from tempest.lib.common.utils import data_utils
+from tempest.lib import decorators
 
 LOG = Topology.get_logger(__name__)
 
@@ -25,7 +21,7 @@ VALID_MAC_ADDRESS_2B = 'fa:fa:3e:e8:e8:2b'
 
 
 class OSManagedDualStackCliTest(
-        BaseNuageNetworksCliTestCase, VsdTestCaseMixin):
+        BaseNuageNetworksCliTestCase):
 
     @classmethod
     def skip_checks(cls):
@@ -145,7 +141,7 @@ class OSManagedDualStackCliTest(
 
     @nuage_test.header()
     @decorators.attr(type='smoke')
-    def test_dualsstack_with_reserved_ipv6_address_neg(self):
+    def test_dualstack_with_reserved_ipv6_address_neg(self):
         network_name = data_utils.rand_name('cli_network')
         network = self.create_network_with_args(network_name)
         self.addCleanup(self._delete_network, network['id'])
@@ -176,7 +172,7 @@ class OSManagedDualStackCliTest(
 
     @nuage_test.header()
     @decorators.attr(type='smoke')
-    def test_dualsstack_with_reserved_ipv6_address_and_ip4v_last_neg(self):
+    def test_dualstack_with_reserved_ipv6_address_and_ip4v_last_neg(self):
         network_name = data_utils.rand_name('cli_network')
         network = self.create_network_with_args(network_name)
         self.addCleanup(self._delete_network, network['id'])

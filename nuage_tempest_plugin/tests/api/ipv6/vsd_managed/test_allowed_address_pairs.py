@@ -1,18 +1,14 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
 
-from tempest.test import decorators
-
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as nuage_constants
-
-from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
-    import NetworkTestCaseMixin
-from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
-    import VsdTestCaseMixin
 from nuage_tempest_plugin.tests.api.ipv6.test_allowed_address_pair \
     import BaseAllowedAddressPair
+from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
+    import BaseVSDManagedNetworksIPv6Test
+from tempest.test import decorators
 
 ###############################################################################
 ###############################################################################
@@ -24,8 +20,7 @@ LOG = Topology.get_logger(__name__)
 
 
 class VSDManagedAllowedAddresPairsTest(BaseAllowedAddressPair,
-                                       VsdTestCaseMixin,
-                                       NetworkTestCaseMixin):
+                                       BaseVSDManagedNetworksIPv6Test):
     @classmethod
     def resource_setup(cls):
         super(VSDManagedAllowedAddresPairsTest, cls).resource_setup()

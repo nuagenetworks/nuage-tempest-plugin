@@ -1,15 +1,12 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
 
-from tempest.lib.common.utils import data_utils
-
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.utils import constants
+from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
+    import BaseVSDManagedNetworksIPv6Test
+from tempest.lib.common.utils import data_utils
 
-from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
-    import NetworkTestCaseMixin
-from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
-    import VsdTestCaseMixin
 
 ###############################################################################
 ###############################################################################
@@ -18,7 +15,12 @@ from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
 ###############################################################################
 
 
-class VSDManagedRedirectTargetTest(NetworkTestCaseMixin, VsdTestCaseMixin):
+class VSDManagedRedirectTargetTest(BaseVSDManagedNetworksIPv6Test):
+
+    @classmethod
+    def resource_setup(cls):
+        super(VSDManagedRedirectTargetTest, cls).resource_setup()
+        cls.net_partition = cls.net_partition[0]['name']
 
     def _verify_redirect_target(self, rt, parent, parentinfo, postinfo):
         redirect_target = self.nuage_vsd_client.get_redirection_target(

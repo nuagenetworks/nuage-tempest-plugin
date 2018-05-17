@@ -6,11 +6,8 @@ from testtools.matchers import Equals
 
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
-
-from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
-    import NetworkTestCaseMixin
-from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
-    import VsdTestCaseMixin
+from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
+    import BaseVSDManagedNetworksIPv6Test
 
 VALID_MAC_ADDRESS = 'fa:fa:3e:e8:e8:01'
 VALID_MAC_ADDRESS_2A = 'fa:fa:3e:e8:e8:2a'
@@ -23,7 +20,12 @@ VALID_MAC_ADDRESS_2B = 'fa:fa:3e:e8:e8:2b'
 ###############################################################################
 
 
-class VSDManagedFloatingIpTest(NetworkTestCaseMixin, VsdTestCaseMixin):
+class VSDManagedFloatingIpTest(BaseVSDManagedNetworksIPv6Test):
+
+    @classmethod
+    def resource_setup(cls):
+        super(VSDManagedFloatingIpTest, cls).resource_setup()
+        cls.net_partition = cls.net_partition[0]['name']
 
     @nuage_test.header()
     def test_create_port_with_vsd_floatingip(self):

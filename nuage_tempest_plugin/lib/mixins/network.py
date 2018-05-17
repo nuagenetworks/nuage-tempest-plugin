@@ -289,15 +289,16 @@ class NetworkMixin(base.BaseMixin):
 
     dhcp_agent_present = None
 
-    def is_dhcp_agent_present(self):
-        if self.dhcp_agent_present is None:
-            agents = self.os_admin.network_agents_client.list_agents() \
+    @classmethod
+    def is_dhcp_agent_present(cls):
+        if cls.dhcp_agent_present is None:
+            agents = cls.os_admin.network_agents_client.list_agents() \
                 .get('agents')
             if agents:
-                self.dhcp_agent_present = any(
+                cls.dhcp_agent_present = any(
                     agent for agent in agents if agent['alive'] and
                     agent['binary'] == 'neutron-dhcp-agent')
             else:
-                self.dhcp_agent_present = False
+                cls.dhcp_agent_present = False
 
-        return self.dhcp_agent_present
+        return cls.dhcp_agent_present

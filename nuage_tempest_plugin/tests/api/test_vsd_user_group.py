@@ -17,7 +17,6 @@ net_partition_name = Topology.def_netpartition
 
 @nuage_test.class_header(tags=[tags.ML2])
 class VSDUserGroup(nuage_test.NuageBaseTest):
-    credentials = ['primary']
 
     @classmethod
     def skip_checks(cls):

@@ -574,10 +574,11 @@ class NuageRestClient(object):
                 return self.delete_resource(constants.L2_DOMAIN_TEMPLATE,
                                             l2dom_tid)
             except Exception as e:
-                if 'l2domain is in use and its properties can neither be ' \
-                   'modified or deleted.' not in str(e):
+                if 'This l2domaintemplate is in use' not in str(e):
                     raise
                 else:
+                    if attempt >= Topology.nbr_retries_for_test_robustness - 1:
+                        raise
                     LOG.error('Got {} (attempt {})'.format(str(e),
                                                            attempt + 1))
                     time.sleep(1)
@@ -635,6 +636,8 @@ class NuageRestClient(object):
             try:
                 return self.delete_resource(constants.L2_DOMAIN, l2dom_id)
             except Exception as e:
+                if attempt >= Topology.nbr_retries_for_test_robustness - 1:
+                    raise
                 if 'l2domain is in use and its properties can neither be ' \
                    'modified or deleted.' not in str(e):
                     raise
@@ -749,7 +752,7 @@ class NuageRestClient(object):
         data = {
             "endPointType": "L3",
             "name": name,
-            }
+        }
         if extra_params:
             data.update(extra_params)
         res_path = self.build_resource_path(
@@ -1313,7 +1316,7 @@ class NuageRestClient(object):
         data = {
             'name': name,
             'type': type,
-            }
+        }
         if type == 'STANDARD':
             net = netaddr.IPNetwork(cidr)
             data.update({'address': str(net.ip)})
@@ -1365,7 +1368,7 @@ class NuageRestClient(object):
             'DSCP': dscp,
             'protocol': protocol,
             'direction': direction,
-            }
+        }
         if extra_params:
             data.update(extra_params)
         if not netpart_name:

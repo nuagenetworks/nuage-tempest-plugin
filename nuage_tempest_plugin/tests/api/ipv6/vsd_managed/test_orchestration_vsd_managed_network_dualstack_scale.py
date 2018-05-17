@@ -1,28 +1,23 @@
-# Copyright 2015 Alcatel-Lucent
+# Copyright 2017 NOKIA
 # All Rights Reserved.
 
 from netaddr import IPAddress
 from netaddr import IPNetwork
 
-from tempest.lib.common.utils import data_utils
-
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
-
-from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
-    import NetworkTestCaseMixin
-from nuage_tempest_plugin.tests.api.ipv6.base_nuage_networks \
-    import VsdTestCaseMixin
 from nuage_tempest_plugin.tests.api.ipv6.base_nuage_orchestration \
     import NuageBaseOrchestrationTest
+from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
+    import BaseVSDManagedNetworksIPv6Test
+from tempest.lib.common.utils import data_utils
 
 CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
 
 
-class OrchestrationDualStackScaleTest(NuageBaseOrchestrationTest,
-                                      NetworkTestCaseMixin,
-                                      VsdTestCaseMixin):
+class OrchestrationDualStackScaleTest(
+        NuageBaseOrchestrationTest, BaseVSDManagedNetworksIPv6Test):
 
     @nuage_test.header()
     def test_link_subnet_to_vsd_l2domain_dhcp_managed_scale_vm_in_net(self):
