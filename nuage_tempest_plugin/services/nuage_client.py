@@ -67,7 +67,7 @@ class NuageRestClient(object):
     @staticmethod
     def _error_checker(resp):
         if resp.status == 300:
-            raise n_exceptions.MultipleChoices
+            raise n_exceptions.MultipleChoices(resp.data)
 
         # It is not an error response
         if resp.status < 400:
@@ -638,8 +638,9 @@ class NuageRestClient(object):
             except Exception as e:
                 if attempt >= Topology.nbr_retries_for_test_robustness - 1:
                     raise
-                if 'l2domain is in use and its properties can neither be ' \
-                   'modified or deleted.' not in str(e):
+                if ('l2domain is in use and its properties can neither be '
+                        'modified or deleted.' not in str(e) and
+                        'Managed by external system' not in str(e)):
                     raise
                 else:
                     LOG.error('Got {} (attempt {})'.format(str(e),
@@ -1401,7 +1402,6 @@ class NuageRestClient(object):
         return self.put(res_path, configuration)
 
     def create_uplink_subnet(self, extra_params=None, **kwargs):
-
         data = {'netmask': kwargs['netmask'],
                 'uplinkGWVlanAttachmentID':
                     str(kwargs['uplinkGWVlanAttachmentID']),
