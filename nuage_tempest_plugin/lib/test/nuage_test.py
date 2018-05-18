@@ -480,7 +480,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                       external_network_id=None, enable_snat=None,
                       external_gateway_info_on=True,
                       client=None, cleanup=True,
-                      retry_on_router_delete=False,
+                      retry_on_router_delete=None,
                       no_net_partition=False,
                       **kwargs):
         """Wrapper utility that creates a router."""
@@ -512,7 +512,9 @@ class NuageBaseTest(manager.NetworkScenarioTest):
     # TODO(TEAM) - DONE TOO SOON AFTER SUBNET DETACH. MEANWHILE THIS IS A
     # TODO(TEAM) - WORK-AROUND, BY GIVING DELAY TO THIS METHOD
     def delete_router(self, router, client=None,
-                      retry_on_router_delete=False):
+                      retry_on_router_delete=None):
+        if retry_on_router_delete is None:
+            retry_on_router_delete = self.is_dhcp_agent_present()
         if not client:
             client = self.manager
         if retry_on_router_delete:
