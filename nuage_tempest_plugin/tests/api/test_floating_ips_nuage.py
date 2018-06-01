@@ -81,8 +81,9 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
             self.assertTrue(validation, msg=error_message)
 
         else:
-            # self.assertEqual(0, len(nuage_domain_fip))
-            pass
+            vsd_fip_list = [fip['address'] for fip in nuage_domain_fip]
+            self.assertNotIn(created_floating_ip['floating_ip_address'],
+                             vsd_fip_list)
 
     @decorators.attr(type='smoke')
     def test_create_list_show_update_delete_floating_ip(self):

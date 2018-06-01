@@ -414,6 +414,12 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                                                **kwargs)
         return body['port']
 
+    def delete_port(self, port, client=None):
+        """Wrapper utility that deletes a test port."""
+        if not client:
+            client = self.manager
+        client.ports_client.delete_port(port['id'])
+
     def _verify_port(self, port, subnet4=None, subnet6=None, **kwargs):
         has_ipv4_ip = False
         has_ipv6_ip = False
