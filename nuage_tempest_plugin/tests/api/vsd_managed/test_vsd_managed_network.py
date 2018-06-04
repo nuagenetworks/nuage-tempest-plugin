@@ -17,11 +17,9 @@ from netaddr import IPAddress
 from netaddr import IPNetwork
 import testtools
 
-from tempest.api.compute import base as serv_base
 from tempest.api.network import base
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
-from tempest.scenario import manager
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
@@ -30,43 +28,45 @@ from nuage_tempest_plugin.lib.test import tags
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.lib.utils import data_utils as nuage_data_utils
-import nuage_tempest_plugin.tests.api.test_netpartitions as test_netpartitions
-from nuage_tempest_plugin.tests.api.vsd_managed \
-    import base_vsd_managed_network as base_vsdman
+
+from nuage_tempest_plugin.services.nuage_network_client \
+    import NuageNetworkClientJSON
+from nuage_tempest_plugin.tests.api.vsd_managed.base_vsd_managed_network \
+    import BaseVSDManagedNetworksTest
 
 CONF = Topology.get_conf()
 
 
 @nuage_test.class_header(tags=[tags.VSD_MANAGED])
-class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
-                             test_netpartitions.NetPartitionTestJSON,
-                             manager.NetworkScenarioTest,
-                             serv_base.BaseV2ComputeTest):
+class VSDManagedTestNetworks(BaseVSDManagedNetworksTest):
 
     def __init__(self, *args, **kwargs):
         super(VSDManagedTestNetworks, self).__init__(*args, **kwargs)
-        if Topology.before_openstack('Newton'):
-            self.failure_type = exceptions.ServerFault
-        else:
-            self.failure_type = exceptions.BadRequest
+        self.failure_type = exceptions.BadRequest
 
     @classmethod
-    def get_server_ip_from_vsd(cls, vm_id):
-        if Topology.within_ext_id_release():
-            vm_details = cls.nuageclient.get_resource(
-                constants.VM,
-                filters='externalID',
-                filter_value=cls.nuageclient.get_vsd_external_id(vm_id))[0]
-        else:
-            # the prehistory
-            vm_details = cls.nuageclient.get_resource(constants.VM,
-                                                      filters='UUID',
-                                                      filter_value=vm_id)[0]
-        interfaces = vm_details.get('interfaces')
-        if interfaces:
-            return interfaces[0]['IPAddress']
+    def setup_clients(cls):
+        super(VSDManagedTestNetworks, cls).setup_clients()
+        cls.client = NuageNetworkClientJSON(
+            cls.os_primary.auth_provider,
+            **cls.os_primary.default_params)
+
+    @classmethod
+    def setUpClass(cls):
+        super(VSDManagedTestNetworks, cls).setUpClass()
+        cls.net_partitions = []
+
+    @classmethod
+    def resource_cleanup(cls):
+        super(VSDManagedTestNetworks, cls).resource_cleanup()
+        for netpartition in cls.net_partitions:
+            cls.client.delete_netpartition(netpartition['id'])
 
     def _create_vsd_shared_resource(self, managed=True, type=None):
+        """_create_vsd_shared_resource
+
+        :rtype: dict
+        """
         if managed:
             cidr, gateway, mask_bits = nuage_data_utils.gimme_a_cidr()
             return (self.create_vsd_managed_shared_resource(
@@ -78,23 +78,112 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
             return self.create_vsd_managed_shared_resource(
                 name=data_utils.rand_name('shared-unmanaged'), type='L2DOMAIN')
 
-    def _verify_vm_ip(self, net_id, net_name):
+    def _create_and_verify_vm(self, network):
         name = data_utils.rand_name('server-smoke')
-        server = self._create_server(name, net_id)
-        self.assertEqual(server.get('OS-EXT-STS:vm_state'), 'active')
-        ip_addr_on_openstack = server['addresses'][net_name][0]['addr']
-        ip_addr_on_vsd = self.get_server_ip_from_vsd(server['id'])
+        server = self.create_tenant_server(name=name,
+                                           tenant_networks=[network])
+        ip_addr_on_openstack = server.get_server_details()['addresses'][
+            network['name']][0]['addr']
+        ip_addr_on_vsd = self.get_server_ip_from_vsd(server.id())
         return ip_addr_on_openstack == ip_addr_on_vsd
 
-    def _create_server(self, name, network_id):
-        return self.create_server(name=name,
-                                  networks=[{'uuid': network_id}],
-                                  wait_until='ACTIVE')
+    @classmethod
+    def create_netpartition(cls, np_name=None):
+        """Wrapper utility that returns a test network."""
+        np_name = np_name or data_utils.rand_name('tempest-np-')
+
+        body = cls.client.create_netpartition(np_name)
+        netpartition = body['net_partition']
+        cls.net_partitions.append(netpartition)
+        return netpartition
+
+    @decorators.attr(type='smoke')
+    def test_create_list_verify_delete_netpartition(self):
+        name = data_utils.rand_name('tempest-np')
+        body = self.client.create_netpartition(name)
+        self.assertEqual('201', body.response['status'])
+        netpart = body['net_partition']
+        self.assertEqual(name, netpart['name'])
+        if Topology.within_ext_id_release():
+            net_partition = self.nuageclient.get_global_resource(
+                resource=constants.NET_PARTITION,
+                filters='externalID',
+                filter_value=netpart['id'] + '@openstack')
+            self.assertEqual(name, net_partition[0]['name'])
+            default_l2dom_template = self.nuageclient.get_resource(
+                resource=constants.L2_DOMAIN_TEMPLATE,
+                filters='externalID',
+                filter_value=netpart['id'] + '@openstack',
+                netpart_name=name)
+            self.assertIsNot(default_l2dom_template, "", "Default L2Domain "
+                                                         "Template Not Found")
+            default_dom_template = self.nuageclient.get_resource(
+                resource=constants.DOMAIN_TEMPLATE,
+                filters='externalID',
+                filter_value=netpart['id'] + '@openstack',
+                netpart_name=name)
+            self.assertIsNot(default_dom_template, "", "Default Domain "
+                                                       "Template Not Found")
+            zone_templates = self.nuageclient.get_child_resource(
+                resource=constants.DOMAIN_TEMPLATE,
+                resource_id=default_dom_template[0]['ID'],
+                child_resource=constants.ZONE_TEMPLATE,
+                filters='externalID',
+                filter_value=netpart['id'] + '@openstack')
+            self.assertEqual(2, len(zone_templates))
+        body = self.client.list_netpartition()
+        netpartition_idlist = list()
+        netpartition_namelist = list()
+        for netpartition in body['net_partitions']:
+            netpartition_idlist.append(netpartition['id'])
+            netpartition_namelist.append(netpartition['name'])
+        self.assertIn(netpart['id'], netpartition_idlist)
+        self.assertIn(netpart['name'], netpartition_namelist)
+        body = self.client.delete_netpartition(netpart['id'])
+        self.assertEqual('204', body.response['status'])
 
     def link_subnet_l2(self, cidr=None, mask_bits=None, dhcp_port=None,
                        dhcp_option_3=None,
                        pool=None, vsd_l2dom=None,
+                       net_partition=None,
                        should_pass=True, create_server=False, network=None):
+
+        def verify_subnet_info(i_subnet, i_vsd_l2dom, i_cidr, i_pool,
+                               i_dhcp_option_3):
+            self.assertEqual(i_subnet['cidr'], str(i_cidr))
+            # self.assertEqual(i_subnet['vsd_managed'], True)
+            # self.assertEqual(i_subnet['nuagenet'], i_vsd_l2dom['ID'])
+            sub_pool = i_subnet['allocation_pools'][0]
+            if i_pool:
+                self.assertEqual(sub_pool['start'], i_pool['start'])
+                self.assertEqual(sub_pool['end'], i_pool['end'])
+            else:
+                if i_dhcp_option_3 and i_dhcp_option_3 == '10.10.100.2':
+                    self.assertEqual(2, len(i_subnet['allocation_pools']))
+                    # today we split the allocation pool ...
+                    # apparently the pools order can vary ...
+                    # so allow for both order permutations ...
+                    # TODO(Kris) dig deeper why order is random
+                    other_sub_pool = i_subnet['allocation_pools'][1]
+                    if sub_pool['start'] != str(i_cidr[1]):
+                        # swap
+                        tmp = other_sub_pool
+                        other_sub_pool = sub_pool
+                        sub_pool = tmp
+
+                    self.assertEqual(sub_pool['start'], str(i_cidr[1]))
+                    self.assertEqual(sub_pool['end'], str(i_cidr[1]))
+
+                    self.assertEqual(other_sub_pool['start'], str(i_cidr[3]))
+                    self.assertEqual(other_sub_pool['end'], str(i_cidr[-2]))
+
+                elif i_dhcp_option_3 and i_dhcp_option_3 != '10.10.100.2':
+                    raise NotImplementedError  # volunteers, feel free
+
+                else:
+                    self.assertEqual(sub_pool['start'], str(i_cidr[1]))
+                    self.assertEqual(sub_pool['end'], str(i_cidr[-2]))
+
         # create l2domain on VSD
         name = data_utils.rand_name('l2domain-')
         cidr = cidr or IPNetwork('10.10.100.0/24')
@@ -103,9 +192,10 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
 
         if vsd_l2dom is None:
             vsd_l2dom_tmplt = self.create_vsd_dhcpmanaged_l2dom_template(
-                name=name,
-                cidr=cidr, gateway=dhcp_port)[0]
+                netpart_name=net_partition['name'] if net_partition else None,
+                name=name, cidr=cidr, gateway=dhcp_port)[0]
             vsd_l2dom = self.create_vsd_l2domain(
+                netpart_name=net_partition['name'] if net_partition else None,
                 name=name, tid=vsd_l2dom_tmplt['ID'])[0]
             self.assertEqual(vsd_l2dom['name'], name)
             if dhcp_option_3:
@@ -123,51 +213,24 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
             'cidr': cidr,
             'mask_bits': mask_bits,
             'nuagenet': vsd_l2dom['ID'],
-            'net_partition': Topology.def_netpartition
+            'net_partition': (net_partition['id'] if net_partition
+                              else Topology.def_netpartition)
         }
         if pool:
             kwargs['allocation_pools'] = [pool]
         if should_pass:
             subnet = self.create_subnet(network, **kwargs)
-            self.assertEqual(subnet['cidr'], str(cidr))
-            sub_pool = subnet['allocation_pools'][0]
-            if pool:
-                self.assertEqual(sub_pool['start'], pool['start'])
-                self.assertEqual(sub_pool['end'], pool['end'])
-            else:
-                if dhcp_option_3 and dhcp_option_3 == '10.10.100.2':
-                    self.assertEqual(2, len(subnet['allocation_pools']))
-                    # today we split the allocation pool ...
-                    # apparently the pools order can vary ...
-                    # so allow for both order permutations ...
-                    # TODO(Kris) dig deeper why order is random
-                    other_sub_pool = subnet['allocation_pools'][1]
-                    if sub_pool['start'] != str(cidr[1]):
-                        # swap
-                        tmp = other_sub_pool
-                        other_sub_pool = sub_pool
-                        sub_pool = tmp
+            verify_subnet_info(subnet, vsd_l2dom, cidr, pool, dhcp_option_3)
 
-                    self.assertEqual(sub_pool['start'], str(cidr[1]))
-                    self.assertEqual(sub_pool['end'], str(cidr[1]))
-
-                    self.assertEqual(other_sub_pool['start'], str(cidr[3]))
-                    self.assertEqual(other_sub_pool['end'], str(cidr[-2]))
-
-                elif dhcp_option_3 and dhcp_option_3 != '10.10.100.2':
-                    raise NotImplementedError  # volunteers, feel free
-
-                else:
-                    self.assertEqual(sub_pool['start'], str(cidr[1]))
-                    self.assertEqual(sub_pool['end'], str(cidr[-2]))
+            # now refetch the subnet and verify again
+            subnet = self.client.show_subnet(subnet['id'])['subnet']
+            verify_subnet_info(subnet, vsd_l2dom, cidr, pool, dhcp_option_3)
 
             if create_server:
-                self.assertTrue(self._verify_vm_ip(network['id'], net_name))
-
+                self.assertTrue(self._create_and_verify_vm(network))
         else:
             self.assertRaises(self.failure_type, self.create_subnet,
                               network, **kwargs)
-
         return vsd_l2dom
 
     @nuage_test.header(tags=['smoke'])
@@ -180,6 +243,11 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
     @nuage_test.header(tags=['smoke'])
     def test_link_subnet_l2_with_gw(self):
         self.link_subnet_l2(dhcp_option_3='10.10.100.2', create_server=True)
+
+    # @nuage_test.header(tags=['smoke'])
+    # def test_link_subnet_l2_using_preconfigured_netpartition_id(self):
+    #     np = self.create_netpartition()
+    #     self.link_subnet_l2(net_partition=np)
 
     def double_link_subnet_l2(
             self, cidr=None, mask_bits=None, dhcp_port=None,
@@ -194,7 +262,6 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
         # 1st net
         vsd_l2dom = self.link_subnet_l2(cidr, mask_bits, dhcp_port,
                                         dhcp_option_3, pool1)
-
         # 2nd net
         self.link_subnet_l2(cidr, mask_bits, dhcp_port, dhcp_option_3, pool2,
                             vsd_l2dom=vsd_l2dom, should_pass=should_pass)
@@ -274,54 +341,7 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
         self.assertEqual(
             subnet['enable_dhcp'],
             vsd_managed_shared_l2dom['DHCPManaged'])
-        self.assertTrue(self._verify_vm_ip(network['id'], net_name))
-
-    @nuage_test.header(tags=['smoke'])
-    def test_link_vsd_shared_subnet_l3(self):
-        vsd_shared_l3dom_subnet, cidr, gateway, mask_bits = \
-            self._create_vsd_shared_resource(type='PUBLIC')
-        name = data_utils.rand_name('l3dom-with-shared')
-        vsd_l3dom_tmplt = self.create_vsd_l3dom_template(
-            name=name)
-        vsd_l3dom = self.create_vsd_l3domain(name=name,
-                                             tid=vsd_l3dom_tmplt[0]['ID'])
-
-        self.assertEqual(vsd_l3dom[0]['name'], name)
-        zone_name = data_utils.rand_name('Public-zone-')
-        extra_params = {'publicZone': True}
-        vsd_zone = self.create_vsd_zone(name=zone_name,
-                                        domain_id=vsd_l3dom[0]['ID'],
-                                        extra_params=extra_params)
-
-        name = data_utils.rand_name('l3domain-with-shared')
-        data = {
-            'name': name,
-            'associatedSharedNetworkResourceID': vsd_shared_l3dom_subnet['ID']
-        }
-        resource = '/zones/' + vsd_zone[0]['ID'] + '/subnets'
-        vsd_l3dom_subnet = self.nuageclient.restproxy.rest_call(
-            'POST', resource, data)
-        vsd_l3_dom_public_subnet = vsd_l3dom_subnet.data[0]
-        self.assertEqual(vsd_l3_dom_public_subnet['name'], name)
-        self.assertEqual(
-            vsd_l3_dom_public_subnet['associatedSharedNetworkResourceID'],
-            vsd_shared_l3dom_subnet['ID'])
-
-        # create subnet on OS with nuagenet param set to l3domain UUID
-        net_name = data_utils.rand_name('shared-l3-network-')
-        network = self.create_network(network_name=net_name)
-        subnet = self.create_subnet(
-            network, cidr=cidr, mask_bits=mask_bits,
-            nuagenet=vsd_l3_dom_public_subnet['ID'],
-            net_partition=Topology.def_netpartition)
-        self.assertEqual(
-            str(IPNetwork(subnet['cidr']).ip),
-            vsd_shared_l3dom_subnet['address'])
-        self.assertEqual(subnet['gateway_ip'], gateway)
-        self.assertEqual(
-            subnet['enable_dhcp'],
-            vsd_shared_l3dom_subnet['DHCPManaged'])
-        self.assertTrue(self._verify_vm_ip(network['id'], net_name))
+        self.assertTrue(self._create_and_verify_vm(network))
 
     @nuage_test.header(tags=['smoke'])
     def test_link_vsd_unmanaged_shared_subnet_l2(self):
@@ -531,13 +551,15 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
             net_partition=Topology.def_netpartition,
             enable_dhcp=False)
 
-    @nuage_test.header(tags=['smoke'])
-    def test_link_subnet_l3(self):
+    def link_subnet_l3(self, net_partition=None):
         # create l3domain on VSD
         name = data_utils.rand_name('l3domain-')
-        vsd_l3dom_tmplt = self.create_vsd_l3dom_template(name=name)
-        vsd_l3dom = self.create_vsd_l3domain(name=name,
-                                             tid=vsd_l3dom_tmplt[0]['ID'])
+        vsd_l3dom_tmplt = self.create_vsd_l3dom_template(
+            name=name,
+            netpart_name=net_partition['name'] if net_partition else None)
+        vsd_l3dom = self.create_vsd_l3domain(
+            name=name, tid=vsd_l3dom_tmplt[0]['ID'],
+            netpart_name=net_partition['name'] if net_partition else None)
 
         self.assertEqual(vsd_l3dom[0]['name'], name)
         zone_name = data_utils.rand_name('l3dom-zone-')
@@ -558,9 +580,28 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
         subnet = self.create_subnet(
             network,
             cidr=cidr, mask_bits=24, nuagenet=vsd_domain_subnet[0]['ID'],
-            net_partition=Topology.def_netpartition)
+            net_partition=(net_partition['id'] if net_partition
+                           else Topology.def_netpartition))
         self.assertEqual(subnet['cidr'], str(cidr))
-        self.assertTrue(self._verify_vm_ip(network['id'], net_name))
+        # self.assertEqual(subnet['vsd_managed'], True)
+        # self.assertEqual(subnet['nuagenet'], vsd_domain_subnet[0]['ID'])
+
+        # now refetch the subnet and verify again
+        subnet = self.client.show_subnet(subnet['id'])['subnet']
+        self.assertEqual(subnet['cidr'], str(cidr))
+        # self.assertEqual(subnet['vsd_managed'], True)
+        # self.assertEqual(subnet['nuagenet'], vsd_domain_subnet[0]['ID'])
+
+        self.assertTrue(self._create_and_verify_vm(network))
+
+    @nuage_test.header(tags=['smoke'])
+    def test_link_subnet_l3(self):
+        self.link_subnet_l3()
+
+    # @nuage_test.header(tags=['smoke'])
+    # def test_link_subnet_l3_using_preconfigured_netpartition_id(self):
+    #     np = self.create_netpartition()
+    #     self.link_subnet_l3(net_partition=np)
 
     @decorators.attr(type='smoke')
     def test_link_subnet_with_incorrect_gw_l3(self):
@@ -596,7 +637,7 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
                 gateway='10.10.100.5',
                 net_partition=Topology.def_netpartition)
             self.assertEqual(subnet['cidr'], str(cidr))
-            self.assertTrue(self._verify_vm_ip(network['id'], net_name))
+            self.assertTrue(self._create_and_verify_vm(network))
         else:
             # since 5.2.2 we correctly check gw
             self.assertRaises(
@@ -607,6 +648,53 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
                 mask_bits=24, nuagenet=vsd_domain_subnet['ID'],
                 gateway='10.10.100.5',
                 net_partition=Topology.def_netpartition)
+
+    @nuage_test.header(tags=['smoke'])
+    def test_link_vsd_shared_subnet_l3(self):
+        vsd_shared_l3dom_subnet, cidr, gateway, mask_bits = \
+            self._create_vsd_shared_resource(type='PUBLIC')
+        name = data_utils.rand_name('l3dom-with-shared')
+        vsd_l3dom_tmplt = self.create_vsd_l3dom_template(
+            name=name)
+        vsd_l3dom = self.create_vsd_l3domain(name=name,
+                                             tid=vsd_l3dom_tmplt[0]['ID'])
+
+        self.assertEqual(vsd_l3dom[0]['name'], name)
+        zone_name = data_utils.rand_name('Public-zone-')
+        extra_params = {'publicZone': True}
+        vsd_zone = self.create_vsd_zone(name=zone_name,
+                                        domain_id=vsd_l3dom[0]['ID'],
+                                        extra_params=extra_params)
+
+        name = data_utils.rand_name('l3domain-with-shared')
+        data = {
+            'name': name,
+            'associatedSharedNetworkResourceID': vsd_shared_l3dom_subnet['ID']
+        }
+        resource = '/zones/' + vsd_zone[0]['ID'] + '/subnets'
+        vsd_l3dom_subnet = self.nuageclient.restproxy.rest_call(
+            'POST', resource, data)
+        vsd_l3_dom_public_subnet = vsd_l3dom_subnet.data[0]
+        self.assertEqual(vsd_l3_dom_public_subnet['name'], name)
+        self.assertEqual(
+            vsd_l3_dom_public_subnet['associatedSharedNetworkResourceID'],
+            vsd_shared_l3dom_subnet['ID'])
+
+        # create subnet on OS with nuagenet param set to l3domain UUID
+        net_name = data_utils.rand_name('shared-l3-network-')
+        network = self.create_network(network_name=net_name)
+        subnet = self.create_subnet(
+            network, cidr=cidr, mask_bits=mask_bits,
+            nuagenet=vsd_l3_dom_public_subnet['ID'],
+            net_partition=Topology.def_netpartition)
+        self.assertEqual(
+            str(IPNetwork(subnet['cidr']).ip),
+            vsd_shared_l3dom_subnet['address'])
+        self.assertEqual(subnet['gateway_ip'], gateway)
+        self.assertEqual(
+            subnet['enable_dhcp'],
+            vsd_shared_l3dom_subnet['DHCPManaged'])
+        self.assertTrue(self._create_and_verify_vm(network))
 
     # Originally part of _m2 suite
 
@@ -619,15 +707,15 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
         vsd_l2dom = self.create_vsd_l2domain(name=net_name,
                                              tid=vsd_l2dom_tmplt[0]['ID'])[0]
 
-        network = self.create_network(network_name=net_name)
+        network = self.create_network(network_name=net_name, cleanup=False)
         subnet = self.create_subnet(
             network, gateway=None, cidr=cidr,
             mask_bits=24, nuagenet=vsd_l2dom['ID'],
             net_partition=Topology.def_netpartition,
-            enable_dhcp=True)
+            enable_dhcp=True, cleanup=False)
         self.assertIsNotNone(subnet, "Subnet should be created.")
 
-        port = self.create_port(network)
+        port = self.create_port(network, cleanup=False)
         nuage_vport = self.nuageclient.get_vport(constants.L2_DOMAIN,
                                                  vsd_l2dom['ID'],
                                                  filters='externalID',
@@ -717,7 +805,7 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
         self.assertEqual(
             subnet['enable_dhcp'],
             vsd_shared_l3dom_subnet['DHCPManaged'])
-        self.assertTrue(self._verify_vm_ip(network['id'], net_name))
+        self.assertTrue(self._create_and_verify_vm(network))
 
     # Telenor scenario with multiple vsd managed subnets in a network
     @nuage_test.header(tags=['smoke'])
@@ -741,7 +829,7 @@ class VSDManagedTestNetworks(base_vsdman.BaseVSDManagedNetworksTest,
                 cidr=IPNetwork('10.1.0.0/24'),
                 dhcp_port='10.1.0.1')
 
-        # Telenor scenario with multiple vsd managed subnets in a network
+    # Telenor scenario with multiple vsd managed subnets in a network
     @nuage_test.header(tags=['smoke'])
     def test_link_multi_l3domain_subnets_to_network(self):
         name = data_utils.rand_name('l3domain-')

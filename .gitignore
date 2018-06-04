@@ -1,5 +1,7 @@
 build/
 dist/
+AUTHORS
+ChangeLog
 .tox/
 *.pyc
 *.egg-info/

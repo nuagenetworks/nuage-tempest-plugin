@@ -60,6 +60,18 @@ class NuageNetworkClientJSON(service_client.RestClient):
         body = json.loads(body)
         return service_client.ResponseBody(resp, body)
 
+    # for convenience added a few std resource methods
+
+    def show_network(self, network_id):
+        uri = ('%s/networks/%s' % (self.uri_prefix, network_id))
+        return self._get_request(uri)
+
+    def show_subnet(self, subnet_id):
+        uri = ('%s/subnets/%s' % (self.uri_prefix, subnet_id))
+        return self._get_request(uri)
+
+    # end of convenience methods
+
     def get_nuage_plugin_stats(self):
         uri = '%s/nuage-plugin-stats' % self.uri_prefix
         return self._get_request(uri)

@@ -223,6 +223,14 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         else:
             LOG.warning("Sleeping for {}s. {}.".format(seconds, msg))
 
+    @classmethod
+    def create_network_at_class_level(cls, network_name, client, **kwargs):
+        body = client.create_network(name=network_name, **kwargs)
+        network = body['network']
+        cls.addClassResourceCleanup(
+            client.networks_client.delete_network, network['id'])
+        return network
+
     def create_network(self, network_name=None, client=None,
                        cleanup=True, **kwargs):
         """Wrapper utility that returns a test network."""
@@ -446,7 +454,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
         self.assertIsNotNone(port['mac_address'])
         # verify all other kwargs as attributes (key,value) pairs
-        for key, value in kwargs.iteritems():
+        for key, value in kwargs.iteritems():  # TODO(py3)
             if isinstance(value, dict):
                 # compare dict
                 raise NotImplementedError

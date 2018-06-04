@@ -35,10 +35,6 @@ LOG = logging.getLogger(__name__)
 class VSDManagedPortSecurity(
         base_vsd_managed_network.BaseVSDManagedNetworksTest):
 
-    @classmethod
-    def resource_setup(cls):
-        super(VSDManagedPortSecurity, cls).resource_setup()
-
     @decorators.attr(type='smoke')
     def test_create_port_security_disabled_l3(self):
         name = data_utils.rand_name('l3domain-')

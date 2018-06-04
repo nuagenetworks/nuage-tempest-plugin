@@ -14,13 +14,11 @@
 #    under the License.
 
 from netaddr import IPNetwork
-import time
 
-from tempest.api.network import base
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions as lib_exc
-from tempest.scenario import manager
 
+from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services import nuage_client
@@ -37,12 +35,15 @@ VSD_L3_SHARED_MGD_GW = '30.30.30.1'
 LOG = Topology.get_logger(__name__)
 
 
-class BaseVSDManagedNetwork(base.BaseAdminNetworkTest,
-                            manager.NetworkScenarioTest):
+class BaseVSDManagedNetwork(NuageBaseTest):
 
     @classmethod
     def setup_clients(cls):
         super(BaseVSDManagedNetwork, cls).setup_clients()
+        cls.admin_networks_client = cls.os_admin.networks_client
+        cls.admin_subnets_client = cls.os_admin.subnets_client
+        cls.admin_ports_client = cls.os_admin.ports_client
+
         cls.nuage_vsd_client = nuage_client.NuageRestClient()
         cls.nuage_network_client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
@@ -50,15 +51,6 @@ class BaseVSDManagedNetwork(base.BaseAdminNetworkTest,
 
     @classmethod
     def resource_setup(cls):
-        if Topology.is_ml2:
-            # create default net_partition if it is not there
-            net_partition_name = cls.nuage_vsd_client.def_netpart_name
-            net_partition = cls.nuage_vsd_client.get_net_partition(
-                net_partition_name)
-            if not net_partition:
-                net_partition = cls.nuage_vsd_client.create_net_partition(
-                    net_partition_name, fip_quota=100, extra_params=None)
-
         super(BaseVSDManagedNetwork, cls).resource_setup()
 
         cls.vsd_l2dom_templates = []
@@ -69,7 +61,6 @@ class BaseVSDManagedNetwork(base.BaseAdminNetworkTest,
         cls.vsd_subnets = []
         cls.vsd_shared_domains = []
         cls.keypairs = {}
-#        cls.security_groups = []
         cls.vsd_policy_groups = []
 
     @classmethod
@@ -103,49 +94,6 @@ class BaseVSDManagedNetwork(base.BaseAdminNetworkTest,
         for vsd_shared_domain in cls.vsd_shared_domains:
             cls.nuage_vsd_client.delete_vsd_shared_resource(
                 vsd_shared_domain[0]['ID'])
-
-    dhcp_agent_present = None
-
-    @classmethod
-    def is_dhcp_agent_present(cls):
-        if cls.dhcp_agent_present is None:
-            agents = cls.admin_agents_client.list_agents().get('agents')
-            if agents:
-                cls.dhcp_agent_present = any(
-                    agent for agent in agents if agent['alive'] and
-                    agent['binary'] == 'neutron-dhcp-agent')
-            else:
-                cls.dhcp_agent_present = False
-
-        return cls.dhcp_agent_present
-
-    @classmethod
-    def create_subnet(cls, network, gateway='', cidr=None, mask_bits=None,
-                      ip_version=None, client=None, **kwargs):
-        subnet = super(BaseVSDManagedNetwork, cls).create_subnet(
-            network, gateway, cidr, mask_bits, ip_version, client, **kwargs)
-        dhcp_enabled = subnet['enable_dhcp']
-        current_time = time.time()
-        if cls.is_dhcp_agent_present() and dhcp_enabled:
-            LOG.info("Waiting for dhcp port resolution")
-            dhcp_subnets = []
-            while subnet['id'] not in dhcp_subnets:
-                if time.time() - current_time > 30:
-                    raise lib_exc.NotFound("DHCP port not resolved within"
-                                           " allocated time.")
-                time.sleep(0.5)
-                filters = {
-                    'device_owner': 'network:dhcp',
-                    'network_id': subnet['network_id']
-                }
-                dhcp_ports = cls.ports_client.list_ports(**filters)['ports']
-                if not dhcp_ports:
-                    time.sleep(0.5)
-                    continue
-                dhcp_port = dhcp_ports[0]
-                dhcp_subnets = [x['subnet_id'] for x in dhcp_port['fixed_ips']]
-            LOG.info("DHCP port resolved")
-        return subnet
 
     @classmethod
     def create_vsd_dhcpmanaged_l2dom_template(cls, **kwargs):

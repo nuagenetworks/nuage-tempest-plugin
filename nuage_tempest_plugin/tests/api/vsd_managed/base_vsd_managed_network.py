@@ -13,12 +13,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 from netaddr import IPNetwork
-import time
 
-from tempest.api.network import base
-from tempest.lib import exceptions as lib_exc
-
+from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import constants
+
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
 LOG = Topology.get_logger(__name__)
@@ -31,27 +30,15 @@ VSD_L3_SHARED_MGD_CIDR = IPNetwork('30.30.30.0/24')
 VSD_L3_SHARED_MGD_GW = '30.30.30.1'
 
 
-class BaseVSDManagedNetworksTest(base.BaseNetworkTest):
-
-    credentials = ['primary', 'admin']
-    dhcp_agent_present = None
+class BaseVSDManagedNetworksTest(NuageBaseTest):
 
     @classmethod
     def setup_clients(cls):
         super(BaseVSDManagedNetworksTest, cls).setup_clients()
-        cls.admin_agents_client = cls.os_adm.network_agents_client
         cls.nuageclient = NuageRestClient()
 
     @classmethod
     def resource_setup(cls):
-        if Topology.is_ml2:
-            # create default netpartition if it is not there
-            netpartition_name = cls.nuageclient.def_netpart_name
-            net_partition = cls.nuageclient.get_net_partition(
-                netpartition_name)
-            if not net_partition:
-                net_partition = cls.nuageclient.create_net_partition(
-                    netpartition_name, fip_quota=100, extra_params=None)
         super(BaseVSDManagedNetworksTest, cls).resource_setup()
         cls.vsd_l2dom_template = []
         cls.vsd_l2domain = []
@@ -89,49 +76,17 @@ class BaseVSDManagedNetworksTest(base.BaseNetworkTest):
                         vsd_shared_subnet[0]['ID'])
             cls.nuageclient.restproxy.rest_call('DELETE', resource, '')
 
-    @classmethod
-    def is_dhcp_agent_present(cls):
-        if cls.dhcp_agent_present is None:
-            agents = cls.admin_agents_client.list_agents().get('agents')
-            if agents:
-                cls.dhcp_agent_present = any(
-                    agent for agent in agents if agent['alive'] and
-                    agent['binary'] == 'neutron-dhcp-agent')
-            else:
-                cls.dhcp_agent_present = False
-
-        return cls.dhcp_agent_present
+    def get_server_ip_from_vsd(self, vm_id):
+        vm_details = self.nuageclient.get_resource(
+            constants.VM,
+            filters='externalID',
+            filter_value=self.nuageclient.get_vsd_external_id(vm_id),
+            flat_rest_path=True)[0]
+        return vm_details.get('interfaces')[0]['IPAddress']
 
     @classmethod
-    def create_subnet(cls, network, gateway='', cidr=None, mask_bits=None,
-                      ip_version=None, client=None, **kwargs):
-        subnet = super(BaseVSDManagedNetworksTest, cls).create_subnet(
-            network, gateway, cidr, mask_bits, ip_version, client, **kwargs)
-        dhcp_enabled = subnet['enable_dhcp']
-        current_time = time.time()
-        if cls.is_dhcp_agent_present() and dhcp_enabled:
-            LOG.info("Waiting for dhcp port resolution")
-            dhcp_subnets = []
-            while subnet['id'] not in dhcp_subnets:
-                if time.time() - current_time > 30:
-                    raise lib_exc.NotFound("DHCP port not resolved within"
-                                           " allocated time.")
-                time.sleep(0.5)
-                filters = {
-                    'device_owner': 'network:dhcp',
-                    'network_id': subnet['network_id']
-                }
-                dhcp_ports = cls.ports_client.list_ports(**filters)['ports']
-                if not dhcp_ports:
-                    time.sleep(0.5)
-                    continue
-                dhcp_port = dhcp_ports[0]
-                dhcp_subnets = [x['subnet_id'] for x in dhcp_port['fixed_ips']]
-            LOG.info("DHCP port resolved")
-        return subnet
-
-    @classmethod
-    def create_vsd_dhcpmanaged_l2dom_template(cls, **kwargs):
+    def create_vsd_dhcpmanaged_l2dom_template(cls, netpart_name=None,
+                                              **kwargs):
         params = {
             'DHCPManaged': True,
             'address': str(kwargs['cidr'].ip),
@@ -139,7 +94,7 @@ class BaseVSDManagedNetworksTest(base.BaseNetworkTest):
             'gateway': kwargs['gateway']
         }
         vsd_l2dom_tmplt = cls.nuageclient.create_l2domaintemplate(
-            kwargs['name'] + '-template', extra_params=params)
+            kwargs['name'] + '-template', params, netpart_name)
         cls.vsd_l2dom_template.append(vsd_l2dom_tmplt)
         return vsd_l2dom_tmplt
 
@@ -151,27 +106,29 @@ class BaseVSDManagedNetworksTest(base.BaseNetworkTest):
         return vsd_l2dom_tmplt
 
     @classmethod
-    def create_vsd_l2domain(cls, **kwargs):
+    def create_vsd_l2domain(cls, netpart_name=None, **kwargs):
         extra_params = kwargs.get('extra_params')
         vsd_l2dom = cls.nuageclient.create_l2domain(
             kwargs['name'],
             templateId=kwargs['tid'],
-            extra_params=extra_params)
+            extra_params=extra_params,
+            netpart_name=netpart_name)
         cls.vsd_l2domain.append(vsd_l2dom)
         return vsd_l2dom
 
     @classmethod
-    def create_vsd_l3dom_template(cls, **kwargs):
+    def create_vsd_l3dom_template(cls, netpart_name=None, **kwargs):
         vsd_l3dom_tmplt = cls.nuageclient.create_l3domaintemplate(
-            kwargs['name'] + '-template')
+            kwargs['name'] + '-template', netpart_name=netpart_name)
         cls.vsd_l3dom_template.append(vsd_l3dom_tmplt)
         return vsd_l3dom_tmplt
 
     @classmethod
-    def create_vsd_l3domain(cls, **kwargs):
+    def create_vsd_l3domain(cls, netpart_name=None, **kwargs):
         extra_params = kwargs.get('extra_params')
         vsd_l3dom = cls.nuageclient.create_domain(kwargs['name'],
                                                   kwargs['tid'],
+                                                  netpart_name=netpart_name,
                                                   extra_params=extra_params)
         cls.vsd_l3domain.append(vsd_l3dom)
         return vsd_l3dom

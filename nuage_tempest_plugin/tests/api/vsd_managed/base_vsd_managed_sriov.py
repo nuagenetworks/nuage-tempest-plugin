@@ -30,26 +30,19 @@ class BaseVSDManagedSRIOV(
         base_vsd_managed_port_attributes.BaseVSDManagedPortAttributes):
 
     @classmethod
-    def setup_clients(cls):
-        super(BaseVSDManagedSRIOV, cls).setup_clients()
-
-    # TODO(team) shd below methods be class methods ? then replace self by cls
-
-    @classmethod
-    def _create_vsd_l2_managed_subnet_withoptions(self, net_name_prefix, cidr,
+    def _create_vsd_l2_managed_subnet_withoptions(cls, net_name_prefix, cidr,
                                                   gateway):
         kwargs = {
             'name': data_utils.rand_name(net_name_prefix),
             'cidr': cidr,
             'gateway': gateway,
         }
-        l2dom_template = self.create_vsd_dhcpmanaged_l2dom_template(**kwargs)
-        vsd_l2_subnet = self.create_vsd_l2domain(tid=l2dom_template[0]['ID'])
+        l2dom_template = cls.create_vsd_dhcpmanaged_l2dom_template(**kwargs)
+        vsd_l2_subnet = cls.create_vsd_l2domain(tid=l2dom_template[0]['ID'])
         return vsd_l2_subnet, l2dom_template
 
     @classmethod
-    def _create_vsd_l3_managed_subnet_withoptions(
-            cls, cidr, net_name_prefix="l3dom_template"):
+    def _create_vsd_l3_managed_subnet_withoptions(cls, cidr):
         # create template
         kwargs = {
             'name': data_utils.rand_name("l3dom_template"),
@@ -82,12 +75,11 @@ class BaseVSDManagedSRIOV(
             'nuagenet': vsd_subnet[0]['ID']
             # 'tenant_id': None
         }
-        subnet = self._create_subnet(**kwargs)
-        return subnet
+        return self.create_subnet(**kwargs)
 
     @classmethod
     def create_sriov_dummy_network_multisegment(
-            self, name="dummy-1", physnet_name="physnet1"):
+            cls, name="dummy-1", physnet_name="physnet1"):
         segments_req = [{"provider:network_type": "flat",
                          "provider:physical_network": physnet_name},
                         {"provider:physical_network": "",
@@ -95,15 +87,13 @@ class BaseVSDManagedSRIOV(
         network_name = data_utils.rand_name(name)
         kwargs = {'description': 'sriov parent dummy network',
                   'segments': segments_req}
-        body = self.admin_networks_client.create_network(
-            name=network_name, **kwargs)
-        network = body['network']
-        self.networks.append(network)
-        return network
+        return cls.create_network_at_class_level(network_name,
+                                                 cls.os_admin.networks_client,
+                                                 **kwargs)
 
     @classmethod
     def create_sriov_overlay_network_multisegment(
-            self, segmentation, name="overlay-1", physnet_name="physnet1"):
+            cls, segmentation, name="overlay-1", physnet_name="physnet1"):
         segments_req = [{"provider:network_type": "vlan",
                          "provider:physical_network": physnet_name,
                          "provider:segmentation_id": segmentation},
@@ -112,11 +102,9 @@ class BaseVSDManagedSRIOV(
         network_name = data_utils.rand_name(name)
         kwargs = {'description': 'sriov overlay vlan network',
                   'segments': segments_req}
-        body = self.networks_client.create_network(
-            name=network_name, **kwargs)
-        network = body['network']
-        self.networks.append(network)
-        return network
+        return cls.create_network_at_class_level(network_name,
+                                                 cls.os_admin.networks_client,
+                                                 **kwargs)
 
     def sriov_port_create(
             self, network, port_name="direct-port", vnic_type="direct"):
@@ -124,11 +112,10 @@ class BaseVSDManagedSRIOV(
             'name': port_name,
             'binding:vnic_type': vnic_type
         }
-        port1 = self.create_port(network, **kwargs)
-        return port1
+        return self.create_port(network, **kwargs)
 
     @classmethod
-    def setup_sriov_networks(self):
+    def setup_sriov_networks(cls):
         dummy_network_ip = IPNetwork('99.0.0.0/8')
         dummy_network_ip_gw = "99.0.0.1"
         net_vlan_12_ip = IPNetwork('12.0.0.0/8')
@@ -143,67 +130,67 @@ class BaseVSDManagedSRIOV(
 
         # create dummy network
         vsd_l2_subnet, l2_domtmpl = \
-            self._create_vsd_l2_managed_subnet_withoptions(
+            cls._create_vsd_l2_managed_subnet_withoptions(
                 "dummy_net_physnet2",
                 dummy_network_ip, dummy_network_ip_gw)
-        network = self.create_sriov_dummy_network_multisegment(
+        network = cls.create_sriov_dummy_network_multisegment(
             "dummy_net_physnet2",
             "physnet2")
-        self._create_os_vsd_managed_subnet_withoptions(
+        cls._create_os_vsd_managed_subnet_withoptions(
             network, vsd_l2_subnet, dummy_network_ip)
 
         # create l2 overlay network
         vsd_l2_subnet_1, l2_domtmpl_1 = \
-            self._create_vsd_l2_managed_subnet_withoptions(
+            cls._create_vsd_l2_managed_subnet_withoptions(
                 "net_vlan_33", net_vlan_33_ip, net_vlan_33_ip_gw)
-        network_33 = self.create_sriov_overlay_network_multisegment(
+        network_33 = cls.create_sriov_overlay_network_multisegment(
             "33", "net_vlan_33", "physnet2")
-        self._create_os_vsd_managed_subnet_withoptions(
+        cls._create_os_vsd_managed_subnet_withoptions(
             network_33, vsd_l2_subnet_1, net_vlan_33_ip)
 
         # create l2 overlay network
         vsd_l2_subnet_2, l2_domtmpl_2 = \
-            self._create_vsd_l2_managed_subnet_withoptions(
+            cls._create_vsd_l2_managed_subnet_withoptions(
                 "net_vlan_20", net_vlan_20_ip, net_vlan_20_ip_gw)
-        network_20 = self.create_sriov_overlay_network_multisegment(
+        network_20 = cls.create_sriov_overlay_network_multisegment(
             "20", "net_vlan_20", "physnet2")
-        self._create_os_vsd_managed_subnet_withoptions(
+        cls._create_os_vsd_managed_subnet_withoptions(
             network_20, vsd_l2_subnet_2, net_vlan_20_ip)
 
         # create l2 overlay network
         vsd_l2_subnet_3, l2_domtmpl_3 = \
-            self._create_vsd_l2_managed_subnet_withoptions(
+            cls._create_vsd_l2_managed_subnet_withoptions(
                 "net_vlan_12", net_vlan_12_ip, net_vlan_12_ip_gw)
-        network_12 = self.create_sriov_overlay_network_multisegment(
+        network_12 = cls.create_sriov_overlay_network_multisegment(
             "12", "net_vlan_12", "physnet2")
-        self._create_os_vsd_managed_subnet_withoptions(
+        cls._create_os_vsd_managed_subnet_withoptions(
             network_12, vsd_l2_subnet_3, net_vlan_12_ip)
 
         # create l3 overlay network
         vsd_l3_subnet_34, vsd_l3_domain_1 = \
-            self._create_vsd_l3_managed_subnet_withoptions(
-                net_vlan_34_ip, "net_vlan_34")
-        network_34 = self.create_sriov_overlay_network_multisegment(
+            cls._create_vsd_l3_managed_subnet_withoptions(
+                net_vlan_34_ip)
+        network_34 = cls.create_sriov_overlay_network_multisegment(
             "34", "net_vlan_34", "physnet2")
-        self._create_os_vsd_managed_subnet_withoptions(
+        cls._create_os_vsd_managed_subnet_withoptions(
             network_34, vsd_l3_subnet_34, net_vlan_34_ip)
 
         # create l3 overlay network
         vsd_l3_subnet_2, vsd_l3_domain_2 = \
-            self._create_vsd_l3_managed_subnet_withoptions(
-                net_vlan_35_ip, "net_vlan_35")
-        network_35 = self.create_sriov_overlay_network_multisegment(
+            cls._create_vsd_l3_managed_subnet_withoptions(
+                net_vlan_35_ip)
+        network_35 = cls.create_sriov_overlay_network_multisegment(
             "35", "net_vlan_35", "physnet2")
-        self._create_os_vsd_managed_subnet_withoptions(
+        cls._create_os_vsd_managed_subnet_withoptions(
             network_35, vsd_l3_subnet_2, net_vlan_35_ip)
 
         # create l3 overlay network
         vsd_l3_subnet_3, vsd_l3_domain_3 = \
-            self._create_vsd_l3_managed_subnet_withoptions(
-                net_vlan_22_ip, "net_vlan_22")
-        network_22 = self.create_sriov_overlay_network_multisegment(
+            cls._create_vsd_l3_managed_subnet_withoptions(
+                net_vlan_22_ip)
+        network_22 = cls.create_sriov_overlay_network_multisegment(
             "22", "net_vlan_22", "physnet2")
-        self._create_os_vsd_managed_subnet_withoptions(
+        cls._create_os_vsd_managed_subnet_withoptions(
             network_22, vsd_l3_subnet_3, net_vlan_22_ip)
 
         return network, vsd_l2_subnet, network_12, vsd_l2_subnet_3,\

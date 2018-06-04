@@ -214,15 +214,19 @@ class NuageRestClient(object):
 
     def get_resource(self, resource, filters=None,
                      filter_value=None,
-                     netpart_name=None):
+                     netpart_name=None,
+                     flat_rest_path=False):
         extra_headers = None
-        if not netpart_name:
-            netpart_name = self.def_netpart_name
-
-        net_part = self.get_net_partition(netpart_name)
-        res_path = self.build_resource_path(
-            resource=constants.NET_PARTITION, resource_id=net_part[0]['ID'],
-            child_resource=resource)
+        if flat_rest_path:
+            res_path = '/' + resource
+        else:
+            if not netpart_name:
+                netpart_name = self.def_netpart_name
+            net_part = self.get_net_partition(netpart_name)
+            res_path = self.build_resource_path(
+                resource=constants.NET_PARTITION,
+                resource_id=net_part[0]['ID'],
+                child_resource=resource)
         if filters:
             extra_headers = self.get_extra_headers(filters, filter_value)
         return self.get(res_path, extra_headers)
@@ -255,8 +259,8 @@ class NuageRestClient(object):
         res_path = self.build_resource_path(constants.NET_PARTITION)
         return self.post(res_path, data)
 
-    def delete_net_partition(self):
-        pass
+    def delete_net_partition(self, np_id):
+        return self.delete_resource(constants.NET_PARTITION, np_id)
 
     def get_net_partition(self, net_part_name):
         res_path = self.build_resource_path(constants.NET_PARTITION)

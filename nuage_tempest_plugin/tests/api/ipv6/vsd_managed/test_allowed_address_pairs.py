@@ -21,9 +21,6 @@ LOG = Topology.get_logger(__name__)
 
 class VSDManagedAllowedAddresPairsTest(BaseAllowedAddressPair,
                                        BaseVSDManagedNetworksIPv6Test):
-    @classmethod
-    def resource_setup(cls):
-        super(VSDManagedAllowedAddresPairsTest, cls).resource_setup()
 
     @nuage_test.header()
     @decorators.attr(type='smoke')

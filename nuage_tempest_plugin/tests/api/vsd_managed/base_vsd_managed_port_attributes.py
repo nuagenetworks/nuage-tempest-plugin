@@ -62,72 +62,10 @@ class BaseVSDManagedPortAttributes(
         self.servers = []
 
     @classmethod
-    def setup_clients(cls):
-        super(BaseVSDManagedPortAttributes, cls).setup_clients()
-
-    @classmethod
     def resource_setup(cls):
         super(BaseVSDManagedPortAttributes, cls).resource_setup()
         cls.conn_router_id = '',
         cls.conn_subnet_id = ''
-
-    @classmethod
-    def _create_subnet(cls, network, gateway='', cidr=None, mask_bits=None,
-                       ip_version=None, client=None, **kwargs):
-        """_create_subnet
-
-        Copy of tempest/api/network/base.py_create_subnet
-        where we allow NOT passing gateway_ip (!= not passing as parameter
-        and being calculated by create_subnet)
-        """
-        # allow tests to use admin client
-        if not client:
-            client = cls.subnets_client
-        # The cidr and mask_bits depend on the ip version.
-        ip_version = ip_version if ip_version is not None else cls._ip_version
-        gateway_not_set = gateway == ''
-        if ip_version == 4:
-            cidr = cidr or IPNetwork(CONF.network.tenant_network_cidr)
-            mask_bits = mask_bits or CONF.network.tenant_network_mask_bits
-        elif ip_version == 6:
-            cidr = (
-                cidr or IPNetwork(CONF.network.tenant_network_v6_cidr))
-            mask_bits = (mask_bits or
-                         CONF.network.tenant_network_v6_mask_bits)
-        # Find a cidr that is not in use yet and create a subnet with it
-        for subnet_cidr in cidr.subnet(mask_bits):
-            if gateway_not_set:
-                gateway_ip = str(IPAddress(subnet_cidr) + 1)
-            else:
-                gateway_ip = gateway
-            try:
-                if gateway_not_set:
-                    body = client.create_subnet(
-                        network_id=network['id'],
-                        cidr=str(subnet_cidr),
-                        ip_version=ip_version,
-                        # gateway_ip=not passed,
-                        **kwargs)
-                    break
-                else:
-                    body = client.create_subnet(
-                        network_id=network['id'],
-                        cidr=str(subnet_cidr),
-                        ip_version=ip_version,
-                        gateway_ip=gateway_ip,
-                        **kwargs)
-                    break
-            except exceptions.BadRequest as e:
-                is_overlapping_cidr = 'overlaps with another subnet' in str(e)
-                if not is_overlapping_cidr:
-                    raise
-        else:
-            message = 'Available CIDR for subnet creation could not be found'
-            raise exceptions.NotFound(message)
-            # raise exceptions.BuildErrorException(message)
-        subnet = body['subnet']
-        cls.subnets.append(subnet)
-        return subnet
 
     def _create_shared_network(self, name=None, shared=False):
         if name is None:
@@ -663,7 +601,7 @@ class BaseVSDManagedPortAttributes(
             'net_partition': Topology.def_netpartition,
             'nuagenet': vsd_l2_subnet[0]['ID']
         }
-        subnet = self._create_subnet(**kwargs)
+        subnet = self.create_subnet(**kwargs)
         return network, subnet
 
     def _create_os_l3_vsd_managed_subnet(self, vsd_l3_subnet, cidr=None):
@@ -678,7 +616,7 @@ class BaseVSDManagedPortAttributes(
             'net_partition': Topology.def_netpartition,
             'nuagenet': vsd_l3_subnet[0]['ID']
         }
-        subnet = self._create_subnet(**kwargs)
+        subnet = self.create_subnet(**kwargs)
         return network, subnet
 
     def _create_server(self, name, network_id, port_id=None):
@@ -739,7 +677,7 @@ class BaseVSDManagedPortAttributes(
         server = self.create_server(name=name, **create_kwargs)
         return server
 
-    def _create_connectivity_VM(self, public_network_id,
+    def _create_connectivity_vm(self, public_network_id,
                                 vsd_l2_subnet, vsd_l2_port):
         # Create an intermediate VM with FIP and a second nic in the VSD
         # network, so that we can ssh into this VM and check ping on the
@@ -754,7 +692,7 @@ class BaseVSDManagedPortAttributes(
             'mask_bits': OS_CONNECTING_NW_CIDR.prefixlen,
             'gateway': OS_CONNECTING_NW_GW
         }
-        subnet = self._create_subnet(**kwargs)
+        subnet = self.create_subnet(**kwargs)
         # subnet_kwargs = dict(network=network, client=None)
         # # use explicit check because empty list is a valid option
         # subnet = self._create_subnet(**subnet_kwargs)

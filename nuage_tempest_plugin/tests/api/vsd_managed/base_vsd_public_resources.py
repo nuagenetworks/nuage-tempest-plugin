@@ -221,7 +221,7 @@ class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
 
     @classmethod
     def _check_neutron_network_dhcp_nuage_port(cls, network_id):
-        # Check whether there is a port with device_owner = network:dhco:nuage
+        # Check whether there is a port with device_owner = network:dhcp:nuage
         # in the given network
         port_list = cls.admin_ports_client.list_ports()
         port_found = False
@@ -263,7 +263,7 @@ class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
         return vm_interface[0]['IPAddress']
 
     def _get_l3_subnet_vm_interface_ip_address(self, vm, vsd_subnet_id):
-        # returns first VM-interfce IP address of the given 'vm' in the
+        # returns first VM-interface IP address of the given 'vm' in the
         # VSD domain with id = vsd_domain_id
         ext_id = self._get_external_port_id_from_vm(vm['id'])
         vm_interface = self.nuage_vsd_client.get_vm_iface(
@@ -271,63 +271,6 @@ class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
             vsd_subnet_id,
             filters='externalID', filter_value=ext_id)
         return vm_interface[0]['IPAddress']
-
-    @classmethod
-    def _create_subnet(cls, network, gateway='', cidr=None, mask_bits=None,
-                       ip_version=None, client=None, **kwargs):
-        """_create_subnet
-
-        Copy of tempest/api/network/base.py_create_subnet
-        where we allow NOT passing gateway_ip (!= not passing as parameter
-        and being calculated by create_subnet)
-        """
-        # allow tests to use admin client
-        if not client:
-            client = cls.subnets_client
-        # The cidr and mask_bits depend on the ip version.
-        ip_version = ip_version if ip_version is not None else cls._ip_version
-        gateway_not_set = gateway == ''
-        if ip_version == 4:
-            cidr = cidr or IPNetwork(CONF.network.tenant_network_cidr)
-            mask_bits = mask_bits or CONF.network.tenant_network_mask_bits
-        elif ip_version == 6:
-            cidr = cidr or IPNetwork(CONF.network.tenant_network_v6_cidr)
-            mask_bits = (mask_bits or
-                         CONF.network.tenant_network_v6_mask_bits)
-        # Find a cidr that is not in use yet and create a subnet with it
-        for subnet_cidr in cidr.subnet(mask_bits):
-            if gateway_not_set:
-                gateway_ip = str(IPAddress(subnet_cidr) + 1)
-            else:
-                gateway_ip = gateway
-            try:
-                if gateway_not_set:
-                    body = client.create_subnet(
-                        network_id=network['id'],
-                        cidr=str(subnet_cidr),
-                        ip_version=ip_version,
-                        # gateway_ip=not passed,
-                        **kwargs)
-                    break
-                else:
-                    body = client.create_subnet(
-                        network_id=network['id'],
-                        cidr=str(subnet_cidr),
-                        ip_version=ip_version,
-                        gateway_ip=gateway_ip,
-                        **kwargs)
-                    break
-            except exceptions.BadRequest as e:
-                is_overlapping_cidr = 'overlaps with another subnet' in str(e)
-                if not is_overlapping_cidr:
-                    raise
-        else:
-            message = 'Available CIDR for subnet creation could not be found'
-            raise exceptions.NotFound(message)
-            # raise exceptions.BuildErrorException(message)
-        subnet = body['subnet']
-        cls.subnets.append(subnet)
-        return subnet
 
     def _create_shared_network(self, name=None, shared=False):
         if name is None:
@@ -382,7 +325,7 @@ class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
             kwargs['gateway'] = gateway_ip
 
         if os_shared_network:
-            kwargs['client'] = self.admin_subnets_client
+            kwargs['client'] = self.os_admin
 
         if must_fail:
             if Topology.before_openstack('Newton'):
@@ -392,10 +335,10 @@ class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
 
             self.assertRaises(
                 failure_type,
-                self._create_subnet,
+                self.create_subnet,
                 **kwargs)
         else:
-            return network, self._create_subnet(**kwargs)
+            return network, self.create_subnet(**kwargs)
 
     def _check_vsd_l2_shared_l2_unmgd(self, vsd_l2dom_unmgd, os_shared_network,
                                       enable_dhcp, gateway_ip, cidr,
@@ -434,7 +377,7 @@ class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
 
         # When I spin a VM
         vm = self._create_server(name=data_utils.rand_name('vm-l2um-l2shum'),
-                                 network_id=network['id'])
+                                 network=network)
         # Then the IP address is in the CIDR range
         vm_ip_addr = vm['addresses'][network['name']][0]['addr']
         self.assertEqual(IPAddress(vm_ip_addr) in cidr, True,
@@ -493,7 +436,7 @@ class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
 
         # When I spin a VM
         vm = self._create_server(name=data_utils.rand_name('vm-l2um-l2shum'),
-                                 network_id=network['id'])
+                                 network=network)
         # Then the IP address is in the CIDR range
         vm_ip_addr = vm['addresses'][network['name']][0]['addr']
         self.assertEqual(IPAddress(vm_ip_addr) in cidr, True,
@@ -510,65 +453,6 @@ class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
                 self.assertEqual(str(vm_interface_ip_address), str(vm_ip_addr),
                                  message="VM-interface-IP-address different ()"
                                          " from OS VM Ip address ()!")
-
-    # TODO(team) need to overrule security group creation
-    # as the upstream _create_loginable_secgroup_rule includes IPv6 rules
-    def _create_loginable_secgroup_rule_for_nuage(
-            self, security_group_rules_client=None,
-            secgroup=None,
-            security_groups_client=None):
-        """Create loginable security group rule
-
-        These rules are intended to permit inbound ssh and icmp
-        traffic from all sources, so no group_id is provided.
-        Setting a group_id would only permit traffic from ports
-        belonging to the same security group.
-        """
-
-        if security_group_rules_client is None:
-            security_group_rules_client = self.security_group_rules_client
-        if security_groups_client is None:
-            security_groups_client = self.security_groups_client
-        rules = []
-        rulesets = [
-            dict(
-                # ssh
-                protocol='tcp',
-                port_range_min=22,
-                port_range_max=22
-            ),
-            dict(
-                # ping
-                protocol='icmp'
-            )
-            # VSD does not accepts IPv6 rules !!!
-            # ,
-            # dict(
-            #     # ipv6-icmp for ping6
-            #     protocol='icmp',
-            #     ethertype='IPv6',
-            #     )
-        ]
-        sec_group_rules_client = security_group_rules_client
-        for ruleset in rulesets:
-            for r_direction in ['ingress', 'egress']:
-                ruleset['direction'] = r_direction
-                try:
-                    sg_rule = self._create_security_group_rule(
-                        sec_group_rules_client=sec_group_rules_client,
-                        secgroup=secgroup,
-                        security_groups_client=security_groups_client,
-                        **ruleset)
-                except exceptions.Conflict as ex:
-                    # if rule already exist - skip rule and continue
-                    msg = 'Security group rule already exists'
-                    if msg not in ex._error_string:
-                        raise ex
-                else:
-                    self.assertEqual(r_direction, sg_rule['direction'])
-                    rules.append(sg_rule)
-
-        return rules
 
     def _create_security_group_for_nuage(self,
                                          security_group_rules_client=None,
@@ -595,53 +479,6 @@ class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
             self.assertEqual(secgroup['id'], rule['security_group_id'])
         return secgroup
 
-    # def _create_server(self, name, network_id, port_id=None):
-    #
-    #     keypair = self.create_keypair()
-    #     self.keypairs[keypair['name']] = keypair
-    #     self.security_groups = \
-    #         self._create_security_group_for_nuage(tenant_id=self.tenant_id)
-    #     security_groups = [{'name': self.security_groups['name']}]
-    #     create_kwargs = {
-    #         'networks': [
-    #             {'uuid': network_id},
-    #         ],
-    #         'key_name': keypair['name'],
-    #         'security_groups': security_groups,
-    #     }
-    #     if port_id is not None:
-    #             create_kwargs['networks'][0]['port'] = port_id
-    #     server = self.create_server(name=name, create_kwargs=create_kwargs)
-    #     return server
-
-    # ## Test functions library
-    #
-    # The create_[resource] functions only return body and discard the
-    # resp part which is not used in scenario tests
-
-    def create_keypair(self, client=None):
-        if not client:
-            client = self.keypairs_client
-        name = data_utils.rand_name(self.__class__.__name__)
-        # We don't need to create a keypair by pubkey in scenario
-        body = client.create_keypair(name=name)
-        self.addCleanup(client.delete_keypair, name)
-        return body['keypair']
-
-    def _create_server(self, name, network_id):
-        keypair = self.create_keypair()
-        self.keypairs[keypair['name']] = keypair
-        self.security_groups = self._create_security_group_for_nuage()
-        security_groups = [{'name': self.security_groups['name']}]
-
-        self.instance = self.create_server(
-            name=name,
-            image_id=self.image_ref,
-            flavor=self.flavor_ref,
-            key_name=keypair['name'],
-            security_groups=security_groups,
-            networks=[{'uuid': network_id}])
-
-        # self.verify_ssh(keypair)
-        # self.servers_client.delete_server(self.instance['id'])
-        return self.instance
+    def _create_server(self, name, network):
+        vm = self.create_tenant_server(tenant_networks=[network], name=name)
+        return vm.get_server_details()
