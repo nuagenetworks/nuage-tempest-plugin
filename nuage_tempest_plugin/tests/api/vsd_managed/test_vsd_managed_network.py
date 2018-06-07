@@ -31,14 +31,14 @@ from nuage_tempest_plugin.lib.utils import data_utils as nuage_data_utils
 
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
-from nuage_tempest_plugin.tests.api.vsd_managed.base_vsd_managed_network \
-    import BaseVSDManagedNetworksTest
+from nuage_tempest_plugin.tests.api.vsd_managed.base_vsd_managed_networks \
+    import BaseVSDManagedNetwork
 
 CONF = Topology.get_conf()
 
 
 @nuage_test.class_header(tags=[tags.VSD_MANAGED])
-class VSDManagedTestNetworks(BaseVSDManagedNetworksTest):
+class VSDManagedTestNetworks(BaseVSDManagedNetwork):
 
     def __init__(self, *args, **kwargs):
         super(VSDManagedTestNetworks, self).__init__(*args, **kwargs)
@@ -105,26 +105,26 @@ class VSDManagedTestNetworks(BaseVSDManagedNetworksTest):
         netpart = body['net_partition']
         self.assertEqual(name, netpart['name'])
         if Topology.within_ext_id_release():
-            net_partition = self.nuageclient.get_global_resource(
+            net_partition = self.nuage_client.get_global_resource(
                 resource=constants.NET_PARTITION,
                 filters='externalID',
                 filter_value=netpart['id'] + '@openstack')
             self.assertEqual(name, net_partition[0]['name'])
-            default_l2dom_template = self.nuageclient.get_resource(
+            default_l2dom_template = self.nuage_client.get_resource(
                 resource=constants.L2_DOMAIN_TEMPLATE,
                 filters='externalID',
                 filter_value=netpart['id'] + '@openstack',
                 netpart_name=name)
             self.assertIsNot(default_l2dom_template, "", "Default L2Domain "
                                                          "Template Not Found")
-            default_dom_template = self.nuageclient.get_resource(
+            default_dom_template = self.nuage_client.get_resource(
                 resource=constants.DOMAIN_TEMPLATE,
                 filters='externalID',
                 filter_value=netpart['id'] + '@openstack',
                 netpart_name=name)
             self.assertIsNot(default_dom_template, "", "Default Domain "
                                                        "Template Not Found")
-            zone_templates = self.nuageclient.get_child_resource(
+            zone_templates = self.nuage_client.get_child_resource(
                 resource=constants.DOMAIN_TEMPLATE,
                 resource_id=default_dom_template[0]['ID'],
                 child_resource=constants.ZONE_TEMPLATE,
@@ -199,7 +199,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetworksTest):
                 name=name, tid=vsd_l2dom_tmplt['ID'])[0]
             self.assertEqual(vsd_l2dom['name'], name)
             if dhcp_option_3:
-                self.nuageclient.create_dhcpoption_on_l2dom(
+                self.nuage_client.create_dhcpoption_on_l2dom(
                     vsd_l2dom['ID'], 3, [dhcp_option_3])
 
         # network
@@ -672,7 +672,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetworksTest):
             'associatedSharedNetworkResourceID': vsd_shared_l3dom_subnet['ID']
         }
         resource = '/zones/' + vsd_zone[0]['ID'] + '/subnets'
-        vsd_l3dom_subnet = self.nuageclient.restproxy.rest_call(
+        vsd_l3dom_subnet = self.nuage_client.restproxy.rest_call(
             'POST', resource, data)
         vsd_l3_dom_public_subnet = vsd_l3dom_subnet.data[0]
         self.assertEqual(vsd_l3_dom_public_subnet['name'], name)
@@ -716,14 +716,14 @@ class VSDManagedTestNetworks(BaseVSDManagedNetworksTest):
         self.assertIsNotNone(subnet, "Subnet should be created.")
 
         port = self.create_port(network, cleanup=False)
-        nuage_vport = self.nuageclient.get_vport(constants.L2_DOMAIN,
-                                                 vsd_l2dom['ID'],
-                                                 filters='externalID',
-                                                 filter_value=port['id'])
+        nuage_vport = self.nuage_client.get_vport(constants.L2_DOMAIN,
+                                                  vsd_l2dom['ID'],
+                                                  filters='externalID',
+                                                  filter_value=port['id'])
         self.assertIsNotNone(nuage_vport, "vport should be created.")
 
         # External ID tests
-        vsd_l2domains = self.nuageclient.get_l2domain(
+        vsd_l2domains = self.nuage_client.get_l2domain(
             filters='ID', filter_value=vsd_l2dom['ID'])
         self.assertEqual(len(vsd_l2domains), 1,
                          "Failed to get vsd l2 domain")
@@ -742,17 +742,17 @@ class VSDManagedTestNetworks(BaseVSDManagedNetworksTest):
         self.ports_client.delete_port(port['id'])
 
         # Then the vport on the VSD is also deleted
-        nuage_vport = self.nuageclient.get_vport(constants.L2_DOMAIN,
-                                                 vsd_l2dom['ID'],
-                                                 filters='externalID',
-                                                 filter_value=port['id'])
+        nuage_vport = self.nuage_client.get_vport(constants.L2_DOMAIN,
+                                                  vsd_l2dom['ID'],
+                                                  filters='externalID',
+                                                  filter_value=port['id'])
         self.assertEqual('', nuage_vport, "vport should be deleted.")
 
         # Then I can delete the network
         self.networks_client.delete_network(network['id'])
 
         # Then the VSD managed network is still there
-        vsd_l2domains = self.nuageclient.get_l2domain(
+        vsd_l2domains = self.nuage_client.get_l2domain(
             filters='ID', filter_value=vsd_l2dom['ID'])
         self.assertEqual(len(vsd_l2domains), 1, "Failed to get vsd l2 domain")
 
@@ -761,7 +761,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetworksTest):
     def test_link_vsd_shared_subnet_l3_with_dhcp_option(self):
         vsd_shared_l3dom_subnet, cidr, gateway, mask_bits = \
             self._create_vsd_shared_resource(type='PUBLIC')
-        self.nuageclient.create_dhcpoption_on_shared(
+        self.nuage_client.create_dhcpoption_on_shared(
             vsd_shared_l3dom_subnet['ID'], '03',  # TODO(Kris) bad '03'?
             [str(IPAddress(cidr) + 2)])
 
@@ -783,7 +783,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetworksTest):
             'associatedSharedNetworkResourceID': vsd_shared_l3dom_subnet['ID']
         }
         resource = '/zones/' + vsd_zone[0]['ID'] + '/subnets'
-        vsd_l3dom_subnet = self.nuageclient.restproxy.rest_call(
+        vsd_l3dom_subnet = self.nuage_client.restproxy.rest_call(
             'POST', resource, data)
         vsd_l3_dom_public_subnet = vsd_l3dom_subnet.data[0]
         self.assertEqual(vsd_l3_dom_public_subnet['name'], name)

@@ -35,7 +35,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
     @classmethod
     def setup_clients(cls):
         super(NuageServiceChaining, cls).setup_clients()
-        cls.nuage_vsd_client = NuageRestClient()
+        cls.nuage_client = NuageRestClient()
         cls.client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
             **cls.os_primary.default_params)
@@ -55,7 +55,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
         cls.create_router_interface(cls.router['id'], cls.subnet_l3['id'])
 
     def _verify_redirect_target(self, rt, parent, parentinfo, postinfo):
-        redirect_target = self.nuage_vsd_client.get_redirection_target(
+        redirect_target = self.nuage_client.get_redirection_target(
             parent, parentinfo['ID'], filters='ID',
             filter_value=rt['nuage_redirect_target']['id'])
 
@@ -71,12 +71,12 @@ class NuageServiceChaining(base.BaseNetworkTest):
                                       parentinfo, ruleinfo,
                                       with_external_id=None):
         redirect_target_rule_template = (
-            self.nuage_vsd_client.get_advfwd_template(
+            self.nuage_client.get_advfwd_template(
                 parent, parentinfo['ID'])
         )
 
         redirect_target_rule = (
-            self.nuage_vsd_client.get_advfwd_entrytemplate(
+            self.nuage_client.get_advfwd_entrytemplate(
                 'ingressadvfwdtemplates',
                 str(redirect_target_rule_template[0]['ID']))
         )
@@ -107,16 +107,16 @@ class NuageServiceChaining(base.BaseNetworkTest):
             nuage_redirect_targets=str(rt['nuage_redirect_target']['id']))
         self.assertEqual(
             port_body['port']['status'], 'ACTIVE')
-        redirect_vport = self.nuage_vsd_client.get_redirection_target_vports(
+        redirect_vport = self.nuage_client.get_redirection_target_vports(
             'redirectiontargets',
             rt['nuage_redirect_target']['id'])
 
         # Verifying vport has associated RT
         port_ext_id = (
-            self.nuage_vsd_client.get_vsd_external_id(
+            self.nuage_client.get_vsd_external_id(
                 rtport['id'])
         )
-        vsd_vport = self.nuage_vsd_client.get_vport(
+        vsd_vport = self.nuage_client.get_vport(
             parent, parentinfo['ID'], filters='externalID',
             filter_value=port_ext_id)
         self.assertEqual(
@@ -129,7 +129,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
         )
         self.assertEqual(
             port_body['port']['status'], 'ACTIVE')
-        redirect_vport = self.nuage_vsd_client.get_redirection_target_vports(
+        redirect_vport = self.nuage_client.get_redirection_target_vports(
             'redirectiontargets',
             rt['nuage_redirect_target']['id'])
         self.assertEqual(redirect_vport, '')
@@ -137,7 +137,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
     def _verify_redirect_target_vip(self, rt, vipinfo):
         # Verifying RT has associated vip
         redirect_vip = (
-            self.nuage_vsd_client.get_redirection_target_vips(
+            self.nuage_client.get_redirection_target_vips(
                 'redirectiontargets',
                 rt['nuage_redirect_target']['id'])
         )
@@ -168,11 +168,11 @@ class NuageServiceChaining(base.BaseNetworkTest):
         rt = self.client.create_redirection_target(**post_body)
 
         subnet_ext_id = (
-            self.nuage_vsd_client.get_vsd_external_id(
+            self.nuage_client.get_vsd_external_id(
                 self.subnet_l2['id'])
         )
 
-        vsd_subnet = self.nuage_vsd_client.get_l2domain(
+        vsd_subnet = self.nuage_client.get_l2domain(
             filters='externalID', filter_value=subnet_ext_id)
 
         # Verifying Redirect Target on VSD
@@ -217,7 +217,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
             redirect_target[0]['ID'])
 
         # Verifying RT is deleted from VSD
-        redirect_target = self.nuage_vsd_client.get_redirection_target(
+        redirect_target = self.nuage_client.get_redirection_target(
             'l2domains', vsd_subnet[0]['ID'], filters='ID',
             filter_value=rt['nuage_redirect_target']['id'])
         self.assertEqual(redirect_target, '')
@@ -234,22 +234,22 @@ class NuageServiceChaining(base.BaseNetworkTest):
         rt = self.client.create_redirection_target(**post_body)
 
         router_ext_id = (
-            self.nuage_vsd_client.get_vsd_external_id(
+            self.nuage_client.get_vsd_external_id(
                 self.router['id'])
         )
 
         domain = (
-            self.nuage_vsd_client.get_l3domain(
+            self.nuage_client.get_l3domain(
                 filters='externalID', filter_value=router_ext_id)
         )
 
         subnet_ext_id = (
-            self.nuage_vsd_client.get_vsd_external_id(
+            self.nuage_client.get_vsd_external_id(
                 self.subnet_l3['id'])
         )
 
         vsd_subnet = (
-            self.nuage_vsd_client.get_domain_subnet(
+            self.nuage_client.get_domain_subnet(
                 'domains', domain[0]['ID'], filters='externalID',
                 filter_value=subnet_ext_id)
         )
@@ -294,7 +294,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
         # Put in lines to delete the RT from the l3domain and verify on VSD
         self.client.delete_redirection_target(
             redirect_target[0]['ID'])
-        redirect_target = self.nuage_vsd_client.get_redirection_target(
+        redirect_target = self.nuage_client.get_redirection_target(
             'domains', domain[0]['ID'], filters='ID',
             filter_value=rt['nuage_redirect_target']['id'])
         self.assertEqual(redirect_target, '')
@@ -312,22 +312,22 @@ class NuageServiceChaining(base.BaseNetworkTest):
         rt = self.client.create_redirection_target(**post_body)
 
         router_ext_id = (
-            self.nuage_vsd_client.get_vsd_external_id(
+            self.nuage_client.get_vsd_external_id(
                 self.router['id'])
         )
 
         domain = (
-            self.nuage_vsd_client.get_l3domain(
+            self.nuage_client.get_l3domain(
                 filters='externalID', filter_value=router_ext_id)
         )
 
         subnet_ext_id = (
-            self.nuage_vsd_client.get_vsd_external_id(
+            self.nuage_client.get_vsd_external_id(
                 self.subnet_l3['id'])
         )
 
         vsd_subnet = (
-            self.nuage_vsd_client.get_domain_subnet(
+            self.nuage_client.get_domain_subnet(
                 'domains', domain[0]['ID'], filters='externalID',
                 filter_value=subnet_ext_id)
         )
@@ -372,7 +372,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
         # Put in lines to delete the RT from the l3domain and verify on VSD
         self.client.delete_redirection_target(
             redirect_target[0]['ID'])
-        redirect_target = self.nuage_vsd_client.get_redirection_target(
+        redirect_target = self.nuage_client.get_redirection_target(
             'domains', domain[0]['ID'], filters='ID',
             filter_value=rt['nuage_redirect_target']['id'])
         self.assertEqual(redirect_target, '')
@@ -390,22 +390,22 @@ class NuageServiceChaining(base.BaseNetworkTest):
         rt = self.client.create_redirection_target(**post_body)
 
         router_ext_id = (
-            self.nuage_vsd_client.get_vsd_external_id(
+            self.nuage_client.get_vsd_external_id(
                 self.router['id'])
         )
 
         domain = (
-            self.nuage_vsd_client.get_l3domain(
+            self.nuage_client.get_l3domain(
                 filters='externalID', filter_value=router_ext_id)
         )
 
         subnet_ext_id = (
-            self.nuage_vsd_client.get_vsd_external_id(
+            self.nuage_client.get_vsd_external_id(
                 self.subnet_l3['id'])
         )
 
         vsd_subnet = (
-            self.nuage_vsd_client.get_domain_subnet(
+            self.nuage_client.get_domain_subnet(
                 'domains', domain[0]['ID'], filters='externalID',
                 filter_value=subnet_ext_id)
         )
@@ -449,7 +449,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
         self.client.delete_redirection_target(
             redirect_target[0]['ID'])
 
-        redirect_target = self.nuage_vsd_client.get_redirection_target(
+        redirect_target = self.nuage_client.get_redirection_target(
             'domains', domain[0]['ID'], filters='ID',
             filter_value=rt['nuage_redirect_target']['id'])
         self.assertEqual(redirect_target, '')
@@ -464,22 +464,22 @@ class NuageServiceChaining(base.BaseNetworkTest):
         rt = self.client.create_redirection_target(**post_body)
 
         router_ext_id = (
-            self.nuage_vsd_client.get_vsd_external_id(
+            self.nuage_client.get_vsd_external_id(
                 self.router['id'])
         )
 
         domain = (
-            self.nuage_vsd_client.get_l3domain(
+            self.nuage_client.get_l3domain(
                 filters='externalID', filter_value=router_ext_id)
         )
 
         subnet_ext_id = (
-            self.nuage_vsd_client.get_vsd_external_id(
+            self.nuage_client.get_vsd_external_id(
                 self.subnet_l3['id'])
         )
 
         vsd_subnet = (
-            self.nuage_vsd_client.get_domain_subnet(
+            self.nuage_client.get_domain_subnet(
                 'domains', domain[0]['ID'], filters='externalID',
                 filter_value=subnet_ext_id)
         )
@@ -532,7 +532,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
         self.client.delete_redirection_target(
             redirect_target[0]['ID'])
 
-        redirect_target = self.nuage_vsd_client.get_redirection_target(
+        redirect_target = self.nuage_client.get_redirection_target(
             'domains', domain[0]['ID'], filters='ID',
             filter_value=rt['nuage_redirect_target']['id'])
         self.assertEqual(redirect_target, '')

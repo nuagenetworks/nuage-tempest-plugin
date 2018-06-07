@@ -118,12 +118,12 @@ class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
             }
             self.vsd_l2_shared_managed_opt3 = \
                 self.create_vsd_shared_l2domain_managed(**kwargs)
-            self.nuage_vsd_client.create_dhcpoption_on_shared(
+            self.nuage_client.create_dhcpoption_on_shared(
                 self.vsd_l2_shared_managed_opt3[0]['ID'], 3, [dhcp_option_3])
             self.current_l2_dhcp_option_3 = dhcp_option_3
         elif dhcp_option_3 != self.current_l2_dhcp_option_3:
             # we want tot est with another dhcp+option_3 value, set it
-            self.nuage_vsd_client.create_dhcpoption_on_shared(
+            self.nuage_client.create_dhcpoption_on_shared(
                 self.vsd_l2_shared_managed_opt3[0]['ID'], 3, [dhcp_option_3])
             self.current_l2_dhcp_option_3 = dhcp_option_3
         vsd_l2_dom_unmgd_l2_shared_mgd_opt3 = \
@@ -166,12 +166,12 @@ class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
             }
             self.vsd_l3_shared_mgd_opt3 = \
                 self.create_vsd_shared_l3domain_managed(**kwargs)
-            self.nuage_vsd_client.create_dhcpoption_on_shared(
+            self.nuage_client.create_dhcpoption_on_shared(
                 self.vsd_l3_shared_mgd_opt3[0]['ID'], 3, [dhcp_option_3])
             self.current_l3_dhcp_option_3 = dhcp_option_3
         elif dhcp_option_3 != self.current_l3_dhcp_option_3:
             # we want to test with another dhcp_option_3 value: set it
-            self.nuage_vsd_client.create_dhcpoption_on_shared(
+            self.nuage_client.create_dhcpoption_on_shared(
                 self.vsd_l3_shared_mgd_opt3[0]['ID'], 3, [dhcp_option_3])
             self.current_l3_dhcp_option_3 = dhcp_option_3
         vsd_l3_domain = self.create_vsd_l3domain(
@@ -199,7 +199,7 @@ class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
             }
             self.vsd_l3_shared_mgd_opt3 = \
                 self.create_vsd_shared_l3domain_managed(**kwargs)
-            self.nuage_vsd_client.create_dhcpoption_on_shared(
+            self.nuage_client.create_dhcpoption_on_shared(
                 self.vsd_l3_shared_mgd_opt3[0]['ID'], 3, ['0.0.0.0'])
         vsd_l3_domain = self.create_vsd_l3domain(
             tid=self.vsd_l3_dom_template[0]['ID'])
@@ -249,14 +249,14 @@ class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
             raise exceptions.NotFound("ERROR: this VM (%s) has no "
                                       "port".format(str(vm_id)))
         else:
-            ext_id = cls.nuage_vsd_client.get_vsd_external_id(the_port['id'])
+            ext_id = cls.nuage_client.get_vsd_external_id(the_port['id'])
         return ext_id
 
     def _get_l2dom_vm_interface_ip_address(self, vm, vsd_domain_id):
         # returns first VM-interfce IP address of the given 'vm' in the
         # VSD domain with id = vsd_domain_id
         ext_id = self._get_external_port_id_from_vm(vm['id'])
-        vm_interface = self.nuage_vsd_client.get_vm_iface(
+        vm_interface = self.nuage_client.get_vm_iface(
             constants.L2_DOMAIN,
             vsd_domain_id,
             filters='externalID', filter_value=ext_id)
@@ -266,7 +266,7 @@ class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
         # returns first VM-interface IP address of the given 'vm' in the
         # VSD domain with id = vsd_domain_id
         ext_id = self._get_external_port_id_from_vm(vm['id'])
-        vm_interface = self.nuage_vsd_client.get_vm_iface(
+        vm_interface = self.nuage_client.get_vm_iface(
             constants.SUBNETWORK,
             vsd_subnet_id,
             filters='externalID', filter_value=ext_id)

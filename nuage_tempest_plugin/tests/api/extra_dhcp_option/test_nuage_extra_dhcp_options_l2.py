@@ -27,9 +27,9 @@ class NuageExtraDHCPOptionsBaseL2(
         cls.osmgd_l2_subnet = cls.create_subnet(cls.osmgd_l2_network)
         # Find the "network:dhcp:nuage" port created by nuage
         cls.os_l2_port = cls.create_port(cls.osmgd_l2_network)
-        cls.l2domain = cls.nuage_vsd_client.get_l2domain(
+        cls.l2domain = cls.nuage_client.get_l2domain(
             'externalID',
-            cls.nuage_vsd_client.get_vsd_external_id(cls.osmgd_l2_subnet['id'])
+            cls.nuage_client.get_vsd_external_id(cls.osmgd_l2_subnet['id'])
         )
 
         # Create a L2 VSD managed network and link to its OS network
@@ -62,14 +62,14 @@ class NuageExtraDHCPOptionsBaseL2(
             'netmask': str(kwargs['cidr'].netmask),
             'gateway': kwargs['gateway']
         }
-        vsd_l2dom_tmplt = cls.nuage_vsd_client.create_l2domaintemplate(
+        vsd_l2dom_tmplt = cls.nuage_client.create_l2domaintemplate(
             kwargs['name'] + '-template', extra_params=params)
         cls.vsd_l2dom_template.append(vsd_l2dom_tmplt)
         return vsd_l2dom_tmplt
 
     @classmethod
     def create_vsd_l2domain(cls, **kwargs):
-        vsd_l2dom = cls.nuage_vsd_client.create_l2domain(
+        vsd_l2dom = cls.nuage_client.create_l2domain(
             kwargs['name'], templateId=kwargs['tid'])
         cls.vsd_l2domain.append(vsd_l2dom)
         return vsd_l2dom
@@ -100,10 +100,10 @@ class NuageExtraDHCPOptionsBaseL2(
                                  cls.vsdmgd_l2_network['id'])
 
         for vsd_l2domain in cls.vsd_l2domain:
-            cls.nuage_vsd_client.delete_l2domain(vsd_l2domain[0]['ID'])
+            cls.nuage_client.delete_l2domain(vsd_l2domain[0]['ID'])
 
         for vsd_l2dom_template in cls.vsd_l2dom_template:
-            cls.nuage_vsd_client.delete_l2domaintemplate(
+            cls.nuage_client.delete_l2domaintemplate(
                 vsd_l2dom_template[0]['ID'])
 
         super(NuageExtraDHCPOptionsBaseL2, cls).resource_cleanup()

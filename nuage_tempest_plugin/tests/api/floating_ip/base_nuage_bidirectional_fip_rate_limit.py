@@ -26,7 +26,7 @@ class NuageBidirectionalFipRateLimitBase(base.BaseNetworkTest):
     @classmethod
     def setup_clients(cls):
         super(NuageBidirectionalFipRateLimitBase, cls).setup_clients()
-        cls.nuage_vsd_client = nuage_client.NuageRestClient()
+        cls.nuage_client = nuage_client.NuageRestClient()
 
     @classmethod
     def resource_setup(cls):
@@ -176,12 +176,12 @@ class NuageBidirectionalFipRateLimitBase(base.BaseNetworkTest):
                         ingress_rate_limit=None, egress_rate_limit=None,
                         backward=False):
         # verifying on Domain level that the floating ip is added
-        external_id = self.nuage_vsd_client.get_vsd_external_id(
+        external_id = self.nuage_client.get_vsd_external_id(
             created_floating_ip['router_id'])
-        nuage_domain = self.nuage_vsd_client.get_l3domain(
+        nuage_domain = self.nuage_client.get_l3domain(
             filters='externalID',
             filter_value=external_id)
-        nuage_domain_fip = self.nuage_vsd_client.get_floatingip(
+        nuage_domain_fip = self.nuage_client.get_floatingip(
             constants.DOMAIN, nuage_domain[0]['ID'])
 
         # The VSD FIP has same IP address than OpenStack FIP
@@ -189,24 +189,24 @@ class NuageBidirectionalFipRateLimitBase(base.BaseNetworkTest):
                       [nuage_fip['address'] for nuage_fip in nuage_domain_fip])
 
         # The VSD externalID for FIP matches the OpenStack ID
-        external_id = self.nuage_vsd_client.get_vsd_external_id(
+        external_id = self.nuage_client.get_vsd_external_id(
             created_floating_ip['id'])
         self.assertIn(external_id,
                       [nuage_fip['externalID'] for nuage_fip
                        in nuage_domain_fip])
 
         # Check vsd
-        vsd_subnets = self.nuage_vsd_client.get_domain_subnet(
+        vsd_subnets = self.nuage_client.get_domain_subnet(
             None, None, 'externalID',
-            self.nuage_vsd_client.get_vsd_external_id(self.subnet['id']))
+            self.nuage_client.get_vsd_external_id(self.subnet['id']))
         self.assertEqual(1, len(vsd_subnets))
-        vports = self.nuage_vsd_client.get_vport(
+        vports = self.nuage_client.get_vport(
             constants.SUBNETWORK,
             vsd_subnets[0]['ID'],
             'externalID',
-            self.nuage_vsd_client.get_vsd_external_id(port['id']))
+            self.nuage_client.get_vsd_external_id(port['id']))
         self.assertEqual(1, len(vports))
-        qos = self.nuage_vsd_client.get_qos(constants.VPORT, vports[0]['ID'])
+        qos = self.nuage_client.get_qos(constants.VPORT, vports[0]['ID'])
         self.assertEqual(1, len(qos))
         self.assertEqual(True, qos[0]['FIPRateLimitingActive'])
 
@@ -227,7 +227,7 @@ class NuageBidirectionalFipRateLimitBase(base.BaseNetworkTest):
             self.assertEqualFiprate(
                 egress_rate_limit, qos[0]['FIPPeakInformationRate'])
 
-        self.assertEqual(self.nuage_vsd_client.get_vsd_external_id(
+        self.assertEqual(self.nuage_client.get_vsd_external_id(
             created_floating_ip['id']), qos[0]['externalID'])
 
     def _create_fip_with_fip_rate_limit(self, port, ingress_rate_limit=None,

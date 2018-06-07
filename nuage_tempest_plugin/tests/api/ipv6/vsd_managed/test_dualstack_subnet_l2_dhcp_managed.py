@@ -742,7 +742,7 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
                           nuage_redirect_targets=[],
                           nuage_floatingip=None)
 
-        nuage_vports = self.nuage_vsd_client.get_vport(
+        nuage_vports = self.nuage_client.get_vport(
             nuage_constants.L2_DOMAIN,
             vsd_l2domain['ID'],
             filters='externalID',
@@ -776,7 +776,7 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
                           nuage_redirect_targets=[],
                           nuage_floatingip=None)
 
-        nuage_vports = self.nuage_vsd_client.get_vport(
+        nuage_vports = self.nuage_client.get_vport(
             nuage_constants.L2_DOMAIN,
             vsd_l2domain['ID'],
             filters='externalID',
@@ -1208,7 +1208,7 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
     #
     #     name = data_utils.rand_name('vsd-l2domain-shared-unmgd')
     #     vsd_l2_shared_domains = \
-    #          self.nuage_vsd_client.create_vsd_shared_resource(
+    #          self.nuage_client.create_vsd_shared_resource(
     #              name=name, type='L2DOMAIN')
     #     vsd_l2_shared_domain = vsd_l2_shared_domains[0]
     #     self.link_l2domain_to_shared_domain(

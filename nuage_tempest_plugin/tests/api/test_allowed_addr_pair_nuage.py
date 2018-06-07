@@ -35,7 +35,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
     @classmethod
     def setup_clients(cls):
         super(AllowedAddressPairTest, cls).setup_clients()
-        cls.nuage_vsd_client = NuageRestClient()
+        cls.nuage_client = NuageRestClient()
 
     @classmethod
     def resource_setup(cls):
@@ -109,12 +109,12 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
             port, addrpair_port['fixed_ips'][0]['ip_address'],
             port['mac_address'])
         # Check address spoofing is disabled on vport in VSD
-        subnet_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        subnet_ext_id = self.nuage_client.get_vsd_external_id(
             port['fixed_ips'][0]['subnet_id'])
-        nuage_subnet = self.nuage_vsd_client.get_l2domain(
+        nuage_subnet = self.nuage_client.get_l2domain(
             filters='externalID', filter_value=subnet_ext_id)
-        port_ext_id = self.nuage_vsd_client.get_vsd_external_id(port['id'])
-        nuage_vport = self.nuage_vsd_client.get_vport(
+        port_ext_id = self.nuage_client.get_vsd_external_id(port['id'])
+        nuage_vport = self.nuage_client.get_vport(
             n_constants.L2_DOMAIN,
             nuage_subnet[0]['ID'],
             filters='externalID',
@@ -155,12 +155,12 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
             addrpair_port['mac_address'])
 
         # Check address spoofing is disabled on vport in VSD
-        subnet_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        subnet_ext_id = self.nuage_client.get_vsd_external_id(
             port['fixed_ips'][0]['subnet_id'])
-        nuage_subnet = self.nuage_vsd_client.get_l2domain(
+        nuage_subnet = self.nuage_client.get_l2domain(
             filters='externalID', filter_value=subnet_ext_id)
-        port_ext_id = self.nuage_vsd_client.get_vsd_external_id(port['id'])
-        nuage_vport = self.nuage_vsd_client.get_vport(
+        port_ext_id = self.nuage_client.get_vsd_external_id(port['id'])
+        nuage_vport = self.nuage_client.get_vport(
             n_constants.L2_DOMAIN,
             nuage_subnet[0]['ID'],
             filters='externalID',
@@ -182,12 +182,12 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         self._verify_port_allowed_address_fields(
             port, ip_address, mac_address)
         # Check address spoofing is disabled on vport in VSD
-        subnet_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        subnet_ext_id = self.nuage_client.get_vsd_external_id(
             port['fixed_ips'][0]['subnet_id'])
-        nuage_subnet = self.nuage_vsd_client.get_l2domain(
+        nuage_subnet = self.nuage_client.get_l2domain(
             filters='externalID', filter_value=subnet_ext_id)
-        port_ext_id = self.nuage_vsd_client.get_vsd_external_id(port['id'])
-        nuage_vport = self.nuage_vsd_client.get_vport(
+        port_ext_id = self.nuage_client.get_vsd_external_id(port['id'])
+        nuage_vport = self.nuage_client.get_vport(
             n_constants.L2_DOMAIN,
             nuage_subnet[0]['ID'],
             filters='externalID',
@@ -220,12 +220,12 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         self._verify_port_allowed_address_fields(
             port, ip_address, mac_address)
         # Check address spoofing is disabled on vport in VSD
-        subnet_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        subnet_ext_id = self.nuage_client.get_vsd_external_id(
             port['fixed_ips'][0]['subnet_id'])
-        nuage_subnet = self.nuage_vsd_client.get_l2domain(
+        nuage_subnet = self.nuage_client.get_l2domain(
             filters='externalID', filter_value=subnet_ext_id)
-        port_ext_id = self.nuage_vsd_client.get_vsd_external_id(port['id'])
-        nuage_vport = self.nuage_vsd_client.get_vport(
+        port_ext_id = self.nuage_client.get_vsd_external_id(port['id'])
+        nuage_vport = self.nuage_client.get_vport(
             n_constants.L2_DOMAIN,
             nuage_subnet[0]['ID'],
             filters='externalID',
@@ -262,26 +262,26 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
             port, addrpair_port['fixed_ips'][0]['ip_address'],
             addrpair_port['mac_address'])
         # Check VIP is created in VSD
-        l3domain_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        l3domain_ext_id = self.nuage_client.get_vsd_external_id(
             self.router['id'])
-        nuage_domain = self.nuage_vsd_client.get_resource(
+        nuage_domain = self.nuage_client.get_resource(
             n_constants.DOMAIN,
             filters='externalID',
             filter_value=l3domain_ext_id)
-        subnet_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        subnet_ext_id = self.nuage_client.get_vsd_external_id(
             port['fixed_ips'][0]['subnet_id'])
-        nuage_subnet = self.nuage_vsd_client.get_domain_subnet(
+        nuage_subnet = self.nuage_client.get_domain_subnet(
             n_constants.DOMAIN, nuage_domain[0]['ID'],
             filters='externalID', filter_value=subnet_ext_id)
-        port_ext_id = self.nuage_vsd_client.get_vsd_external_id(port['id'])
-        nuage_vport = self.nuage_vsd_client.get_vport(
+        port_ext_id = self.nuage_client.get_vsd_external_id(port['id'])
+        nuage_vport = self.nuage_client.get_vport(
             n_constants.SUBNETWORK,
             nuage_subnet[0]['ID'],
             filters='externalID',
             filter_value=port_ext_id)
         self.assertEqual(n_constants.INHERITED,
                          nuage_vport[0]['addressSpoofing'])
-        nuage_vip = self.nuage_vsd_client.get_virtual_ip(
+        nuage_vip = self.nuage_client.get_virtual_ip(
             n_constants.VPORT,
             nuage_vport[0]['ID'],
             filters='virtualIP',
@@ -289,7 +289,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         self.assertEqual(addrpair_port['mac_address'], nuage_vip[0]['MAC'])
         if Topology.within_ext_id_release():
             self.assertEqual(nuage_vip[0]['externalID'],
-                             self.nuage_vsd_client.get_vsd_external_id(
+                             self.nuage_client.get_vsd_external_id(
                                  port['id']))
 
     @decorators.attr(type='smoke')
@@ -320,26 +320,26 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
             port, addrpair_port['fixed_ips'][0]['ip_address'],
             addrpair_port['mac_address'])
         # Check VIP is created in VSD
-        l3domain_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        l3domain_ext_id = self.nuage_client.get_vsd_external_id(
             self.router['id'])
-        nuage_domain = self.nuage_vsd_client.get_resource(
+        nuage_domain = self.nuage_client.get_resource(
             n_constants.DOMAIN,
             filters='externalID',
             filter_value=l3domain_ext_id)
-        subnet_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        subnet_ext_id = self.nuage_client.get_vsd_external_id(
             port['fixed_ips'][0]['subnet_id'])
-        nuage_subnet = self.nuage_vsd_client.get_domain_subnet(
+        nuage_subnet = self.nuage_client.get_domain_subnet(
             n_constants.DOMAIN, nuage_domain[0]['ID'],
             filters='externalID', filter_value=subnet_ext_id)
-        port_ext_id = self.nuage_vsd_client.get_vsd_external_id(port['id'])
-        nuage_vport = self.nuage_vsd_client.get_vport(
+        port_ext_id = self.nuage_client.get_vsd_external_id(port['id'])
+        nuage_vport = self.nuage_client.get_vport(
             n_constants.SUBNETWORK,
             nuage_subnet[0]['ID'],
             filters='externalID',
             filter_value=port_ext_id)
         self.assertEqual(n_constants.INHERITED,
                          nuage_vport[0]['addressSpoofing'])
-        nuage_vip = self.nuage_vsd_client.get_virtual_ip(
+        nuage_vip = self.nuage_client.get_virtual_ip(
             n_constants.VPORT,
             nuage_vport[0]['ID'],
             filters='virtualIP',
@@ -347,7 +347,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         self.assertEqual(addrpair_port['mac_address'], nuage_vip[0]['MAC'])
         if Topology.within_ext_id_release():
             self.assertEqual(nuage_vip[0]['externalID'],
-                             self.nuage_vsd_client.get_vsd_external_id(
+                             self.nuage_client.get_vsd_external_id(
                                  port['id']))
 
     def test_create_address_pair_on_l3subnet_with_no_mac(self):
@@ -365,26 +365,26 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
             port, addrpair_port['fixed_ips'][0]['ip_address'],
             port['mac_address'])
         # Check VIP is created in VSD
-        l3domain_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        l3domain_ext_id = self.nuage_client.get_vsd_external_id(
             self.router['id'])
-        nuage_domain = self.nuage_vsd_client.get_resource(
+        nuage_domain = self.nuage_client.get_resource(
             n_constants.DOMAIN,
             filters='externalID',
             filter_value=l3domain_ext_id)
-        subnet_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        subnet_ext_id = self.nuage_client.get_vsd_external_id(
             port['fixed_ips'][0]['subnet_id'])
-        nuage_subnet = self.nuage_vsd_client.get_domain_subnet(
+        nuage_subnet = self.nuage_client.get_domain_subnet(
             n_constants.DOMAIN, nuage_domain[0]['ID'],
             filters='externalID', filter_value=subnet_ext_id)
-        port_ext_id = self.nuage_vsd_client.get_vsd_external_id(port['id'])
-        nuage_vport = self.nuage_vsd_client.get_vport(
+        port_ext_id = self.nuage_client.get_vsd_external_id(port['id'])
+        nuage_vport = self.nuage_client.get_vport(
             n_constants.SUBNETWORK,
             nuage_subnet[0]['ID'],
             filters='externalID',
             filter_value=port_ext_id)
         self.assertEqual(n_constants.INHERITED,
                          nuage_vport[0]['addressSpoofing'])
-        nuage_vip = self.nuage_vsd_client.get_virtual_ip(
+        nuage_vip = self.nuage_client.get_virtual_ip(
             n_constants.VPORT,
             nuage_vport[0]['ID'],
             filters='virtualIP',
@@ -392,7 +392,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         self.assertEqual(port['mac_address'], nuage_vip[0]['MAC'])
         if Topology.within_ext_id_release():
             self.assertEqual(nuage_vip[0]['externalID'],
-                             self.nuage_vsd_client.get_vsd_external_id(
+                             self.nuage_client.get_vsd_external_id(
                                  port['id']))
 
     def test_create_address_pair_on_l3subnet_with_cidr(self):
@@ -409,21 +409,21 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         self._verify_port_allowed_address_fields(
             port, ip_address, mac_address)
         # Check VIP is created in VSD
-        l3domain_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        l3domain_ext_id = self.nuage_client.get_vsd_external_id(
             self.router['id'])
-        nuage_domain = self.nuage_vsd_client.get_resource(
+        nuage_domain = self.nuage_client.get_resource(
             n_constants.DOMAIN,
             filters='externalID',
             filter_value=l3domain_ext_id)
-        subnet_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        subnet_ext_id = self.nuage_client.get_vsd_external_id(
             port['fixed_ips'][0]['subnet_id'])
-        nuage_subnet = self.nuage_vsd_client.get_domain_subnet(
+        nuage_subnet = self.nuage_client.get_domain_subnet(
             n_constants.DOMAIN,
             nuage_domain[0]['ID'],
             filters='externalID',
             filter_value=subnet_ext_id)
-        port_ext_id = self.nuage_vsd_client.get_vsd_external_id(port['id'])
-        nuage_vport = self.nuage_vsd_client.get_vport(
+        port_ext_id = self.nuage_client.get_vsd_external_id(port['id'])
+        nuage_vport = self.nuage_client.get_vport(
             n_constants.SUBNETWORK,
             nuage_subnet[0]['ID'],
             filters='externalID',
@@ -455,21 +455,21 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         self._verify_port_allowed_address_fields(
             port, ip_address, mac_address)
         # Check VIP is created in VSD
-        l3domain_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        l3domain_ext_id = self.nuage_client.get_vsd_external_id(
             self.router['id'])
-        nuage_domain = self.nuage_vsd_client.get_resource(
+        nuage_domain = self.nuage_client.get_resource(
             n_constants.DOMAIN,
             filters='externalID',
             filter_value=l3domain_ext_id)
-        subnet_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        subnet_ext_id = self.nuage_client.get_vsd_external_id(
             port['fixed_ips'][0]['subnet_id'])
-        nuage_subnet = self.nuage_vsd_client.get_domain_subnet(
+        nuage_subnet = self.nuage_client.get_domain_subnet(
             n_constants.DOMAIN,
             nuage_domain[0]['ID'],
             filters='externalID',
             filter_value=subnet_ext_id)
-        port_ext_id = self.nuage_vsd_client.get_vsd_external_id(port['id'])
-        nuage_vport = self.nuage_vsd_client.get_vport(
+        port_ext_id = self.nuage_client.get_vsd_external_id(port['id'])
+        nuage_vport = self.nuage_client.get_vport(
             n_constants.SUBNETWORK,
             nuage_subnet[0]['ID'],
             filters='externalID',
@@ -492,26 +492,26 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
             port, allowed_address_pairs[0]['ip_address'],
             allowed_address_pairs[0]['mac_address'])
         # Check VIP is created in VSD
-        l3domain_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        l3domain_ext_id = self.nuage_client.get_vsd_external_id(
             self.router['id'])
-        nuage_domain = self.nuage_vsd_client.get_resource(
+        nuage_domain = self.nuage_client.get_resource(
             n_constants.DOMAIN,
             filters='externalID',
             filter_value=l3domain_ext_id)
-        subnet_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        subnet_ext_id = self.nuage_client.get_vsd_external_id(
             port['fixed_ips'][0]['subnet_id'])
-        nuage_subnet = self.nuage_vsd_client.get_domain_subnet(
+        nuage_subnet = self.nuage_client.get_domain_subnet(
             n_constants.DOMAIN, nuage_domain[0]['ID'],
             filters='externalID', filter_value=subnet_ext_id)
-        port_ext_id = self.nuage_vsd_client.get_vsd_external_id(port['id'])
-        nuage_vport = self.nuage_vsd_client.get_vport(
+        port_ext_id = self.nuage_client.get_vsd_external_id(port['id'])
+        nuage_vport = self.nuage_client.get_vport(
             n_constants.SUBNETWORK,
             nuage_subnet[0]['ID'],
             filters='externalID',
             filter_value=port_ext_id)
         self.assertEqual(n_constants.INHERITED,
                          nuage_vport[0]['addressSpoofing'])
-        nuage_vip = self.nuage_vsd_client.get_virtual_ip(
+        nuage_vip = self.nuage_client.get_virtual_ip(
             n_constants.VPORT,
             nuage_vport[0]['ID'],
             filters='virtualIP',
@@ -519,7 +519,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         self.assertEqual(addrpair_port_1['mac_address'], nuage_vip[0]['MAC'])
         if Topology.within_ext_id_release():
             self.assertEqual(nuage_vip[0]['externalID'],
-                             self.nuage_vsd_client.get_vsd_external_id(
+                             self.nuage_client.get_vsd_external_id(
                                  port['id']))
         # Update the address pairs
         # Create port with allowed address pair attribute
@@ -535,15 +535,15 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
             port, addrpair_port_2['fixed_ips'][0]['ip_address'],
             addrpair_port_2['mac_address'])
         # Verify new VIP is created
-        port_ext_id = self.nuage_vsd_client.get_vsd_external_id(port['id'])
-        nuage_vport = self.nuage_vsd_client.get_vport(
+        port_ext_id = self.nuage_client.get_vsd_external_id(port['id'])
+        nuage_vport = self.nuage_client.get_vport(
             n_constants.SUBNETWORK,
             nuage_subnet[0]['ID'],
             filters='externalID',
             filter_value=port_ext_id)
         self.assertEqual(n_constants.INHERITED,
                          nuage_vport[0]['addressSpoofing'])
-        nuage_vip = self.nuage_vsd_client.get_virtual_ip(
+        nuage_vip = self.nuage_client.get_virtual_ip(
             n_constants.VPORT,
             nuage_vport[0]['ID'],
             filters='virtualIP',
@@ -551,10 +551,10 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         self.assertEqual(addrpair_port_2['mac_address'], nuage_vip[0]['MAC'])
         if Topology.within_ext_id_release():
             self.assertEqual(nuage_vip[0]['externalID'],
-                             self.nuage_vsd_client.get_vsd_external_id(
+                             self.nuage_client.get_vsd_external_id(
                                  port['id']))
         # Verify old VIP is deleted
-        nuage_vip = self.nuage_vsd_client.get_virtual_ip(
+        nuage_vip = self.nuage_client.get_virtual_ip(
             n_constants.VPORT,
             nuage_vport[0]['ID'],
             filters='virtualIP',
@@ -601,26 +601,26 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
             port, allowed_address_pairs[0]['ip_address'],
             allowed_address_pairs[0]['mac_address'])
         # Check VIP is created in VSD
-        l3domain_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        l3domain_ext_id = self.nuage_client.get_vsd_external_id(
             self.router['id'])
-        nuage_domain = self.nuage_vsd_client.get_resource(
+        nuage_domain = self.nuage_client.get_resource(
             n_constants.DOMAIN,
             filters='externalID',
             filter_value=l3domain_ext_id)
-        subnet_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        subnet_ext_id = self.nuage_client.get_vsd_external_id(
             port['fixed_ips'][0]['subnet_id'])
-        nuage_subnet = self.nuage_vsd_client.get_domain_subnet(
+        nuage_subnet = self.nuage_client.get_domain_subnet(
             n_constants.DOMAIN, nuage_domain[0]['ID'],
             filters='externalID', filter_value=subnet_ext_id)
-        port_ext_id = self.nuage_vsd_client.get_vsd_external_id(port['id'])
-        nuage_vport = self.nuage_vsd_client.get_vport(
+        port_ext_id = self.nuage_client.get_vsd_external_id(port['id'])
+        nuage_vport = self.nuage_client.get_vport(
             n_constants.SUBNETWORK,
             nuage_subnet[0]['ID'],
             filters='externalID',
             filter_value=port_ext_id)
         self.assertEqual(n_constants.INHERITED,
                          nuage_vport[0]['addressSpoofing'])
-        nuage_vip = self.nuage_vsd_client.get_virtual_ip(
+        nuage_vip = self.nuage_client.get_virtual_ip(
             n_constants.VPORT,
             nuage_vport[0]['ID'],
             filters='virtualIP',
@@ -628,7 +628,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         self.assertEqual(addrpair_port_1['mac_address'], nuage_vip[0]['MAC'])
         if Topology.within_ext_id_release():
             self.assertEqual(nuage_vip[0]['externalID'],
-                             self.nuage_vsd_client.get_vsd_external_id(
+                             self.nuage_client.get_vsd_external_id(
                                  port['id']))
         # Update the address pairs
         # Create port with allowed address pair attribute
@@ -654,7 +654,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
             addrpair_port_2['mac_address'])
         self.create_router_interface(
             self.router['id'], port['fixed_ips'][0]['subnet_id'])
-        nuage_subnet = self.nuage_vsd_client.get_domain_subnet(
+        nuage_subnet = self.nuage_client.get_domain_subnet(
             n_constants.DOMAIN, nuage_domain[0]['ID'],
             filters='externalID', filter_value=subnet_ext_id)
 
@@ -664,15 +664,15 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
             port, addrpair_port_2['fixed_ips'][0]['ip_address'],
             addrpair_port_2['mac_address'])
         # Verify new VIP is created
-        port_ext_id = self.nuage_vsd_client.get_vsd_external_id(port['id'])
-        nuage_vport = self.nuage_vsd_client.get_vport(
+        port_ext_id = self.nuage_client.get_vsd_external_id(port['id'])
+        nuage_vport = self.nuage_client.get_vport(
             n_constants.SUBNETWORK,
             nuage_subnet[0]['ID'],
             filters='externalID',
             filter_value=port_ext_id)
         self.assertEqual(n_constants.INHERITED,
                          nuage_vport[0]['addressSpoofing'])
-        nuage_vip = self.nuage_vsd_client.get_virtual_ip(
+        nuage_vip = self.nuage_client.get_virtual_ip(
             n_constants.VPORT,
             nuage_vport[0]['ID'],
             filters='virtualIP',
@@ -680,10 +680,10 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         self.assertEqual(addrpair_port_2['mac_address'], nuage_vip[0]['MAC'])
         if Topology.within_ext_id_release():
             self.assertEqual(nuage_vip[0]['externalID'],
-                             self.nuage_vsd_client.get_vsd_external_id(
+                             self.nuage_client.get_vsd_external_id(
                                  port['id']))
         # Verify old VIP is deleted
-        nuage_vip = self.nuage_vsd_client.get_virtual_ip(
+        nuage_vip = self.nuage_client.get_virtual_ip(
             n_constants.VPORT,
             nuage_vport[0]['ID'],
             filters='virtualIP',
@@ -741,28 +741,28 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         self.assertEqual(created_floating_ip['fixed_ip_address'],
                          addrpair_port['fixed_ips'][0]['ip_address'])
         # VSD validation of VIP to FIP association
-        l3dom_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        l3dom_ext_id = self.nuage_client.get_vsd_external_id(
             self.router['id'])
-        nuage_domain = self.nuage_vsd_client.get_l3domain(
+        nuage_domain = self.nuage_client.get_l3domain(
             filters='externalID',
             filter_value=l3dom_ext_id)
-        nuage_domain_fip = self.nuage_vsd_client.get_floatingip(
+        nuage_domain_fip = self.nuage_client.get_floatingip(
             n_constants.DOMAIN,
             nuage_domain[0]['ID'])
-        subnet_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        subnet_ext_id = self.nuage_client.get_vsd_external_id(
             port['fixed_ips'][0]['subnet_id'])
-        nuage_subnet = self.nuage_vsd_client.get_domain_subnet(
+        nuage_subnet = self.nuage_client.get_domain_subnet(
             n_constants.DOMAIN,
             nuage_domain[0]['ID'],
             filters='externalID',
             filter_value=subnet_ext_id)
-        port_ext_id = self.nuage_vsd_client.get_vsd_external_id(port['id'])
-        nuage_vport = self.nuage_vsd_client.get_vport(
+        port_ext_id = self.nuage_client.get_vsd_external_id(port['id'])
+        nuage_vport = self.nuage_client.get_vport(
             n_constants.SUBNETWORK,
             nuage_subnet[0]['ID'],
             filters='externalID',
             filter_value=port_ext_id)
-        nuage_vip = self.nuage_vsd_client.get_virtual_ip(
+        nuage_vip = self.nuage_client.get_virtual_ip(
             n_constants.VPORT, nuage_vport[0]['ID'],
             filters='virtualIP',
             filter_value=str(addrpair_port['fixed_ips'][0]['ip_address']))
@@ -772,7 +772,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
                          'virtualip')
         if Topology.within_ext_id_release():
             self.assertEqual(nuage_vip[0]['externalID'],
-                             self.nuage_vsd_client.get_vsd_external_id(
+                             self.nuage_client.get_vsd_external_id(
                                  port['id']))
         self.floating_ips_client.delete_floatingip(created_floating_ip['id'])
 
@@ -815,26 +815,26 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
                          show_body['router']['routes'][0]['nexthop'])
 
         # Check VIP is created in VSD
-        l3domain_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        l3domain_ext_id = self.nuage_client.get_vsd_external_id(
             self.router['id'])
-        nuage_domain = self.nuage_vsd_client.get_resource(
+        nuage_domain = self.nuage_client.get_resource(
             n_constants.DOMAIN,
             filters='externalID',
             filter_value=l3domain_ext_id)
-        subnet_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        subnet_ext_id = self.nuage_client.get_vsd_external_id(
             port['fixed_ips'][0]['subnet_id'])
-        nuage_subnet = self.nuage_vsd_client.get_domain_subnet(
+        nuage_subnet = self.nuage_client.get_domain_subnet(
             n_constants.DOMAIN, nuage_domain[0]['ID'],
             filters='externalID', filter_value=subnet_ext_id)
-        port_ext_id = self.nuage_vsd_client.get_vsd_external_id(port['id'])
-        nuage_vport = self.nuage_vsd_client.get_vport(
+        port_ext_id = self.nuage_client.get_vsd_external_id(port['id'])
+        nuage_vport = self.nuage_client.get_vport(
             n_constants.SUBNETWORK,
             nuage_subnet[0]['ID'],
             filters='externalID',
             filter_value=port_ext_id)
         self.assertEqual(n_constants.INHERITED,
                          nuage_vport[0]['addressSpoofing'])
-        nuage_vip = self.nuage_vsd_client.get_virtual_ip(
+        nuage_vip = self.nuage_client.get_virtual_ip(
             n_constants.VPORT,
             nuage_vport[0]['ID'],
             filters='virtualIP',
@@ -842,10 +842,10 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         self.assertEqual(addrpair_port['mac_address'], nuage_vip[0]['MAC'])
         if Topology.within_ext_id_release():
             self.assertEqual(nuage_vip[0]['externalID'],
-                             self.nuage_vsd_client.get_vsd_external_id(
+                             self.nuage_client.get_vsd_external_id(
                                  port['id']))
         # Check static roues on VSD
-        nuage_static_route = self.nuage_vsd_client.get_staticroute(
+        nuage_static_route = self.nuage_client.get_staticroute(
             parent=n_constants.DOMAIN, parent_id=nuage_domain[0]['ID'])
         self.assertEqual(
             nuage_static_route[0][u'nextHopIp'], next_hop, "wrong nexthop")

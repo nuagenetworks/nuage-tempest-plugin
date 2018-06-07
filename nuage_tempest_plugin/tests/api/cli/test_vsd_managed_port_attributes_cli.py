@@ -80,7 +80,7 @@ class VSDManagedRedirectTargetCliTest(
         os_redirect_target = nuage_redirect_target
         # And, as I do not trus the VSD, I expect the redirect-target
         # to be present in the VSD as well ;-)
-        vsd_redirect_target = self.nuage_vsd_client.get_redirection_target(
+        vsd_redirect_target = self.nuage_client.get_redirection_target(
             constants.L2_DOMAIN, vsd_l2_subnet[0]['ID'], filters='ID',
             filter_value=nuage_redirect_target['id'])
         self.assertNotEmpty(vsd_redirect_target,
@@ -112,7 +112,7 @@ class VSDManagedRedirectTargetCliTest(
                          message="Deleted nuage_redirect_target still "
                                  "present in subnet")
         # And the reditrect-target is also deleted on the VSD
-        vsd_redirect_target = self.nuage_vsd_client.get_redirection_target(
+        vsd_redirect_target = self.nuage_client.get_redirection_target(
             constants.L2_DOMAIN, vsd_l2_subnet[0]['ID'], filters='ID',
             filter_value=nuage_redirect_target['id'])
         self.assertEqual(vsd_redirect_target, '')
@@ -126,7 +126,7 @@ class VSDManagedRedirectTargetCliTest(
             vsd_l2_subnet)
         # When I create a redirection-target in the VSD-L2-Managed-Subnet
         # on the VSD
-        vsd_redirect_target = self.nuage_vsd_client.create_l2_redirect_target(
+        vsd_redirect_target = self.nuage_client.create_l2_redirect_target(
             vsd_l2_subnet[0]['ID'], data_utils.rand_name("vsd-rt"))
         # Fetch this redircet_target in OS, as this structure is used through
         # the test
@@ -163,7 +163,7 @@ class VSDManagedRedirectTargetCliTest(
                          message="Deleteed nuage_redirect_target still "
                                  "present in subnet")
         # Verifying RT is deleted from VSD
-        vsd_redirect_target = self.nuage_vsd_client.get_redirection_target(
+        vsd_redirect_target = self.nuage_client.get_redirection_target(
             constants.L2_DOMAIN, vsd_l2_subnet[0]['ID'], filters='ID',
             filter_value=vsd_redirect_target[0]['ID'])
         self.assertEqual(vsd_redirect_target, '')
@@ -183,7 +183,7 @@ class VSDManagedRedirectTargetCliTest(
                 self._cli_create_nuage_redirect_target_in_l2_subnet(
                     cli_subnet))
             vsd_redirect_target = \
-                self.nuage_vsd_client.create_l2_redirect_target(
+                self.nuage_client.create_l2_redirect_target(
                     vsd_l2_subnet[0]['ID'], data_utils.rand_name("vsd-rt"))
             # Fetch this redirect_target in OS, as this structure is used
             # through the test
@@ -231,12 +231,12 @@ class VSDManagedRedirectTargetCliTest(
                              message="Deleted nuage_redirect_target still "
                                      "present in subnet")
             # And the redirect-target on VSD is also gone
-            vsd_redirect_target = self.nuage_vsd_client.get_redirection_target(
+            vsd_redirect_target = self.nuage_client.get_redirection_target(
                 constants.L2_DOMAIN, vsd_l2_subnet[0]['ID'], filters='ID',
                 filter_value=os_redirect_targets[i]['id'])
             self.assertEqual(vsd_redirect_target, '')
             # When I delete the VSD created redirect-target
-            self.nuage_vsd_client.delete_redirect_target(
+            self.nuage_client.delete_redirect_target(
                 vsd_redirect_targets[i]['nuage_redirect_target']['id'])
             # Then I expect the redirect_target to be gone from my list
             my_vsd_rt_found = self._cli_find_redirect_target_in_list(
@@ -245,7 +245,7 @@ class VSDManagedRedirectTargetCliTest(
                              message="Deleted nuage_redirect_target still "
                                      "present in subnet")
             # And the redirect-target on VSD is also gone
-            vsd_redirect_target = self.nuage_vsd_client.get_redirection_target(
+            vsd_redirect_target = self.nuage_client.get_redirection_target(
                 constants.L2_DOMAIN, vsd_l2_subnet[0]['ID'], filters='ID',
                 filter_value=vsd_redirect_targets[i][
                     'nuage_redirect_target']['id'])
@@ -267,7 +267,7 @@ class VSDManagedRedirectTargetCliTest(
         self.assertTrue(my_rt_found,
                         "Did not find my redirect-target in the list")
         # check on VSD
-        vsd_redirect_target = self.nuage_vsd_client.get_redirection_target(
+        vsd_redirect_target = self.nuage_client.get_redirection_target(
             constants.DOMAIN, vsd_l3_domain[0]['ID'], filters='ID',
             filter_value=os_redirect_target['id'])
         self.assertIsNotNone(vsd_redirect_target,
@@ -299,7 +299,7 @@ class VSDManagedRedirectTargetCliTest(
                          message="Deleted nuage_redirect_target still "
                                  "present in subnet")
         # And the redirect target on VSD is gone as well
-        vsd_redirect_target = self.nuage_vsd_client.get_redirection_target(
+        vsd_redirect_target = self.nuage_client.get_redirection_target(
             constants.DOMAIN, vsd_l3_domain[0]['ID'], filters='ID',
             filter_value=os_redirect_target['id'])
         self.assertEqual(vsd_redirect_target, '')
@@ -312,7 +312,7 @@ class VSDManagedRedirectTargetCliTest(
             vsd_l3_subnet)
         #  When I create a redirection-target in the VSD-L2-Managed-Subnet
         # on the VSD
-        vsd_redirect_target = self.nuage_vsd_client.create_l3_redirect_target(
+        vsd_redirect_target = self.nuage_client.create_l3_redirect_target(
             vsd_l3_domain[0]['ID'], data_utils.rand_name("vsd-rt"))
         # Fetch this redirect_target in OS, as this structure is used
         # through the test
@@ -349,7 +349,7 @@ class VSDManagedRedirectTargetCliTest(
                          message="Deleted nuage_redirect_target still "
                                  "present in subnet")
         # Verifying RT is deleted from VSD
-        vsd_redirect_target = self.nuage_vsd_client.get_redirection_target(
+        vsd_redirect_target = self.nuage_client.get_redirection_target(
             constants.DOMAIN, vsd_l3_domain[0]['ID'], filters='ID',
             filter_value=vsd_redirect_target[0]['ID'])
         self.assertEqual(vsd_redirect_target, '')
@@ -370,7 +370,7 @@ class VSDManagedRedirectTargetCliTest(
                 self._cli_create_nuage_redirect_target_in_l3_subnet(
                     cli_subnet))
             vsd_redirect_target = \
-                self.nuage_vsd_client.create_l3_redirect_target(
+                self.nuage_client.create_l3_redirect_target(
                     vsd_l3_domain[0]['ID'], data_utils.rand_name("vsd-l3-rt"))
             # Fetch this redirect_target in OS, as this strucutre is used
             # through the test
@@ -420,14 +420,14 @@ class VSDManagedRedirectTargetCliTest(
                              message="Deleted nuage_redirect_target still "
                                      "present in subnet")
             # And the redirect-target on VSD is also gone
-            vsd_redirect_target = self.nuage_vsd_client.get_redirection_target(
+            vsd_redirect_target = self.nuage_client.get_redirection_target(
                 constants.DOMAIN, vsd_l3_domain[0]['ID'], filters='ID',
                 filter_value=os_redirect_targets[i]['id'])
             self.assertEqual(vsd_redirect_target, '')
             # When I delete the VSD created redirect-target
             self.delete_redirect_target(vsd_redirect_targets[i][
                                         'nuage_redirect_target']['id'])
-            # self.nuage_vsd_client.delete_redirect_target(
+            # self.nuage_client.delete_redirect_target(
             #     vsd_redirect_targets[i]['nuage_redirect_target']['id'])
             # Then I expect the redirect_target to be gone from my list
             my_vsd_rt_found = self._cli_find_redirect_target_in_list(
@@ -436,7 +436,7 @@ class VSDManagedRedirectTargetCliTest(
                              message="Deleted nuage_redirect_target still "
                                      "present in subnet")
             # And the redirect-target on VSD is also gone
-            vsd_redirect_target = self.nuage_vsd_client.get_redirection_target(
+            vsd_redirect_target = self.nuage_client.get_redirection_target(
                 constants.DOMAIN, vsd_l3_domain[0]['ID'], filters='ID',
                 filter_value=vsd_redirect_targets[i][
                     'nuage_redirect_target']['id'])
@@ -622,7 +622,7 @@ class VSDManagedRedirectTargetCliTest(
         # VSD-L2-Managed-Subnet
         for i in range(2):
             vsd_redirect_target = \
-                self.nuage_vsd_client.create_l2_redirect_target(
+                self.nuage_client.create_l2_redirect_target(
                     vsd_l2_subnet[0]['ID'], data_utils.rand_name("vsd-rt"))
             # Fetch this redirect_target in OS, as this structure is used
             # through the test
@@ -668,7 +668,7 @@ class VSDManagedPolicyGroupsCLITest(
         vsd_l2_subnet, l2_domtmpl = self._create_vsd_l2_managed_subnet()
         cli_network, cli_subnet = self._cli_create_os_l2_vsd_managed_subnet(
             vsd_l2_subnet)
-        policy_group = self.nuage_vsd_client.create_policygroup(
+        policy_group = self.nuage_client.create_policygroup(
             constants.L2_DOMAIN,
             vsd_l2_subnet[0]['ID'],
             name='cli-myVSDpg-1',
@@ -718,7 +718,7 @@ class VSDManagedPolicyGroupsCLITest(
             vsd_l2_subnet)
         # And I have multiple policy_groups
         for i in range(SEVERAL_POLICY_GROUPS):
-            policy_groups.append(self.nuage_vsd_client.create_policygroup(
+            policy_groups.append(self.nuage_client.create_policygroup(
                 constants.L2_DOMAIN,
                 vsd_l2_subnet[0]['ID'],
                 name='myVSDpg-%s' % i,
@@ -780,7 +780,7 @@ class VSDManagedPolicyGroupsCLITest(
         vsd_l2_subnet_x, l2dom_templ_x = self._create_vsd_l2_managed_subnet()
         cli_network_x, cli_subnet_x = \
             self._cli_create_os_l2_vsd_managed_subnet(vsd_l2_subnet_x)
-        policy_group_x = self.nuage_vsd_client.create_policygroup(
+        policy_group_x = self.nuage_client.create_policygroup(
             constants.L2_DOMAIN,
             vsd_l2_subnet_x[0]['ID'],
             name='myVSDpg-X',
@@ -789,7 +789,7 @@ class VSDManagedPolicyGroupsCLITest(
         vsd_l2_subnet_y, l2dom_templ_y = self._create_vsd_l2_managed_subnet()
         cli_network_y, cli_subnet_y = \
             self._cli_create_os_l2_vsd_managed_subnet(vsd_l2_subnet_y)
-        policy_group_y = self.nuage_vsd_client.create_policygroup(
+        policy_group_y = self.nuage_client.create_policygroup(
             constants.L2_DOMAIN,
             vsd_l2_subnet_y[0]['ID'],
             name='myVSDpg-2',
@@ -837,7 +837,7 @@ class VSDManagedPolicyGroupsCLITest(
         vsd_l3_subnet_x, vsd_l3_domain_x = self._create_vsd_l3_managed_subnet()
         cli_network_x, cli_subnet_x = \
             self._cli_create_os_l3_vsd_managed_subnet(vsd_l3_subnet_x)
-        policy_group_x = self.nuage_vsd_client.create_policygroup(
+        policy_group_x = self.nuage_client.create_policygroup(
             constants.DOMAIN,
             vsd_l3_domain_x[0]['ID'],
             name='myVSD-L3-pg-X',
@@ -846,7 +846,7 @@ class VSDManagedPolicyGroupsCLITest(
         vsd_l3_subnet_y, vsd_l3_domain_y = self._create_vsd_l3_managed_subnet()
         cli_network_y, cli_subnet_y = \
             self._cli_create_os_l3_vsd_managed_subnet(vsd_l3_subnet_y)
-        policy_group_y = self.nuage_vsd_client.create_policygroup(
+        policy_group_y = self.nuage_client.create_policygroup(
             constants.DOMAIN,
             vsd_l3_domain_y[0]['ID'],
             name='myVSD-L3-pg-Y',
@@ -901,7 +901,7 @@ class VSDManagedPolicyGroupsCLITest(
             self._cli_create_os_l3_vsd_managed_subnet(vsd_l3_subnet)
         # And I have multiple policy_groups
         for i in range(SEVERAL_POLICY_GROUPS):
-            policy_groups.append(self.nuage_vsd_client.create_policygroup(
+            policy_groups.append(self.nuage_client.create_policygroup(
                 constants.DOMAIN,
                 vsd_l3_domain[0]['ID'],
                 name='my-L3-VSDpg-%s' % i,
@@ -964,7 +964,7 @@ class VSDManagedPolicyGroupsCLITest(
         vsd_l2_subnet, l2_domtmpl = self._create_vsd_l2_managed_subnet()
         cli_network, cli_subnet = \
             self._cli_create_os_l2_vsd_managed_subnet(vsd_l2_subnet)
-        policy_group = self.nuage_vsd_client.create_policygroup(
+        policy_group = self.nuage_client.create_policygroup(
             constants.L2_DOMAIN,
             vsd_l2_subnet[0]['ID'],
             name='myVSDpg-1',
@@ -976,7 +976,7 @@ class VSDManagedPolicyGroupsCLITest(
         # # And I have a redirect target
         # os_redirect_target = \
         #     self._cli_create_nuage_redirect_target_in_l2_subnet(cli_subnet)
-        # advfw_template = self.nuage_vsd_client.create_advfwd_entrytemplate(
+        # advfw_template = self.nuage_client.create_advfwd_entrytemplate(
         #     constants.L2_DOMAIN,
         #     vsd_l2_subnet[0]['ID']
         # )
@@ -1045,9 +1045,9 @@ class VSDManagedAllowedAddresPairsCLITest(
             aap_fixed_ip,
             addrpair_port['mac_address'])
         # And no corresponding MultiVIP on the VSD
-        port_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        port_ext_id = self.nuage_client.get_vsd_external_id(
             addrpair_port['id'])
-        nuage_vport = self.nuage_vsd_client.get_vport(
+        nuage_vport = self.nuage_client.get_vport(
             constants.L2_DOMAIN,
             vsd_l2_subnet[0]['ID'],
             filters='externalID',
@@ -1094,9 +1094,9 @@ class VSDManagedAllowedAddresPairsCLITest(
         self.cli_check_show_port_allowed_address_fields(
             show_port, aap_fixed_ip, VALID_MAC_ADDRESS)
         # And no corresponding MultiVIP on the VSD
-        port_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        port_ext_id = self.nuage_client.get_vsd_external_id(
             addrpair_port['id'])
-        nuage_vport = self.nuage_vsd_client.get_vport(
+        nuage_vport = self.nuage_client.get_vport(
             constants.L2_DOMAIN,
             vsd_l2_subnet[0]['ID'],
             filters='externalID',
@@ -1141,9 +1141,9 @@ class VSDManagedAllowedAddresPairsCLITest(
         self.cli_check_show_port_allowed_address_fields(
             show_port, aap_fixed_ip, addrpair_port['mac_address'])
         # And no corresponding MultiVIP on the VSD
-        port_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        port_ext_id = self.nuage_client.get_vsd_external_id(
             addrpair_port['id'])
-        nuage_vport = self.nuage_vsd_client.get_vport(
+        nuage_vport = self.nuage_client.get_vport(
             constants.SUBNETWORK,
             vsd_l3_subnet[0]['ID'],
             filters='externalID',
@@ -1189,9 +1189,9 @@ class VSDManagedAllowedAddresPairsCLITest(
         self.cli_check_show_port_allowed_address_fields(
             show_port, aap_fixed_ip, VALID_MAC_ADDRESS)
         # And no corresponding MultiVIP on the VSD
-        port_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        port_ext_id = self.nuage_client.get_vsd_external_id(
             addrpair_port['id'])
-        nuage_vport = self.nuage_vsd_client.get_vport(
+        nuage_vport = self.nuage_client.get_vport(
             constants.SUBNETWORK,
             vsd_l3_subnet[0]['ID'],
             filters='externalID',
@@ -1239,7 +1239,7 @@ class VSDManagedAssociateFIPCLITest(
         cli_network, cli_subnet = self._cli_create_os_l3_vsd_managed_subnet(
             vsd_l3_subnet)
         # And I have claimed a VSD-FloatingIP in the VSD-L3-Domain
-        claimed_fip = self.nuage_vsd_client.claim_floatingip(
+        claimed_fip = self.nuage_client.claim_floatingip(
             vsd_l3_domain[0]['ID'], vsd_fip_pool[0]['ID'])
         # When I retrieve the nuage-floatingIP-list of the
         # VSD-L3-Managed-Subnet
@@ -1288,7 +1288,7 @@ class VSDManagedAssociateFIPCLITest(
             vsd_l3_subnet)
         # And I have claimed several VSD-FloatingIP in the VSD-L3-Domain
         for i in range(SEVERAL_VSD_CLAIMED_FIPS):
-            claimed_fip = self.nuage_vsd_client.claim_floatingip(
+            claimed_fip = self.nuage_client.claim_floatingip(
                 vsd_l3_domain[0]['ID'], vsd_fip_pool[0]['ID'])
             claimed_fips.append(claimed_fip)
         # When I retrieve the nuage-floatingIP-list of the
@@ -1350,9 +1350,9 @@ class VSDManagedAssociateFIPCLITest(
             self._cli_create_os_l3_vsd_managed_subnet(
                 vsd_l3_subnet_y,
                 cidr=base_vsd_managed_port_attributes.VSD_SECOND_SUBNET_CIDR)
-        claimed_fip_x = self.nuage_vsd_client.claim_floatingip(
+        claimed_fip_x = self.nuage_client.claim_floatingip(
             vsd_l3_domain[0]['ID'], vsd_fip_pool[0]['ID'])
-        claimed_fip_y = self.nuage_vsd_client.claim_floatingip(
+        claimed_fip_y = self.nuage_client.claim_floatingip(
             vsd_l3_domain[0]['ID'], vsd_fip_pool[0]['ID'])
 
         # When I retrieve the nuage-floatingip-list from
@@ -1461,14 +1461,14 @@ class VSDManagedAssociateFIPCLITest(
         vsd_l3_subnet_x, vsd_l3_domain_x = self._create_vsd_l3_managed_subnet()
         cli_network_x, cli_subnet_x = \
             self._cli_create_os_l3_vsd_managed_subnet(vsd_l3_subnet_x)
-        claimed_fip_x = self.nuage_vsd_client.claim_floatingip(
+        claimed_fip_x = self.nuage_client.claim_floatingip(
             vsd_l3_domain_x[0]['ID'], vsd_fip_pool[0]['ID'])
         # And I have claimed a VSD-FloatingIP-Y in VD-L3-Managed-Subnet-Y
         # And they are in different VSD-L3-domains
         vsd_l3_subnet_y, vsd_l3_domain_y = self._create_vsd_l3_managed_subnet()
         cli_network_y, cli_subnet_y = \
             self._cli_create_os_l3_vsd_managed_subnet(vsd_l3_subnet_y)
-        claimed_fip_y = self.nuage_vsd_client.claim_floatingip(
+        claimed_fip_y = self.nuage_client.claim_floatingip(
             vsd_l3_domain_y[0]['ID'], vsd_fip_pool[0]['ID'])
         # When I retrieve the nuage-floatingip-list from
         # VSD-L3-Managed-Subnet-X
@@ -1523,7 +1523,7 @@ class VSDManagedAssociateFIPCLITest(
         cli_network, cli_subnet = \
             self._cli_create_os_l3_vsd_managed_subnet(vsd_l3_subnet)
         # And I have claimed a VSD-FloatingIP in the VSD-L3-Domain
-        claimed_fip = self.nuage_vsd_client.claim_floatingip(
+        claimed_fip = self.nuage_client.claim_floatingip(
             vsd_l3_domain[0]['ID'], vsd_fip_pool[0]['ID'])
         # When I retrieve the nuage-floatingIP-list of the
         # VSD-L3-Managed-Subnet

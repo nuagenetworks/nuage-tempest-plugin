@@ -23,7 +23,7 @@ from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 from nuage_tempest_plugin.tests.api.vsd_managed \
-    import base_vsd_managed_network as base_vsdman
+    import base_vsd_managed_networks as base_vsdman
 
 from tempest.api.network import base
 from tempest.lib.common.utils import data_utils
@@ -36,47 +36,47 @@ LOG = Topology.get_logger(__name__)
 
 
 class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
-                           base_vsdman.BaseVSDManagedNetworksTest):
+                           base_vsdman.BaseVSDManagedNetwork):
     _interface = 'json'
 
     @classmethod
     def create_gateway(cls, personality):
         name = rand_name('tempest-gw')
-        gw = cls.nuage_vsd_client.create_gateway(
+        gw = cls.nuage_client.create_gateway(
             name, str(uuid.uuid4()), personality, None)
         return gw
 
     @classmethod
     def create_gateway_port(cls, gw):
         name = rand_name('tempest-gw-port')
-        gw_port = cls.nuage_vsd_client.create_gateway_port(
+        gw_port = cls.nuage_client.create_gateway_port(
             name, 'test', 'ACCESS', gw[0]['ID'])
         return gw_port
 
     @classmethod
     def create_gateway_vlan(cls, gw_port, value):
-        gw_port = cls.nuage_vsd_client.create_gateway_vlan(
+        gw_port = cls.nuage_client.create_gateway_vlan(
             gw_port[0]['ID'], 'test', value)
         return gw_port
 
     @classmethod
     def create_redundancy_group(cls, gw1, gw2):
         rdn_grp_name = rand_name('rd-grp')
-        rdn_grp = cls.nuage_vsd_client.create_redundancy_group(
+        rdn_grp = cls.nuage_client.create_redundancy_group(
             rdn_grp_name, gw1[0]['ID'], gw2[0]['ID'])
         return rdn_grp
 
     @classmethod
     def create_vrsg_redundancy_ports(cls, rd_grp):
         name = rand_name('tempest-gw-vrsg-rd-port')
-        gw_port = cls.nuage_vsd_client.create_vrsg_redundancy_ports(
+        gw_port = cls.nuage_client.create_vrsg_redundancy_ports(
             name, 'test', 'ACCESS', rd_grp[0]['ID'])
         return gw_port
 
     @classmethod
     def create_vsg_redundancy_ports(cls, gw_1_port, gw_2_port, rdn_grp):
         name = rand_name('tempest-gw-vsg-rd-port')
-        gw_port = cls.nuage_vsd_client.create_vsg_redundancy_ports(
+        gw_port = cls.nuage_client.create_vsg_redundancy_ports(
             name, 'test', 'ACCESS',
             gw_1_port[0]['ID'],
             gw_2_port[0]['ID'], rdn_grp)
@@ -84,7 +84,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
 
     @classmethod
     def create_vsg_redundancy_vlans(cls, rd_port, value):
-        gw_vlan = cls.nuage_vsd_client.create_vsg_redundancy_vlans(
+        gw_vlan = cls.nuage_client.create_vsg_redundancy_vlans(
             rd_port[0]['ID'], 'test', value)
         return gw_vlan
 
@@ -118,9 +118,9 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
 
             if personality == 'VSG':
                 name = 'rd-gw-port-vsg'
-                gw_1_port = cls.nuage_vsd_client.create_gateway_port(
+                gw_1_port = cls.nuage_client.create_gateway_port(
                     name, 'test', 'ACCESS', gw1[0]['ID'])
-                gw_2_port = cls.nuage_vsd_client.create_gateway_port(
+                gw_2_port = cls.nuage_client.create_gateway_port(
                     name, 'test', 'ACCESS', gw2[0]['ID'])
                 cls.rdn_gw_ports_vsg.append(gw_1_port)
                 cls.rdn_gw_ports_vsg.append(gw_2_port)
@@ -137,7 +137,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
 
             if personality == 'VSG':
                 name = 'rd-gw-port-vsg'
-                gw_port = cls.nuage_vsd_client.create_vsg_redundancy_ports(
+                gw_port = cls.nuage_client.create_vsg_redundancy_ports(
                     name, 'test', 'ACCESS',
                     gw_1_port[0]['ID'],
                     gw_2_port[0]['ID'], rdn_grp)
@@ -152,7 +152,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
 
         for port in cls.rdn_gw_ports_vrsg:
             try:
-                cls.nuage_vsd_client.delete_gateway_port(port[0]['ID'])
+                cls.nuage_client.delete_gateway_port(port[0]['ID'])
             except Exception as exc:
                 LOG.exception(exc)
                 has_exception = True
@@ -162,7 +162,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
 
         for port in cls.rdn_gw_ports_vsg_combn:
             try:
-                cls.nuage_vsd_client.delete_vsg_redundancy_ports(port[0]['ID'])
+                cls.nuage_client.delete_vsg_redundancy_ports(port[0]['ID'])
             except Exception as exc:
                 LOG.exception(exc)
                 has_exception = True
@@ -172,7 +172,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
 
         for port in cls.rdn_gw_ports_vsg:
             try:
-                cls.nuage_vsd_client.delete_gateway_port(port[0]['ID'])
+                cls.nuage_client.delete_gateway_port(port[0]['ID'])
             except Exception as exc:
                 LOG.exception(exc)
                 has_exception = True
@@ -182,7 +182,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
 
         for grp in cls.rdn_groups:
             try:
-                cls.nuage_vsd_client.delete_redundancy_group(grp[0]['ID'])
+                cls.nuage_client.delete_redundancy_group(grp[0]['ID'])
             except Exception as exc:
                 LOG.exception(exc)
                 has_exception = True
@@ -192,7 +192,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
 
         for gateway in cls.rdn_gateways:
             try:
-                cls.nuage_vsd_client.delete_gateway(gateway[0]['ID'])
+                cls.nuage_client.delete_gateway(gateway[0]['ID'])
             except Exception as exc:
                 LOG.exception(exc)
                 has_exception = True
@@ -203,7 +203,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
     @classmethod
     def setup_clients(cls):
         super(NuageGatewayTestJSON, cls).setup_clients()
-        cls.nuage_vsd_client = NuageRestClient()
+        cls.nuage_client = NuageRestClient()
         # Overriding cls.client with Nuage network client
         cls.client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
@@ -259,23 +259,23 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
         cls.nondef_netpart = netpart_body['net_partition']
         cls.nondef_network = cls.create_network()
         name = data_utils.rand_name('l3domain-')
-        cls.nondef_vsd_l3dom_tmplt = cls.nuageclient.create_l3domaintemplate(
+        cls.nondef_vsd_l3dom_tmplt = cls.nuage_client.create_l3domaintemplate(
             name=name, netpart_name=cls.nondef_netpart['name'])
 
         l3dom_extra_params = {'tunnelType': 'VXLAN'}
-        cls.nondef_vsd_l3dom = cls.nuageclient.create_domain(
+        cls.nondef_vsd_l3dom = cls.nuage_client.create_domain(
             name,
             cls.nondef_vsd_l3dom_tmplt[0]['ID'],
             netpart_name=cls.nondef_netpart['name'],
             extra_params=l3dom_extra_params)
-        cls.vsd_l3domain.append(cls.nondef_vsd_l3dom)
+        cls.vsd_l3domains.append(cls.nondef_vsd_l3dom)
 
         zonename = data_utils.rand_name('l3dom-zone-')
         vsd_zone = cls.create_vsd_zone(name=zonename,
                                        domain_id=cls.nondef_vsd_l3dom[0]['ID'])
         subname = data_utils.rand_name('l3dom-sub-')
         l2domain_extra_params = {'net_partition': cls.nondef_netpart['name']}
-        vsd_domain_subnet = cls.nuageclient.create_domain_subnet(
+        vsd_domain_subnet = cls.nuage_client.create_domain_subnet(
             name=subname,
             parent_id=vsd_zone[0]['ID'],
             net_address='20.20.200.0',
@@ -299,12 +299,12 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
         for vport in cls.gatewayvports:
             try:
                 if vport['type'] == n_constants.HOST_VPORT:
-                    cls.nuage_vsd_client.delete_host_interface(
+                    cls.nuage_client.delete_host_interface(
                         vport['interface'])
                 elif vport['type'] == n_constants.BRIDGE_VPORT:
-                    cls.nuage_vsd_client.delete_bridge_interface(
+                    cls.nuage_client.delete_bridge_interface(
                         vport['interface'])
-                cls.nuage_vsd_client.delete_host_vport(vport['id'])
+                cls.nuage_client.delete_host_vport(vport['id'])
             except Exception as exc:
                 LOG.exception(exc)
                 has_exception = True
@@ -318,8 +318,8 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
                     vlan_id = vlan['id']
                 else:
                     vlan_id = vlan[0]['ID']
-                cls.nuage_vsd_client.delete_vlan_permission(vlan_id)
-                cls.nuage_vsd_client.delete_gateway_vlan(vlan_id)
+                cls.nuage_client.delete_vlan_permission(vlan_id)
+                cls.nuage_client.delete_gateway_vlan(vlan_id)
             except Exception as exc:
                 LOG.exception(exc)
                 has_exception = True
@@ -329,7 +329,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
 
         for port in cls.gatewayports:
             try:
-                cls.nuage_vsd_client.delete_gateway_port(port[0]['ID'])
+                cls.nuage_client.delete_gateway_port(port[0]['ID'])
             except Exception as exc:
                 LOG.exception(exc)
                 has_exception = True
@@ -339,7 +339,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
 
         for gateway in cls.gateways:
             try:
-                cls.nuage_vsd_client.delete_gateway(gateway[0]['ID'])
+                cls.nuage_client.delete_gateway(gateway[0]['ID'])
             except Exception as exc:
                 LOG.exception(exc)
                 has_exception = True
@@ -371,7 +371,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
             external_id = (expected_vlan['gatewayport'] + "." +
                            str(expected_vlan['value']))
             self.assertEqual(actual_vlan['externalID'],
-                             self.nuage_vsd_client.get_vsd_external_id(
+                             self.nuage_client.get_vsd_external_id(
                                  external_id))
 
     def verify_vport_properties(self, actual_vport, expected_vport):
@@ -381,11 +381,11 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
         if Topology.within_ext_id_release():
             if expected_vport['type'] == n_constants.BRIDGE_VPORT:
                 self.assertEqual(actual_vport['externalID'],
-                                 self.nuage_vsd_client.get_vsd_external_id(
+                                 self.nuage_client.get_vsd_external_id(
                                      expected_vport['subnet']))
             else:
                 self.assertEqual(actual_vport['externalID'],
-                                 self.nuage_vsd_client.get_vsd_external_id(
+                                 self.nuage_client.get_vsd_external_id(
                                      expected_vport['port']))
 
     @decorators.attr(type='smoke')
@@ -489,7 +489,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
     @decorators.attr(type='smoke')
     def test_show_gateway_port_by_gateway_name(self):
         for gw_port in self.gatewayports:
-            gateway = self.nuage_vsd_client.get_global_gateways(
+            gateway = self.nuage_client.get_global_gateways(
                 filters='ID', filter_value=gw_port[0]['parentID'])
             body = self.admin_client.show_gateway_ports_by_gateway_name(
                 gw_port[0]['name'], gateway[0]['name'])
@@ -506,12 +506,12 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
         self.assertIsNotNone(vlan)
 
         if gw_type == 'non-redundant':
-            gw_vlan = self.nuage_vsd_client.get_gateway_vlan(
+            gw_vlan = self.nuage_client.get_gateway_vlan(
                 n_constants.GATEWAY_PORT, gw_port[0]['ID'],
                 filters='value',
                 filter_value=900)
         else:
-            gw_vlan = self.nuage_vsd_client.get_gateway_vlan(
+            gw_vlan = self.nuage_client.get_gateway_vlan(
                 n_constants.VSG_REDUNDANT_PORTS, gw_port[0]['ID'],
                 filters='value',
                 filter_value=900)
@@ -543,12 +543,12 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
 
         # Get the vlan
         if gw_type == 'non-redundant':
-            gw_vlan = self.nuage_vsd_client.get_gateway_vlan(
+            gw_vlan = self.nuage_client.get_gateway_vlan(
                 n_constants.GATEWAY_PORT, gw_port[0]['ID'],
                 filters='value',
                 filter_value=211)
         else:
-            gw_vlan = self.nuage_vsd_client.get_gateway_vlan(
+            gw_vlan = self.nuage_client.get_gateway_vlan(
                 n_constants.VSG_REDUNDANT_PORTS, gw_port[0]['ID'],
                 filters='value',
                 filter_value=211)
@@ -562,12 +562,12 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
         # Verify in VSD
         # Get the vlan
         if gw_type == 'non-redundant':
-            gw_vlan = self.nuage_vsd_client.get_gateway_vlan(
+            gw_vlan = self.nuage_client.get_gateway_vlan(
                 n_constants.GATEWAY_PORT, gw_port[0]['ID'],
                 filters='value',
                 filter_value=211)
         else:
-            gw_vlan = self.nuage_vsd_client.get_gateway_vlan(
+            gw_vlan = self.nuage_client.get_gateway_vlan(
                 n_constants.VSG_REDUNDANT_PORTS, gw_port[0]['ID'],
                 filters='value',
                 filter_value=211)
@@ -617,7 +617,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
         gw_vlan = self.gatewayvlans[0]
         gw_port = self.gatewayports[0]
         self.assertIsNotNone(gw_port)
-        gateway = self.nuage_vsd_client.get_global_gateways(
+        gateway = self.nuage_client.get_global_gateways(
             filters='ID',
             filter_value=gw_vlan[0]['gatewayID'])
         # Get the vlan
@@ -648,7 +648,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
     @decorators.attr(type='smoke')
     def test_list_vlan_by_admin_tenant_by_name(self):
         gw_port = self.gatewayports[0]
-        gateway = self.nuage_vsd_client.get_global_gateways(
+        gateway = self.nuage_client.get_global_gateways(
             filters='ID', filter_value=gw_port[0]['parentID'])
         gatway_port = gw_port[0]['name']
         body = self.admin_client.list_gateway_vlans_by_name(
@@ -713,12 +713,12 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
         # Get the vlan
 
         if gw_type == 'non-redundant':
-            gw_vlan = self.nuage_vsd_client.get_gateway_vlan(
+            gw_vlan = self.nuage_client.get_gateway_vlan(
                 n_constants.GATEWAY_PORT, gw_port[0]['ID'],
                 filters='value',
                 filter_value=210)
         else:
-            gw_vlan = self.nuage_vsd_client.get_gateway_vlan(
+            gw_vlan = self.nuage_client.get_gateway_vlan(
                 n_constants.VSG_REDUNDANT_PORTS, gw_port[0]['ID'],
                 filters='value',
                 filter_value=210)
@@ -734,12 +734,12 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
         body = self.admin_client.assign_gateway_vlan(
             vlan['id'], **kwargs)
         self.assertIsNotNone(body)
-        vlan_ent_permission = self.nuage_vsd_client.get_vlan_permission(
+        vlan_ent_permission = self.nuage_client.get_vlan_permission(
             n_constants.VLAN, vlan['id'], n_constants.ENTERPRISE_PERMS)
         self.assertEqual(vlan_ent_permission[0]['permittedEntityName'],
                          Topology.def_netpartition)
 
-        vlan_permission = self.nuage_vsd_client.get_vlan_permission(
+        vlan_permission = self.nuage_client.get_vlan_permission(
             n_constants.VLAN, vlan['id'], n_constants.PERMIT_ACTION)
         self.assertEqual(vlan_permission[0]['permittedEntityName'],
                          self.client.tenant_id)
@@ -752,11 +752,11 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
         body = self.admin_client.assign_gateway_vlan(
             vlan['id'], **kwargs)
         self.assertIsNotNone(body)
-        vlan_ent_permission = self.nuage_vsd_client.get_vlan_permission(
+        vlan_ent_permission = self.nuage_client.get_vlan_permission(
             n_constants.VLAN, vlan['id'], n_constants.ENTERPRISE_PERMS)
         self.assertEmpty(vlan_ent_permission)
 
-        vlan_permission = self.nuage_vsd_client.get_vlan_permission(
+        vlan_permission = self.nuage_client.get_vlan_permission(
             n_constants.VLAN, vlan['id'], n_constants.PERMIT_ACTION)
         self.assertEmpty(vlan_permission)
 
@@ -797,7 +797,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
         body = self.client.create_gateway_vport(**kwargs)
         vport = body['nuage_gateway_vport']
 
-        gw_vport = self.nuage_vsd_client.get_host_vport(vport['id'])
+        gw_vport = self.nuage_client.get_host_vport(vport['id'])
         self.verify_vport_properties(gw_vport[0], vport)
         if nondef_netpart:
             body = self.admin_client.list_gateway_vport(
@@ -833,7 +833,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
         vport = body['nuage_gateway_vport']
         self.gatewayvports.append(vport)
 
-        gw_vport = self.nuage_vsd_client.get_host_vport(vport['id'])
+        gw_vport = self.nuage_client.get_host_vport(vport['id'])
         self.verify_vport_properties(gw_vport[0], vport)
         if nondef_netpart:
             body = self.admin_client.list_gateway_vport(
@@ -890,7 +890,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
 
         body = self.client.create_gateway_vport(**kwargs)
         vport = body['nuage_gateway_vport']
-        gw_vport = self.nuage_vsd_client.get_host_vport(vport['id'])
+        gw_vport = self.nuage_client.get_host_vport(vport['id'])
         body = self.admin_client.show_gateway_vport(
             gw_vport[0]['ID'], self.subnet['id'])
         vport = body['nuage_gateway_vport']
@@ -916,7 +916,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
 
         body = self.client.create_gateway_vport(**kwargs)
         vport = body['nuage_gateway_vport']
-        gw_vport = self.nuage_vsd_client.get_host_vport(vport['id'])
+        gw_vport = self.nuage_client.get_host_vport(vport['id'])
         body = self.admin_client.show_gateway_vport(
             gw_vport[0]['ID'], self.nondef_subnet['id'])
         vport = body['nuage_gateway_vport']
@@ -940,7 +940,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
         }
         body = self.client.create_gateway_vport(**kwargs)
         vport = body['nuage_gateway_vport']
-        gw_vport = self.nuage_vsd_client.get_host_vport(vport['id'])
+        gw_vport = self.nuage_client.get_host_vport(vport['id'])
         body = self.admin_client.show_gateway_vport(
             gw_vport[0]['ID'], self.subnet['id'])
         vport = body['nuage_gateway_vport']
@@ -964,7 +964,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
         }
         body = self.client.create_gateway_vport(**kwargs)
         vport = body['nuage_gateway_vport']
-        gw_vport = self.nuage_vsd_client.get_host_vport(vport['id'])
+        gw_vport = self.nuage_client.get_host_vport(vport['id'])
         body = self.admin_client.show_gateway_vport(
             gw_vport[0]['ID'], self.nondef_subnet['id'])
         vport = body['nuage_gateway_vport']
@@ -983,7 +983,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
         vport = body['nuage_gateway_vport']
         self.gatewayvports.append(vport)
 
-        gw_vport = self.nuage_vsd_client.get_host_vport(vport['id'])
+        gw_vport = self.nuage_client.get_host_vport(vport['id'])
         self.verify_vport_properties(gw_vport[0], vport)
         body = self.admin_client.list_gateway_vport(self.subnet['id'])
         vports = body['nuage_gateway_vports']
@@ -1008,7 +1008,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
         vport = body['nuage_gateway_vport']
         self.gatewayvports.append(vport)
 
-        gw_vport = self.nuage_vsd_client.get_host_vport(vport['id'])
+        gw_vport = self.nuage_client.get_host_vport(vport['id'])
         self.verify_vport_properties(gw_vport[0], vport)
         body = self.admin_client.list_gateway_vport(self.nondef_subnet['id'])
         vports = body['nuage_gateway_vports']

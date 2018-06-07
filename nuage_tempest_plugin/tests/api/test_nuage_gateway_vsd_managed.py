@@ -17,7 +17,7 @@ import base_nuage_gateway as base
 
 from netaddr import IPNetwork
 from nuage_tempest_plugin.tests.api.vsd_managed \
-    import base_vsd_managed_network as base_vsdman
+    import base_vsd_managed_networks as base_vsdman
 
 from tempest.lib.common.utils import data_utils
 from tempest.test import decorators
@@ -28,7 +28,7 @@ LOG = Topology.get_logger(__name__)
 
 
 class NuageGatewayTestVSDManaged(base.BaseNuageGatewayTest,
-                                 base_vsdman.BaseVSDManagedNetworksTest):
+                                 base_vsdman.BaseVSDManagedNetwork):
 
     @classmethod
     def resource_setup(cls):
@@ -85,7 +85,7 @@ class NuageGatewayTestVSDManaged(base.BaseNuageGatewayTest,
         body = self.client.create_gateway_vport(**kwargs)
         vport = body['nuage_gateway_vport']
         self.assertIsNotNone(vport, "vport is not created")
-        gw_vport = self.nuage_vsd_client.get_host_vport(vport['id'])
+        gw_vport = self.nuage_client.get_host_vport(vport['id'])
         body = self.admin_client.show_gateway_vport(
             gw_vport[0]['ID'], subnet['id'])
         vport = body['nuage_gateway_vport']
@@ -104,7 +104,7 @@ class NuageGatewayTestVSDManaged(base.BaseNuageGatewayTest,
         self.assertIsNotNone(vport, "vport is not created")
         self.gatewayvports.append(vport)
 
-        gw_vport = self.nuage_vsd_client.get_host_vport(vport['id'])
+        gw_vport = self.nuage_client.get_host_vport(vport['id'])
         self.verify_vport_properties(gw_vport[0], vport)
         body = self.admin_client.show_gateway_vport(
             gw_vport[0]['ID'], subnet['id'])
@@ -146,7 +146,7 @@ class NuageGatewayTestVSDManaged(base.BaseNuageGatewayTest,
         body = self.client.create_gateway_vport(**kwargs)
         vport = body['nuage_gateway_vport']
         self.assertIsNotNone(vport, "vport is not created")
-        gw_vport = self.nuage_vsd_client.get_host_vport(vport['id'])
+        gw_vport = self.nuage_client.get_host_vport(vport['id'])
         body = self.admin_client.show_gateway_vport(
             gw_vport[0]['ID'], subnet['id'])
         vport = body['nuage_gateway_vport']
@@ -165,7 +165,7 @@ class NuageGatewayTestVSDManaged(base.BaseNuageGatewayTest,
         self.assertIsNotNone(vport, "vport is not created")
         self.gatewayvports.append(vport)
 
-        gw_vport = self.nuage_vsd_client.get_host_vport(vport['id'])
+        gw_vport = self.nuage_client.get_host_vport(vport['id'])
         self.verify_vport_properties(gw_vport[0], vport)
         body = self.admin_client.show_gateway_vport(
             gw_vport[0]['ID'], subnet['id'])
@@ -208,7 +208,7 @@ class NuageGatewayTestVSDManaged(base.BaseNuageGatewayTest,
         body = self.client.create_gateway_vport(**kwargs)
         vport = body['nuage_gateway_vport']
         self.assertIsNotNone(vport, "vport is not created")
-        gw_vport = self.nuage_vsd_client.get_host_vport(vport['id'])
+        gw_vport = self.nuage_client.get_host_vport(vport['id'])
         body = self.admin_client.show_gateway_vport(
             gw_vport[0]['ID'], subnet['id'])
         vport = body['nuage_gateway_vport']

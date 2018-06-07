@@ -63,15 +63,15 @@ class NuageExtraDHCPOptionsOSManagedL3Test(
         cls.create_router_interface(
             cls.router['id'], cls.osmgd_l3_subnet['id'])
         cls.os_l3_port = cls.create_port(cls.osmgd_l3_network)
-        cls.nuage_domain = cls.nuage_vsd_client.get_resource(
+        cls.nuage_domain = cls.nuage_client.get_resource(
             constants.DOMAIN,
             filters='externalID',
-            filter_value=cls.nuage_vsd_client.get_vsd_external_id(
+            filter_value=cls.nuage_client.get_vsd_external_id(
                 cls.router['id']))
-        cls.osmgd_l3_subnet = cls.nuage_vsd_client.get_domain_subnet(
+        cls.osmgd_l3_subnet = cls.nuage_client.get_domain_subnet(
             constants.DOMAIN, cls.nuage_domain[0]['ID'],
             filters='externalID',
-            filter_value=cls.nuage_vsd_client.get_vsd_external_id(
+            filter_value=cls.nuage_client.get_vsd_external_id(
                 cls.osmgd_l3_subnet['id']))
 
     @classmethod
@@ -335,28 +335,28 @@ class NuageExtraDHCPOptionsVsdManagedL3Test(
 
     @classmethod
     def create_vsd_l3dom_template(cls, **kwargs):
-        vsd_l3dom_tmplt = cls.nuage_vsd_client.create_l3domaintemplate(
+        vsd_l3dom_tmplt = cls.nuage_client.create_l3domaintemplate(
             kwargs['name'] + '-template')
         cls.vsd_l3dom_template.append(vsd_l3dom_tmplt)
         return vsd_l3dom_tmplt
 
     @classmethod
     def create_vsd_l3domain(cls, **kwargs):
-        vsd_l3dom = cls.nuage_vsd_client.create_domain(kwargs['name'],
-                                                       kwargs['tid'])
+        vsd_l3dom = cls.nuage_client.create_domain(kwargs['name'],
+                                                   kwargs['tid'])
         cls.vsd_l3domain.append(vsd_l3dom)
         return vsd_l3dom
 
     @classmethod
     def create_vsd_zone(cls, **kwargs):
-        vsd_zone = cls.nuage_vsd_client.create_zone(kwargs['domain_id'],
-                                                    kwargs['name'])
+        vsd_zone = cls.nuage_client.create_zone(kwargs['domain_id'],
+                                                kwargs['name'])
         cls.vsd_zone.append(vsd_zone)
         return vsd_zone
 
     @classmethod
     def create_vsd_l3domain_subnet(cls, **kwargs):
-        vsd_subnet = cls.nuage_vsd_client.create_domain_subnet(
+        vsd_subnet = cls.nuage_client.create_domain_subnet(
             kwargs['zone_id'],
             kwargs['name'],
             str(kwargs['cidr'].ip),
@@ -408,15 +408,15 @@ class NuageExtraDHCPOptionsVsdManagedL3Test(
                                  cls.vsdmgd_l3_network['id'])
 
         for vsd_subnet in cls.vsd_subnet:
-            cls.nuage_vsd_client.delete_domain_subnet(vsd_subnet[0]['ID'])
+            cls.nuage_client.delete_domain_subnet(vsd_subnet[0]['ID'])
 
         for vsd_zone in cls.vsd_zone:
-            cls.nuage_vsd_client.delete_zone(vsd_zone['ID'])
+            cls.nuage_client.delete_zone(vsd_zone['ID'])
 
         for vsd_l3domain in cls.vsd_l3domain:
-            cls.nuage_vsd_client.delete_domain(vsd_l3domain[0]['ID'])
+            cls.nuage_client.delete_domain(vsd_l3domain[0]['ID'])
 
         for vsd_l3dom_template in cls.vsd_l3dom_template:
-            cls.nuage_vsd_client.delete_l3domaintemplate(
+            cls.nuage_client.delete_l3domaintemplate(
                 vsd_l3dom_template[0]['ID'])
         super(NuageExtraDHCPOptionsBaseL3, cls).resource_cleanup()

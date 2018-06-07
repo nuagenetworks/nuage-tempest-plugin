@@ -39,9 +39,9 @@ class VSDManagedFloatingIpTest(BaseVSDManagedNetworksIPv6Test):
             vsd_l3_subnet, cidr4=self.cidr4, cidr6=self.cidr6)
 
         # And I have claimed a VSD-FloatingIP in the VSD-L3-Domain
-        fip1 = self.nuage_vsd_client.claim_floatingip(
+        fip1 = self.nuage_client.claim_floatingip(
             vsd_l3_domain['ID'], vsd_fip_pool['ID'])[0]
-        fip2 = self.nuage_vsd_client.claim_floatingip(
+        fip2 = self.nuage_client.claim_floatingip(
             vsd_l3_domain['ID'], vsd_fip_pool['ID'])[0]
 
         # When I retrieve the nuage-floatingIP-list of the OS IPv4 subnet

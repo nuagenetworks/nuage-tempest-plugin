@@ -42,7 +42,7 @@ class ExternalIdForVpnServiceTest(VPNMixin, base.BaseNetworkTest):
 
         def has_dummy_router(self, with_external_id=None):
             # vsd dummy router object name is 'r_d_<router-id>'
-            vsd_dummy_routers = self.test.nuage_vsd_client.get_resource(
+            vsd_dummy_routers = self.test.nuage_client.get_resource(
                 resource=n_constants.DOMAIN,
                 filters='description',
                 filter_value="r_d_" + self.vpn_service['router_id'])
@@ -53,7 +53,7 @@ class ExternalIdForVpnServiceTest(VPNMixin, base.BaseNetworkTest):
             self.vsd_dummy_router = vsd_dummy_routers[0]
 
         def has_floating_ip(self, with_external_id=None):
-            vsd_floating_ips = self.test.nuage_vsd_client.get_child_resource(
+            vsd_floating_ips = self.test.nuage_client.get_child_resource(
                 resource=n_constants.DOMAIN,
                 resource_id=self.vsd_dummy_router['ID'],
                 child_resource=n_constants.FLOATINGIP,
@@ -68,7 +68,7 @@ class ExternalIdForVpnServiceTest(VPNMixin, base.BaseNetworkTest):
                 self.test.assertIsNone(vsd_floating_ips[0]['externalID'])
             else:
                 vsd_floating_ips = \
-                    self.test.nuage_vsd_client.get_child_resource(
+                    self.test.nuage_client.get_child_resource(
                         resource=n_constants.DOMAIN,
                         resource_id=self.vsd_dummy_router['ID'],
                         child_resource=n_constants.FLOATINGIP,
@@ -85,7 +85,7 @@ class ExternalIdForVpnServiceTest(VPNMixin, base.BaseNetworkTest):
             self.test.assertRaisesRegex(
                 n_exceptions.MultipleChoices,
                 "Multiple choices",
-                self.test.nuage_vsd_client.delete_resource,
+                self.test.nuage_client.delete_resource,
                 n_constants.FLOATINGIP, self.vsd_floating_ip['ID'])
 
     @classmethod
@@ -96,7 +96,7 @@ class ExternalIdForVpnServiceTest(VPNMixin, base.BaseNetworkTest):
     @classmethod
     def setup_clients(cls):
         super(ExternalIdForVpnServiceTest, cls).setup_clients()
-        cls.nuage_vsd_client = NuageRestClient()
+        cls.nuage_client = NuageRestClient()
 
     @nuage_test.header()
     @utils.requires_ext(extension='vpnaas', service='network')

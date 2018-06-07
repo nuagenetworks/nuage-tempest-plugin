@@ -35,12 +35,12 @@ class APIKeyRenewal(NuageBaseTest):
     @classmethod
     def setup_clients(cls):
         super(APIKeyRenewal, cls).setup_clients()
-        cls.nuage_vsd_client = NuageRestClient()
+        cls.nuage_client = NuageRestClient()
         cls.service_manager = service_mgmt.ServiceManager()
         cls.client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
             **cls.os_primary.default_params)
-        sys_conf = cls.nuage_vsd_client.get_system_configuration()
+        sys_conf = cls.nuage_client.get_system_configuration()
 
         cls.sys_conf = sys_conf[0]
         cls.conf_id = cls.sys_conf['ID']
@@ -53,14 +53,14 @@ class APIKeyRenewal(NuageBaseTest):
         self.sys_conf['APIKeyRenewalInterval'] = interval
         if 'APIKeyValidity' in self.sys_conf:
             del self.sys_conf['APIKeyValidity']
-        self.nuage_vsd_client.update_system_configuration(
+        self.nuage_client.update_system_configuration(
             self.conf_id, self.sys_conf)
 
     def _set_api_key_validity(self, interval):
         self.sys_conf['APIKeyValidity'] = interval
         if 'APIKeyRenewalInterval' in self.sys_conf:
             del self.sys_conf['APIKeyRenewalInterval']
-        self.nuage_vsd_client.update_system_configuration(
+        self.nuage_client.update_system_configuration(
             self.conf_id, self.sys_conf)
 
     def _get_current_api_key_from_neutron(self):

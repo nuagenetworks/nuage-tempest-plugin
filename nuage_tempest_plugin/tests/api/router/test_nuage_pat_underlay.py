@@ -157,12 +157,12 @@ class TestNuagePatUnderlay(base_nuage_pat_underlay.NuagePatUnderlayBase):
             'netmask': str(cidr.netmask),
             'gateway': str(cidr.cidr[1])
         }
-        vsd_l2dom_template = self.nuage_vsd_client.create_l2domaintemplate(
+        vsd_l2dom_template = self.nuage_client.create_l2domaintemplate(
             name=name + '-template',
             extra_params=params)
 
         template_id = vsd_l2dom_template[0]['ID']
-        vsd_l2domain = self.nuage_vsd_client.create_l2domain(
+        vsd_l2domain = self.nuage_client.create_l2domain(
             name=name, templateId=template_id)
         self.assertEqual(vsd_l2domain[0][u'name'], name)
         # create subnet on OS with nuagenet param set to l2domain UUID
@@ -189,9 +189,9 @@ class TestNuagePatUnderlay(base_nuage_pat_underlay.NuagePatUnderlayBase):
         self.assertRaises(exceptions.BadRequest,
                           self.admin_subnets_client.create_subnet,
                           **kwargs)
-        self.nuage_vsd_client.delete_l2domain(
+        self.nuage_client.delete_l2domain(
             vsd_l2domain[0]['ID'])
-        self.nuage_vsd_client.delete_l2domaintemplate(
+        self.nuage_client.delete_l2domaintemplate(
             vsd_l2dom_template[0]['ID'])
 
     @nuage_test.header()
@@ -258,9 +258,9 @@ class TestNuagePatUnderlay(base_nuage_pat_underlay.NuagePatUnderlayBase):
                 ip_version=self._ip_version)
             # subnet = self.create_subnet(ext_network, None, cidr)
             # Check patEnabled flag on VSD: should be accordingly
-            nuage_domain = self.nuage_vsd_client.get_l3domain(
+            nuage_domain = self.nuage_client.get_l3domain(
                 filters='externalID',
-                filter_value=self.nuage_vsd_client.get_vsd_external_id(
+                filter_value=self.nuage_client.get_vsd_external_id(
                     create_body['router']['id']))
             self.assertEqual(
                 nuage_domain[0]['PATEnabled'],

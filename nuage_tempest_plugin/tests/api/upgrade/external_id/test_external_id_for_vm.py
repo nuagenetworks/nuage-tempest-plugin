@@ -43,7 +43,7 @@ class ExternalIdForVmTest(
             self.vsd_vm = None
 
         def get_by_external_id(self):
-            vsd_vms = self.test.nuage_vsd_client.get_vm(
+            vsd_vms = self.test.nuage_client.get_vm(
                 parent=None, parent_id='',
                 filters='externalID', filter_value=self.vm['id'])
 
@@ -60,7 +60,7 @@ class ExternalIdForVmTest(
             return self
 
         def get_by_uuid(self):
-            vsd_vms = self.test.nuage_vsd_client.get_vm(
+            vsd_vms = self.test.nuage_client.get_vm(
                 parent=None, parent_id='',
                 filters='UUID', filter_value=self.vm['id'])
 
@@ -92,7 +92,7 @@ class ExternalIdForVmTest(
             self.test.assertRaisesRegex(
                 n_exceptions.MultipleChoices,
                 "Multiple choices",
-                self.test.nuage_vsd_client.delete_resource,
+                self.test.nuage_client.delete_resource,
                 n_constants.VM, self.vsd_vm['ID'])
 
     def setUp(self):
@@ -108,7 +108,7 @@ class ExternalIdForVmTest(
     @classmethod
     def setup_clients(cls):
         super(ExternalIdForVmTest, cls).setup_clients()
-        cls.nuage_vsd_client = NuageRestClient()
+        cls.nuage_client = NuageRestClient()
 
     def _create_server(self, name, network, port_id=None):
         keypair = self.create_keypair()
@@ -185,9 +185,9 @@ class ExternalIdForVmTest(
             'netmask': str(kwargs['cidr'].netmask),
             'gateway': kwargs['gateway']
         }
-        vsd_l2dom_tmplt = self.nuage_vsd_client.create_l2domaintemplate(
+        vsd_l2dom_tmplt = self.nuage_client.create_l2domaintemplate(
             kwargs['name'] + '-template', extra_params=params)
-        self.addCleanup(self.nuage_vsd_client.delete_l2domaintemplate,
+        self.addCleanup(self.nuage_client.delete_l2domaintemplate,
                         vsd_l2dom_tmplt[0]['ID'])
         return vsd_l2dom_tmplt
 
@@ -202,13 +202,13 @@ class ExternalIdForVmTest(
             "Failed to create vsd l2 domain template")
 
         vsd_l2domain_template = vsd_l2domain_templates[0]
-        vsd_l2domains = self.nuage_vsd_client.create_l2domain(
+        vsd_l2domains = self.nuage_client.create_l2domain(
             name=net_name, templateId=vsd_l2domain_template['ID'])
         self.assertEqual(
             len(vsd_l2domains), 1, "Failed to create vsd l2 domain")
         vsd_l2domain = vsd_l2domains[0]
         self.addCleanup(
-            self.nuage_vsd_client.delete_l2domain, vsd_l2domain['ID'])
+            self.nuage_client.delete_l2domain, vsd_l2domain['ID'])
 
         network = self._create_network(namestart='network-')
         subnet_kwargs = {
@@ -259,13 +259,13 @@ class ExternalIdForVmTest(
             "Failed to create vsd l2 domain template")
 
         vsd_l2domain_template = vsd_l2domain_templates[0]
-        vsd_l2domains = self.nuage_vsd_client.create_l2domain(
+        vsd_l2domains = self.nuage_client.create_l2domain(
             name=net_name, templateId=vsd_l2domain_template['ID'])
         self.assertEqual(
             len(vsd_l2domains), 1, "Failed to create vsd l2 domain")
         vsd_l2domain = vsd_l2domains[0]
         self.addCleanup(
-            self.nuage_vsd_client.delete_l2domain, vsd_l2domain['ID'])
+            self.nuage_client.delete_l2domain, vsd_l2domain['ID'])
 
         network = self._create_network(namestart='network-')
         subnet_kwargs = {

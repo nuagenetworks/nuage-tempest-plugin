@@ -23,7 +23,7 @@ class VSDManagedRedirectTargetTest(BaseVSDManagedNetworksIPv6Test):
         cls.net_partition = cls.net_partition[0]['name']
 
     def _verify_redirect_target(self, rt, parent, parentinfo, postinfo):
-        redirect_target = self.nuage_vsd_client.get_redirection_target(
+        redirect_target = self.nuage_client.get_redirection_target(
             parent, parentinfo['ID'], filters='ID',
             filter_value=rt['nuage_redirect_target']['id'])
 
@@ -38,9 +38,9 @@ class VSDManagedRedirectTargetTest(BaseVSDManagedNetworksIPv6Test):
     def _verify_redirect_target_rules(self, rtrule,
                                       parent, parentinfo, ruleinfo):
         redirect_target_rule_template = \
-            self.nuage_vsd_client.get_advfwd_template(parent, parentinfo['ID'])
+            self.nuage_client.get_advfwd_template(parent, parentinfo['ID'])
 
-        redirect_target_rule = self.nuage_vsd_client.get_advfwd_entrytemplate(
+        redirect_target_rule = self.nuage_client.get_advfwd_entrytemplate(
             'ingressadvfwdtemplates',
             str(redirect_target_rule_template[0]['ID']))
 
@@ -79,19 +79,19 @@ class VSDManagedRedirectTargetTest(BaseVSDManagedNetworksIPv6Test):
         # Unassigning port to Redirect Target
         self.ports_client.update_port(
             rtport['id'], nuage_redirect_targets='')
-        redirect_vport = self.nuage_vsd_client.get_redirection_target_vports(
+        redirect_vport = self.nuage_client.get_redirection_target_vports(
             'redirectiontargets',
             rt['nuage_redirect_target']['id'])
         self.assertEqual(redirect_vport, '')
 
     def _verify_vsd_rt_port(self, rtport, rt, parent, parentinfo):
         # Verifying vport has associated RT
-        redirect_vport = self.nuage_vsd_client.get_redirection_target_vports(
+        redirect_vport = self.nuage_client.get_redirection_target_vports(
             'redirectiontargets',
             rt['nuage_redirect_target']['id'])
-        port_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        port_ext_id = self.nuage_client.get_vsd_external_id(
             rtport['id'])
-        vsd_vport = self.nuage_vsd_client.get_vport(
+        vsd_vport = self.nuage_client.get_vport(
             parent, parentinfo['ID'], filters='externalID',
             filter_value=port_ext_id)
         self.assertEqual(
@@ -101,14 +101,14 @@ class VSDManagedRedirectTargetTest(BaseVSDManagedNetworksIPv6Test):
         self.ports_client.update_port(
             rtport['id'],
             nuage_redirect_targets=str(rt['nuage_redirect_target']['id']))
-        redirect_vport = self.nuage_vsd_client.get_redirection_target_vports(
+        redirect_vport = self.nuage_client.get_redirection_target_vports(
             'redirectiontargets',
             rt['nuage_redirect_target']['id'])
 
         # Verifying vport has associated RT
-        port_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        port_ext_id = self.nuage_client.get_vsd_external_id(
             rtport['id'])
-        vsd_vport = self.nuage_vsd_client.get_vport(
+        vsd_vport = self.nuage_client.get_vport(
             parent, parentinfo['ID'], filters='externalID',
             filter_value=port_ext_id)
         self.assertEqual(
@@ -220,7 +220,7 @@ class VSDManagedRedirectTargetTest(BaseVSDManagedNetworksIPv6Test):
         self.assertTrue(my_rt_found,
                         "Did not find my redirect-target in the list")
         # and check on VSD
-        vsd_redirect_target = self.nuage_vsd_client.get_redirection_target(
+        vsd_redirect_target = self.nuage_client.get_redirection_target(
             constants.DOMAIN, vsd_l3_domain['ID'], filters='ID',
             filter_value=os_redirect_target['nuage_redirect_target']['id'])
         self.assertIsNotNone(
@@ -236,7 +236,7 @@ class VSDManagedRedirectTargetTest(BaseVSDManagedNetworksIPv6Test):
         self.assertTrue(my_rt_found,
                         "Did not find my redirect-target in the list")
         # and check on VSD
-        vsd_redirect_target = self.nuage_vsd_client.get_redirection_target(
+        vsd_redirect_target = self.nuage_client.get_redirection_target(
             constants.DOMAIN, vsd_l3_domain['ID'], filters='ID',
             filter_value=os_redirect_target6['nuage_redirect_target']['id'])
         self.assertIsNotNone(
@@ -289,7 +289,7 @@ class VSDManagedRedirectTargetTest(BaseVSDManagedNetworksIPv6Test):
                                  "present in subnet")
 
         # And the redirect target on VSD is gone as well
-        vsd_redirect_target = self.nuage_vsd_client.get_redirection_target(
+        vsd_redirect_target = self.nuage_client.get_redirection_target(
             constants.DOMAIN, vsd_l3_domain['ID'], filters='ID',
             filter_value=os_redirect_target['nuage_redirect_target']['id'])
         self.assertEqual(vsd_redirect_target, '')
@@ -303,7 +303,7 @@ class VSDManagedRedirectTargetTest(BaseVSDManagedNetworksIPv6Test):
                          message="Deleted nuage_redirect_target still "
                                  "present in subnet")
         # And the redirect target on VSD is gone as well
-        vsd_redirect_target = self.nuage_vsd_client.get_redirection_target(
+        vsd_redirect_target = self.nuage_client.get_redirection_target(
             constants.DOMAIN, vsd_l3_domain['ID'], filters='ID',
             filter_value=os_redirect_target6['nuage_redirect_target']['id'])
         self.assertEqual(vsd_redirect_target, '')
@@ -323,9 +323,9 @@ class VSDManagedRedirectTargetTest(BaseVSDManagedNetworksIPv6Test):
     #         vsd_l3_subnet, cidr4=self.cidr4, cidr6=self.cidr6)
     #
     #     # And I have claimed a VSD-FloatingIP in the VSD-L3-Domain
-    #     fip1 = self.nuage_vsd_client.claim_floatingip(vsd_l3_domain['ID'],
+    #     fip1 = self.nuage_client.claim_floatingip(vsd_l3_domain['ID'],
     #          vsd_fip_pool['ID'])[0]
-    #     fip2 = self.nuage_vsd_client.claim_floatingip(vsd_l3_domain['ID'],
+    #     fip2 = self.nuage_client.claim_floatingip(vsd_l3_domain['ID'],
     #          vsd_fip_pool['ID'])[0]
     #
     #     # When I retrieve the nuage-floatingIP-list of the

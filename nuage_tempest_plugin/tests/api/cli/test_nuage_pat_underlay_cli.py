@@ -149,10 +149,10 @@ class TestNuagePatUnderlayCli(client_testcase.CLIClientTestCase,
             'gateway': '10.10.99.1'
         }
         # Create VSD managed subnet
-        vsd_l2dom_template = self.nuage_vsd_client.create_l2domaintemplate(
+        vsd_l2dom_template = self.nuage_client.create_l2domaintemplate(
             name=name + '-template', extra_params=params)
         template_id = vsd_l2dom_template[0]['ID']
-        vsd_l2domain = self.nuage_vsd_client.create_l2domain(
+        vsd_l2domain = self.nuage_client.create_l2domain(
             name=name, templateId=template_id)
         self.assertEqual(vsd_l2domain[0][u'name'], name)
         # Try to create subnet on OS with nuagenet param set to l2domain UUID
@@ -175,8 +175,8 @@ class TestNuagePatUnderlayCli(client_testcase.CLIClientTestCase,
                                  '--nuagenet',
                                  vsd_l2domain[0][u'ID'])
         # Delete the VSD manged subnet
-        self.nuage_vsd_client.delete_l2domain(vsd_l2domain[0]['ID'])
-        self.nuage_vsd_client.delete_l2domaintemplate(
+        self.nuage_client.delete_l2domain(vsd_l2domain[0]['ID'])
+        self.nuage_client.delete_l2domaintemplate(
             vsd_l2dom_template[0]['ID'])
 
     @nuage_test.header()

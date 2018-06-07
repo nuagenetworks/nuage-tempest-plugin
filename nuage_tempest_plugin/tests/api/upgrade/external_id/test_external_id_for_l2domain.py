@@ -45,7 +45,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
 
         def get_by_external_id(self, net_partition_name=None):
             self.net_partition_name = net_partition_name
-            vsd_l2domains = self.test.nuage_vsd_client.get_l2domain(
+            vsd_l2domains = self.test.nuage_client.get_l2domain(
                 netpart_name=self.net_partition_name,
                 filters='externalID', filter_value=self.subnet['id'])
 
@@ -60,7 +60,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
         def has_l2domain_template(self, with_external_id=None):
             # vsd l2domain template object has external ID
             vsd_l2domain_templates = \
-                self.test.nuage_vsd_client.get_l2domaintemplate(
+                self.test.nuage_client.get_l2domaintemplate(
                     filters='name', filter_value=self.subnet['id'])
             self.test.assertEqual(
                 len(vsd_l2domain_templates), 1,
@@ -75,7 +75,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
 
                 # can find vsd permissions by external ID
                 vsd_l2domain_templates = \
-                    self.test.nuage_vsd_client.get_l2domaintemplate(
+                    self.test.nuage_client.get_l2domaintemplate(
                         filters='externalID', filter_value=with_external_id)
                 self.test.assertEqual(
                     len(vsd_l2domain_templates), 1,
@@ -83,7 +83,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
 
         def has_permissions(self, with_external_id=None):
             # vsd permissions object has external ID
-            vsd_permissions = self.test.nuage_vsd_client.get_permissions(
+            vsd_permissions = self.test.nuage_client.get_permissions(
                 parent=n_constants.L2_DOMAIN,
                 parent_id=self.vsd_l2domain['ID'])
 
@@ -99,7 +99,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
                     with_external_id, vsd_permissions[0]['externalID'])
 
                 # can find vsd permissions by external ID
-                vsd_permissions = self.test.nuage_vsd_client.get_permissions(
+                vsd_permissions = self.test.nuage_client.get_permissions(
                     parent=n_constants.L2_DOMAIN,
                     parent_id=self.vsd_l2domain['ID'],
                     filters='externalID', filter_value=with_external_id)
@@ -109,7 +109,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
 
         def has_group(self, with_external_id=None):
             # vsd group object has external ID
-            vsd_groups = self.test.nuage_vsd_client.get_usergroup(
+            vsd_groups = self.test.nuage_client.get_usergroup(
                 netpart_name=self.net_partition_name,
                 parent=n_constants.L2_DOMAIN,
                 parent_id=self.vsd_l2domain['ID'])
@@ -124,7 +124,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
             if with_external_id is None:
                 self.test.assertIsNone(vsd_groups[0]['externalID'])
             else:
-                vsd_groups = self.test.nuage_vsd_client.get_resource(
+                vsd_groups = self.test.nuage_client.get_resource(
                     netpart_name=self.net_partition_name,
                     resource=n_constants.GROUP,
                     filters='externalID',
@@ -137,7 +137,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
 
         def has_group_everybody(self):
             # vsd group object has external ID
-            vsd_groups = self.test.nuage_vsd_client.get_usergroup(
+            vsd_groups = self.test.nuage_client.get_usergroup(
                 parent=n_constants.L2_DOMAIN,
                 parent_id=self.vsd_l2domain['ID'])
 
@@ -151,7 +151,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
 
         def has_user(self, with_external_id=None):
             # vsd user object has external ID
-            vsd_users = self.test.nuage_vsd_client.get_user(
+            vsd_users = self.test.nuage_client.get_user(
                 netpart_name=self.net_partition_name,
                 filters='userName',
                 filter_value=self.subnet['tenant_id'])
@@ -166,7 +166,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
             if with_external_id is None:
                 self.test.assertIsNone(vsd_users[0]['externalID'])
             else:
-                vsd_users = self.test.nuage_vsd_client.get_resource(
+                vsd_users = self.test.nuage_client.get_resource(
                     netpart_name=self.net_partition_name,
                     resource=n_constants.USER,
                     filters='externalID',
@@ -179,7 +179,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
 
         def has_dhcp_options(self, with_external_id=None, with_dhcp_opts=None):
             # vsd dhcp_options object has external ID
-            vsd_dhcp_options = self.test.nuage_vsd_client.get_dhcpoption(
+            vsd_dhcp_options = self.test.nuage_client.get_dhcpoption(
                 parent=n_constants.L2_DOMAIN,
                 parent_id=self.vsd_l2domain['ID'])
 
@@ -190,7 +190,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
                 self.test.assertIsNone(vsd_dhcp_options[0]['externalID'])
             else:
                 vsd_dhcp_options = \
-                    self.test.nuage_vsd_client.get_child_resource(
+                    self.test.nuage_client.get_child_resource(
                         resource=n_constants.L2_DOMAIN,
                         resource_id=self.vsd_l2domain['ID'],
                         child_resource=n_constants.DHCPOPTION,
@@ -207,7 +207,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
         def has_egress_acl_template(self, with_external_id=None):
             # vsd egress_acl_template object has external ID
             vsd_egress_acl_templates = \
-                self.test.nuage_vsd_client.get_egressacl_template(
+                self.test.nuage_client.get_egressacl_template(
                     parent=n_constants.L2_DOMAIN,
                     parent_id=self.vsd_l2domain['ID'])
 
@@ -220,7 +220,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
                     vsd_egress_acl_templates[0]['externalID'])
             else:
                 vsd_egress_acl_templates = \
-                    self.test.nuage_vsd_client.get_child_resource(
+                    self.test.nuage_client.get_child_resource(
                         resource=n_constants.L2_DOMAIN,
                         resource_id=self.vsd_l2domain['ID'],
                         child_resource=n_constants.EGRESS_ACL_TEMPLATE,
@@ -237,7 +237,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
         def has_ingress_acl_template(self, with_external_id=None):
             # vsd ingress_acl_template object has external ID
             vsd_ingress_acl_templates = \
-                self.test.nuage_vsd_client.get_ingressacl_template(
+                self.test.nuage_client.get_ingressacl_template(
                     parent=n_constants.L2_DOMAIN,
                     parent_id=self.vsd_l2domain['ID'])
 
@@ -250,7 +250,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
                     vsd_ingress_acl_templates[0]['externalID'])
             else:
                 vsd_ingress_acl_templates = \
-                    self.test.nuage_vsd_client.get_child_resource(
+                    self.test.nuage_client.get_child_resource(
                         resource=n_constants.L2_DOMAIN,
                         resource_id=self.vsd_l2domain['ID'],
                         child_resource=n_constants.INGRESS_ACL_TEMPLATE,
@@ -267,7 +267,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
         def has_forwarding_policy_template(self, with_external_id=None):
             # vsd forwarding_policy_template object has external ID
             vsd_forwarding_policy_templates = \
-                self.test.nuage_vsd_client.get_child_resource(
+                self.test.nuage_client.get_child_resource(
                     resource=n_constants.L2_DOMAIN,
                     resource_id=self.vsd_l2domain['ID'],
                     child_resource=n_constants.INGRESS_ADV_FWD_TEMPLATE)
@@ -281,7 +281,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
                     vsd_forwarding_policy_templates[0]['externalID'])
             else:
                 vsd_forwarding_policy_templates = \
-                    self.test.nuage_vsd_client.get_child_resource(
+                    self.test.nuage_client.get_child_resource(
                         resource=n_constants.L2_DOMAIN,
                         resource_id=self.vsd_l2domain['ID'],
                         child_resource=n_constants.INGRESS_ADV_FWD_TEMPLATE,
@@ -300,7 +300,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
             self.test.assertRaisesRegex(
                 n_exceptions.MultipleChoices,
                 "Multiple choices",
-                self.test.nuage_vsd_client.delete_l2domain,
+                self.test.nuage_client.delete_l2domain,
                 self.vsd_l2domain['ID'])
 
     @classmethod
@@ -315,7 +315,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
     @classmethod
     def setup_clients(cls):
         super(ExternalIdForL2domainTest, cls).setup_clients()
-        cls.nuage_vsd_client = NuageRestClient()
+        cls.nuage_client = NuageRestClient()
         cls.nuage_network_client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
             **cls.os_primary.default_params)

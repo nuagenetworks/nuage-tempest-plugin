@@ -29,7 +29,7 @@ class NeutronGatewayResourcesTest(nuage_base.NuageBaseOrchestrationTest):
     @classmethod
     def setup_clients(cls):
         super(NeutronGatewayResourcesTest, cls).setup_clients()
-        cls.nuage_vsd_client = nuage_client.NuageRestClient()
+        cls.nuage_client = nuage_client.NuageRestClient()
 
     @classmethod
     def resource_setup(cls):
@@ -43,11 +43,11 @@ class NeutronGatewayResourcesTest(nuage_base.NuageBaseOrchestrationTest):
         cls.gateway_ports = []
 
         cls.gw_name = data_utils.rand_name('tempest-gw')
-        gw = cls.nuage_vsd_client.create_gateway(
+        gw = cls.nuage_client.create_gateway(
             cls.gw_name, str(uuid.uuid4()), 'VRSG', None)
         cls.gateways.append(gw)
         cls.port_name = data_utils.rand_name('tempest-gw-port')
-        gw_port = cls.nuage_vsd_client.create_gateway_port(
+        gw_port = cls.nuage_client.create_gateway_port(
             cls.port_name, 'test', 'ACCESS', gw[0]['ID'])
         cls.gateway_ports.append(gw_port)
 
@@ -56,13 +56,13 @@ class NeutronGatewayResourcesTest(nuage_base.NuageBaseOrchestrationTest):
         super(NeutronGatewayResourcesTest, cls).resource_cleanup()
         for port in cls.gateway_ports:
             try:
-                cls.nuage_vsd_client.delete_gateway_port(port[0]['ID'])
+                cls.nuage_client.delete_gateway_port(port[0]['ID'])
             except Exception as exc:
                 LOG.exception(exc)
 
         for gateway in cls.gateways:
             try:
-                cls.nuage_vsd_client.delete_gateway(gateway[0]['ID'])
+                cls.nuage_client.delete_gateway(gateway[0]['ID'])
             except Exception as exc:
                 LOG.exception(exc)
 

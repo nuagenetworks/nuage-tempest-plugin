@@ -26,7 +26,6 @@ from tempest.services import orchestration
 from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
 
-from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test import tags as test_tags
 from nuage_tempest_plugin.lib.test.tenant_server import TenantServer
 from nuage_tempest_plugin.lib.test import vsd_helper
@@ -227,8 +226,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
     def create_network_at_class_level(cls, network_name, client, **kwargs):
         body = client.create_network(name=network_name, **kwargs)
         network = body['network']
-        cls.addClassResourceCleanup(
-            client.networks_client.delete_network, network['id'])
+        cls.addClassResourceCleanup(client.delete_network, network['id'])
         return network
 
     def create_network(self, network_name=None, client=None,
@@ -1026,58 +1024,6 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         else:
             self.fail("traffic is not received as expected " + complete_output)
 
-    def _create_loginable_secgroup_rule(self, security_group_rules_client=None,
-                                        secgroup=None,
-                                        security_groups_client=None):
-
-        if NUAGE_FEATURES.os_managed_dualstack_subnets:
-            return super(NuageBaseTest, self)._create_loginable_secgroup_rule(
-                security_group_rules_client, secgroup, security_groups_client)
-        else:
-            # NEED TO OVERRULE FOR NOT SUPPORTING IPV6 SG ...
-            """Create loginable security group rule
-
-            This function will create:
-            1. egress and ingress tcp port 22 allow rule
-            2. egress and ingress ipv4 icmp allow rule
-            """
-
-            if security_group_rules_client is None:
-                security_group_rules_client = self.security_group_rules_client
-            if security_groups_client is None:
-                security_groups_client = self.security_groups_client
-            rules = []
-            rulesets = [
-                dict(
-                    # ssh
-                    protocol='tcp', port_range_min=22, port_range_max=22
-                ),
-                dict(
-                    # ping
-                    protocol='icmp'
-                )
-            ]
-            sec_group_rules_client = security_group_rules_client
-            for ruleset in rulesets:
-                for r_direction in ['ingress', 'egress']:
-                    ruleset['direction'] = r_direction
-                    try:
-                        sg_rule = self._create_security_group_rule(
-                            sec_group_rules_client=sec_group_rules_client,
-                            secgroup=secgroup,
-                            security_groups_client=security_groups_client,
-                            **ruleset)
-                    except lib_exc.Conflict as ex:
-                        # if rule already exist - skip rule and continue
-                        msg = 'Security group rule already exists'
-                        if msg not in ex._error_string:
-                            raise ex
-                    else:
-                        self.assertEqual(r_direction, sg_rule['direction'])
-                        rules.append(sg_rule)
-
-            return rules
-
     def osc_delete_test_server(self, vm_id, client=None):
         """Common wrapper utility delete a test server."""
         if not client:
@@ -1122,7 +1068,7 @@ class NuageBaseOrchestrationTest(NuageBaseTest):
     @classmethod
     def setup_credentials(cls):
         super(NuageBaseOrchestrationTest, cls).setup_credentials()
-        stack_owner_role = CONF.heat_plugin.admin_username
+        stack_owner_role = CONF.heat_plugin.admin_username or 'admin'
         cls.os = cls.get_client_manager(roles=[stack_owner_role])
 
     @classmethod

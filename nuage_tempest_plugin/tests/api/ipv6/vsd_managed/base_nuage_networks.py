@@ -284,7 +284,7 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
     @classmethod
     def setup_clients(cls):
         super(BaseVSDManagedNetworksIPv6Test, cls).setup_clients()
-        cls.nuage_vsd_client = NuageRestClient()
+        cls.nuage_client = NuageRestClient()
 
     @classmethod
     def resource_setup(cls):
@@ -292,11 +292,11 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
 
         if Topology.is_ml2:
             # create default net_partition if it is not there
-            net_partition_name = cls.nuage_vsd_client.def_netpart_name
-            cls.net_partition = cls.nuage_vsd_client.get_net_partition(
+            net_partition_name = cls.nuage_client.def_netpart_name
+            cls.net_partition = cls.nuage_client.get_net_partition(
                 net_partition_name)
             if not cls.net_partition:
-                cls.net_partition = cls.nuage_vsd_client.create_net_partition(
+                cls.net_partition = cls.nuage_client.create_net_partition(
                     net_partition_name,
                     fip_quota=100,
                     extra_params=None)
@@ -310,7 +310,7 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
         update_params = {
             'associatedSharedNetworkResourceID': shared_domain_id
         }
-        cls.nuage_vsd_client.update_l2domain(
+        cls.nuage_client.update_l2domain(
             domain_id, update_params=update_params)
 
     def create_vsd_l2domain_template(self, name=None, ip_type=None,
@@ -365,12 +365,12 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
         for key, value in kwargs.iteritems():
             params.update({key: value})
 
-        body = self.nuage_vsd_client.create_l2domaintemplate(
+        body = self.nuage_client.create_l2domaintemplate(
             name, extra_params=params)
         vsd_l2dom_template = body[0]
 
         self.addCleanup(
-            self.nuage_vsd_client.delete_l2domaintemplate,
+            self.nuage_client.delete_l2domaintemplate,
             vsd_l2dom_template['ID'])
         return vsd_l2dom_template
 
@@ -453,13 +453,13 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
             name = data_utils.rand_name('l2domain-')
 
         extra_params = kwargs.get('extra_params')
-        vsd_l2domains = self.nuage_vsd_client.create_l2domain(
+        vsd_l2domains = self.nuage_client.create_l2domain(
             name,
             templateId=template_id,
             extra_params=extra_params)
         vsd_l2domain = vsd_l2domains[0]
         self.addCleanup(
-            self.nuage_vsd_client.delete_l2domain, vsd_l2domain['ID'])
+            self.nuage_client.delete_l2domain, vsd_l2domain['ID'])
         return vsd_l2domain
 
     def _given_vsd_l2domain(self, cidr4=None, cidr6=None, dhcp_managed=False,
@@ -475,28 +475,28 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
         return vsd_l2domain
 
     def create_vsd_l3dom_template(self, **kwargs):
-        vsd_l3dom_templates = self.nuage_vsd_client.create_l3domaintemplate(
+        vsd_l3dom_templates = self.nuage_client.create_l3domaintemplate(
             kwargs['name'] + '-template')
         vsd_l3dom_template = vsd_l3dom_templates[0]
-        self.addCleanup(self.nuage_vsd_client.delete_l3domaintemplate,
+        self.addCleanup(self.nuage_client.delete_l3domaintemplate,
                         vsd_l3dom_template['ID'])
         return vsd_l3dom_template
 
     def create_vsd_l3domain(self, **kwargs):
         extra_params = kwargs.get('extra_params')
-        vsd_l3domains = self.nuage_vsd_client.create_domain(
+        vsd_l3domains = self.nuage_client.create_domain(
             kwargs['name'], kwargs['tid'], extra_params=extra_params)
         vsd_l3domain = vsd_l3domains[0]
         self.addCleanup(
-            self.nuage_vsd_client.delete_domain, vsd_l3domain['ID'])
+            self.nuage_client.delete_domain, vsd_l3domain['ID'])
         return vsd_l3domain
 
     def create_vsd_zone(self, **kwargs):
         extra_params = kwargs.get('extra_params')
-        vsd_zones = self.nuage_vsd_client.create_zone(
+        vsd_zones = self.nuage_client.create_zone(
             kwargs['domain_id'], kwargs['name'], extra_params=extra_params)
         vsd_zone = vsd_zones[0]
-        self.addCleanup(self.nuage_vsd_client.delete_zone, vsd_zone['ID'])
+        self.addCleanup(self.nuage_client.delete_zone, vsd_zone['ID'])
         return vsd_zone
 
     def create_vsd_l3domain_dualstack_subnet(self, zone_id, subnet_name,
@@ -506,7 +506,7 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
                         'IPv6Address': str(cidr6),
                         'IPv6Gateway': gateway6}
 
-        vsd_subnets = self.nuage_vsd_client.create_domain_subnet(
+        vsd_subnets = self.nuage_client.create_domain_subnet(
             parent_id=zone_id,
             name=subnet_name,
             net_address=str(cidr.ip),
@@ -516,7 +516,7 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
 
         vsd_subnet = vsd_subnets[0]
         self.addCleanup(
-            self.nuage_vsd_client.delete_domain_subnet, vsd_subnet['ID'])
+            self.nuage_client.delete_domain_subnet, vsd_subnet['ID'])
         return vsd_subnet
 
     def create_vsd_l3domain_subnet(self, zone_id, subnet_name,
@@ -545,7 +545,7 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
         elif ip_type:
             params.update({'IPType': ip_type})
 
-        vsd_subnets = self.nuage_vsd_client.create_domain_subnet(
+        vsd_subnets = self.nuage_client.create_domain_subnet(
             parent_id=zone_id,
             name=subnet_name,
             net_address=net_address,
@@ -555,7 +555,7 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
 
         vsd_subnet = vsd_subnets[0]
         self.addCleanup(
-            self.nuage_vsd_client.delete_domain_subnet, vsd_subnet['ID'])
+            self.nuage_client.delete_domain_subnet, vsd_subnet['ID'])
         return vsd_subnet
 
     def _given_vsd_l3subnet(self, cidr4=None, cidr6=None, dhcp_managed=True,
@@ -591,7 +591,7 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
         return vsd_l3domain, vsd_l3domain_subnet
 
     def _verify_vport_in_l2_domain(self, port, vsd_l2domain, **kwargs):
-        nuage_vports = self.nuage_vsd_client.get_vport(
+        nuage_vports = self.nuage_client.get_vport(
             nuage_constants.L2_DOMAIN,
             vsd_l2domain['ID'],
             filters='externalID',
@@ -615,7 +615,7 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
                 self.assertThat(port, ContainsDict({key: Equals(value)}))
 
     def _verify_vport_in_l3_subnet(self, port, vsd_l3_subnet, **kwargs):
-        nuage_vports = self.nuage_vsd_client.get_vport(
+        nuage_vports = self.nuage_client.get_vport(
             nuage_constants.SUBNETWORK,
             vsd_l3_subnet['ID'],
             filters='externalID',
@@ -653,21 +653,21 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
             "underlay": True
         }
 
-        vsd_fip_pool = self.nuage_vsd_client.create_floatingip_pool(
+        vsd_fip_pool = self.nuage_client.create_floatingip_pool(
             name=name,
             address=str(address),
             gateway=str(gateway),
             netmask=str(netmask),
             extra_params=extra_params)
 
-        self.addCleanup(self.nuage_vsd_client.delete_vsd_shared_resource,
+        self.addCleanup(self.nuage_client.delete_vsd_shared_resource,
                         vsd_fip_pool[0]['ID'])
 
         return vsd_fip_pool[0]
 
     def _claim_vsd_floating_ip(self, l3domain_id, vsd_fip_pool_id):
-        claimed_fip = self.nuage_vsd_client.claim_floatingip(l3domain_id,
-                                                             vsd_fip_pool_id)
+        claimed_fip = self.nuage_client.claim_floatingip(l3domain_id,
+                                                         vsd_fip_pool_id)
         return claimed_fip
 
     def _associate_fip_to_port(self, port, fip_id):

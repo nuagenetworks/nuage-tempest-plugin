@@ -20,7 +20,7 @@ class VlanTransparentConnectivityTest(NuageBaseTest):
     @classmethod
     def setup_clients(cls):
         super(VlanTransparentConnectivityTest, cls).setup_clients()
-        cls.nuage_vsd_client = NuageRestClient()
+        cls.nuage_client = NuageRestClient()
         cls.client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
             **cls.os_primary.default_params)

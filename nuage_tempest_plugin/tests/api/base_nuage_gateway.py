@@ -38,14 +38,14 @@ class BaseNuageGatewayTest(base.BaseAdminNetworkTest):
     @classmethod
     def create_gateway(cls, type):
         name = rand_name('tempest-gw')
-        gw = cls.nuage_vsd_client.create_gateway(
+        gw = cls.nuage_client.create_gateway(
             name, str(uuid.uuid4()), type, None)
         return gw
 
     @classmethod
     def create_gateway_group(cls, gw1_id, gw2_id):
         name = rand_name('tempest-gw-grp')
-        grp = cls.nuage_vsd_client.create_gateway_redundancy_group(
+        grp = cls.nuage_client.create_gateway_redundancy_group(
             name, gw1_id, gw2_id, None)
         return grp
 
@@ -53,13 +53,13 @@ class BaseNuageGatewayTest(base.BaseAdminNetworkTest):
     def create_gateway_port(cls, gw, name=None):
         if not name:
             name = rand_name('tempest-gw-port')
-        gw_port = cls.nuage_vsd_client.create_gateway_port(
+        gw_port = cls.nuage_client.create_gateway_port(
             name, 'test', 'ACCESS', gw[0]['ID'])
         return gw_port
 
     @classmethod
     def create_gateway_vlan(cls, gw_port, value):
-        gw_port = cls.nuage_vsd_client.create_gateway_vlan(
+        gw_port = cls.nuage_client.create_gateway_vlan(
             gw_port[0]['ID'], 'test', value)
         return gw_port
 
@@ -84,7 +84,7 @@ class BaseNuageGatewayTest(base.BaseAdminNetworkTest):
     @classmethod
     def setup_clients(cls):
         super(BaseNuageGatewayTest, cls).setup_clients()
-        cls.nuage_vsd_client = NuageRestClient()
+        cls.nuage_client = NuageRestClient()
 
         # cls.client = cls.networks_client
         # cls.admin_client = cls.admin_networks_client
@@ -168,12 +168,12 @@ class BaseNuageGatewayTest(base.BaseAdminNetworkTest):
         for vport in cls.gatewayvports:
             try:
                 if vport['type'] == n_constants.HOST_VPORT:
-                    cls.nuage_vsd_client.delete_host_interface(
+                    cls.nuage_client.delete_host_interface(
                         vport['interface'])
                 elif vport['type'] == n_constants.BRIDGE_VPORT:
-                    cls.nuage_vsd_client.delete_bridge_interface(
+                    cls.nuage_client.delete_bridge_interface(
                         vport['interface'])
-                cls.nuage_vsd_client.delete_host_vport(vport['id'])
+                cls.nuage_client.delete_host_vport(vport['id'])
             except Exception as exc:
                 LOG.exception(exc)
                 has_exception = True
@@ -184,22 +184,22 @@ class BaseNuageGatewayTest(base.BaseAdminNetworkTest):
                     vlan_id = vlan['id']
                 else:
                     vlan_id = vlan[0]['ID']
-                cls.nuage_vsd_client.delete_vlan_permission(vlan_id)
-                cls.nuage_vsd_client.delete_gateway_vlan(vlan_id)
+                cls.nuage_client.delete_vlan_permission(vlan_id)
+                cls.nuage_client.delete_gateway_vlan(vlan_id)
             except Exception as exc:
                 LOG.exception(exc)
                 has_exception = True
 
         for port in cls.gatewayports:
             try:
-                cls.nuage_vsd_client.delete_gateway_port(port[0]['ID'])
+                cls.nuage_client.delete_gateway_port(port[0]['ID'])
             except Exception as exc:
                 LOG.exception(exc)
                 has_exception = True
 
         for gateway in cls.gateways:
             try:
-                cls.nuage_vsd_client.delete_gateway(gateway[0]['ID'])
+                cls.nuage_client.delete_gateway(gateway[0]['ID'])
             except Exception as exc:
                 LOG.exception(exc)
                 has_exception = True
@@ -290,7 +290,7 @@ class BaseNuageGatewayTest(base.BaseAdminNetworkTest):
             external_id = (expected_vlan['gatewayport'] + "." +
                            str(expected_vlan['value']))
             self.assertEqual(actual_vlan['externalID'],
-                             self.nuage_vsd_client.get_vsd_external_id(
+                             self.nuage_client.get_vsd_external_id(
                                  external_id))
 
     def verify_vport_properties(self, actual_vport, expected_vport):
@@ -300,9 +300,9 @@ class BaseNuageGatewayTest(base.BaseAdminNetworkTest):
         if Topology.within_ext_id_release():
             if expected_vport['type'] == n_constants.BRIDGE_VPORT:
                 self.assertEqual(actual_vport['externalID'],
-                                 self.nuage_vsd_client.get_vsd_external_id(
+                                 self.nuage_client.get_vsd_external_id(
                                      expected_vport['subnet']))
             else:
                 self.assertEqual(actual_vport['externalID'],
-                                 self.nuage_vsd_client.get_vsd_external_id(
+                                 self.nuage_client.get_vsd_external_id(
                                      expected_vport['port']))

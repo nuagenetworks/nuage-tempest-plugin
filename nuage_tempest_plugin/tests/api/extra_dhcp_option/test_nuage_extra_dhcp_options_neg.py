@@ -84,9 +84,9 @@ class NuageExtraDHCPOptionsNegativeTest(
         cls.osmgd_l2_network = cls.create_network()
         cls.osmgd_l2_subnet = cls.create_subnet(cls.osmgd_l2_network)
         cls.os_l2_port = cls.create_port(cls.osmgd_l2_network)
-        cls.l2domain = cls.nuage_vsd_client.get_l2domain(
+        cls.l2domain = cls.nuage_client.get_l2domain(
             'externalID',
-            cls.nuage_vsd_client.get_vsd_external_id(cls.osmgd_l2_subnet['id'])
+            cls.nuage_client.get_vsd_external_id(cls.osmgd_l2_subnet['id'])
         )
 
     def _assert_nuage_create_port_with_dhcp_opts(self, network_id,

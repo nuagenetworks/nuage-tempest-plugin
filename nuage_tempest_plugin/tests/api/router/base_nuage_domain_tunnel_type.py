@@ -18,7 +18,7 @@ class NuageDomainTunnelTypeBase(test.BaseTestCase):
         super(NuageDomainTunnelTypeBase, cls).setup_clients()
         cls.os_admin = cls.get_client_manager(credential_type='admin')
         cls.client = cls.os_admin.networks_client
-        cls.nuage_vsd_client = nuage_client.NuageRestClient()
+        cls.nuage_client = nuage_client.NuageRestClient()
 
     def _create_router(self, **kwargs):
         # Create a router

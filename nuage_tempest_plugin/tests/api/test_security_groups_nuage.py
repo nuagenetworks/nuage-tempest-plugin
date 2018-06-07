@@ -37,7 +37,7 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
     @classmethod
     def setup_clients(cls):
         super(SecGroupTestNuageBase, cls).setup_clients()
-        cls.nuage_vsd_client = NuageRestClient()
+        cls.nuage_client = NuageRestClient()
 
     def _create_verify_security_group_rule(self, nuage_domains=None, **kwargs):
         sec_group_rule = self.security_group_rules_client \
@@ -62,7 +62,7 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
                                name=None):
         if not nuage_domain:
             nuage_domain = self.nuage_any_domain
-        nuage_policy_grps = self.nuage_vsd_client.get_policygroup(
+        nuage_policy_grps = self.nuage_client.get_policygroup(
             self.nuage_domain_type,
             nuage_domain[0]['ID'])
 
@@ -85,7 +85,7 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
                         " with matching externalID")
 
         # can retrieve VSD policy group by the externalID
-        nuage_policy_grp = self.nuage_vsd_client.get_policygroup(
+        nuage_policy_grp = self.nuage_client.get_policygroup(
             self.nuage_domain_type,
             nuage_domain[0]['ID'],
             filters='externalID',
@@ -95,7 +95,7 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
 
     def _verify_vsd_network_macro(self, remote_ip_prefix):
         net_addr = remote_ip_prefix.split('/')
-        ent_net_macro = self.nuage_vsd_client.get_enterprise_net_macro(
+        ent_net_macro = self.nuage_client.get_enterprise_net_macro(
             filters='address', filter_value=net_addr[0])
         self.assertNotEqual(ent_net_macro, '', msg='Macro not found')
         if Topology.within_ext_id_release():
@@ -106,20 +106,20 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
         if not nuage_domain:
             nuage_domain = self.nuage_any_domain
         if sec_group_rule['direction'] == 'ingress':
-            nuage_eacl_template = self.nuage_vsd_client. \
+            nuage_eacl_template = self.nuage_client. \
                 get_egressacl_template(self.nuage_domain_type,
                                        nuage_domain[0]['ID'])
-            nuage_eacl_entrytemplate = self.nuage_vsd_client. \
+            nuage_eacl_entrytemplate = self.nuage_client. \
                 get_egressacl_entytemplate(n_constants.EGRESS_ACL_TEMPLATE,
                                            nuage_eacl_template[0]['ID'],
                                            filters='externalID',
                                            filter_value=sec_group_rule['id'])
             return nuage_eacl_entrytemplate
         else:
-            nuage_iacl_template = self.nuage_vsd_client. \
+            nuage_iacl_template = self.nuage_client. \
                 get_ingressacl_template(self.nuage_domain_type,
                                         nuage_domain[0]['ID'])
-            nuage_iacl_entrytemplate = self.nuage_vsd_client. \
+            nuage_iacl_entrytemplate = self.nuage_client. \
                 get_ingressacl_entytemplate(n_constants.INGRESS_ACL_TEMPLATE,
                                             nuage_iacl_template[0]['ID'],
                                             filters='externalID',
@@ -352,18 +352,18 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
         self._create_nuage_port_with_security_group(
             sg1_body['security_group']['id'], n2['id'])
         if l3:
-            nuage_d1 = self.nuage_vsd_client.get_l3domain(
+            nuage_d1 = self.nuage_client.get_l3domain(
                 filters='externalID',
                 filter_value=r1['id'])
-            nuage_d2 = self.nuage_vsd_client.get_l3domain(
+            nuage_d2 = self.nuage_client.get_l3domain(
                 filters='externalID',
                 filter_value=r2['id'])
 
         else:
-            nuage_d1 = self.nuage_vsd_client.get_l2domain(
+            nuage_d1 = self.nuage_client.get_l2domain(
                 filters='externalID',
                 filter_value=s1['id'])
-            nuage_d2 = self.nuage_vsd_client.get_l2domain(
+            nuage_d2 = self.nuage_client.get_l2domain(
                 filters='externalID',
                 filter_value=s2['id'])
 
@@ -391,7 +391,7 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
         name = data_utils.rand_name('network-')
         cls.network = cls.create_network(network_name=name)
         cls.subnet = cls.create_subnet(cls.network)
-        nuage_l2domain = cls.nuage_vsd_client.get_l2domain(
+        nuage_l2domain = cls.nuage_client.get_l2domain(
             filters='externalID',
             filter_value=cls.subnet['id'])
         cls.nuage_any_domain = nuage_l2domain
@@ -448,7 +448,7 @@ class TestSecGroupTestNuageL3Domain(SecGroupTestNuageBase):
         cls.routers_client.add_router_interface(
             cls.router['id'], subnet_id=cls.subnet['id'])
 
-        nuage_l3domain = cls.nuage_vsd_client.get_l3domain(
+        nuage_l3domain = cls.nuage_client.get_l3domain(
             filters='externalID',
             filter_value=cls.router['id'])
 

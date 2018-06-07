@@ -26,7 +26,7 @@ class TestNuageDomainTunnelTypeCli(CLIClientTestCase):
     @classmethod
     def setup_clients(cls):
         super(TestNuageDomainTunnelTypeCli, cls).setup_clients()
-        cls.nuage_vsd_client = nuage_client.NuageRestClient()
+        cls.nuage_client = nuage_client.NuageRestClient()
 
     @classmethod
     def skip_checks(cls):
@@ -44,7 +44,7 @@ class TestNuageDomainTunnelTypeCli(CLIClientTestCase):
 
     @classmethod
     def get_data_center_default_domain_tunnel_type(cls):
-        system_configurations = cls.nuage_vsd_client.get_system_configuration()
+        system_configurations = cls.nuage_client.get_system_configuration()
         cls.system_configuration = system_configurations[0]
         return cls.system_configuration['domainTunnelType']
 
@@ -54,11 +54,11 @@ class TestNuageDomainTunnelTypeCli(CLIClientTestCase):
                 domain_tunnel_type):
             cls.system_configuration['domainTunnelType'] = domain_tunnel_type
             configuration_id = cls.system_configuration['ID']
-            cls.nuage_vsd_client.update_system_configuration(
+            cls.nuage_client.update_system_configuration(
                 configuration_id, cls.system_configuration)
 
             updated_system_configurations = \
-                cls.nuage_vsd_client.get_system_configuration()
+                cls.nuage_client.get_system_configuration()
             updated_system_configuration = updated_system_configurations[0]
 
             cls.system_configuration = updated_system_configuration
@@ -195,11 +195,11 @@ class TestNuageDomainTunnelTypeAsTenantCli(CLIClientTestCase):
     @classmethod
     def setup_clients(cls):
         super(TestNuageDomainTunnelTypeAsTenantCli, cls).setup_clients()
-        cls.nuage_vsd_client = nuage_client.NuageRestClient()
+        cls.nuage_client = nuage_client.NuageRestClient()
 
     @classmethod
     def get_data_center_default_domain_tunnel_type(cls):
-        system_configurations = cls.nuage_vsd_client.get_system_configuration()
+        system_configurations = cls.nuage_client.get_system_configuration()
         cls.system_configuration = system_configurations[0]
         return cls.system_configuration['domainTunnelType']
 

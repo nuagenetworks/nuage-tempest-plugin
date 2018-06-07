@@ -79,7 +79,7 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
             cidr4=cidr4, cidr6=cidr6, dhcp_managed=True)
         cli_network, cli_subnet4, cli_subnet6 = \
             self._cli_create_os_l2_vsd_managed_dualstack_subnet(vsd_l2_subnet)
-        policy_group = self.nuage_vsd_client.create_policygroup(
+        policy_group = self.nuage_client.create_policygroup(
             constants.L2_DOMAIN,
             vsd_l2_subnet['ID'],
             name='cli-myVSDpg-1',
@@ -145,7 +145,7 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
             cidr4=cidr4, cidr6=cidr6, dhcp_managed=True)
         cli_network, cli_subnet4, cli_subnet6 = \
             self._cli_create_os_l2_vsd_managed_dualstack_subnet(vsd_l2_subnet)
-        policy_group = self.nuage_vsd_client.create_policygroup(
+        policy_group = self.nuage_client.create_policygroup(
             constants.L2_DOMAIN,
             vsd_l2_subnet['ID'],
             name='cli-myVSDpg-1',
@@ -214,7 +214,7 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
         # And I have multiple policy_groups
         for i in range(SEVERAL_POLICY_GROUPS):
             policy_groups.append(
-                self.nuage_vsd_client.create_policygroup(
+                self.nuage_client.create_policygroup(
                     constants.L2_DOMAIN,
                     vsd_l2_subnet['ID'],
                     name='myVSDpg-%s' % i,
@@ -287,7 +287,7 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
             self._cli_create_os_l2_vsd_managed_dualstack_subnet(
                 vsd_l2_subnet_x)
 
-        policy_group_x = self.nuage_vsd_client.create_policygroup(
+        policy_group_x = self.nuage_client.create_policygroup(
             constants.L2_DOMAIN,
             vsd_l2_subnet_x['ID'],
             name='myVSDpg-X',
@@ -302,7 +302,7 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
             self._cli_create_os_l2_vsd_managed_dualstack_subnet(
                 vsd_l2_subnet_y)
 
-        policy_group_y = self.nuage_vsd_client.create_policygroup(
+        policy_group_y = self.nuage_client.create_policygroup(
             constants.L2_DOMAIN,
             vsd_l2_subnet_y['ID'],
             name='myVSDpg-2',
@@ -371,7 +371,7 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
             self._cli_create_os_l2_vsd_managed_dualstack_subnet(
                 vsd_l3_subnet_x)
 
-        policy_group_x = self.nuage_vsd_client.create_policygroup(
+        policy_group_x = self.nuage_client.create_policygroup(
             constants.DOMAIN,
             vsd_l3_domain_x['ID'],
             name='myVSD-L3-pg-X',
@@ -385,7 +385,7 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
         cli_network_y, cli_subnet4_y, cli_subnet6_y = \
             self._cli_create_os_l2_vsd_managed_dualstack_subnet(
                 vsd_l3_subnet_y)
-        policy_group_y = self.nuage_vsd_client.create_policygroup(
+        policy_group_y = self.nuage_client.create_policygroup(
             constants.DOMAIN,
             vsd_l3_domain_y['ID'],
             name='myVSD-L3-pg-Y',
@@ -483,7 +483,7 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
 
         # And I have multiple policy_groups
         for i in range(SEVERAL_POLICY_GROUPS):
-            policy_groups.append(self.nuage_vsd_client.create_policygroup(
+            policy_groups.append(self.nuage_client.create_policygroup(
                 constants.DOMAIN,
                 vsd_l3_domain['ID'],
                 name='my-L3-VSDpg-%s' % i,
@@ -559,7 +559,7 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
 
         # And I have multiple policy_groups
         for i in range(SEVERAL_POLICY_GROUPS):
-            policy_groups.append(self.nuage_vsd_client.create_policygroup(
+            policy_groups.append(self.nuage_client.create_policygroup(
                 constants.L2_DOMAIN,
                 vsd_l2_subnet['ID'],
                 name='myVSDpg-%s' % i,

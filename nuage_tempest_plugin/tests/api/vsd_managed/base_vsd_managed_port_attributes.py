@@ -85,7 +85,7 @@ class BaseVSDManagedPortAttributes(
         return network
 
     def _verify_redirect_target(self, rt, parent, parentinfo, postinfo):
-        redirect_target = self.nuage_vsd_client.get_redirection_target(
+        redirect_target = self.nuage_client.get_redirection_target(
             parent, parentinfo['ID'], filters='ID',
             filter_value=rt['nuage_redirect_target']['id'])
 
@@ -100,10 +100,10 @@ class BaseVSDManagedPortAttributes(
     def _verify_redirect_target_rules(self, rtrule,
                                       parent, parentinfo, ruleinfo):
         redirect_target_rule_template = \
-            self.nuage_vsd_client.get_advfwd_template(
+            self.nuage_client.get_advfwd_template(
                 parent, parentinfo['ID'])
 
-        redirect_target_rule = self.nuage_vsd_client.get_advfwd_entrytemplate(
+        redirect_target_rule = self.nuage_client.get_advfwd_entrytemplate(
             'ingressadvfwdtemplates',
             str(redirect_target_rule_template[0]['ID']))
 
@@ -142,19 +142,19 @@ class BaseVSDManagedPortAttributes(
         # Unassigning port to Redirect Target
         self.admin_ports_client.update_port(
             rtport['id'], nuage_redirect_targets='')
-        redirect_vport = self.nuage_vsd_client.get_redirection_target_vports(
+        redirect_vport = self.nuage_client.get_redirection_target_vports(
             'redirectiontargets',
             rt['nuage_redirect_target']['id'])
         self.assertEqual(redirect_vport, '')
 
     def _verify_vsd_rt_port(self, rtport, rt, parent, parentinfo):
         # Verifying vport has associated RT
-        redirect_vport = self.nuage_vsd_client.get_redirection_target_vports(
+        redirect_vport = self.nuage_client.get_redirection_target_vports(
             'redirectiontargets',
             rt['nuage_redirect_target']['id'])
-        port_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        port_ext_id = self.nuage_client.get_vsd_external_id(
             rtport['id'])
-        vsd_vport = self.nuage_vsd_client.get_vport(
+        vsd_vport = self.nuage_client.get_vport(
             parent, parentinfo['ID'], filters='externalID',
             filter_value=port_ext_id)
         self.assertEqual(
@@ -164,14 +164,14 @@ class BaseVSDManagedPortAttributes(
         self.ports_client.update_port(
             rtport['id'],
             nuage_redirect_targets=str(rt['nuage_redirect_target']['id']))
-        redirect_vport = self.nuage_vsd_client.get_redirection_target_vports(
+        redirect_vport = self.nuage_client.get_redirection_target_vports(
             'redirectiontargets',
             rt['nuage_redirect_target']['id'])
 
         # Verifying vport has associated RT
-        port_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        port_ext_id = self.nuage_client.get_vsd_external_id(
             rtport['id'])
-        vsd_vport = self.nuage_vsd_client.get_vport(
+        vsd_vport = self.nuage_client.get_vport(
             parent, parentinfo['ID'], filters='externalID',
             filter_value=port_ext_id)
         self.assertEqual(
@@ -397,7 +397,7 @@ class BaseVSDManagedPortAttributes(
             "DSCP": "*",
             "action": "FORWARD"
         }
-        self.nuage_vsd_client.create_ingress_security_group_entry(
+        self.nuage_client.create_ingress_security_group_entry(
             name_description='ping8',
             iacl_template_id=iacl_template_id,
             extra_params=extra_params,
@@ -418,7 +418,7 @@ class BaseVSDManagedPortAttributes(
             "description": "ping0",
             "action": "FORWARD"
         }
-        self.nuage_vsd_client.create_ingress_security_group_entry(
+        self.nuage_client.create_ingress_security_group_entry(
             name_description='ping0',
             iacl_template_id=iacl_template_id,
             extra_params=extra_params,
@@ -437,7 +437,7 @@ class BaseVSDManagedPortAttributes(
         #    ports to the pg
         #
         # # start policy group changes
-        # self.nuage_vsd_client.begin_l2_policy_changes(l2domain_id)
+        # self.nuage_client.begin_l2_policy_changes(l2domain_id)
         # create ingress policy
         self.iacl_template = self._create_l2_ingress_acl_template(
             data_utils.rand_name("iacl_policy"), l2domain_id)
@@ -446,7 +446,7 @@ class BaseVSDManagedPortAttributes(
         self.eacl_templace = self._create_l2_egress_acl_template(
             data_utils.rand_name("eacl_policy"), l2domain_id)
         # # Apply the policy changes
-        # self.nuage_vsd_client.apply_l2_policy_changes(l2domain_id)
+        # self.nuage_client.apply_l2_policy_changes(l2domain_id)
         pass
 
     def _prepare_l3_security_group_entries(self, policy_group_id, l3domain_id,
@@ -462,7 +462,7 @@ class BaseVSDManagedPortAttributes(
         #    ports to the pg
         #
         # # start policy group changes
-        # self.nuage_vsd_client.begin_l3_policy_changes(l3domain_id)
+        # self.nuage_client.begin_l3_policy_changes(l3domain_id)
         # create ingress policy
         self.iacl_template = self._create_l3_ingress_acl_template(
             data_utils.rand_name("iacl_policy"),
@@ -473,7 +473,7 @@ class BaseVSDManagedPortAttributes(
         self.eacl_templace = self._create_l3_egress_acl_template(
             data_utils.rand_name("eacl_policy"), l3domain_id)
         # # Apply the policy changes
-        # self.nuage_vsd_client.apply_l3_policy_changes(l3domain_id)
+        # self.nuage_client.apply_l3_policy_changes(l3domain_id)
         pass
 
     def _create_l2_ingress_acl_template(self, name, domain_id):
@@ -485,7 +485,7 @@ class BaseVSDManagedPortAttributes(
                         "defaultAllowNonIP": True,
                         "defaultAllowIP": False,
                         "active": True}
-        iacl_template = self.nuage_vsd_client.create_ingress_acl_template(
+        iacl_template = self.nuage_client.create_ingress_acl_template(
             name, constants.L2_DOMAIN, domain_id, extra_params=extra_params)
         return iacl_template
         pass
@@ -500,13 +500,13 @@ class BaseVSDManagedPortAttributes(
                         "defaultAllowNonIP": True,
                         "defaultAllowIP": defaultAllowIP,
                         "active": True}
-        iacl_template = self.nuage_vsd_client.create_ingress_acl_template(
+        iacl_template = self.nuage_client.create_ingress_acl_template(
             name, constants.DOMAIN, domain_id, extra_params=extra_params)
         return iacl_template
         pass
 
     def _create_ingress_acl_template(self, name, domain_id):
-        iacl_template = self.nuage_vsd_client.create_ingress_acl_template(
+        iacl_template = self.nuage_client.create_ingress_acl_template(
             name, domain_id)
         return iacl_template
         pass
@@ -565,7 +565,7 @@ class BaseVSDManagedPortAttributes(
                         "defaultAllowNonIP": True,
                         "defaultAllowIP": False,
                         "active": True}
-        eacl_template = self.nuage_vsd_client.create_egress_acl_template(
+        eacl_template = self.nuage_client.create_egress_acl_template(
             name, constants.L2_DOMAIN, domain_id, extra_params=extra_params)
         return eacl_template
         pass
@@ -578,13 +578,13 @@ class BaseVSDManagedPortAttributes(
                         "defaultAllowNonIP": True,
                         "defaultAllowIP": True,
                         "active": True}
-        eacl_template = self.nuage_vsd_client.create_egress_acl_template(
+        eacl_template = self.nuage_client.create_egress_acl_template(
             name, constants.DOMAIN, domain_id, extra_params=extra_params)
         return eacl_template
         pass
 
     def _create_egress_acl_template(self, name, template_id):
-        eacl_template = self.nuage_vsd_client.create_egress_acl_template(
+        eacl_template = self.nuage_client.create_egress_acl_template(
             name, template_id)
         return eacl_template
         pass
@@ -767,7 +767,7 @@ class BaseVSDManagedPortAttributes(
         # vsd_l3_subnet, vsd_l3_domain = self._create_vsd_l3_managed_subnet()
         network, subnet = self._create_os_l3_vsd_managed_subnet(
             vsd_l3_subnet, OS_CONNECTING_NW_CIDR)
-        policy_group = self.nuage_vsd_client.create_policygroup(
+        policy_group = self.nuage_client.create_policygroup(
             constants.DOMAIN,
             vsd_l3_domain[0]['ID'],
             name='myVSD-l3-policygrp',
@@ -791,9 +791,9 @@ class BaseVSDManagedPortAttributes(
             CONF.network.public_network_id)
         public_subnet = self.subnets_client.show_subnet(
             public_network['network']['subnets'][0])
-        public_subnet_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        public_subnet_ext_id = self.nuage_client.get_vsd_external_id(
             public_subnet['subnet']['id'])
-        floating_ip_pool = self.nuage_vsd_client.get_sharedresource(
+        floating_ip_pool = self.nuage_client.get_sharedresource(
             filters='externalID', filter_value=public_subnet_ext_id)
         floating_ip = self._claim_vsd_floating_ip(vsd_l3_domain[0]['ID'],
                                                   floating_ip_pool[0]['ID'])
@@ -891,7 +891,7 @@ class BaseVSDManagedPortAttributes(
             "defaultAllowNonIP": False,
             "defaultAllowIP": False
         }
-        self.nuage_vsd_client.update_ingress_acl_template(
+        self.nuage_client.update_ingress_acl_template(
             iacl_template_id, extra_params=update_params)
         pass
 
@@ -901,7 +901,7 @@ class BaseVSDManagedPortAttributes(
             "defaultAllowNonIP": True,
             "defaultAllowIP": True
         }
-        self.nuage_vsd_client.update_ingress_acl_template(
+        self.nuage_client.update_ingress_acl_template(
             iacl_template_id, extra_params=update_params)
         pass
 
@@ -911,7 +911,7 @@ class BaseVSDManagedPortAttributes(
             "defaultAllowNonIP": False,
             "defaultAllowIP": False
         }
-        self.nuage_vsd_client.update_egress_acl_template(
+        self.nuage_client.update_egress_acl_template(
             eacl_template_id, extra_params=update_params)
         pass
 
@@ -921,7 +921,7 @@ class BaseVSDManagedPortAttributes(
             "defaultAllowNonIP": True,
             "defaultAllowIP": True
         }
-        self.nuage_vsd_client.update_egress_acl_template(
+        self.nuage_client.update_egress_acl_template(
             eacl_template_id, extra_params=update_params)
         pass
 
@@ -1035,7 +1035,7 @@ class BaseVSDManagedPortAttributes(
         extra_params = {
             "underlay": True
         }
-        vsd_fip_pool = cls.nuage_vsd_client.create_floatingip_pool(
+        vsd_fip_pool = cls.nuage_client.create_floatingip_pool(
             name=name,
             address=str(address),
             gateway=str(gateway),
@@ -1045,7 +1045,7 @@ class BaseVSDManagedPortAttributes(
         return vsd_fip_pool
 
     def _claim_vsd_floating_ip(self, l3domain_id, vsd_fip_pool_id):
-        claimed_fip = self.nuage_vsd_client.claim_floatingip(
+        claimed_fip = self.nuage_client.claim_floatingip(
             l3domain_id, vsd_fip_pool_id)
         return claimed_fip
 

@@ -47,7 +47,7 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
     @classmethod
     def setup_clients(cls):
         super(NuagePatUnderlayBase, cls).setup_clients()
-        cls.nuage_vsd_client = nuage_client.NuageRestClient()
+        cls.nuage_client = nuage_client.NuageRestClient()
         cls.service_manager = service_mgmt.ServiceManager()
 
         if not cls.service_manager.is_service_running(
@@ -152,9 +152,9 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
                         create_body['router']['id'])
         # Verify snat attributes after router creation
         self._verify_router_gateway(create_body['router']['id'])
-        nuage_domain = self.nuage_vsd_client.get_l3domain(
+        nuage_domain = self.nuage_client.get_l3domain(
             filters='externalID',
-            filter_value=self.nuage_vsd_client.get_vsd_external_id(
+            filter_value=self.nuage_client.get_vsd_external_id(
                 create_body['router']['id']))
         self.assertEqual(
             nuage_domain[0]['PATEnabled'],
@@ -207,9 +207,9 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
             show_body['router']['external_gateway_info']['enable_snat'],
             pat_value)
         # VSD patEnabled flag should be = ENABLED (True) / DISABLED (False)
-        nuage_domain = self.nuage_vsd_client.get_l3domain(
+        nuage_domain = self.nuage_client.get_l3domain(
             filters='externalID',
-            filter_value=self.nuage_vsd_client.get_vsd_external_id(
+            filter_value=self.nuage_client.get_vsd_external_id(
                 create_body['router']['id']))
         self.assertEqual(
             nuage_domain[0]['PATEnabled'],
@@ -273,9 +273,9 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
                 show_body['router']['external_gateway_info']['enable_snat'],
                 enable_snat)
             # Check patEnabled flag on VSD: should be accordingly
-            nuage_domain = self.nuage_vsd_client.get_l3domain(
+            nuage_domain = self.nuage_client.get_l3domain(
                 filters='externalID',
-                filter_value=self.nuage_vsd_client.get_vsd_external_id(
+                filter_value=self.nuage_client.get_vsd_external_id(
                     create_body['router']['id']))
             self.assertEqual(
                 nuage_domain[0]['PATEnabled'],
@@ -315,9 +315,9 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
                 {'network_id': ext_network['id'],
                  'enable_snat': False if enable_snat else True})
             # check whether the VSD flag is update
-            nuage_domain = self.nuage_vsd_client.get_l3domain(
+            nuage_domain = self.nuage_client.get_l3domain(
                 filters='externalID',
-                filter_value=self.nuage_vsd_client.get_vsd_external_id(
+                filter_value=self.nuage_client.get_vsd_external_id(
                     create_body['router']['id']))
             self.assertEqual(
                 nuage_domain[0]['PATEnabled'],
@@ -355,9 +355,9 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
                 show_body['router']['external_gateway_info']['enable_snat'],
                 enable_snat)
             # Check patEnabled flag on VSD: should be accordingly
-            nuage_domain = self.nuage_vsd_client.get_l3domain(
+            nuage_domain = self.nuage_client.get_l3domain(
                 filters='externalID',
-                filter_value=self.nuage_vsd_client.get_vsd_external_id(
+                filter_value=self.nuage_client.get_vsd_external_id(
                     create_body['router']['id']))
             self.assertEqual(
                 nuage_domain[0]['PATEnabled'],
@@ -373,9 +373,9 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
             self._verify_router_gateway(
                 updated_body['router']['id'],
                 exp_ext_gw_info=updated_ext_gw_info)
-            nuage_domain = self.nuage_vsd_client.get_l3domain(
+            nuage_domain = self.nuage_client.get_l3domain(
                 filters='externalID',
-                filter_value=self.nuage_vsd_client.get_vsd_external_id(
+                filter_value=self.nuage_client.get_vsd_external_id(
                     create_body['router']['id']))
             self.assertEqual(
                 nuage_domain[0]['PATEnabled'],
@@ -583,9 +583,9 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
         self.assertIn(compare_snat_str.lower(),
                       self.router['external_gateway_info'])
         # And I expect the PATEnabled flag on the VSD to be set accordingly
-        nuage_domain = self.nuage_vsd_client.get_l3domain(
+        nuage_domain = self.nuage_client.get_l3domain(
             filters='externalID',
-            filter_value=self.nuage_vsd_client.get_vsd_external_id(
+            filter_value=self.nuage_client.get_vsd_external_id(
                 self.router['id']))
         self.assertEqual(
             nuage_domain[0]['PATEnabled'],
@@ -619,9 +619,9 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
             compare_snat_str = '"enable_snat": ' + str(enable_snat)
             self.assertIn(
                 compare_snat_str.lower(), self.router['external_gateway_info'])
-            nuage_domain = self.nuage_vsd_client.get_l3domain(
+            nuage_domain = self.nuage_client.get_l3domain(
                 filters='externalID',
-                filter_value=self.nuage_vsd_client.get_vsd_external_id(
+                filter_value=self.nuage_client.get_vsd_external_id(
                     self.router['id']))
             self.assertEqual(
                 nuage_domain[0]['PATEnabled'],
@@ -653,9 +653,9 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
             compare_snat_str = '"enable_snat": ' + str(enable_snat)
             self.assertIn(compare_snat_str.lower(),
                           self.router['external_gateway_info'])
-            nuage_domain = self.nuage_vsd_client.get_l3domain(
+            nuage_domain = self.nuage_client.get_l3domain(
                 filters='externalID',
-                filter_value=self.nuage_vsd_client.get_vsd_external_id(
+                filter_value=self.nuage_client.get_vsd_external_id(
                     self.router['id']))
             self.assertEqual(
                 nuage_domain[0]['PATEnabled'],
@@ -672,9 +672,9 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
             show_router = self.show_router(self.router['id'])
             self.assertIn(
                 compare_snat_str.lower(), show_router['external_gateway_info'])
-            nuage_domain = self.nuage_vsd_client.get_l3domain(
+            nuage_domain = self.nuage_client.get_l3domain(
                 filters='externalID',
-                filter_value=self.nuage_vsd_client.get_vsd_external_id(
+                filter_value=self.nuage_client.get_vsd_external_id(
                     self.router['id']))
             self.assertEqual(
                 nuage_domain[0]['PATEnabled'],
@@ -848,9 +848,9 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
                                     constants.NUAGE_PAT_VSD_DISABLED)
                     self.assertIn(compare_snat_str.lower(),
                                   self.router['external_gateway_info'])
-                    nuage_domain = self.nuage_vsd_client.get_l3domain(
+                    nuage_domain = self.nuage_client.get_l3domain(
                         filters='externalID',
-                        filter_value=self.nuage_vsd_client.get_vsd_external_id(
+                        filter_value=self.nuage_client.get_vsd_external_id(
                             created_id))
                     self.assertEqual(
                         nuage_domain[0]['PATEnabled'],

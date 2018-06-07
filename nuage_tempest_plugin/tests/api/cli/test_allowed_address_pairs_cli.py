@@ -119,13 +119,13 @@ class OSManagedAllowedAddresPairsCliTest(
             aap_fixed_ip,
             addrpair_port['mac_address'])
         # And no corresponding MultiVIP on the VSD
-        vsd_l2_domain = self.nuage_vsd_client.get_l2domain(
+        vsd_l2_domain = self.nuage_client.get_l2domain(
             filters='externalID', filter_value=cli_subnet4['id'])
         vsd_l2_domain = vsd_l2_domain[0]
 
-        port_ext_id = self.nuage_vsd_client.get_vsd_external_id(
+        port_ext_id = self.nuage_client.get_vsd_external_id(
             addrpair_port['id'])
-        nuage_vport = self.nuage_vsd_client.get_vport(
+        nuage_vport = self.nuage_client.get_vport(
             constants.L2_DOMAIN,
             vsd_l2_domain['ID'],
             filters='externalID',
@@ -145,9 +145,9 @@ class OSManagedAllowedAddresPairsCliTest(
             aap_fixed_ip6,
             addrpair_port_dual['mac_address'])
         # And no corresponding MultiVIP on the VSD
-        port_ext_id6 = self.nuage_vsd_client.get_vsd_external_id(
+        port_ext_id6 = self.nuage_client.get_vsd_external_id(
             addrpair_port_dual['id'])
-        nuage_vport_dual = self.nuage_vsd_client.get_vport(
+        nuage_vport_dual = self.nuage_client.get_vport(
             constants.L2_DOMAIN,
             vsd_l2_domain['ID'],
             filters='externalID',

@@ -25,7 +25,7 @@ from nuage_tempest_plugin.lib.test import tags
 from nuage_tempest_plugin.lib.utils import constants
 
 from nuage_tempest_plugin.tests.api.vsd_managed \
-    import base_vsd_managed_network
+    import base_vsd_managed_networks
 
 CONF = config.CONF
 LOG = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ LOG = logging.getLogger(__name__)
 
 @nuage_test.class_header(tags=tags.VSD_MANAGED)
 class VSDManagedPortSecurity(
-        base_vsd_managed_network.BaseVSDManagedNetworksTest):
+        base_vsd_managed_networks.BaseVSDManagedNetwork):
 
     @decorators.attr(type='smoke')
     def test_create_port_security_disabled_l3(self):
@@ -69,7 +69,7 @@ class VSDManagedPortSecurity(
         port = body['port']
 
         self.addCleanup(self.ports_client.delete_port, port['id'])
-        nuage_vport = self.nuageclient.get_vport(
+        nuage_vport = self.nuage_client.get_vport(
             constants.SUBNETWORK,
             vsd_subnet[0]['ID'],
             filters='externalID',
@@ -100,7 +100,7 @@ class VSDManagedPortSecurity(
         port = body['port']
 
         self.addCleanup(self.ports_client.delete_port, port['id'])
-        nuage_vport = self.nuageclient.get_vport(
+        nuage_vport = self.nuage_client.get_vport(
             constants.L2_DOMAIN,
             vsd_l2dom[0]['ID'],
             filters='externalID',
@@ -132,7 +132,7 @@ class VSDManagedPortSecurity(
         port = body['port']
 
         self.addCleanup(self.ports_client.delete_port, port['id'])
-        nuage_vport = self.nuageclient.get_vport(
+        nuage_vport = self.nuage_client.get_vport(
             constants.L2_DOMAIN,
             vsd_l2dom[0]['ID'],
             filters='externalID',
@@ -173,7 +173,7 @@ class VSDManagedPortSecurity(
         port = body['port']
 
         self.addCleanup(self.ports_client.delete_port, port['id'])
-        nuage_vport = self.nuageclient.get_vport(
+        nuage_vport = self.nuage_client.get_vport(
             constants.SUBNETWORK,
             vsd_subnet[0]['ID'],
             filters='externalID',
@@ -184,7 +184,7 @@ class VSDManagedPortSecurity(
                        'port_security_enabled': 'False'}
         self.ports_client.update_port(port['id'], **update_body)
 
-        nuage_vport = self.nuageclient.get_vport(
+        nuage_vport = self.nuage_client.get_vport(
             constants.SUBNETWORK,
             vsd_subnet[0]['ID'],
             filters='externalID',
@@ -194,7 +194,7 @@ class VSDManagedPortSecurity(
         update_body = {'port_security_enabled': 'True'}
         self.ports_client.update_port(port['id'], **update_body)
 
-        nuage_vport = self.nuageclient.get_vport(
+        nuage_vport = self.nuage_client.get_vport(
             constants.SUBNETWORK,
             vsd_subnet[0]['ID'],
             filters='externalID',
@@ -225,7 +225,7 @@ class VSDManagedPortSecurity(
         port = body['port']
 
         self.addCleanup(self.ports_client.delete_port, port['id'])
-        nuage_vport = self.nuageclient.get_vport(
+        nuage_vport = self.nuage_client.get_vport(
             constants.L2_DOMAIN,
             vsd_l2dom[0]['ID'],
             filters='externalID',
@@ -236,7 +236,7 @@ class VSDManagedPortSecurity(
                        'port_security_enabled': 'False'}
         self.ports_client.update_port(port['id'], **update_body)
 
-        nuage_vport = self.nuageclient.get_vport(
+        nuage_vport = self.nuage_client.get_vport(
             constants.L2_DOMAIN,
             vsd_l2dom[0]['ID'],
             filters='externalID',
@@ -246,7 +246,7 @@ class VSDManagedPortSecurity(
         update_body = {'port_security_enabled': 'True'}
         self.ports_client.update_port(port['id'], **update_body)
 
-        nuage_vport = self.nuageclient.get_vport(
+        nuage_vport = self.nuage_client.get_vport(
             constants.L2_DOMAIN,
             vsd_l2dom[0]['ID'],
             filters='externalID',
@@ -277,7 +277,7 @@ class VSDManagedPortSecurity(
         port = body['port']
 
         self.addCleanup(self.ports_client.delete_port, port['id'])
-        nuage_vport = self.nuageclient.get_vport(
+        nuage_vport = self.nuage_client.get_vport(
             constants.L2_DOMAIN,
             vsd_l2dom[0]['ID'],
             filters='externalID',
@@ -288,7 +288,7 @@ class VSDManagedPortSecurity(
                        'port_security_enabled': 'False'}
         self.ports_client.update_port(port['id'], **update_body)
 
-        nuage_vport = self.nuageclient.get_vport(
+        nuage_vport = self.nuage_client.get_vport(
             constants.L2_DOMAIN,
             vsd_l2dom[0]['ID'],
             filters='externalID',
@@ -298,7 +298,7 @@ class VSDManagedPortSecurity(
         update_body = {'port_security_enabled': 'True'}
         self.ports_client.update_port(port['id'], **update_body)
 
-        nuage_vport = self.nuageclient.get_vport(
+        nuage_vport = self.nuage_client.get_vport(
             constants.L2_DOMAIN,
             vsd_l2dom[0]['ID'],
             filters='externalID',

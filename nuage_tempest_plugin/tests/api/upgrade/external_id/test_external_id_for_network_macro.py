@@ -43,7 +43,7 @@ class ExternalIdForNetworkMacroTest(base.BaseAdminNetworkTest):
 
         def get_by_external_id(self):
             vsd_network_macro = \
-                self.test.nuage_vsd_client.get_enterprise_net_macro(
+                self.test.nuage_client.get_enterprise_net_macro(
                     netpart_name=self.net_partition['name'])
             if NUAGE_FEATURES.os_managed_dualstack_subnets:
                 self.test.assertEqual(
@@ -52,7 +52,7 @@ class ExternalIdForNetworkMacroTest(base.BaseAdminNetworkTest):
                 self.test.assertEqual(
                     1, len(vsd_network_macro), "should have network macros")
             vsd_network_macros = \
-                self.test.nuage_vsd_client.get_enterprise_net_macro(
+                self.test.nuage_client.get_enterprise_net_macro(
                     netpart_name=self.net_partition['name'],
                     filters='externalID',
                     filter_value=ExternalId(
@@ -80,14 +80,14 @@ class ExternalIdForNetworkMacroTest(base.BaseAdminNetworkTest):
             self.test.assertRaisesRegex(
                 n_exceptions.MultipleChoices,
                 "Multiple choices",
-                self.test.nuage_vsd_client.delete_resource,
+                self.test.nuage_client.delete_resource,
                 n_constants.ENTERPRISE_NET_MACRO,
                 self.vsd_network_macro['ID'])
 
     @classmethod
     def setup_clients(cls):
         super(ExternalIdForNetworkMacroTest, cls).setup_clients()
-        cls.nuage_vsd_client = NuageRestClient()
+        cls.nuage_client = NuageRestClient()
         cls.nuage_network_client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
             **cls.os_primary.default_params)
@@ -119,7 +119,7 @@ class ExternalIdForNetworkMacroTest(base.BaseAdminNetworkTest):
             network_a1, net_partition=netpartition_b['name'])
         self.assertIsNotNone(subnet_a1)  # dummy check to use local variable
 
-        network_macros = self.nuage_vsd_client.get_enterprise_net_macro(
+        network_macros = self.nuage_client.get_enterprise_net_macro(
             netpart_name=netpartition_b['name'])
         self.assertEqual(
             0, len(network_macros), "should not have network macros")

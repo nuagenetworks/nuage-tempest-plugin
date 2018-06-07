@@ -53,7 +53,7 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
             self.vsd_security_policy_group = None
 
         def get_by_external_id(self):
-            vsd_vports = self.test.nuage_vsd_client.get_vport(
+            vsd_vports = self.test.nuage_client.get_vport(
                 parent=n_constants.L2_DOMAIN,
                 parent_id=self.vsd_l2domain['ID'],
                 filters='externalID',
@@ -69,7 +69,7 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
 
         def has_dhcp_options(self, with_external_id=None):
             # vsd dhcp_options object has external ID
-            vsd_dhcp_options = self.test.nuage_vsd_client.get_dhcpoption(
+            vsd_dhcp_options = self.test.nuage_client.get_dhcpoption(
                 parent=n_constants.VPORT,
                 parent_id=self.vsd_vport['ID'])
 
@@ -80,7 +80,7 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
                 self.test.assertIsNone(vsd_dhcp_options[0]['externalID'])
             else:
                 vsd_dhcp_options = \
-                    self.test.nuage_vsd_client.get_child_resource(
+                    self.test.nuage_client.get_child_resource(
                         resource=n_constants.VPORT,
                         resource_id=self.vsd_vport['ID'],
                         child_resource=n_constants.DHCPOPTION,
@@ -97,12 +97,12 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
 
         def has_default_security_policy_group(self, with_external_id=None):
             # vsd has_default_security_policy_group object has external ID
-            # vsd_security_policy_groups = self.test.nuage_vsd_client.\
+            # vsd_security_policy_groups = self.test.nuage_client.\
             #                              get_policygroup(
             #     parent=n_constants.POLICYGROUP,
             #     parent_id=self.vsd_vport['parentID'])
             vsd_security_policy_groups = \
-                self.test.nuage_vsd_client.get_child_resource(
+                self.test.nuage_client.get_child_resource(
                     resource=n_constants.L2_DOMAIN,
                     resource_id=self.vsd_vport['parentID'],
                     child_resource=n_constants.POLICYGROUP)
@@ -117,7 +117,7 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
                     vsd_security_policy_groups[0]['externalID'])
             else:
                 vsd_security_policy_groups = \
-                    self.test.nuage_vsd_client.get_child_resource(
+                    self.test.nuage_client.get_child_resource(
                         resource=n_constants.L2_DOMAIN,
                         resource_id=self.vsd_vport['parentID'],
                         child_resource=n_constants.POLICYGROUP,
@@ -135,7 +135,7 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
         def has_default_ingress_policy_entries(self, with_external_id=None):
             # vsd ingress_acl_template object has external ID
             vsd_ingress_acl_templates =\
-                self.test.nuage_vsd_client.get_ingressacl_template(
+                self.test.nuage_client.get_ingressacl_template(
                     parent=n_constants.L2_DOMAIN,
                     parent_id=self.vsd_l2domain['ID'])
 
@@ -144,7 +144,7 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
                 "ingress_acl_template not found by VSD parent ID")
 
             vsd_ingress_security_policy_entries = \
-                self.test.nuage_vsd_client.get_child_resource(
+                self.test.nuage_client.get_child_resource(
                     resource=n_constants.INGRESS_ACL_TEMPLATE,
                     resource_id=vsd_ingress_acl_templates[0]['ID'],
                     child_resource=n_constants.INGRESS_ACL_ENTRY_TEMPLATE,
@@ -160,7 +160,7 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
                     vsd_ingress_security_policy_entries[0]['externalID'])
             else:
                 vsd_ingress_security_policy_entries = \
-                    self.test.nuage_vsd_client.get_child_resource(
+                    self.test.nuage_client.get_child_resource(
                         resource=n_constants.INGRESS_ACL_TEMPLATE,
                         resource_id=vsd_ingress_acl_templates[0]['ID'],
                         child_resource=n_constants.INGRESS_ACL_ENTRY_TEMPLATE,
@@ -180,7 +180,7 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
         def has_default_egress_policy_entries(self, with_external_id=None):
             # vsd egress_acl_template object has external ID
             vsd_egress_acl_templates = \
-                self.test.nuage_vsd_client.get_egressacl_template(
+                self.test.nuage_client.get_egressacl_template(
                     parent=n_constants.L2_DOMAIN,
                     parent_id=self.vsd_l2domain['ID'])
 
@@ -189,7 +189,7 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
                 "egress_acl_template not found by VSD parent ID")
 
             vsd_egress_security_policy_entries = \
-                self.test.nuage_vsd_client.get_child_resource(
+                self.test.nuage_client.get_child_resource(
                     resource=n_constants.EGRESS_ACL_TEMPLATE,
                     resource_id=vsd_egress_acl_templates[0]['ID'],
                     child_resource=n_constants.EGRESS_ACL_ENTRY_TEMPLATE,
@@ -205,7 +205,7 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
                     vsd_egress_security_policy_entries[0]['externalID'])
             else:
                 vsd_egress_security_policy_entries = \
-                    self.test.nuage_vsd_client.get_child_resource(
+                    self.test.nuage_client.get_child_resource(
                         resource=n_constants.EGRESS_ACL_TEMPLATE,
                         resource_id=vsd_egress_acl_templates[0]['ID'],
                         child_resource=n_constants.EGRESS_ACL_ENTRY_TEMPLATE,
@@ -227,7 +227,7 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
             self.test.assertRaisesRegex(
                 n_exceptions.MultipleChoices,
                 "Multiple choices",
-                self.test.nuage_vsd_client.delete_resource,
+                self.test.nuage_client.delete_resource,
                 n_constants.VPORT,
                 self.vsd_vport['ID'])
 
@@ -239,7 +239,7 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
     @classmethod
     def setup_clients(cls):
         super(ExternalIdForVPortTest, cls).setup_clients()
-        cls.nuage_vsd_client = NuageRestClient()
+        cls.nuage_client = NuageRestClient()
 
     def create_vsd_dhcpmanaged_l2dom_template(self, **kwargs):
         params = {
@@ -248,9 +248,9 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
             'netmask': str(kwargs['cidr'].netmask),
             'gateway': kwargs['gateway']
         }
-        vsd_l2dom_tmplt = self.nuage_vsd_client.create_l2domaintemplate(
+        vsd_l2dom_tmplt = self.nuage_client.create_l2domaintemplate(
             kwargs['name'] + '-template', extra_params=params)
-        self.addCleanup(self.nuage_vsd_client.delete_l2domaintemplate,
+        self.addCleanup(self.nuage_client.delete_l2domaintemplate,
                         vsd_l2dom_tmplt[0]['ID'])
         return vsd_l2dom_tmplt
 
@@ -267,13 +267,13 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
             "Failed to create vsd l2 domain template")
 
         vsd_l2domain_template = vsd_l2domain_templates[0]
-        vsd_l2domains = self.nuage_vsd_client.create_l2domain(
+        vsd_l2domains = self.nuage_client.create_l2domain(
             name=net_name, templateId=vsd_l2domain_template['ID'])
         self.assertEqual(
             len(vsd_l2domains), 1, "Failed to create vsd l2 domain")
         vsd_l2domain = vsd_l2domains[0]
         self.addCleanup(
-            self.nuage_vsd_client.delete_l2domain, vsd_l2domain['ID'])
+            self.nuage_client.delete_l2domain, vsd_l2domain['ID'])
 
         body = self.networks_client.create_network(name=net_name)
         network = body['network']

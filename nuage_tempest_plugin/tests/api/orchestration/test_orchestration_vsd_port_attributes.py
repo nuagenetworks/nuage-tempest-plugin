@@ -210,7 +210,7 @@ class HeatVsdManagedPortAttributesTest(
             extra_params=None)
         # FIP pool for L3
         self.vsd_fip_pool = self._create_vsd_floatingip_pool()
-        claimed_fip = self.nuage_vsd_client.claim_floatingip(
+        claimed_fip = self.nuage_client.claim_floatingip(
             vsd_l3_domain[0]['ID'], self.vsd_fip_pool[0]['ID'])
 
         stack_name = 'port_attributes'

@@ -30,7 +30,7 @@ class VSDUserGroup(nuage_test.NuageBaseTest):
         super(VSDUserGroup, cls).setup_clients()
         cls.manager = cls.get_client_manager()
         cls.admin_manager = cls.get_client_manager(credential_type='admin')
-        cls.nuage_vsd_client = NuageRestClient()
+        cls.nuage_client = NuageRestClient()
 
     @classmethod
     def setup_credentials(cls):
@@ -71,7 +71,7 @@ class VSDUserGroup(nuage_test.NuageBaseTest):
             vspk_filter='externalID == "{}"'.format(
                 ExternalId(ipv4_subnet['id']).at_cms_id()))
         self.assertIsNotNone(vsd_l2_domain)
-        vsd_group = self.nuage_vsd_client.get_usergroup(
+        vsd_group = self.nuage_client.get_usergroup(
             netpart_name=net_partition_name,
             parent=nuage_constants.L2_DOMAIN,
             parent_id=vsd_l2_domain.id)
@@ -92,12 +92,12 @@ class VSDUserGroup(nuage_test.NuageBaseTest):
             vspk_filter='externalID == "{}"'.format(
                 ExternalId(router['id']).at_cms_id()))
         self.assertIsNotNone(vsd_l3_domain)
-        vsd_l3_domain_zones = self.nuage_vsd_client.get_zone(
+        vsd_l3_domain_zones = self.nuage_client.get_zone(
             parent_id=vsd_l3_domain.id)
         self.assertIsNotNone(vsd_l3_domain_zones)
         for vsd_l3_domain_zone in vsd_l3_domain_zones:
             if '-pub-' not in vsd_l3_domain_zone['name']:
-                vsd_group = self.nuage_vsd_client.get_usergroup(
+                vsd_group = self.nuage_client.get_usergroup(
                     netpart_name=net_partition_name,
                     parent=nuage_constants.ZONE,
                     parent_id=vsd_l3_domain_zone['ID'])

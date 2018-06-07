@@ -56,11 +56,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
     @classmethod
     def setup_clients(cls):
         super(OsManagedDualStackL2SubnetsTest, cls).setup_clients()
-        cls.nuage_vsd_client = NuageRestClient()
-
-    @classmethod
-    def setup_credentials(cls):
-        super(OsManagedDualStackL2SubnetsTest, cls).setup_credentials()
+        cls.nuage_client = NuageRestClient()
 
     def _verify_ipv6_subnet_with_vsd_l2_domain(self, subnet, external_id):
         vsd_l2_domain = self.vsd.get_l2domain(
@@ -97,7 +93,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
 
     # TODO(waelj) port to VSD helper
     def _verify_vport_in_l2_domain(self, port, vsd_l2domain, **kwargs):
-        nuage_vports = self.nuage_vsd_client.get_vport(
+        nuage_vports = self.nuage_client.get_vport(
             nuage_constants.L2_DOMAIN,
             vsd_l2domain.id,
             filters='externalID',
@@ -416,7 +412,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
         self.assertIsNotNone(ipv4_subnet)
 
         # Then a VSD L2 domain is created with type IPv4
-        vsd_l2_domain = self.nuage_vsd_client.get_l2domain(
+        vsd_l2_domain = self.nuage_client.get_l2domain(
             filters='externalID',
             filter_value=ExternalId(ipv4_subnet['id']).at_cms_id())
 
@@ -434,7 +430,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
             enable_dhcp=False)
         self.assertIsNotNone(ipv6_subnet)
 
-        vsd_l2_domain = self.nuage_vsd_client.get_l2domain(
+        vsd_l2_domain = self.nuage_client.get_l2domain(
             filters='externalID',
             filter_value=ExternalId(ipv4_subnet['id']).at_cms_id())
 

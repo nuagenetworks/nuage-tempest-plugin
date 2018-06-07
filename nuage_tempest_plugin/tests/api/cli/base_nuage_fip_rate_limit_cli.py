@@ -31,7 +31,7 @@ class BaseNuageFipRateLimit(
     @classmethod
     def setup_clients(cls):
         super(BaseNuageFipRateLimit, cls).setup_clients()
-        cls.nuage_vsd_client = nuage_client.NuageRestClient()
+        cls.nuage_client = nuage_client.NuageRestClient()
         cls.assure_nuage_fip_rate_limit_configs()
 
     @classmethod

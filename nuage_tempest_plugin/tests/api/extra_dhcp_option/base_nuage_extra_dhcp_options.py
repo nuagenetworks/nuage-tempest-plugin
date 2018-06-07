@@ -195,10 +195,9 @@ class NuageExtraDHCPOptionsBase(base.BaseAdminNetworkTest):
     @classmethod
     def setup_clients(cls):
         super(NuageExtraDHCPOptionsBase, cls).setup_clients()
-        cls.nuage_vsd_client = nuage_client.NuageRestClient()
-        # os = cls.get_client_manager()
-        #
-        # # TODO(Hendrik) only use admin credentials where required!
+        cls.nuage_client = nuage_client.NuageRestClient()
+
+        # TODO(Hendrik) only use admin credentials where required!
         cls.client = NuageNetworkClientJSON(
             cls.os_admin.auth_provider,
             **cls.os_admin.default_params)
@@ -207,11 +206,11 @@ class NuageExtraDHCPOptionsBase(base.BaseAdminNetworkTest):
     def resource_setup(cls):
         if Topology.is_ml2:
             # create default netpartition if it is not there
-            netpartition_name = cls.nuage_vsd_client.def_netpart_name
-            net_partition = cls.nuage_vsd_client.get_net_partition(
+            netpartition_name = cls.nuage_client.def_netpart_name
+            net_partition = cls.nuage_client.get_net_partition(
                 netpartition_name)
             if not net_partition:
-                net_partition = cls.nuage_vsd_client.create_net_partition(
+                net_partition = cls.nuage_client.create_net_partition(
                     netpartition_name, fip_quota=100, extra_params=None)
         super(NuageExtraDHCPOptionsBase, cls).resource_setup()
 
@@ -297,12 +296,12 @@ class NuageExtraDHCPOptionsBase(base.BaseAdminNetworkTest):
             parent = constants.DOMAIN
         else:
             parent = constants.L2_DOMAIN
-        vports = self.nuage_vsd_client.get_vport(
+        vports = self.nuage_client.get_vport(
             parent,
             vsd_network_id,
             'externalID',
-            self.nuage_vsd_client.get_vsd_external_id(port_id))
-        vsd_dchp_options = self.nuage_vsd_client.get_dhcpoption(
+            self.nuage_client.get_vsd_external_id(port_id))
+        vsd_dchp_options = self.nuage_client.get_dhcpoption(
             constants.VPORT, vports[0]['ID'])
         self._verify_vsd_extra_dhcp_options(vsd_dchp_options, extra_dhcp_opts)
         # update
@@ -316,7 +315,7 @@ class NuageExtraDHCPOptionsBase(base.BaseAdminNetworkTest):
         upd_show_body = self.ports_client.show_port(port_id)
         self._confirm_extra_dhcp_options(upd_show_body['port'],
                                          new_extra_dhcp_opts)
-        vsd_dchp_options = self.nuage_vsd_client.get_dhcpoption(
+        vsd_dchp_options = self.nuage_client.get_dhcpoption(
             constants.VPORT, vports[0]['ID'])
         self._verify_vsd_extra_dhcp_options(vsd_dchp_options,
                                             new_extra_dhcp_opts)

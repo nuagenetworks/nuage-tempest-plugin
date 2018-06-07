@@ -54,7 +54,7 @@ class ML2VSDManagedSRIOVTest(
     @classmethod
     def setup_clients(self):
         super(ML2VSDManagedSRIOVTest, self).setup_clients()
-        self.nuage_vsd_client = nuage_client.NuageRestClient()
+        self.nuage_client = nuage_client.NuageRestClient()
 
     def setUp(self):
         super(ML2VSDManagedSRIOVTest, self).setUp()
@@ -100,15 +100,15 @@ class ML2VSDManagedSRIOVTest(
         self._create_server_sriov_port(port, name="sriov-vm1")
         time.sleep(5)
         # find bridgeport created on the dummy network
-        bridge_port = self.nuage_vsd_client.get_l2domain_vports(
+        bridge_port = self.nuage_client.get_l2domain_vports(
             self.vsd_dummy_network[0]['ID'])
         # find the gateway port id of the vlan associated
-        vlan_obj = self.nuage_vsd_client.get_bridge_port_gateway_vlan(
+        vlan_obj = self.nuage_client.get_bridge_port_gateway_vlan(
             bridge_port[0])
         gateway_port_id = vlan_obj[0]['parentID']
         # get all the vlans on the gateway port.
         # should have all the vlans in the port name
-        vlans_in_port = self.nuage_vsd_client.get_gateway_vlan(
+        vlans_in_port = self.nuage_client.get_gateway_vlan(
             "ports", gateway_port_id)
         vlan_list = []
         for vlan_id in vlans_in_port:
@@ -129,15 +129,15 @@ class ML2VSDManagedSRIOVTest(
         vm = self.servers_client.create_server(**vmkwargs)
         time.sleep(5)
         # find bridgeport created on the dummy network
-        bridge_port = self.nuage_vsd_client.get_l2domain_vports(
+        bridge_port = self.nuage_client.get_l2domain_vports(
             self.vsd_dummy_network[0]['ID'])
         # find the gateway port id of the vlan associated
-        vlan_obj = self.nuage_vsd_client.get_bridge_port_gateway_vlan(
+        vlan_obj = self.nuage_client.get_bridge_port_gateway_vlan(
             bridge_port[0])
         gateway_port_id = vlan_obj[0]['parentID']
         # get all the vlans on the gateway port.
         # should have all the vlans in the port name
-        vlans_in_port = self.nuage_vsd_client.get_gateway_vlan(
+        vlans_in_port = self.nuage_client.get_gateway_vlan(
             "ports", gateway_port_id)
         vlan_list = []
         for vlan_id in vlans_in_port:
@@ -151,7 +151,7 @@ class ML2VSDManagedSRIOVTest(
         self.servers_client.delete_server(vm['server']['id'])
         time.sleep(2)
         # check vlans are deleted
-        vlans_del_vm_port = self.nuage_vsd_client.get_gateway_vlan(
+        vlans_del_vm_port = self.nuage_client.get_gateway_vlan(
             "ports", gateway_port_id)
         vlan_list = []
         for vlan_id in vlans_del_vm_port:
@@ -168,15 +168,15 @@ class ML2VSDManagedSRIOVTest(
         self._create_server_sriov_port(port, name="vlanunaware-sriov-vm1")
         time.sleep(2)
         # find bridgeport created on the dummy network
-        bridge_port = self.nuage_vsd_client.get_l2domain_vports(
+        bridge_port = self.nuage_client.get_l2domain_vports(
             self.vsd_network_12[0]['ID'])
         # find the gateway port id of the vlan associated
-        vlan_obj = self.nuage_vsd_client.get_bridge_port_gateway_vlan(
+        vlan_obj = self.nuage_client.get_bridge_port_gateway_vlan(
             bridge_port[0])
         gateway_port_id = vlan_obj[0]['parentID']
         # get all the vlans on the gateway port.
         # should have all the vlans in the port name
-        vlans_in_port = self.nuage_vsd_client.get_gateway_vlan(
+        vlans_in_port = self.nuage_client.get_gateway_vlan(
             "ports", gateway_port_id)
         vlan_list = []
         for vlan_id in vlans_in_port:
@@ -193,14 +193,14 @@ class ML2VSDManagedSRIOVTest(
         port = self.sriov_port_create(self.network_34, port_name)
         self._create_server_sriov_port(port, name="vlanunaware-sriov-vm2")
         time.sleep(2)
-        bridge_port = self.nuage_vsd_client.get_l3_subnet_vports(
+        bridge_port = self.nuage_client.get_l3_subnet_vports(
             self.vsd_subnet_34[0]['ID'])
-        vlan_obj = self.nuage_vsd_client.get_bridge_port_gateway_vlan(
+        vlan_obj = self.nuage_client.get_bridge_port_gateway_vlan(
             bridge_port[0])
         gateway_port_id = vlan_obj[0]['parentID']
         # get all the vlans on the gateway port.
         # should have all the vlans in the port name
-        vlans_in_port = self.nuage_vsd_client.get_gateway_vlan(
+        vlans_in_port = self.nuage_client.get_gateway_vlan(
             "ports", gateway_port_id)
         vlan_list = []
         for vlan_id in vlans_in_port:

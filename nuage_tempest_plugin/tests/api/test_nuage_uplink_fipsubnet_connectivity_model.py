@@ -36,7 +36,7 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
     @classmethod
     def setup_clients(cls):
         super(FloatingIPTestAdminNuage, cls).setup_clients()
-        cls.nuage_vsd_client = NuageRestClient()
+        cls.nuage_client = NuageRestClient()
 
         # Overriding cls.client with Nuage network client
         cls.client = NuageNetworkClientJSON(
@@ -68,30 +68,30 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
     @classmethod
     def resource_cleanup(cls):
         if cls.uplink_subnet:
-            cls.nuage_vsd_client.delete_uplink_subnet(
+            cls.nuage_client.delete_uplink_subnet(
                 cls.uplink_subnet[0]['ID'])
         if cls.gateway_vlan:
-            cls.nuage_vsd_client.delete_gateway_vlan(cls.gateway_vlan[0]['ID'])
+            cls.nuage_client.delete_gateway_vlan(cls.gateway_vlan[0]['ID'])
         if cls.gateway_port:
-            cls.nuage_vsd_client.delete_gateway_port(cls.gateway_port[0]['ID'])
+            cls.nuage_client.delete_gateway_port(cls.gateway_port[0]['ID'])
         if cls.gateway:
-            cls.nuage_vsd_client.delete_gateway(cls.gateway[0]['ID'])
+            cls.nuage_client.delete_gateway(cls.gateway[0]['ID'])
         super(FloatingIPTestAdminNuage, cls).resource_cleanup()
 
     @classmethod
     def create_gateway_port_vlan(cls, gw_type='VRSG', vlan_no=200):
         gw_name = data_utils.rand_name('gw-')
-        cls.gateway = cls.nuage_vsd_client.create_gateway(
+        cls.gateway = cls.nuage_client.create_gateway(
             gw_name, str(uuid.uuid4()), gw_type, None)
         gw_port_name = data_utils.rand_name('gw-port-')
-        cls.gateway_port = cls.nuage_vsd_client.create_gateway_port(
+        cls.gateway_port = cls.nuage_client.create_gateway_port(
             gw_port_name, 'test', 'ACCESS', cls.gateway[0]['ID'])
-        cls.gateway_vlan = cls.nuage_vsd_client.create_gateway_vlan(
+        cls.gateway_vlan = cls.nuage_client.create_gateway_vlan(
             cls.gateway_port[0]['ID'], 'test', vlan_no)
-        shared_enterprises = cls.nuage_vsd_client.get_net_partition(
+        shared_enterprises = cls.nuage_client.get_net_partition(
             'Shared Infrastructure')
         if len(shared_enterprises) != 0:
-            cls.nuage_vsd_client.create_vlan_permission(
+            cls.nuage_client.create_vlan_permission(
                 cls.gateway_vlan[0]['ID'],
                 shared_enterprises[0]['ID'])
 
@@ -107,13 +107,13 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
             'uplinkGWVlanAttachmentID': self.gateway_vlan[0]['ID'],
             'sharedResourceParentID': parent_id
         }
-        uplink_subnet = self.nuage_vsd_client.create_uplink_subnet(
+        uplink_subnet = self.nuage_client.create_uplink_subnet(
             **uplink_subnet_dict)
         self.addCleanup(self.delete_uplink_subnet, str(uplink_subnet[0]['ID']))
         return uplink_subnet
 
     def delete_uplink_subnet(self, subnet_id):
-        return self.nuage_vsd_client.delete_uplink_subnet(subnet_id)
+        return self.nuage_client.delete_uplink_subnet(subnet_id)
 
     def create_fip_subnet(self, cidr, nuage_uplink=None):
         name = data_utils.rand_name('network-')
@@ -178,8 +178,8 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
         self.addCleanup(self.delete_fip_subnet, fipsub1['id'])
 
         # Get FIP parentID
-        fip_extID = self.nuage_vsd_client.get_vsd_external_id(fipsub1['id'])
-        nuage_fipsubnet1 = self.nuage_vsd_client.get_sharedresource(
+        fip_extID = self.nuage_client.get_vsd_external_id(fipsub1['id'])
+        nuage_fipsubnet1 = self.nuage_client.get_sharedresource(
             filters='externalID', filter_value=fip_extID)
         self.assertEqual(fipsub1['id'], nuage_fipsubnet1[0]['name'])
 
@@ -198,8 +198,8 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
         fipsub2 = self.create_fip_subnet(cidr2,
                                          nuage_fipsubnet1[0]['parentID'])
         self.addCleanup(self.delete_fip_subnet, fipsub2['id'])
-        fip_ext_id = self.nuage_vsd_client.get_vsd_external_id(fipsub2['id'])
-        nuage_fipsubnet2 = self.nuage_vsd_client.get_sharedresource(
+        fip_ext_id = self.nuage_client.get_vsd_external_id(fipsub2['id'])
+        nuage_fipsubnet2 = self.nuage_client.get_sharedresource(
             filters='externalID', filter_value=fip_ext_id)
         self.assertEqual(fipsub2['id'], nuage_fipsubnet2[0]['name'])
         self.assertEqual(nuage_fipsubnet1[0]['parentID'],
@@ -217,8 +217,8 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
         body = self.admin_subnets_client.show_subnet(fipsub['id'])
         fipsub_show = body['subnet']
         # Get FIP parentID in VSD
-        fip_extID = self.nuage_vsd_client.get_vsd_external_id(fipsub['id'])
-        nuage_fipsubnet = self.nuage_vsd_client.get_sharedresource(
+        fip_extID = self.nuage_client.get_vsd_external_id(fipsub['id'])
+        nuage_fipsubnet = self.nuage_client.get_sharedresource(
             filters='externalID', filter_value=fip_extID)
         self.assertEqual(fipsub_show['id'], nuage_fipsubnet[0]['name'])
         self.assertEqual(fipsub_show['nuage_uplink'],
@@ -246,8 +246,8 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
         # Creation FIP subnet with same cidr and nuage_uplink should fail
         fipsub1 = self.create_fip_subnet('172.40.0.0/24')
         self.addCleanup(self.delete_fip_subnet, fipsub1['id'])
-        fip_ext_id = self.nuage_vsd_client.get_vsd_external_id(fipsub1['id'])
-        nuage_fipsubnet1 = self.nuage_vsd_client.get_sharedresource(
+        fip_ext_id = self.nuage_client.get_vsd_external_id(fipsub1['id'])
+        nuage_fipsubnet1 = self.nuage_client.get_sharedresource(
             filters='externalID', filter_value=fip_ext_id)
 
         kwargs = {'name': fipsub_name,
@@ -279,8 +279,8 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
         fipsub1 = self.create_fip_subnet('172.40.0.0/24',
                                          uplink_subnet[0]['parentID'])
         self.addCleanup(self.delete_fip_subnet, fipsub1['id'])
-        fip_ext_id = self.nuage_vsd_client.get_vsd_external_id(fipsub1['id'])
-        nuage_fipsubnet1 = self.nuage_vsd_client.get_sharedresource(
+        fip_ext_id = self.nuage_client.get_vsd_external_id(fipsub1['id'])
+        nuage_fipsubnet1 = self.nuage_client.get_sharedresource(
             filters='externalID', filter_value=fip_ext_id)
         self.assertEqual(fipsub1['id'], nuage_fipsubnet1[0]['name'])
         self.assertEqual(uplink_subnet[0]['parentID'],
