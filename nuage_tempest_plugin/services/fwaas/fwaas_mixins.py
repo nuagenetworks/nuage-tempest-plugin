@@ -58,6 +58,22 @@ class FWaaSClientMixin(object):
             build_interval=CONF.network.build_interval,
             build_timeout=CONF.network.build_timeout,
             **manager.default_params)
+        cls.firewall_policies_admin_client = client.FirewallPoliciesClient(
+            cls.os_admin.auth_provider,
+            CONF.network.catalog_type,
+            CONF.network.region or CONF.identity.region,
+            endpoint_type=CONF.network.endpoint_type,
+            build_interval=CONF.network.build_interval,
+            build_timeout=CONF.network.build_timeout,
+            **cls.os_admin.default_params)
+        cls.firewall_rules_admin_client = client.FirewallRulesClient(
+            cls.os_admin.auth_provider,
+            CONF.network.catalog_type,
+            CONF.network.region or CONF.identity.region,
+            endpoint_type=CONF.network.endpoint_type,
+            build_interval=CONF.network.build_interval,
+            build_timeout=CONF.network.build_timeout,
+            **cls.os_admin.default_params)
 
     def create_firewall_rule(self, name=None, **kwargs):
         if not name:
