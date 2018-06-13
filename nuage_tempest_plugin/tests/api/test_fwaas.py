@@ -32,6 +32,8 @@ CONF = Topology.get_conf()
 
 class BaseFWaaSTest(fwaas_mixins.FWaaSClientMixin, base.BaseNetworkTest):
 
+    credentials = ['primary', 'admin']
+
     @classmethod
     def resource_setup(cls):
         cls.nuage_ent_client = NuageNetworkClientJSON(
@@ -200,7 +202,7 @@ class FWaaSExtensionTestJSON(BaseFWaaSTest):
         self._verify_fw_rule(body['firewall_rule'], vsd_acl)
 
         # Update firewall rule
-        body = self.firewall_rules_client.update_firewall_rule(
+        body = self.firewall_rules_admin_client.update_firewall_rule(
             fw_rule_id,
             shared=True,
             source_port=1000,
@@ -392,7 +394,7 @@ class FWaaSExtensionTestJSON(BaseFWaaSTest):
         self.addCleanup(self._try_delete_policy, fw_policy_id)
 
         # Update firewall policy
-        body = self.firewall_policies_client.update_firewall_policy(
+        body = self.firewall_policies_admin_client.update_firewall_policy(
             fw_policy_id,
             shared=True,
             name="updated_policy")
@@ -519,7 +521,7 @@ class FWaaSExtensionTestJSON(BaseFWaaSTest):
         # Try to create firewall with the same router
         self.assertRaisesRegex(
             lib_exc.Conflict,
-            "An object with that identifier already exists",
+            "Conflict with state of target resource",
             self.firewalls_client.create_firewall,
             name=data_utils.rand_name("firewall"),
             firewall_policy_id=self.fw_policy['id'],
@@ -611,8 +613,8 @@ class FWaaSExtensionTestJSON(BaseFWaaSTest):
 
         # Verify rule association to acl on VSD.
         policy1 = self.vsd.get_firewall_acl(by_fw_policy_id=fw_policy_id)
-        self.assertIn(rule1.id, policy1._rule_ids)
-        self.assertIn(rule2.id, policy1._rule_ids)
+        self.assertIn(rule1.id, policy1.rule_ids)
+        self.assertIn(rule2.id, policy1.rule_ids)
 
         # Add a rule 3 after rule1 and before rule2
         body = self.firewall_rules_client.create_firewall_rule(
@@ -646,9 +648,9 @@ class FWaaSExtensionTestJSON(BaseFWaaSTest):
 
         # Verify rule association to acl on VSD.
         policy1 = self.vsd.get_firewall_acl(by_fw_policy_id=fw_policy_id)
-        self.assertIn(rule1.id, policy1._rule_ids)
-        self.assertIn(rule2.id, policy1._rule_ids)
-        self.assertIn(rule3.id, policy1._rule_ids)
+        self.assertIn(rule1.id, policy1.rule_ids)
+        self.assertIn(rule2.id, policy1.rule_ids)
+        self.assertIn(rule3.id, policy1.rule_ids)
 
         # Remove rule from the firewall policy
         self.firewall_policies_client.remove_firewall_rule_from_policy(
@@ -718,7 +720,7 @@ class FWaaSExtensionTestJSON(BaseFWaaSTest):
 
         policy1 = self.vsd.get_firewall_acl(by_fw_policy_id=fw_policy_id)
         rule1 = self.vsd.get_firewall_rule(by_fw_rule_id=fw_rule_id)
-        self.assertIn(rule1.id, policy1._rule_ids)
+        self.assertIn(rule1.id, policy1.rule_ids)
 
         self.assertFalse(body['firewall_policy']['audited'])
 
@@ -780,7 +782,7 @@ class FWaaSExtensionTestJSON(BaseFWaaSTest):
         self.assertIn(fw_rule_id1, self._get_list_fw_rule_ids(fw_policy_id1))
         rule1 = self.vsd.get_firewall_rule(by_fw_rule_id=fw_rule_id1)
         policy1 = self.vsd.get_firewall_acl(by_fw_policy_id=fw_policy_id1)
-        self.assertIn(rule1.id, policy1._rule_ids)
+        self.assertIn(rule1.id, policy1.rule_ids)
 
         body = self.firewall_rules_client.create_firewall_rule(
             name=data_utils.rand_name("fw-rule"),
@@ -801,7 +803,7 @@ class FWaaSExtensionTestJSON(BaseFWaaSTest):
         self.assertIn(fw_rule_id2, self._get_list_fw_rule_ids(fw_policy_id2))
         rule2 = self.vsd.get_firewall_rule(by_fw_rule_id=fw_rule_id2)
         policy2 = self.vsd.get_firewall_acl(by_fw_policy_id=fw_policy_id2)
-        self.assertIn(rule2.id, policy2._rule_ids)
+        self.assertIn(rule2.id, policy2.rule_ids)
 
     def test_create_firewall_rule_and_add_remove_router(self):
         # Create firewall rule
@@ -825,7 +827,7 @@ class FWaaSExtensionTestJSON(BaseFWaaSTest):
         # Verify On VSD
         rule1 = self.vsd.get_firewall_rule(by_fw_rule_id=fw_rule_id1)
         policy1 = self.vsd.get_firewall_acl(by_fw_policy_id=fw_policy_id)
-        self.assertIn(rule1.id, policy1._rule_ids)
+        self.assertIn(rule1.id, policy1.rule_ids)
 
         # Create a router1
         router1 = self.create_router(

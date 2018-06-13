@@ -1016,10 +1016,10 @@ class VsdHelper(object):
                 LOG.error('a enterprise is required')
                 return None
             else:
-                ent = self.default_enterprise
+                ent = self.get_default_enterprise()
             firewall_acl = ent.firewall_acls.get_first(filter=vspk_filter)
         elif by_fw_policy_id:
-            firewall_acl = self.get_firewall_rule(
+            firewall_acl = self.get_firewall_acl(
                 ent, self.get_external_id_filter(by_fw_policy_id))
         else:
             LOG.error('a qualifier is required')
@@ -1047,7 +1047,7 @@ class VsdHelper(object):
                     LOG.error('a enterprise is required')
                     return None
             else:
-                ent = self.default_enterprise
+                ent = self.get_default_enterprise()
             firewall_rule = ent.firewall_rules.get_first(filter=vspk_filter)
         elif by_fw_rule_id:
             firewall_rule = self.get_firewall_rule(
