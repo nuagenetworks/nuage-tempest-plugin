@@ -1,6 +1,8 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
 
+from six import iteritems
+
 from netaddr import IPAddress
 from netaddr import IPNetwork
 from netaddr import IPRange
@@ -106,7 +108,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
                         ContainsDict({'name': Equals(port['id'])}))
 
         # verify all other kwargs as attributes (key,value) pairs
-        for key, value in kwargs.iteritems():
+        for key, value in iteritems(kwargs):
             if isinstance(value, dict):
                 # compare dict
                 raise NotImplementedError
@@ -145,7 +147,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
         self.assertIsNotNone(port['mac_address'])
 
         # verify all other kwargs as attributes (key,value) pairs
-        for key, value in kwargs.iteritems():
+        for key, value in iteritems(kwargs):
             if isinstance(value, dict):
                 # compare dict
                 raise NotImplementedError

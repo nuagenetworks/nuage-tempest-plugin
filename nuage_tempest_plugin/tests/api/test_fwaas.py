@@ -12,7 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import six
+from six import iteritems
 
 from tempest.api.network import base
 from tempest.common import utils
@@ -371,7 +371,7 @@ class FWaaSExtensionTestJSON(BaseFWaaSTest):
         # show a created firewall rule
         fw_rule = self.firewall_rules_client.show_firewall_rule(
             self.fw_rule['id'])
-        for key, value in six.iteritems(fw_rule['firewall_rule']):
+        for key, value in iteritems(fw_rule['firewall_rule']):
             self.assertEqual(self.fw_rule[key], value)
 
     @decorators.idempotent_id('1086dd93-a4c0-4bbb-a1bd-6d4bc62c199f')
@@ -415,7 +415,7 @@ class FWaaSExtensionTestJSON(BaseFWaaSTest):
         fw_policy = self.firewall_policies_client.show_firewall_policy(
             self.fw_policy['id'])
         fw_policy = fw_policy['firewall_policy']
-        for key, value in six.iteritems(fw_policy):
+        for key, value in iteritems(fw_policy):
             self.assertEqual(self.fw_policy[key], value)
 
     @decorators.idempotent_id('02082a03-3cdd-4789-986a-1327dd80bfb7')
@@ -444,7 +444,7 @@ class FWaaSExtensionTestJSON(BaseFWaaSTest):
         firewall = self.firewalls_client.show_firewall(firewall_id)
         firewall = firewall['firewall']
 
-        for key, value in six.iteritems(firewall):
+        for key, value in iteritems(firewall):
             if key == 'status':
                 continue
             self.assertEqual(created_firewall[key], value)
