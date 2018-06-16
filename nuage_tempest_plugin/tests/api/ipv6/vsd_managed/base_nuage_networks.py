@@ -6,6 +6,7 @@ from netaddr import IPNetwork
 from netaddr import IPRange
 
 import random
+from six import iteritems
 import time
 
 from tempest import exceptions
@@ -215,7 +216,7 @@ class BaseNuageNetworksIpv6TestCase(test.BaseTestCase):
         self.assertIsNotNone(port['mac_address'])
 
         # verify all other kwargs as attributes (key,value) pairs
-        for key, value in kwargs.iteritems():
+        for key, value in iteritems(kwargs):
             if isinstance(value, dict):
                 # compare dict
                 raise NotImplementedError
@@ -362,7 +363,7 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
             name = data_utils.rand_name('l2domain-template')
 
         # add all other kwargs as attributes (key,value) pairs
-        for key, value in kwargs.iteritems():
+        for key, value in iteritems(kwargs):
             params.update({key: value})
 
         body = self.nuage_client.create_l2domaintemplate(
@@ -426,7 +427,7 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
                             ContainsDict({'DHCPManaged': Equals(False)}))
 
         # verify all other kwargs as attributes (key,value) pairs
-        for key, value in kwargs.iteritems():
+        for key, value in iteritems(kwargs):
             self.assertThat(
                 l2domain_template, ContainsDict({key: Equals(value)}))
 
@@ -604,7 +605,7 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
                         ContainsDict({'name': Equals(port['id'])}))
 
         # verify all other kwargs as attributes (key,value) pairs
-        for key, value in kwargs.iteritems():
+        for key, value in iteritems(kwargs):
             if isinstance(value, dict):
                 # compare dict
                 self.fail('Compare with dict is not implemented')
@@ -628,7 +629,7 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
                         ContainsDict({'name': Equals(port['id'])}))
 
         # verify all other kwargs as attributes (key,value) pairs
-        for key, value in kwargs.iteritems():
+        for key, value in iteritems(kwargs):
             if isinstance(value, dict):
                 # compare dict
                 self.fail('Compare with dict is not implemented')

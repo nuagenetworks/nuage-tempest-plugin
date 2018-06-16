@@ -16,6 +16,7 @@
 from netaddr import IPNetwork
 import random
 import re
+from six import iteritems
 
 from tempest.api.network import base
 from tempest.common import utils
@@ -504,7 +505,7 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
             self.assertIsNone(actual_ext_gw_info)
             return
         # Verify only keys passed in exp_ext_gw_info
-        for k, v in exp_ext_gw_info.iteritems():
+        for k, v in iteritems(exp_ext_gw_info):
             self.assertEqual(v, actual_ext_gw_info[k])
 
     def _cli_create_router_without_ext_gw_neg(self):

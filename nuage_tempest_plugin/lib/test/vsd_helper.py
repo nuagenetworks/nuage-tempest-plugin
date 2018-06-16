@@ -3,6 +3,7 @@
 
 import importlib
 import re
+from six import iteritems
 
 from tempest.lib.common.utils import data_utils
 
@@ -152,7 +153,7 @@ class VsdHelper(object):
                 params.update({'ipv6_gateway': gateway6})
 
         # add all other kwargs as attributes (key,value) pairs
-        for key, value in kwargs.iteritems():
+        for key, value in iteritems(kwargs):
             params.update({key: value})
 
         template = self.vspk.NUL2DomainTemplate(

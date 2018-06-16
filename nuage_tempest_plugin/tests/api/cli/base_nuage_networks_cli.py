@@ -3,6 +3,7 @@
 
 import json
 from netaddr import IPRange
+from six import iteritems
 
 from tempest.lib.common.utils import data_utils
 
@@ -212,5 +213,5 @@ class BaseNuageNetworksCliTestCase(
         self.assertIsNotNone(port['mac_address'])
 
         # verify all other kwargs as attributes (key,value) pairs
-        for key, value in kwargs.iteritems():
+        for key, value in iteritems(kwargs):
             self.assertThat(port, ContainsDict({key: Equals(value)}))

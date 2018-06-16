@@ -7,6 +7,7 @@ from enum import Enum
 import json
 import netaddr
 import re
+from six import iteritems
 
 import client
 import output_parser as cli_output_parser
@@ -473,7 +474,7 @@ class CLIClientTestCase(test.BaseTestCase):
     def _kwargs_to_cli(self, **kwargs):
         params_str = ''
         if kwargs is not None:
-            for key, value in kwargs.iteritems():
+            for key, value in iteritems(kwargs):
 
                 print("%s == %s", (key, value))
                 params_str += " --%s %s" % (key, value)

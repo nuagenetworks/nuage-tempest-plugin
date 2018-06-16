@@ -7,6 +7,7 @@ import inspect
 import os.path
 from oslo_utils import excutils
 import pymysql
+from six import iteritems
 import testtools
 import time
 import yaml
@@ -458,7 +459,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
         self.assertIsNotNone(port['mac_address'])
         # verify all other kwargs as attributes (key,value) pairs
-        for key, value in kwargs.iteritems():  # TODO(py3)
+        for key, value in iteritems(kwargs):
             if isinstance(value, dict):
                 # compare dict
                 raise NotImplementedError

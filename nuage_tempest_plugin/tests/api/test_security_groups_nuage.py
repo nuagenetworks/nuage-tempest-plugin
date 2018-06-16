@@ -13,7 +13,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import six
+from six import iteritems
+
 import uuid
 
 from tempest.api.network import base_security_groups as base
@@ -152,7 +153,7 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
             elif parm_value:
                 expected[parameter] = parm_value
 
-        for key, value in expected.iteritems():
+        for key, value in iteritems(expected):
             if key in ['sourcePort']:
                 self.assertEqual(value, '*')
             elif key in ['destinationPort']:
@@ -233,7 +234,7 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
                 self.security_group_rules_client.show_security_group_rule(
                     rule_create_body['security_group_rule']['id']))
             create_dict = rule_create_body['security_group_rule']
-            for key, value in six.iteritems(create_dict):
+            for key, value in iteritems(create_dict):
                 self.assertEqual(value,
                                  show_rule_body['security_group_rule'][key],
                                  "%s does not match." % key)
@@ -514,7 +515,7 @@ class TestSecGroupTestNuageL3Domain(SecGroupTestNuageBase):
                 self.security_group_rules_client.show_security_group_rule(
                     rule_create_body['security_group_rule']['id']))
             create_dict = rule_create_body['security_group_rule']
-            for key, value in six.iteritems(create_dict):
+            for key, value in iteritems(create_dict):
                 self.assertEqual(value,
                                  show_rule_body['security_group_rule'][key],
                                  "%s does not match." % key)

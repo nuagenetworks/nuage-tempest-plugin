@@ -1,6 +1,8 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
 
+from six import iteritems
+
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as nuage_constants
@@ -30,7 +32,7 @@ class VSDManagedAllowedAddresPairsTest(BaseAllowedAddressPair,
         network, subnet4, subnet6 = self._given_network_linked_to_vsd_subnet(
             vsd_l2_subnet, cidr4=self.cidr4, cidr6=self.cidr6,
             enable_dhcp=False)
-        for scenario, port_config in self.port_configs.iteritems():
+        for scenario, port_config in iteritems(self.port_configs):
             LOG.info("TESTCASE scenario {}".format(scenario))
             self._check_crud_port(scenario, network, subnet4, subnet6,
                                   vsd_l2_subnet, nuage_constants.L2_DOMAIN)
@@ -44,7 +46,7 @@ class VSDManagedAllowedAddresPairsTest(BaseAllowedAddressPair,
         network, subnet4, subnet6 = self._given_network_linked_to_vsd_subnet(
             vsd_l3_subnet, cidr4=self.cidr4, cidr6=self.cidr6)
 
-        for scenario, port_config in self.port_configs.iteritems():
+        for scenario, port_config in iteritems(self.port_configs):
             LOG.info("TESTCASE scenario {}".format(scenario))
             self._check_crud_port(scenario, network, subnet4, subnet6,
                                   vsd_l3_subnet, nuage_constants.SUBNETWORK)

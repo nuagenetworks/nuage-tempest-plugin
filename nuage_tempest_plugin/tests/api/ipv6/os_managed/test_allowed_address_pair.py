@@ -14,6 +14,7 @@
 #    under the License.
 
 from netaddr import IPAddress
+from six import iteritems
 
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.tests.api.ipv6.test_allowed_address_pair \
@@ -268,7 +269,7 @@ class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
         vsd_l2_domain = self.nuage_client.get_l2domain(
             filters='externalID',
             filter_value=subnet_ext_id)
-        for scenario, port_config in self.port_configs.iteritems():
+        for scenario, port_config in iteritems(self.port_configs):
             LOG.info("TESTCASE scenario {}".format(scenario))
             self._check_crud_port(scenario, network, subnet4, subnet6,
                                   vsd_l2_domain[0], constants.L2_DOMAIN)
@@ -303,7 +304,7 @@ class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
                 filter_value=subnet_ext_id)
         )
 
-        for scenario, port_config in self.port_configs.iteritems():
+        for scenario, port_config in iteritems(self.port_configs):
             LOG.info("TESTCASE scenario {}".format(scenario))
             self._check_crud_port(scenario, network, subnet4, subnet6,
                                   vsd_subnet[0], constants.SUBNETWORK)
