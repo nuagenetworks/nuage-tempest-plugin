@@ -261,7 +261,7 @@ class NuageFipToVip(NuageBaseTest):
                           "No floating ip should be associated to the "
                           "VIP port after floating ip delete.")
 
-    # TODO(CI) uncomment me - @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_fip_to_vip_delete_nuage_vip_port_disassociate(self):
         # Referencing OPENSTACK-2202
 
