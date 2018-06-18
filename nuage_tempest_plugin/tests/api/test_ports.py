@@ -42,6 +42,7 @@ class PortsTest(NuageAdminNetworksTest,
             wait_until='ACTIVE')
         return server
 
+    @decorators.attr(type='smoke')
     def test_nuage_port_create_fixed_ips_negative(self):
         # Set up resources
         # Base resources
@@ -75,6 +76,7 @@ class PortsTest(NuageAdminNetworksTest,
                                self.create_port,
                                network=network, fixed_ips=fixed_ips)
 
+    @decorators.attr(type='smoke')
     def test_nuage_port_update_fixed_ips_negative(self):
         if self.is_dhcp_agent_present():
             raise self.skipException(
