@@ -24,15 +24,8 @@ class Topology(object):
     nuage_release = Release(nuage_release_qualifier)
     openstack_version_qualifier = CONF.nuage_sut.openstack_version
     openstack_version = Release(openstack_version_qualifier)
-    is_ml2 = CONF.nuage_sut.nuage_plugin_mode.lower() == 'ml2'
-    nuage_plugin_configuration = CONF.nuage_sut.nuage_plugin_configuration
-
-    controller_user = CONF.nuage_sut.controller_user
-    controller_password = CONF.nuage_sut.controller_password
-    database_user = CONF.nuage_sut.database_user
-    database_password = CONF.nuage_sut.database_password
+    is_ml2 = True
     api_workers = int(CONF.nuage_sut.api_workers)
-    management_mode = CONF.nuage_sut.controller_service_management_mode
     nuage_baremetal_driver = CONF.nuage_sut.nuage_baremetal_driver
 
     vsd_server = CONF.nuage.nuage_vsd_server
@@ -116,7 +109,7 @@ class Topology(object):
 
     @staticmethod
     def is_devstack():
-        return CONF.nuage_sut.sut_deployment.lower() == 'devstack'
+        return True  # hardcoded now ; next step is take out all checks (later)
 
     @staticmethod
     def single_worker_run():

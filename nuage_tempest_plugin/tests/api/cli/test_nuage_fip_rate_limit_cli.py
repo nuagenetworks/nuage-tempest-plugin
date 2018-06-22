@@ -5,7 +5,6 @@ import json
 
 from tempest.test import decorators
 
-from nuage_tempest_plugin.lib import service_mgmt
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
@@ -35,17 +34,9 @@ class TestNuageFipRateLimitCliWithoutDefault(BaseNuageFipRateLimit):
 
     @classmethod
     def read_nuage_fip_rate_limit_configs(cls):
-        # TODO(Kris) FIXME.....................................................
-        if Topology.assume_default_fip_rate_limits():
-            return None
-        # TODO(Kris) FIXME.....................................................
-
-        fip_rate_limit = cls.service_manager.get_configuration_attribute(
-            Topology.nuage_plugin_configuration,
-            constants.FIP_RATE_GROUP,
-            constants.FIP_RATE_DEFAULT
-        )
-        return fip_rate_limit
+        # we don't support this, so assert the assumed setting approach
+        assert Topology.assume_default_fip_rate_limits()
+        return None
 
     @classmethod
     def nuage_fip_rate_limit_config_needs_update(cls):
@@ -56,17 +47,8 @@ class TestNuageFipRateLimitCliWithoutDefault(BaseNuageFipRateLimit):
     @classmethod
     def assure_nuage_fip_rate_limit_configs(cls):
         if cls.nuage_fip_rate_limit_config_needs_update():
-
-            if Topology.neutron_restart_supported():
-                cls.service_manager = service_mgmt.ServiceManager()
-                cls.service_manager.must_have_configuration_attribute(
-                    Topology.nuage_plugin_configuration,
-                    constants.FIP_RATE_GROUP, constants.FIP_RATE_DEFAULT,
-                    cls.configured_default_fip_rate)
-
-            else:
-                msg = 'Skipping tests that restart neutron ...'
-                raise cls.skipException(msg)
+            msg = 'Skipping tests that require neutron restart...'
+            raise cls.skipException(msg)
 
     def _verify_fip_openstack(self, port, created_floating_ip,
                               default_rate_limit):

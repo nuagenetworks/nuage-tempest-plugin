@@ -26,8 +26,6 @@ from nuage_tempest_plugin.lib.utils import exceptions as n_exceptions
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.services.vpnaas.vpnaas_mixins import VPNMixin
 
-import upgrade_external_id_with_cms_id as upgrade_script
-
 CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
 
@@ -136,14 +134,6 @@ class ExternalIdForVpnServiceTest(VPNMixin, base.BaseNetworkTest):
                     **ipnkwargs) as created_ipsecsiteconnection:
 
                 self.assertIsNotNone(created_ipsecsiteconnection)
-
-                if self.test_upgrade:
-                    vpn_service_match = self.MatchingVsdVpnServiceObjects(
-                        self, created_vpnservice)
-                    vpn_service_match.has_dummy_router(with_external_id=None)
-                    vpn_service_match.has_floating_ip(with_external_id=None)
-
-                    upgrade_script.do_run_upgrade_script()
 
                 vpn_service_match = self.MatchingVsdVpnServiceObjects(
                     self, created_vpnservice)

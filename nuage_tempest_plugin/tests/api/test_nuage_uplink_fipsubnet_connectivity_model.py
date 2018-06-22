@@ -21,9 +21,7 @@ from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
-from nuage_tempest_plugin.lib import service_mgmt
 from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants as nuage_constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
@@ -42,19 +40,6 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
         cls.client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
             **cls.os_primary.default_params)
-
-        cls.service_manager = service_mgmt.ServiceManager()
-        if (Topology.neutron_restart_supported() and
-                not cls.service_manager.is_service_running(
-                nuage_constants.NEUTRON_SERVICE)):
-            cls.service_manager.comment_configuration_attribute(
-                Topology.nuage_plugin_configuration,
-                nuage_constants.NUAGE_UPLINK_GROUP,
-                nuage_constants.NUAGE_UPLINK)
-            cls.service_manager.start_service(
-                nuage_constants.NEUTRON_SERVICE)
-            cls.service_manager.wait_for_service_status(
-                nuage_constants.NEUTRON_SERVICE)
 
     @classmethod
     def resource_setup(cls):
@@ -140,34 +125,6 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
             self.admin_subnets_client.delete_subnet(fip_sub_id)
         except Exception as exc:
             LOG.exception(exc)
-
-    def add_uplink_key_to_plugin_file(self, nuage_uplink):
-        if not Topology.neutron_restart_supported():
-            self.skipTest('Skipping tests that restart neutron ...')
-
-        self.service_manager.stop_service(nuage_constants.NEUTRON_SERVICE)
-        # Add the shared zone ID to the plugin.ini file
-        self.service_manager.set_configuration_attribute(
-            Topology.nuage_plugin_configuration,
-            nuage_constants.NUAGE_UPLINK_GROUP,
-            nuage_constants.NUAGE_UPLINK,
-            nuage_uplink)
-        self.service_manager.start_service(nuage_constants.NEUTRON_SERVICE)
-        self.service_manager.wait_for_service_status(
-            nuage_constants.NEUTRON_SERVICE)
-
-    def delete_uplink_key_from_plugin_file(self):
-        if not Topology.neutron_restart_supported():
-            self.skipTest('Skipping tests that restart neutron ...')
-
-        self.service_manager.stop_service(nuage_constants.NEUTRON_SERVICE)
-        self.service_manager.comment_configuration_attribute(
-            Topology.nuage_plugin_configuration,
-            nuage_constants.NUAGE_UPLINK_GROUP,
-            nuage_constants.NUAGE_UPLINK)
-        self.service_manager.start_service(nuage_constants.NEUTRON_SERVICE)
-        self.service_manager.wait_for_service_status(
-            nuage_constants.NEUTRON_SERVICE)
 
     @decorators.attr(type='smoke')
     def test_create_fipsubs_in_shared_domain(self):

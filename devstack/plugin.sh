@@ -83,13 +83,6 @@ function configure_tempest_nuage {
 
     iniset $TEMPEST_CONFIG nuage_sut openstack_version ${NUAGE_OPENSTACK_RELEASE}
     iniset $TEMPEST_CONFIG nuage_sut release ${NUAGE_VSP_RELEASE}
-    iniset $TEMPEST_CONFIG nuage_sut nuage_plugin_mode ${NUAGE_PLUGIN_MODE}
-    iniset $TEMPEST_CONFIG nuage_sut controller_user ${NUAGE_CONTROLLER_USER}
-    iniset $TEMPEST_CONFIG nuage_sut controller_password ${NUAGE_CONTROLLER_PSSWD}
-    iniset $TEMPEST_CONFIG nuage_sut database_user ${NEUTRON_DB_USERNAME}
-    iniset $TEMPEST_CONFIG nuage_sut database_password ${NEUTRON_DB_PASSWORD}
-    iniset $TEMPEST_CONFIG nuage_sut nuage_plugin_configuration /${NUAGE_PLUGIN_CONFIGURATION}
-    iniset $TEMPEST_CONFIG nuage_sut controller_service_management_mode $NUAGE_CONTROLLER_NODE
     iniset $TEMPEST_CONFIG nuage_sut api_workers $API_WORKERS  # from devstack itself
     iniset $TEMPEST_CONFIG nuage_sut nuage_pat_legacy $NUAGE_PAT_LEGACY
 }

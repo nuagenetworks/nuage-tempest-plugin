@@ -5,7 +5,6 @@ import json
 
 from tempest.test import decorators
 
-from nuage_tempest_plugin.lib import service_mgmt
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
@@ -34,22 +33,10 @@ class TestNuageBidiFRLCliWODefault(BaseNuageFipRateLimit):
 
     @classmethod
     def read_nuage_fip_rate_limit_configs(cls):
-        # TODO(Kris) FIXME.....................................................
         if Topology.assume_default_fip_rate_limits():
             return None, None
-        # TODO(Kris) FIXME.....................................................
-
-        fip_eg_rate_limit = cls.service_manager.get_configuration_attribute(
-            Topology.nuage_plugin_configuration,
-            constants.FIP_RATE_GROUP,
-            constants.BIDIRECTIONAL_FIP_RATE_DEFAULT_EGRESS
-        )
-        fip_ig_rate_limit = cls.service_manager.get_configuration_attribute(
-            Topology.nuage_plugin_configuration,
-            constants.FIP_RATE_GROUP,
-            constants.BIDIRECTIONAL_FIP_RATE_DEFAULT_INGRESS
-        )
-        return fip_eg_rate_limit, fip_ig_rate_limit
+        else:
+            assert False  # unsupported
 
     @classmethod
     def nuage_fip_rate_limit_configs_needs_update(cls):
@@ -63,23 +50,11 @@ class TestNuageBidiFRLCliWODefault(BaseNuageFipRateLimit):
     @classmethod
     def assure_nuage_fip_rate_limit_configs(cls):
         if cls.nuage_fip_rate_limit_configs_needs_update():
-
-            if Topology.neutron_restart_supported():
-                cls.service_manager = service_mgmt.ServiceManager()
-                cls.service_manager.must_have_configuration_attribute(
-                    Topology.nuage_plugin_configuration,
-                    constants.FIP_RATE_GROUP,
-                    constants.BIDIRECTIONAL_FIP_RATE_DEFAULT_EGRESS,
-                    cls.configured_default_fip_rate)
-                cls.service_manager.must_have_configuration_attribute(
-                    Topology.nuage_plugin_configuration,
-                    constants.FIP_RATE_GROUP,
-                    constants.BIDIRECTIONAL_FIP_RATE_DEFAULT_INGRESS,
-                    cls.configured_default_fip_rate)
-
-            else:
-                msg = 'Skipping tests that restart neutron ...'
+            if not Topology.neutron_restart_supported():
+                msg = 'Skipping tests that require neutron restart...'
                 raise cls.skipException(msg)
+            else:
+                assert False  # we don't support it :)
 
     def _verify_fip_openstack(self, port, created_floating_ip,
                               ingress_rate_limit=None, egress_rate_limit=None):
