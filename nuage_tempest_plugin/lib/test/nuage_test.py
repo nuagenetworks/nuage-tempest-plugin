@@ -246,6 +246,25 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 client.networks_client.delete_network, network['id'])
         return network
 
+    def update_network(self, network_id, client=None,
+                       **kwargs):
+        """Wrapper utility that updates a test network."""
+        if not client:
+            client = self.manager
+
+        body = client.networks_client.update_network(network_id, **kwargs)
+        network = body['network']
+        return network
+
+    def get_network(self, network_id, client=None, **kwargs):
+        """Wrapper utility that gets a test network."""
+        if not client:
+            client = self.manager
+
+        body = client.networks_client.show_network(network_id, **kwargs)
+        network = body['network']
+        return network
+
     def create_subnet(self, network, subnet_name=None, gateway='', cidr=None,
                       mask_bits=None,
                       ip_version=None, client=None, cleanup=True,
@@ -319,7 +338,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                     'device_owner': 'network:dhcp',
                     'network_id': subnet['network_id']
                 }
-                dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+                dhcp_ports = client.ports_client.list_ports(**filters)['ports']
                 if not dhcp_ports:
                     continue
                 dhcp_port = dhcp_ports[0]

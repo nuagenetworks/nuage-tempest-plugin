@@ -596,7 +596,6 @@ class PortsDirectTest(network_mixin.NetworkMixin,
                     "ip_address": "10.20.30.5",
                     "subnet_id": topology.subnet["id"]
                 }
-
             ]
 
         mapping = {'switch_id': self.gateway['systemID'],
