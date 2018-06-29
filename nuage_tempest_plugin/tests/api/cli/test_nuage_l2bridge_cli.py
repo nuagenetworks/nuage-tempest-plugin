@@ -3,6 +3,8 @@
 
 from tempest.lib.common.utils import data_utils
 
+from tempest.test import decorators
+
 from nuage_tempest_plugin.lib.cli import client_testcase
 from nuage_tempest_plugin.lib.topology import Topology
 
@@ -11,6 +13,7 @@ LOG = Topology.get_logger(__name__)
 
 class TestNuageL2BridgeCli(client_testcase.CLIClientTestCase):
 
+    @decorators.attr(type='smoke')
     def test_cli_create_delete_l2bridge(self):
         self._as_admin()
         name = data_utils.rand_name('test-create-l2bridge-')
@@ -21,6 +24,7 @@ class TestNuageL2BridgeCli(client_testcase.CLIClientTestCase):
         self.assertIsNotNone(bridge)
         self.delete_nuage_l2bridge_cli(name)
 
+    @decorators.attr(type='smoke')
     def test_cli_create_update_delete_l2bridge(self):
         self._as_admin()
         name = data_utils.rand_name('test-create-l2bridge-')

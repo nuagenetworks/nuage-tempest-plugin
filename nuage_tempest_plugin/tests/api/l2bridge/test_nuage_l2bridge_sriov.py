@@ -16,6 +16,7 @@ from netaddr import IPNetwork
 
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
+from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.mixins import net_topology as topology_mixin
 from nuage_tempest_plugin.lib.topology import Topology
@@ -94,6 +95,7 @@ class TestNuageL2BridgeSRIOV(BaseNuageL2Bridge,
         for dhcp_option in dhcp_options:
             self.assertEqual(expected_ext_id, dhcp_option.external_id)
 
+    @decorators.attr(type='smoke')
     def test_nuage_l2bridge_add_segments_to_bridge_with_subnet_with_vm(self):
         physnets = [{
             'physnet_name': 'physnet1',

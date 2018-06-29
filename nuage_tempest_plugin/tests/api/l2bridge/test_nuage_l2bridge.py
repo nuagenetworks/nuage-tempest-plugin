@@ -16,6 +16,7 @@ from netaddr import IPNetwork
 
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
+from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.topology import Topology
 
@@ -35,6 +36,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
     # physnet2,100,vlan
     # physnet2,101,vlan
 
+    @decorators.attr(type='smoke')
     def test_nuage_l2bridge_create_and_update(self):
         phys_nets = [{
             'physnet_name': 'physnet1',
@@ -89,6 +91,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
         self.assertIsNotNone(bridge, "Unable to create l2bridge")
         self._validate_bridge_config(bridge, name, phys_nets)
 
+    @decorators.attr(type='smoke')
     def test_nuage_l2bridge_create_and_update_non_admin_negative(self):
         phys_nets = [{
             'physnet_name': 'physnet1',
@@ -139,6 +142,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                     break
             self.assertEqual(True, found_matching_phys_net)
 
+    @decorators.attr(type='smoke')
     def test_nuage_l2bridge_create_update_vlan_negative(self):
         phys_nets = [{
             'physnet_name': 'physnet1',
@@ -187,6 +191,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                name,
                                phys_nets)
 
+    @decorators.attr(type='smoke')
     def test_nuage_l2bridge_update_with_networks_neg(self):
         physnets = [{
             'physnet_name': 'physnet1',
@@ -255,6 +260,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                bridge['id'], name=bridge['name'],
                                physnets=physnets)
 
+    @decorators.attr(type='smoke')
     def test_nuage_l2bridge_update_bridged_networks_with_subnets_neg(self):
         physnets = [{
             'physnet_name': 'physnet1',
@@ -375,6 +381,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                    name,
                                    physnets)
 
+    @decorators.attr(type='smoke')
     def test_nuage_l2bridge_add_segments_to_bridge_with_subnet_with_vm(self):
         physnets = [{
             'physnet_name': 'physnet1',
@@ -538,6 +545,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             bridge = self.get_l2bridge(bridge['id'])
             self._validate_bridge_config(bridge, name, physnets)
 
+    @decorators.attr(type='smoke')
     def test_nuage_l2bridge_create_bridge_with_network_and_subnet_neg(self):
         name = data_utils.rand_name('test-l2bridge-dualipv4')
         kwargs = {
@@ -584,6 +592,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                name,
                                physnets)
 
+    @decorators.attr(type='smoke')
     def test_nuage_l2bridge_dual_ipv4(self):
         # Scenario 6
         physnets = [{
@@ -709,6 +718,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
         for dhcp_option in dhcp_options:
             self.assertEqual(expected_ext_id, dhcp_option.external_id)
 
+    @decorators.attr(type='smoke')
     def test_nuage_l2bridge_dual_dualstack(self):
         # Scenario 5
         physnets = [{
@@ -829,6 +839,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                        client=self.admin_manager,
                                        enable_dhcp=False)
 
+    @decorators.attr(type='smoke')
     def test_nuage_l2bridge_dualstack_ipv4(self):
         # Scenario 4
         physnets = [{
@@ -938,6 +949,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                        client=self.admin_manager,
                                        enable_dhcp=False)
 
+    @decorators.attr(type='smoke')
     def test_nuage_l2bridge_dual_ipv6_negative(self):
         physnets = [{
             'physnet_name': 'physnet1',
@@ -1005,6 +1017,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
             self.assertIsNone(l2domain, 'L2domain was erronously created ')
 
+    @decorators.attr(type='smoke')
     def test_nuage_l2bridge_non_normalized_ipv6_negative(self):
         physnets = [{
             'physnet_name': 'physnet1',
@@ -1072,6 +1085,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
             self.assertIsNone(l2domain, 'L2domain was erronously created ')
 
+    @decorators.attr(type='smoke')
     def test_nuage_l2bridge_ipv4_ipv6(self):
         # Scenario 8
         physnets = [{
@@ -1153,6 +1167,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             self.assertIsNotNone(vport_1,
                                  "Vport not created for port in network 1")
 
+    @decorators.attr(type='smoke')
     def test_nuage_l2bridge_ipv4_ipv6_same_cidr(self):
         physnets = [{
             'physnet_name': 'physnet1',
@@ -1292,6 +1307,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             expected_ext_id = bridge['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(bridge, expected_ext_id, l2domain)
 
+    @decorators.attr(type='smoke')
     def test_nuage_l2bridge_same_cidr_different_bridges_ipv4(self):
         physnets = [{
             'physnet_name': 'physnet1',
@@ -1430,6 +1446,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             expected_ext_id = bridge['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(bridge, expected_ext_id, l2domain)
 
+    @decorators.attr(type='smoke')
     def test_nuage_l2bridge_same_cidr_one_bridged_other_non_bridged(self):
         physnets = [{
             'physnet_name': 'physnet1',
@@ -1533,6 +1550,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             expected_ext_id = bridge['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(bridge, expected_ext_id, l2domain)
 
+    @decorators.attr(type='smoke')
     def test_nuage_l2bridge_multiple_subnets_bridged_other_non_bridged(self):
         phys_nets = [{
             'physnet_name': 'physnet1',
@@ -1735,6 +1753,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                 non_bridge_l2domain1.id)
             self.assertIsNotNone(non_bridge_l2domain2)
 
+    @decorators.attr(type='smoke')
     def test_nuage_l2bridge_dualstack_subnets_bridged_and_non_bridged(self):
         physnets = [{
             'physnet_name': 'physnet1',
@@ -1834,6 +1853,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             expected_ext_id = bridge['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(bridge, expected_ext_id, l2domain)
 
+    @decorators.attr(type='smoke')
     def test_nuage_l2bridge_vsd_managed_subnet_negative(self):
         physnets = [{
             'physnet_name': 'physnet1',
@@ -1880,6 +1900,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                net_partition=Topology.def_netpartition,
                                enable_dhcp=True)
 
+    @decorators.attr(type='smoke')
     def test_nuage_l2bridge_router_external_network_negative(self):
         physnets = [{
             'physnet_name': 'physnet1',
@@ -1913,6 +1934,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                client=self.admin_manager,
                                **kwargs)
 
+    @decorators.attr(type='smoke')
     def test_nuage_l2bridge_shared_network_negative(self):
         physnets = [{
             'physnet_name': 'physnet1',
@@ -1946,6 +1968,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                client=self.admin_manager,
                                **kwargs)
 
+    @decorators.attr(type='smoke')
     def test_nuage_l2bridge_with_subnet_delete_check_bridge_mapping(self):
         physnets = [{
             'physnet_name': 'physnet1',
@@ -1994,6 +2017,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
 
             self.assertEqual(bridge['nuage_subnet_id'], None)
 
+    @decorators.attr(type='smoke')
     def test_nuage_l2bridge_with_dualstack_delete_check_bridge_mapping(self):
         physnets = [{
             'physnet_name': 'physnet1',
