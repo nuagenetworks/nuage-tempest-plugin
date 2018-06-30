@@ -14,6 +14,7 @@ import nuage_base
 
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
+from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.tests.api.l2bridge.base_nuage_l2bridge \
@@ -34,23 +35,20 @@ class NuageOSManagedDuplexHeatTest(nuage_base.NuageBaseOrchestrationTest,
         super(NuageOSManagedDuplexHeatTest, cls).setup_clients()
         cls.subnets_client = cls.os_admin.subnets_client
 
+    @decorators.attr(type='smoke')
     def test_created_resources(self):
         """Verifies created neutron resources."""
         neutron_basic_template = self.load_template('l2_bridge_basic')
         stack_name = data_utils.rand_name('heat')
         template = self.read_template('l2_bridge_basic')
 
-        physnets = [
-            {
-                'physnet_name': 'physnet1',
-                'segmentation_id': 50,
-                'segmentation_type': 'vlan'
-            },
-            {
-                'physnet_name': 'physnet1',
-                'segmentation_id': 55,
-                'segmentation_type': 'vlan'
-            }
+        physnets = [{
+            'physnet_name': 'physnet1',
+            'segmentation_id': 50,
+            'segmentation_type': 'vlan'},
+            {'physnet_name': 'physnet1',
+             'segmentation_id': 55,
+             'segmentation_type': 'vlan'}
         ]
         name = data_utils.rand_name('test-l2bridge-')
         bridge = self.create_l2bridge(name, physnets, cleanup=False)
