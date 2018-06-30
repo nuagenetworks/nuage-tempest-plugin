@@ -623,6 +623,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
     # Negative cases
     ###########################################################################
     @decorators.attr(type='negative')
+    @decorators.attr(type='smoke')
     @nuage_test.header()
     def test_os_managed_dual_stack_create_ipv6_only_port_neg(self):
         network = self.create_network()
@@ -647,6 +648,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
             **port_args)
 
     @decorators.attr(type='negative')
+    @decorators.attr(type='smoke')
     @nuage_test.header()
     def test_os_managed_dual_stack_update_port_to_ipv6_only_neg(self):
         network = self.create_network()
