@@ -24,7 +24,6 @@ from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
-from nuage_tempest_plugin.lib import service_mgmt
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services import nuage_client
@@ -34,7 +33,6 @@ LOG = Topology.get_logger(__name__)
 
 
 class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
-    service_manager = None
     _interface = 'json'
 
     ext_net_id = CONF.network.public_network_id
@@ -49,11 +47,6 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
     def setup_clients(cls):
         super(NuagePatUnderlayBase, cls).setup_clients()
         cls.nuage_client = nuage_client.NuageRestClient()
-        cls.service_manager = service_mgmt.ServiceManager()
-
-        if not cls.service_manager.is_service_running(
-                constants.NEUTRON_SERVICE):
-            cls.service_manager.start_service(constants.NEUTRON_SERVICE)
 
     @classmethod
     def skip_checks(cls):
@@ -81,31 +74,20 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
     def needs_ini_nuage_pat(cls, pat_value):
         if not cls.pat_value_matches(
                 pat_value, cls.read_nuage_pat_value_ini()):
-
-            if Topology.neutron_restart_supported():
-                # set the nuage_pat setting in the .ini file
-                cls.service_manager.must_have_configuration_attribute(
-                    Topology.nuage_plugin_configuration,
-                    constants.NUAGE_PAT_GROUP, constants.NUAGE_PAT, pat_value)
-
-            else:
+            if not Topology.neutron_restart_supported():
                 raise cls.skipException(
-                    'Skipping tests that restart neutron ...')
+                    'Skipping tests that require neutron restart...')
+            else:
+                assert False  # we don't support it :)
 
         cls.nuage_pat_ini = pat_value
 
     @classmethod
     def read_nuage_pat_value_ini(cls):
-        # TODO(Kris) FIXME.....................................................
         if Topology.assume_pat_to_underlay_as_disabled_by_default():
             return constants.NUAGE_PAT_DEFAULTDISABLED
-        # TODO(Kris) FIXME.....................................................
-
-        pat_from_ini = cls.service_manager.get_configuration_attribute(
-            Topology.nuage_plugin_configuration,
-            constants.NUAGE_PAT_GROUP, constants.NUAGE_PAT
-        )
-        return pat_from_ini
+        else:
+            assert False  # we don't support reading it out
 
     @staticmethod
     def pat_value_matches(a, b):

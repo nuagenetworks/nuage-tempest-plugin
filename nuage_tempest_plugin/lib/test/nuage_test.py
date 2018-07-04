@@ -674,11 +674,10 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         self.remove_router_interface(router['id'], subnet['id'])
 
     @staticmethod
-    def osc_get_database_table_row(table_name, row=0,
+    # NOTE : not used at the moment ; but kept in codebase for now
+    def osc_get_database_table_row(db_name, db_username, db_password,
+                                   table_name, row=0,
                                    assert_table_size=None):
-        db_name = 'neutron'
-        db_username = Topology.database_user
-        db_password = Topology.database_password
         db_cmd = 'SELECT * FROM ' + table_name
 
         db_connection = pymysql.connect(host='localhost',

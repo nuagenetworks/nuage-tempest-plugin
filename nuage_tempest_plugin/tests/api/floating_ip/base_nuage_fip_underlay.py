@@ -25,15 +25,13 @@ from tempest.lib import exceptions
 from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
 
-from nuage_tempest_plugin.lib import service_mgmt
 from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants as nuage_constants
 from nuage_tempest_plugin.services import nuage_client
 
 CONF = Topology.get_conf()
 
 
-class NuageFipUnderlayBase(base.BaseAdminNetworkTest,):
+class NuageFipUnderlayBase(base.BaseAdminNetworkTest):
 
     @classmethod
     def setup_clients(cls):
@@ -52,17 +50,11 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest,):
         super(NuageFipUnderlayBase, cls).resource_setup()
 
         cls.ext_net_id = CONF.network.public_network_id
-        cls.service_manager = service_mgmt.ServiceManager()
 
         nuage_fip_underlay_ini = cls.read_nuage_fip_underlay_value_ini()
         if nuage_fip_underlay_ini == '':
             nuage_fip_underlay_ini = None
         cls.nuage_fip_underlay_ini = nuage_fip_underlay_ini
-
-        if (Topology.neutron_restart_supported() and
-                not cls.service_manager.is_service_running(
-                    nuage_constants.NEUTRON_SERVICE)):
-            cls.service_manager.start_service(nuage_constants.NEUTRON_SERVICE)
 
     @staticmethod
     def randomized_cidr():
@@ -74,31 +66,18 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest,):
         if underlay_value != cls.read_nuage_fip_underlay_value_ini():
             if not Topology.neutron_restart_supported():
                 raise cls.skipException(
-                    'Skipping tests that restart neutron ...')
-
-            # underlay_value is supposed to be True/False/None, but can be
-            # different (add exception case)
-            cls.service_manager.must_have_configuration_attribute(
-                Topology.nuage_plugin_configuration,
-                nuage_constants.NUAGE_FIP_UNDERLAY_GROUP,
-                nuage_constants.NUAGE_FIP_UNDERLAY, underlay_value)
+                    'Skipping tests that require neutron restart ...')
+            else:
+                assert False  # we don't support it :)
 
         cls.nuage_fip_underlay_ini = underlay_value
 
     @classmethod
     def read_nuage_fip_underlay_value_ini(cls):
-        # TODO(Kris) FIXME.....................................................
         if Topology.assume_fip_to_underlay_as_enabled_by_default():
             return True
-        # TODO(Kris) ..........................................................
-
         else:
-            fip_underlay_from_ini = \
-                cls.service_manager.get_configuration_attribute(
-                    Topology.nuage_plugin_configuration,
-                    nuage_constants.NUAGE_FIP_UNDERLAY_GROUP,
-                    nuage_constants.NUAGE_FIP_UNDERLAY)
-            return fip_underlay_from_ini
+            assert False  # we don't support reading it out
 
     # Taken from test_external_network_extensions.py,trying to avoid issues
     # with the cli client

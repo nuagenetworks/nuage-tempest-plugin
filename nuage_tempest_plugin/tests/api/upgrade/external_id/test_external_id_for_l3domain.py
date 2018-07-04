@@ -23,7 +23,6 @@ from nuage_tempest_plugin.lib.utils import exceptions as n_exceptions
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
 from external_id import ExternalId
-import upgrade_external_id_with_cms_id as upgrade_script
 
 CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
@@ -330,17 +329,6 @@ class ExternalIdForL3domainTest(base.BaseAdminNetworkTest):
         self.addCleanup(self.routers_client.delete_router, router['id'])
         self.assertEqual(router['name'], name)
 
-        if self.test_upgrade:
-            vsd_l3domain = self.MatchingVsdl3domain(
-                self, router).get_by_external_id()
-            vsd_l3domain.has_zones(with_external_id=None)
-            vsd_l3domain.has_permissions(with_external_id=None)
-            vsd_l3domain.has_egress_acl_template(with_external_id=None)
-            vsd_l3domain.has_ingress_acl_template(with_external_id=None)
-            vsd_l3domain.has_forwarding_policy_template(with_external_id=None)
-
-            upgrade_script.do_run_upgrade_script()
-
         vsd_l3domain = self.MatchingVsdl3domain(
             self, router).get_by_external_id()
         vsd_l3domain.has_zones(
@@ -382,16 +370,6 @@ class ExternalIdForL3domainTest(base.BaseAdminNetworkTest):
             router['id'], subnet_id=subnet['id'])
         self.addCleanup(self._remove_router_interface_with_subnet_id,
                         router['id'], subnet['id'])
-
-        if self.test_upgrade:
-            vsd_l3domain = self.MatchingVsdl3domain(
-                self, router).get_by_external_id()
-            vsd_l3domain.has_zones(with_external_id=None)
-            vsd_l3domain.has_subnet(
-                with_external_id=ExternalId(subnet['id']).at_cms_id(),
-                subnet=subnet)
-
-            upgrade_script.do_run_upgrade_script()
 
         vsd_l3domain = self.MatchingVsdl3domain(
             self, router).get_by_external_id()

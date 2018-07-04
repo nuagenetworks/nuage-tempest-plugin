@@ -24,8 +24,6 @@ from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.lib.utils import exceptions as n_exceptions
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
-import upgrade_external_id_with_cms_id as upgrade_script
-
 from external_id import ExternalId
 
 LOG = Topology.get_logger(__name__)
@@ -311,20 +309,6 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
         port = create_body['port']
         self.addCleanup(self.ports_client.delete_port, port['id'])
 
-        if self.test_upgrade:
-            vsd_vport = self.MatchingVsdVPort(
-                self, port, subnet).get_by_external_id()
-            vsd_vport.has_default_security_policy_group(
-                with_external_id=ExternalId(
-                    self._build_default_security_policy_group_id(
-                        vsd_vport.vsd_vport['parentID'])).at_cms_id())
-            vsd_vport.has_default_egress_policy_entries(
-                with_external_id=None)
-            vsd_vport.has_default_ingress_policy_entries(
-                with_external_id=None)
-
-            upgrade_script.do_run_upgrade_script()
-
         vsd_vport = self.MatchingVsdVPort(
             self, port, subnet).get_by_external_id()
         vsd_vport.has_default_security_policy_group(
@@ -361,29 +345,6 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
         # switch port security to true/false
         self.ports_client.update_port(port['id'], port_security_enabled=True)
         self.ports_client.update_port(port['id'], port_security_enabled=False)
-
-        if self.test_upgrade:
-            vsd_vport = self.MatchingVsdVPort(
-                self, port, subnet).get_by_external_id()
-            vsd_vport.has_default_security_policy_group(
-                with_external_id=ExternalId(
-                    self._build_default_security_policy_group_id(
-                        vsd_vport.vsd_vport['parentID'])).at_cms_id())
-
-            # due to OPENSTACK-1451, multiple entries are created
-            self.assertRaisesRegex(
-                AssertionError,
-                "1 != 2: Should find exact 1 match for ingress policy entries",
-                vsd_vport.has_default_ingress_policy_entries,
-                with_external_id=None)
-            self.assertRaisesRegex(
-                AssertionError,
-                "1 != 2: Should find exact 1 match for egress policy entries",
-                vsd_vport.has_default_egress_policy_entries,
-                with_external_id=None)
-
-            # script should delete
-            upgrade_script.do_run_upgrade_script()
 
         vsd_vport = self.MatchingVsdVPort(
             self, port, subnet).get_by_external_id()
@@ -422,29 +383,6 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
         self.ports_client.update_port(port['id'], port_security_enabled=True)
         self.ports_client.update_port(port['id'], port_security_enabled=False)
         self.ports_client.update_port(port['id'], port_security_enabled=True)
-
-        if self.test_upgrade:
-            vsd_vport = self.MatchingVsdVPort(
-                self, port, subnet).get_by_external_id()
-            vsd_vport.has_default_security_policy_group(
-                with_external_id=ExternalId(
-                    self._build_default_security_policy_group_id(
-                        vsd_vport.vsd_vport['parentID'])).at_cms_id())
-
-            # due to OPENSTACK-1451, multiple entries are created
-            self.assertRaisesRegex(
-                AssertionError,
-                "1 != 2: Should find exact 1 match for ingress policy entries",
-                vsd_vport.has_default_ingress_policy_entries,
-                with_external_id=None)
-            self.assertRaisesRegex(
-                AssertionError,
-                "1 != 2: Should find exact 1 match for egress policy entries",
-                vsd_vport.has_default_egress_policy_entries,
-                with_external_id=None)
-
-            # script should delete
-            upgrade_script.do_run_upgrade_script()
 
         vsd_vport = self.MatchingVsdVPort(
             self, port, subnet).get_by_external_id()

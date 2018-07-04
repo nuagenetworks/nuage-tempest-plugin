@@ -26,13 +26,11 @@ from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
 from external_id import ExternalId
-import upgrade_external_id_with_cms_id as upgrade_script
 
 LOG = Topology.get_logger(__name__)
 
 
 class ExternalIdForL2domainTest(base.BaseNetworkTest):
-    test_upgrade = False
     net_partition_name = Topology.def_netpartition
 
     class MatchingVsdL2domain(object):
@@ -304,15 +302,6 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
                 self.vsd_l2domain['ID'])
 
     @classmethod
-    def resource_setup(cls):
-        super(ExternalIdForL2domainTest, cls).resource_setup()
-
-    @classmethod
-    def skip_checks(cls):
-        super(ExternalIdForL2domainTest, cls).skip_checks()
-        cls.test_upgrade = not Topology.within_ext_id_release()
-
-    @classmethod
     def setup_clients(cls):
         super(ExternalIdForL2domainTest, cls).setup_clients()
         cls.nuage_client = NuageRestClient()
@@ -334,21 +323,6 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
         dhcp_opts = [
             {'actualType': 3, 'actualValues': subnet['gateway_ip']}
         ]
-
-        if self.test_upgrade:
-            vsd_l2domain = self.MatchingVsdL2domain(
-                self, subnet).get_by_external_id()
-            vsd_l2domain.has_l2domain_template(with_external_id=None)
-            vsd_l2domain.has_dhcp_options(
-                with_external_id=None, with_dhcp_opts=dhcp_opts)
-            vsd_l2domain.has_permissions(with_external_id=None)
-            vsd_l2domain.has_group(with_external_id=None)
-            vsd_l2domain.has_user(with_external_id=None)
-            vsd_l2domain.has_egress_acl_template(with_external_id=None)
-            vsd_l2domain.has_ingress_acl_template(with_external_id=None)
-            vsd_l2domain.has_forwarding_policy_template(with_external_id=None)
-
-            upgrade_script.do_run_upgrade_script()
 
         vsd_l2domain = self.MatchingVsdL2domain(
             self, subnet).get_by_external_id()
@@ -411,21 +385,6 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
         subnet_b1 = self.create_subnet(network_b1,
                                        net_partition=netpartition_b['name'])
 
-        if self.test_upgrade:
-            vsd_l2domain_a1 = self.MatchingVsdL2domain(
-                self, subnet_a1).get_by_external_id(
-                net_partition_name=netpartition_a['name'])
-            vsd_l2domain_a1.has_group(with_external_id=None)
-            vsd_l2domain_a1.has_user(with_external_id=None)
-
-            vsd_l2domain_b1 = self.MatchingVsdL2domain(
-                self, subnet_b1).get_by_external_id(
-                net_partition_name=netpartition_b['name'])
-            vsd_l2domain_b1.has_group(with_external_id=None)
-            vsd_l2domain_b1.has_user(with_external_id=None)
-
-            upgrade_script.do_run_upgrade_script()
-
         # has only 1 group and 1 user with same External ID as subnet in
         # netpartition A
         vsd_l2domain_a1 = self.MatchingVsdL2domain(
@@ -474,29 +433,6 @@ class ExternalIdForL2domainAdminTest(ExternalIdForL2domainTest):
         # Create a second subnet
         subnet_b = self.create_subnet(
             network, client=self.os_admin.subnets_client)
-
-        if self.test_upgrade:
-            vsd_l2domain_a = self.MatchingVsdL2domain(
-                self, subnet).get_by_external_id()
-            vsd_l2domain_a.has_permissions(with_external_id=None)
-            vsd_l2domain_a.has_group_everybody()
-            vsd_l2domain_a.has_user(with_external_id=None)
-            vsd_l2domain_a.has_egress_acl_template(with_external_id=None)
-            vsd_l2domain_a.has_ingress_acl_template(with_external_id=None)
-            vsd_l2domain_a.has_forwarding_policy_template(
-                with_external_id=None)
-
-            vsd_l2domain_b = self.MatchingVsdL2domain(
-                self, subnet_b).get_by_external_id()
-            vsd_l2domain_b.has_permissions(with_external_id=None)
-            vsd_l2domain_b.has_group_everybody()
-            vsd_l2domain_b.has_user(with_external_id=None)
-            vsd_l2domain_b.has_egress_acl_template(with_external_id=None)
-            vsd_l2domain_b.has_ingress_acl_template(with_external_id=None)
-            vsd_l2domain_b.has_forwarding_policy_template(
-                with_external_id=None)
-
-            upgrade_script.do_run_upgrade_script()
 
         vsd_l2domain_a = self.MatchingVsdL2domain(
             self, subnet).get_by_external_id()

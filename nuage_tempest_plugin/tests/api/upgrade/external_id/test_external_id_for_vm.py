@@ -27,8 +27,6 @@ from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
 from nuage_tempest_plugin.tests.scenario \
     import base_nuage_network_scenario_test
 
-import upgrade_external_id_with_cms_id as upgrade_script
-
 LOG = Topology.get_logger(__name__)
 
 
@@ -136,12 +134,6 @@ class ExternalIdForVmTest(
         name = data_utils.rand_name('server-smoke')
         server = self._create_server(name, network, port['id'])
 
-        if self.test_upgrade:
-            vsd_vm = self.MatchingVsdVm(self, server).get_by_uuid()
-            vsd_vm.has_parent_vm_interface(ExternalId(port['id']).at_cms_id())
-
-            upgrade_script.do_run_upgrade_script()
-
         vsd_vm = self.MatchingVsdVm(self, server).get_by_external_id()
         vsd_vm.has_parent_vm_interface(ExternalId(port['id']).at_cms_id())
 
@@ -164,13 +156,6 @@ class ExternalIdForVmTest(
             'OS-EXT-IPS-MAC:mac_addr']
         ports_response = self.ports_client.list_ports(mac_address=port_mac)
         port = ports_response['ports'][0]
-
-        if self.test_upgrade:
-            vsd_vm = self.MatchingVsdVm(self, server).get_by_uuid()
-            vsd_vm.has_parent_vm_interface(
-                with_external_id=ExternalId(port['id']).at_cms_id())
-
-            upgrade_script.do_run_upgrade_script()
 
         vsd_vm = self.MatchingVsdVm(self, server).get_by_external_id()
         vsd_vm.has_parent_vm_interface(ExternalId(port['id']).at_cms_id())
@@ -234,13 +219,6 @@ class ExternalIdForVmTest(
         ports_response = self.ports_client.list_ports(mac_address=port_mac)
         port = ports_response['ports'][0]
 
-        if self.test_upgrade:
-            vsd_vm = self.MatchingVsdVm(self, server).get_by_uuid()
-            vsd_vm.has_parent_vm_interface(
-                with_external_id=ExternalId(port['id']).at_cms_id())
-
-            upgrade_script.do_run_upgrade_script()
-
         vsd_vm = self.MatchingVsdVm(self, server).get_by_external_id()
         vsd_vm.has_parent_vm_interface(ExternalId(port['id']).at_cms_id())
 
@@ -292,13 +270,6 @@ class ExternalIdForVmTest(
             'OS-EXT-IPS-MAC:mac_addr']
         ports_response = self.ports_client.list_ports(mac_address=port_mac)
         port = ports_response['ports'][0]
-
-        if self.test_upgrade:
-            vsd_vm = self.MatchingVsdVm(self, server).get_by_uuid()
-            vsd_vm.has_parent_vm_interface(
-                with_external_id=ExternalId(port['id']).at_cms_id())
-
-            upgrade_script.do_run_upgrade_script()
 
         vsd_vm = self.MatchingVsdVm(self, server).get_by_external_id()
         vsd_vm.has_parent_vm_interface(ExternalId(port['id']).at_cms_id())
