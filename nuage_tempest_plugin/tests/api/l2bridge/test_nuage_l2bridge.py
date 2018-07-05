@@ -1446,7 +1446,6 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             expected_ext_id = bridge['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(bridge, expected_ext_id, l2domain)
 
-    @decorators.attr(type='smoke')
     def test_nuage_l2bridge_same_cidr_one_bridged_other_non_bridged(self):
         physnets = [{
             'physnet_name': 'physnet1',
@@ -1640,6 +1639,30 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                    cidr=IPNetwork('10.10.1.0/24'),
                                    enable_dhcp=False,
                                    mask_bits=24)
+            host_routes = [{'destination': '10.20.0.0/32',
+                            'nexthop': '10.100.1.2'}]
+            msg = ('Bad request: The host_routes associated with '
+                   'nuage_l2bridge {}').format(bridge['id'])
+            self.assertRaisesRegex(exceptions.BadRequest,
+                                   msg,
+                                   self.create_subnet,
+                                   n2,
+                                   subnet_name='create-subnet-fails',
+                                   client=self.admin_manager,
+                                   cidr=IPNetwork('10.10.1.0/24'),
+                                   mask_bits=24,
+                                   host_routes=host_routes)
+            msg = ('Bad request: The dns_nameservers associated with '
+                   'nuage_l2bridge {}').format(bridge['id'])
+            self.assertRaisesRegex(exceptions.BadRequest,
+                                   msg,
+                                   self.create_subnet,
+                                   n2,
+                                   subnet_name='create-subnet-fails',
+                                   client=self.admin_manager,
+                                   cidr=IPNetwork('10.10.1.0/24'),
+                                   mask_bits=24,
+                                   dns_nameservers=['7.8.8.8'])
             # ipv6
             self.create_subnet(n1, subnet_name=name + '-subnet-1-ipv6',
                                client=self.admin_manager,
