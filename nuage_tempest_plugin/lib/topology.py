@@ -131,11 +131,11 @@ class Topology(Singleton):
 
     @staticmethod
     def use_alpine_for_advanced_image():
-        return not Topology.is_devstack()  # TODO(Kris) not av. on NOC yet
+        return Topology.is_devstack()
 
     @staticmethod
     def support_sfc():
-        return not Topology.is_devstack()  # TODO(Kris) make True in dev ci
+        return Topology.is_devstack()
 
     @staticmethod
     def new_route_to_underlay_model_enabled():

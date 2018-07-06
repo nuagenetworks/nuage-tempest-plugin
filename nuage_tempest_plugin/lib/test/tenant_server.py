@@ -76,12 +76,11 @@ class TenantServer(object):
             'prompt': '\$'
         },
         'advanced': {
-            'alpine',
-            'root',
-            'tigris',
-            '~#'
+            'image_name': 'alpine',
+            'username': 'root',
+            'password': 'tigris',
+            'prompt': '~#'
         } if Topology.use_alpine_for_advanced_image() else {
-            # TODO(KRIS) - needs custom cirros image
             'image_name': 'cirros-0.3.5-x86_64-disk',
             'username': 'cirros',
             'password': 'cubswin:)',
