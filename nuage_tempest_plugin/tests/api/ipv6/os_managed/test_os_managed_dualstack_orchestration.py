@@ -100,9 +100,6 @@ class OsManagedDualStackOrchestrationTest(NuageBaseOrchestrationTest):
         server2.configure_dualstack_interface(
             server2_ipv6, subnet=ipv6_subnet, device="eth0", )
 
-        # TODO(team): find out why we need 5 seconds sleep for stable success?
-        self.sleep(5)
-
         # Test IPv6 connectivity between peer servers
         self.assert_ping6(server1, server2, network)
 

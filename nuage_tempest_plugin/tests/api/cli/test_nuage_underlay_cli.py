@@ -4,7 +4,7 @@
 import testtools
 
 from tempest.lib.common.utils import data_utils
-from tempest import test
+from tempest.lib import decorators
 
 from nuage_tempest_plugin.lib.cli.client_testcase \
     import CLIClientTestCase
@@ -53,7 +53,7 @@ class TestNuageUnderlayCli(CLIClientTestCase):
         self.assertEqual(show_subnet['nuage_underlay'], nuage_underlay)
 
     @nuage_test.header()
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @testtools.skipIf(not Topology.new_route_to_underlay_model_enabled(),
                       'Skipping test as new route-to-UL model is not enabled')
     def test_cli_create_router_with_nuage_underlay_off(self):
@@ -66,7 +66,7 @@ class TestNuageUnderlayCli(CLIClientTestCase):
         self._verify_router_nuage_underlay(created_router['id'], 'off')
 
     @nuage_test.header()
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @testtools.skipIf(not Topology.new_route_to_underlay_model_enabled(),
                       'Skipping test as new route-to-UL model is not enabled')
     def test_cli_update_router_with_nuage_underlay_off(self):
@@ -80,7 +80,7 @@ class TestNuageUnderlayCli(CLIClientTestCase):
         self._verify_router_nuage_underlay(created_router['id'], 'off')
 
     @nuage_test.header()
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @testtools.skipIf(not Topology.new_route_to_underlay_model_enabled(),
                       'Skipping test as new route-to-UL model is not enabled')
     def test_cli_update_router_with_nuage_underlay_snat(self):
@@ -92,7 +92,7 @@ class TestNuageUnderlayCli(CLIClientTestCase):
         self._verify_router_nuage_underlay(created_router['id'], 'snat')
 
     @nuage_test.header()
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @testtools.skipIf(not Topology.new_route_to_underlay_model_enabled(),
                       'Skipping test as new route-to-UL model is not enabled')
     def test_cli_update_router_with_nuage_underlay_route(self):
@@ -104,7 +104,7 @@ class TestNuageUnderlayCli(CLIClientTestCase):
         self._verify_router_nuage_underlay(created_router['id'], 'route')
 
     @nuage_test.header()
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @testtools.skipIf(not Topology.new_route_to_underlay_model_enabled(),
                       'Skipping test as new route-to-UL model is not enabled')
     def test_cli_update_subnet_nuage_underlay_route(self):
@@ -126,7 +126,7 @@ class TestNuageUnderlayCli(CLIClientTestCase):
         self._verify_subnet_nuage_underlay(created_subnet['id'], 'route')
 
     @nuage_test.header()
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @testtools.skipIf(not Topology.new_route_to_underlay_model_enabled(),
                       'Skipping test as new route-to-UL model is not enabled')
     def test_cli_update_subnet_nuage_underlay_snat(self):
@@ -148,7 +148,7 @@ class TestNuageUnderlayCli(CLIClientTestCase):
         self._verify_subnet_nuage_underlay(created_subnet['id'], 'snat')
 
     @nuage_test.header()
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @testtools.skipIf(not Topology.new_route_to_underlay_model_enabled(),
                       'Skipping test as new route-to-UL model is not enabled')
     def test_cli_update_subnet_nuage_underlay_off(self):

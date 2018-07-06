@@ -1,11 +1,11 @@
 # Copyright 2017 Alcatel-Lucent
 # All Rights Reserved.
 
+from base64 import b64encode
 import copy
 import functools
 import inspect
 import os.path
-from oslo_utils import excutils
 import pymysql
 from six import iteritems
 import testtools
@@ -222,6 +222,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 "Please add motivation for this sleep.".format(seconds))
         else:
             LOG.warning("Sleeping for {}s. {}.".format(seconds, msg))
+        time.sleep(seconds)
 
     @classmethod
     def create_network_at_class_level(cls, network_name, client, **kwargs):
@@ -775,7 +776,10 @@ class NuageBaseTest(manager.NetworkScenarioTest):
     def osc_create_test_server(self, client=None, tenant_networks=None,
                                ports=None, wait_until='ACTIVE',
                                volume_backed=False, name=None, flavor=None,
-                               image_id=None, cleanup=True, **kwargs):
+                               image_id=None, cleanup=True,
+                               deploy_attempt_count=1,
+                               return_none_on_failure=False,
+                               **kwargs):
         """Common wrapper utility returning a test server.
 
         :param client: Client manager which provides OpenStack Tempest clients.
@@ -788,6 +792,9 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         :param flavor: Instance flavor.
         :param image_id: Instance image ID.
         :param cleanup: Flag for cleanup (leave True for auto-cleanup).
+        :param deploy_attempt_count: max deploy attempt count
+        :param return_none_on_failure: if True, return None on failure instead
+        of failing the test case
         :returns: a tuple
         """
         if not client:
@@ -835,44 +842,90 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             # to be specified.
             image_id = ''
 
-        body = client.servers_client.create_server(name=name,
-                                                   imageRef=image_id,
-                                                   flavorRef=flavor,
-                                                   **kwargs)
-
-        # get the servers
-        vm = rest_client.ResponseBody(body.response, body['server'])
-        LOG.info("Id of vm %s", vm['id'])
-
-        if wait_until:
-            try:
-                waiters.wait_for_server_status(client.servers_client,
-                                               vm['id'], wait_until)
-
-            except Exception:
-                with excutils.save_and_reraise_exception():
-                    if ('preserve_server_on_error' not in kwargs or
-                            kwargs['preserve_server_on_error'] is False):
-                        try:
-                            client.servers_client.delete_server(vm['id'])
-                        except Exception:
-                            LOG.exception(
-                                'Deleting server %s failed', vm['id'])
+        vm = None
 
         def cleanup_server():
             client.servers_client.delete_server(vm['id'])
-            waiters.wait_for_server_termination(client.servers_client,
-                                                vm['id'])
+            waiters.wait_for_server_termination(
+                client.servers_client, vm['id'])
 
-        if cleanup:
-            self.addCleanup(cleanup_server)
+        for attempt in range(deploy_attempt_count):
 
-        return vm
+            LOG.info("Deploying server %s", name)
+
+            body = client.servers_client.create_server(name=name,
+                                                       imageRef=image_id,
+                                                       flavorRef=flavor,
+                                                       **kwargs)
+
+            vm = rest_client.ResponseBody(body.response, body['server'])
+            LOG.info("Id of vm %s", vm['id'])
+
+            if wait_until:
+
+                LOG.info("Waiting for server %s to be %s", name, wait_until)
+                try:
+                    waiters.wait_for_server_status(client.servers_client,
+                                                   vm['id'], wait_until)
+
+                    break
+
+                except Exception as e:
+
+                    if ('preserve_server_on_error' not in kwargs or
+                            kwargs['preserve_server_on_error'] is False):
+
+                        LOG.error("Deploying server %s failed (%s). "
+                                  "Destroying.", name, str(e))
+
+                        # for convenience, define equal
+                        undeploy_attempt_count = deploy_attempt_count
+
+                        for delete_attempt in range(undeploy_attempt_count):
+
+                            try:
+                                cleanup_server()
+                                vm = None  # mark deletion success
+                                break
+
+                            except Exception as e:
+                                LOG.exception(
+                                    'Destroying server %s failed (%s)',
+                                    name, str(e))
+
+                        if vm is not None:
+                            if return_none_on_failure:
+                                LOG.error('Destroying server %s failed', name)
+                                return None
+                            else:
+                                self.fail('Destroying server %s failed' % name)
+
+            else:
+                break
+
+        if vm:
+            if cleanup:
+                self.addCleanup(cleanup_server)
+
+            return vm
+
+        else:
+
+            # FAILED TO DEPLOY SERVER
+
+            if return_none_on_failure:
+                LOG.error('Deploying server %s failed', name)
+                return None
+
+            else:
+                self.fail('Deploying server %s failed' % name)
 
     def create_tenant_server(self, client=None, tenant_networks=None,
                              ports=None, wait_until='ACTIVE',
                              volume_backed=False, name=None, flavor=None,
                              image_profile='default', cleanup=True,
+                             wait_until_server_is_initialized=True,
+                             return_none_on_failure=False,
                              **kwargs):
 
         name = name or data_utils.rand_name('test-server')
@@ -887,14 +940,69 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                               ' could not be found on setup.')
         server.openstack_data = self.osc_create_test_server(
             client, tenant_networks, ports, wait_until, volume_backed,
-            name, flavor, image_id, cleanup, **kwargs)
+            name, flavor, image_id, cleanup,
+            return_none_on_failure=return_none_on_failure,
+            **kwargs)
+
+        if not server.openstack_data and return_none_on_failure:
+            return None
+
         server.nbr_nics_configured = len(tenant_networks) \
             if tenant_networks else 0
+
+        if wait_until_server_is_initialized:
+            self.sleep(5, 'Give time for server to initialize')
 
         server.init_console()
 
         self.addCleanup(server.cleanup)
         return server
+
+    def create_reachable_tenant_server_in_l2_network(
+            self, network_l2, security_group, name=None,
+            image_profile='default'):
+        """Create a server with a FIP for eth0 and a second interface eth1
+
+           in the given l2 network
+
+        :param network_l2    : The L2 network for the second interface
+        :param security_group: Security group to for the L3 port of the server
+        :param name          : Server name
+        :param image_profile :
+        :return              : The created server
+        """
+
+        for attempt in range(3):  # retrying seems to pay off (CI evidence)
+
+            router = self.create_test_router()
+            network = self.create_network()
+            subnet = self.create_subnet(
+                network, cidr=IPNetwork("192.168.0.0/24"))
+            self.assertIsNotNone(subnet)
+            self.router_attach(router, subnet)
+
+            port_l2 = self.create_port(network_l2)
+            port_l3 = self.create_port(network,
+                                       security_groups=[security_group['id']])
+
+            # boot with user_data to configure eth1
+            server = self.create_tenant_server(
+                ports=[port_l3, port_l2],
+                user_data=b64encode("#!/bin/sh\n/sbin/cirros-dhcpc up eth1"),
+                name=name,
+                image_profile=image_profile,
+                return_none_on_failure=True)
+
+            if server:
+                self.prepare_for_ping_test(server, port=port_l3)  # create FIP
+
+                return server
+
+            else:
+                LOG.error('create_reachable_tenant_server_in_l2_network '
+                          'failed (attempt {}); retrying'.format(attempt + 1))
+
+        self.fail('create_reachable_tenant_server_in_l2_network failed')
 
     def create_fip_to_server(self, server, port=None, validate_access=False,
                              vsd_domain=None, vsd_subnet=None):
@@ -907,8 +1015,8 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         :param vsd_subnet: L3Subnet VSPK object
         :return:
         """
-        LOG.debug("create_fip_to_server: vsd_domain={}, vsd_subnet={}".format(
-            str(vsd_domain), str(vsd_subnet)))
+        LOG.debug("create_fip_to_server: vsd_domain=%s, vsd_subnet=%s",
+                  str(vsd_domain), str(vsd_subnet))
 
         if not server.associated_fip:
             if vsd_domain:
@@ -925,8 +1033,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 )['floating_ip_address']
 
             server.associate_fip(fip)
-            LOG.debug("create_fip_to_server: "
-                      "fip associated: {}".format(str(fip)))
+            LOG.debug("create_fip_to_server: fip associated: %s", str(fip))
 
             if validate_access:
                 assert server.check_connectivity(3)
@@ -968,33 +1075,42 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 LOG.exception('Stopping server %s failed', server_id)
 
     def assert_ping(self, server1, server2, network, ip_type=4,
-                    should_pass=True, interface=None, ping_count=3):
+                    should_pass=True, interface=None, ping_count=3,
+                    return_boolean_to_indicate_success=False):
         if not server1.console():
             self.skipTest('This test cannot complete assert_ping request '
                           'as it has no console access.')
 
         server1.prepare_nics()  # server2 is assumed to be prepared
+
         address2 = server2.get_server_ip_in_network(
             network['name'], ip_type)
         ping_pass = None  # keeps pycharm happy
-        for attempt in range(Topology.nbr_retries_for_test_robustness):
-            LOG.info('assert_ping: ping attempt %d start', attempt + 1)
+
+        for attempt in range(1, Topology.nbr_retries_for_test_robustness + 1):
+            LOG.info('assert_ping: ping attempt %d start', attempt)
 
             ping_result = server1.ping(address2, ping_count, interface,
                                        ip_type, should_pass)
             ping_pass = 'PASSED' if ping_result else 'FAILED'
             if ping_result == should_pass:
                 LOG.info('assert_ping: ping attempt %d %s', attempt, ping_pass)
-                return
+                return True
 
             LOG.error('assert_ping: ping attempt %d %s', attempt, ping_pass)
-            self.sleep(1)
+            self.sleep(msg='reattempting ping in 1 sec')
 
         LOG.error(
             'Ping from server {} to server {} on IP address {} {}.'
             .format(server1.id(), server2.id(), address2, ping_pass))
 
-        self.fail('Ping unexpectedly ' + ping_pass)
+        server1.echo_debug_info()
+
+        if return_boolean_to_indicate_success:
+            LOG.error('Ping unexpectedly ' + ping_pass)
+            return False
+        else:
+            self.fail('Ping unexpectedly ' + ping_pass)
 
     def assert_ping6(self, server1, server2, network, should_pass=True):
         self.assert_ping(server1, server2, network, ip_type=6,

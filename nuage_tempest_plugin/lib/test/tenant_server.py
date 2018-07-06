@@ -268,7 +268,8 @@ class TenantServer(object):
 
         self.send('ip -6 addr add {}/{} dev {}'.format(ip, mask_bits, device))
         self.send('ip link set dev {} up'.format(device))
-        self.send('ip -6 route add default via {}'.format(gateway_ip))
+        if gateway_ip:  # In L2 domains having a gateway does not make sense
+            self.send('ip -6 route add default via {}'.format(gateway_ip))
         self.send('ip a')
         self.send('route -n -A inet6')
 
@@ -326,16 +327,14 @@ class TenantServer(object):
                 if next_nic:  # the first nic (nic 0) never needs preparation
                     self.prepare_cirros_for_extra_nic('eth' + str(next_nic))
                 self.nbr_nics_prepared_for += 1
-        else:
-            pass  # assume nothing to be done
+        # else nothing to be done
 
     def prepare_cirros_for_extra_nic(self, nic):
-        self.send(
-            'echo \"auto ' + nic +
-            '\"|sudo tee -a /etc/network/interfaces;' +
-            'echo \"iface ' + nic + ' inet dhcp' +
-            '\"|sudo tee -a /etc/network/interfaces;' +
-            'sudo /sbin/cirros-dhcpc up ' + nic, False)
+        self.send('echo \"auto ' + nic +
+                  '\"|sudo tee -a /etc/network/interfaces;' +
+                  'echo \"iface ' + nic + ' inet dhcp' +
+                  '\"|sudo tee -a /etc/network/interfaces;' +
+                  'sudo /sbin/cirros-dhcpc up ' + nic, False)
 
     def needs_fip_access(self):
         return not self.console()
@@ -374,3 +373,10 @@ class TenantServer(object):
         expected_packet_cnt = count if should_pass else 0
 
         return str(expected_packet_cnt) + ' packets received' in ping_out
+
+    def echo_debug_info(self):
+        self.send("echo; "
+                  "echo '----- ip route -----'; ip route; "
+                  "echo '----- ip a     -----'; ip a; "
+                  "echo '----- arp -a   -----'; arp -a; "
+                  "echo", CONF.validation.ssh_timeout)

@@ -3,35 +3,25 @@
 
 import testtools
 
-from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
 
-# from tempest.lib import decorators
+from tempest.test import decorators
 
 
-class Ipv6ConnectivityTest(NuageBaseTest):
+class Ipv6OsManagedConnectivityTest(NuageBaseTest):
 
-    @classmethod
-    def skip_checks(cls):
-        super(Ipv6ConnectivityTest, cls).skip_checks()
-        if not NUAGE_FEATURES.os_managed_dualstack_subnets:
-            raise cls.skipException(
-                'OS Managed Dual Stack is not supported in this release')
-
-    ###########################################################################
-    # Typical cases - DualStack
-    ###########################################################################
-    @testtools.skipIf(not Topology.access_to_l2_supported(),
-                      'Access to vm\'s in l2 networks is unsupported.')
+    @decorators.attr(type='smoke')
+    @testtools.skipIf(not Topology.run_connectivity_tests(),
+                      'Connectivity tests are disabled.')
     def test_icmp_connectivity_os_managed_dualstack_l2_domain(self):
         # Provision OpenStack network
         network = self.create_network()
-        ipv4_subnet = self.create_subnet(network)
+        ipv4_subnet = self.create_subnet(network, gateway=None)
         self.assertIsNotNone(ipv4_subnet)
 
         ipv6_subnet = self.create_subnet(
-            network, ip_version=6, enable_dhcp=False)
+            network, ip_version=6, enable_dhcp=False, gateway=None)
         self.assertIsNotNone(ipv6_subnet)
 
         # create open-ssh sg (allow icmp and ssh from anywhere)
@@ -39,12 +29,10 @@ class Ipv6ConnectivityTest(NuageBaseTest):
             namestart='tempest-open-ssh')
 
         # Launch tenant servers in OpenStack network
-        server1 = self.create_tenant_server(
-            tenant_networks=[network],
-            security_groups=[{'name': ssh_security_group['name']}])
-        server2 = self.create_tenant_server(
-            tenant_networks=[network],
-            security_groups=[{'name': ssh_security_group['name']}])
+        server2 = self.create_reachable_tenant_server_in_l2_network(
+            network, ssh_security_group)
+        server1 = self.create_reachable_tenant_server_in_l2_network(
+            network, ssh_security_group)
 
         # Test IPv4 connectivity between peer servers
         self.assert_ping(server1, server2, network, should_pass=True)
@@ -57,14 +45,14 @@ class Ipv6ConnectivityTest(NuageBaseTest):
             network['name'], ip_type=6)
 
         server1.configure_dualstack_interface(
-            server1_ipv6, subnet=ipv6_subnet, device='eth0')
+            server1_ipv6, subnet=ipv6_subnet, device='eth1')
         server2.configure_dualstack_interface(
-            server2_ipv6, subnet=ipv6_subnet, device='eth0')
+            server2_ipv6, subnet=ipv6_subnet, device='eth1')
 
         # Test IPv6 connectivity between peer servers
         self.assert_ping6(server1, server2, network)
 
-    # TODO(KRIS) @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @testtools.skipIf(not Topology.run_connectivity_tests(),
                       'Connectivity tests are disabled.')
     def test_icmp_connectivity_os_managed_dualstack_l3_domain(self):
@@ -83,10 +71,10 @@ class Ipv6ConnectivityTest(NuageBaseTest):
             namestart='tempest-open-ssh')
 
         # Launch tenant servers in OpenStack network
-        server1 = self.create_tenant_server(
+        server2 = self.create_tenant_server(
             tenant_networks=[network],
             security_groups=[{'name': ssh_security_group['name']}])
-        server2 = self.create_tenant_server(
+        server1 = self.create_tenant_server(
             tenant_networks=[network],
             security_groups=[{'name': ssh_security_group['name']}])
 

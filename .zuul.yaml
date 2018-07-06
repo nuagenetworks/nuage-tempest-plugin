@@ -33,3 +33,14 @@
               - ^doc/.*$
               - ^setup.cfg$
               - ^tox.ini$
+    experimental:
+      jobs:
+        - legacy-tempest-aio-full:
+            required-projects:
+              - OpenStack/nuage-openstack-neutron
+            irrelevant-files:
+              - ^(test-|)requirements.txt$
+              - ^.*\.rst$
+              - ^doc/.*$
+              - ^setup.cfg$
+              - ^tox.ini$

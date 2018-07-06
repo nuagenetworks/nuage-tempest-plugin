@@ -3,8 +3,8 @@
 
 import testtools
 
+from tempest.lib import decorators
 from tempest.lib import exceptions
-from tempest import test
 
 from nuage_tempest_plugin.lib import features
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
@@ -25,7 +25,7 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
             msg = "Route to underlay not enabled"
             raise cls.skipException(msg)
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @testtools.skipIf(Topology.new_route_to_underlay_model_enabled(),
                       'Skipping test as legacy nuage_pat model is not enabled')
     def test_nuage_pat_and_route_to_underlay_legacy(self):
@@ -42,7 +42,7 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
         for conf in configs:
             self._subnet_update_legacy(conf, router, network)
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @testtools.skipIf(not Topology.new_route_to_underlay_model_enabled(),
                       'Skipping test as new route-to-UL model is not enabled')
     def test_nuage_pat_and_underlay_subnet_create_negative(self):
@@ -55,7 +55,7 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
         for conf in configs:
             self._subnet_create_check_exception(conf, network)
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @testtools.skipIf(not Topology.new_route_to_underlay_model_enabled(),
                       'Skipping test as new route-to-UL model is not enabled')
     def test_nuage_pat_and_route_to_underlay_subnet(self):
@@ -78,7 +78,7 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
             self._subnet_update_check_vsd(conf[0], conf[1], conf[2],
                                           router, network)
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @testtools.skipIf(not Topology.new_route_to_underlay_model_enabled(),
                       'Skipping test as new route-to-UL model is not enabled')
     def test_nuage_pat_and_route_to_underlay_subnet_negative(self):
@@ -91,7 +91,7 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
         for conf in configs:
             self._subnet_update_check_exception(conf, network)
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @testtools.skipIf(not Topology.new_route_to_underlay_model_enabled(),
                       'Skipping test as new route-to-UL model is not enabled')
     def test_nuage_pat_and_route_to_underlay_subnet_namechange(self):
@@ -112,7 +112,7 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
             self._subnet_name_update_check_no_change(conf[0], conf[1], conf[2],
                                                      router, network)
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @testtools.skipIf(not Topology.new_route_to_underlay_model_enabled(),
                       'Skipping test as new route-to-UL model is not enabled')
     def test_nuage_pat_and_route_to_underlay_subnet_no_op(self):

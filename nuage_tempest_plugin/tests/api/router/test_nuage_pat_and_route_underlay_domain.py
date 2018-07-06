@@ -4,8 +4,8 @@
 import testtools
 
 from tempest.lib.common.utils import data_utils
+from tempest.lib import decorators
 from tempest.lib import exceptions
-from tempest import test
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
@@ -44,7 +44,7 @@ class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
             self._router_create_check_vsd(conf[0], conf[1], conf[2],
                                           conf[3])
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @testtools.skipIf(not Topology.new_route_to_underlay_model_enabled(),
                       'Skipping test as new route-to-UL model is not enabled')
     def test_nuage_pat_and_route_to_underlay_domain_create(self):
@@ -66,7 +66,7 @@ class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
             self._router_create_check_vsd(conf[0], conf[1],
                                           conf[2], conf[3])
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @testtools.skipIf(not Topology.new_route_to_underlay_model_enabled(),
                       'Skipping test as new route-to-UL model is not enabled')
     def test_nuage_pat_and_route_to_underlay_domain_update(self):
@@ -120,7 +120,7 @@ class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
             self._router_update_check_vsd(conf[0], conf[1], conf[2], conf[3],
                                           conf[4], conf[5])
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @testtools.skipIf(not Topology.new_route_to_underlay_model_enabled(),
                       'Skipping test as new route-to-UL model is not enabled')
     def test_nuage_pat_and_route_to_underlay_domain_namechange(self):
@@ -134,7 +134,7 @@ class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
             self._router_name_update_check_no_change(conf[0], conf[1],
                                                      conf[2], conf[3])
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @testtools.skipIf(not Topology.new_route_to_underlay_model_enabled(),
                       'Skipping test as new route-to-UL model is not enabled')
     def test_nuage_pat_and_route_to_underlay_domain_no_op(self):
@@ -153,7 +153,7 @@ class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
                                                       conf[2], conf[3],
                                                       conf[4], conf[5])
 
-    @test.attr(type='smoke')
+    @decorators.attr(type='smoke')
     @testtools.skipIf(not Topology.new_route_to_underlay_model_enabled(),
                       'Skipping test as new route-to-UL model is not enabled')
     def test_nuage_pat_and_route_to_underlay_domain_update_neg(self):

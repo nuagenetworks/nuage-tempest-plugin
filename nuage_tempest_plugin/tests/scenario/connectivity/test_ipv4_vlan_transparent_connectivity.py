@@ -9,6 +9,8 @@ from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
+from tempest.test import decorators
+
 LOG = Topology.get_logger(__name__)
 
 
@@ -33,36 +35,40 @@ class VlanTransparentConnectivityTest(NuageBaseTest):
     def resource_setup(cls):
         super(VlanTransparentConnectivityTest, cls).resource_setup()
 
-    @testtools.skipIf(not Topology.access_to_l2_supported(),
-                      'Access to vm\'s in l2 networks is unsupported.')
+    @decorators.attr(type='smoke')
+    @testtools.skipIf(not Topology.run_connectivity_tests(),
+                      'Connectivity tests are disabled.')
     def test_l2_transparent_network(self):
         kwargs = {
             'vlan_transparent': 'true'
         }
         l2network = self.create_network(**kwargs)
-        self.create_subnet(l2network)
+        self.create_subnet(l2network, gateway=None)
 
-        vm1 = self.create_tenant_server(
-            tenant_networks=[l2network], name='vm1',
-            image_profile=self.image_profile)
+        # Create open-ssh sg (allow icmp and ssh from anywhere)
+        ssh_security_group = self._create_security_group(
+            namestart='tempest-open-ssh')
 
-        vm2 = self.create_tenant_server(
-            tenant_networks=[l2network], name='vm2',
-            image_profile=self.image_profile)
+        vm1 = self.create_reachable_tenant_server_in_l2_network(
+            l2network, ssh_security_group,
+            name='vm1', image_profile=self.image_profile)
+        vm2 = self.create_reachable_tenant_server_in_l2_network(
+            l2network, ssh_security_group,
+            name='vm2', image_profile=self.image_profile)
 
         vm1_ip = vm1.get_server_ip_in_network(l2network['name'])
         vm2_ip = vm2.get_server_ip_in_network(l2network['name'])
 
         try:
-            vm1.configure_vlan_interface(vm1_ip, 'eth0', vlan='10')
+            vm1.configure_vlan_interface(vm1_ip, 'eth1', vlan='10')
             vm2.configure_vlan_interface(vm2_ip, 'eth0', vlan='10')
         except OSError as e:
             self.skipTest('Skipping test as of ' + str(e))
 
-        vm1.bring_down_interface('eth0')
+        vm1.bring_down_interface('eth1')
         vm2.bring_down_interface('eth0')
 
-        self.assert_ping(vm1, vm2, l2network, interface='eth0.10')
+        self.assert_ping(vm1, vm2, l2network, interface='eth1.10')
 
     @testtools.skipIf(not Topology.run_connectivity_tests(),
                       'Connectivity tests are disabled.')

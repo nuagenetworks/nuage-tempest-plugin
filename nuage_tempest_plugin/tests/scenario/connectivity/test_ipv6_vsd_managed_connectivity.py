@@ -17,11 +17,9 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
 
     include_negative_testing = False  # TODO(Kris) FIXME
 
-    ###########################################################################
-    # Typical cases - DualStack
-    ###########################################################################
-    @testtools.skipIf(not Topology.access_to_l2_supported(),
-                      'Access to vm\'s in l2 networks is unsupported.')
+    @decorators.attr(type='smoke')
+    @testtools.skipIf(not Topology.run_connectivity_tests(),
+                      'Connectivity tests are disabled.')
     def test_icmp_connectivity_vsd_managed_dualstack_l2_domain(self):
         # Provision VSD managed network resources
         l2domain_template = self.vsd.create_l2domain_template(
@@ -35,9 +33,7 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
         vsd_l2domain = self.vsd.create_l2domain(template=l2domain_template)
         self.addCleanup(vsd_l2domain.delete)
 
-        self.vsd.define_any_to_any_acl(vsd_l2domain,
-                                       allow_ipv4=True,
-                                       allow_ipv6=True)
+        self.vsd.define_any_to_any_acl(vsd_l2domain, allow_ipv6=True)
 
         # Provision OpenStack network linked to VSD network resources
         network = self.create_network()
@@ -48,15 +44,17 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
         self.assertIsNotNone(ipv4_subnet)
         self.assertIsNotNone(ipv6_subnet)
 
+        # create open-ssh sg (allow icmp and ssh from anywhere)
+        ssh_security_group = self._create_security_group(
+            namestart='tempest-open-ssh')
+
         # Launch tenant servers in OpenStack network
-        server1 = self.create_tenant_server(tenant_networks=[network])
-        server2 = self.create_tenant_server(tenant_networks=[network])
+        server2 = self.create_reachable_tenant_server_in_l2_network(
+            network, ssh_security_group)
+        server1 = self.create_reachable_tenant_server_in_l2_network(
+            network, ssh_security_group)
 
         # Test IPv4 connectivity between peer servers
-
-        # -- In dev CI this will make this test skip itself as there is no --
-        # -- console access --
-
         self.assert_ping(server1, server2, network)
 
         # Define IPv6 interface in the guest VM's
@@ -67,12 +65,9 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
             network['name'], ip_type=6)
 
         server1.configure_dualstack_interface(
-            server1_ipv6, subnet=ipv6_subnet, device="eth0", )
+            server1_ipv6, subnet=ipv6_subnet, device="eth1")
         server2.configure_dualstack_interface(
-            server2_ipv6, subnet=ipv6_subnet, device="eth0", )
-
-        # TODO(team): find out why we need 5 seconds sleep for stable success?
-        time.sleep(5)
+            server2_ipv6, subnet=ipv6_subnet, device="eth1")
 
         # Test IPv6 connectivity between peer servers
         self.assert_ping6(server1, server2, network)
@@ -178,7 +173,7 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
         if skip_server1:
             return vsd_domain, vsd_subnet, None
 
-        # Launch tenant servers in OpenStack network
+        # Launch tenant server in OpenStack network
         server1 = self.create_tenant_server(tenant_networks=[network])
 
         if cidr6:
@@ -189,7 +184,7 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
                                               vsd_subnet=vsd_subnet)
 
             server1.configure_dualstack_interface(
-                server1_ipv6, subnet=ipv6_subnet, device="eth0", )
+                server1_ipv6, subnet=ipv6_subnet, device="eth0")
 
         if skip_server2_and_ping_tests:
             return vsd_domain, vsd_subnet, server1
@@ -198,10 +193,9 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
             server2 = server2_pre_set_up
             network2 = server2.networks[0] if server2.networks else network
         else:
+            # Launch tenant server in OpenStack network
             server2 = self.create_tenant_server(tenant_networks=[network])
             network2 = network
-
-        time.sleep(5)
 
         # Test IPv4 connectivity between peer servers
         self.prepare_for_ping_test(server1, vsd_domain=vsd_domain,
@@ -218,7 +212,7 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
                     server2, vsd_domain=vsd_domain, vsd_subnet=vsd_subnet)
 
                 server2.configure_dualstack_interface(
-                    server2_ipv6, subnet=ipv6_subnet, device="eth0", )
+                    server2_ipv6, subnet=ipv6_subnet, device="eth0")
 
             # Test IPv6 connectivity between peer servers
             self.assert_ping6(server1, server2, network2)
