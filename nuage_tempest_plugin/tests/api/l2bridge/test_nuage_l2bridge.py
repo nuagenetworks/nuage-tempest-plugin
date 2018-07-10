@@ -1167,6 +1167,159 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             self.assertIsNotNone(vport_1,
                                  "Vport not created for port in network 1")
 
+    def test_nuage_l2bridge_first_ipv6_then_ipv4(self):
+        physnets = [{
+            'physnet_name': 'physnet1',
+            'segmentation_id': 101,
+            'segmentation_type': 'vlan'
+        }, {
+            'physnet_name': 'physnet2',
+            'segmentation_id': 101,
+            'segmentation_type': 'vlan'
+        }]
+        name = data_utils.rand_name('test-l2bridge-dualipv6')
+        bridge = self.create_l2bridge(name, physnets)
+        kwargs = {
+            'segments': [
+                {
+                    'provider:network_type': 'vlan',
+                    'provider:segmentation_id': 101,
+                    'provider:physical_network': 'physnet1'},
+                {
+                    'provider:network_type': 'vxlan'
+                }
+            ]
+        }
+        n1 = self.create_network(network_name=name + '-1',
+                                 client=self.admin_manager,
+                                 **kwargs)
+        kwargs = {
+            'segments': [
+                {
+                    'provider:network_type': 'vlan',
+                    'provider:segmentation_id': 101,
+                    'provider:physical_network': 'physnet2'},
+                {
+                    'provider:network_type': 'vxlan'
+                }
+            ]
+        }
+        n2 = self.create_network(network_name=name + '-2',
+                                 client=self.admin_manager,
+                                 **kwargs)
+        if self.is_dhcp_agent_present():
+            msg = ("Bad request: A network cannot be attached to an l2bridge"
+                   " when neutron-dhcp-agent is enabled'")
+            self.assertRaisesRegex(exceptions.BadRequest,
+                                   msg,
+                                   self.create_subnet,
+                                   n1, subnet_name=name + '-subnet-14',
+                                   client=self.admin_manager,
+                                   cidr=IPNetwork('10.10.1.0/24'),
+                                   mask_bits=24)
+        else:
+            self.create_subnet(n1, subnet_name=name + '-subnet-16',
+                               client=self.admin_manager,
+                               ip_version=6,
+                               cidr=IPNetwork('cafe::/64'),
+                               mask_bits=64)
+            self.create_subnet(n2, subnet_name=name + '-subnet-24',
+                               client=self.admin_manager,
+                               cidr=IPNetwork('10.10.1.0/24'),
+                               mask_bits=24)
+            subnet2_ipv6 = self.create_subnet(n2, subnet_name=name +
+                                              '-subnet-26',
+                                              client=self.admin_manager,
+                                              ip_version=6,
+                                              cidr=IPNetwork('cafe::/64'),
+                                              mask_bits=64,
+                                              cleanup=False)
+            bridge = self.get_l2bridge(bridge['id'])
+            l2domain = self.vsd.get_l2domain(
+                vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
+            self.assertEqual('cafe::/64', l2domain.ipv6_address)
+            expected_ext_id = bridge['id'] + '@' + CONF.nuage.nuage_cms_id
+            self._validate_l2domain_on_vsd(bridge, expected_ext_id, l2domain)
+            # Delete + validate
+            self.delete_subnet(subnet2_ipv6, client=self.admin_manager)
+            l2domain = self.vsd.get_l2domain(
+                vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
+            self.assertIsNone(l2domain.ipv6_address,
+                              "l2domain is still dualstack")
+
+    def test_nuage_l2bridge_first_ipv4_then_ipv4_then_ipv6(self):
+        physnets = [{
+            'physnet_name': 'physnet1',
+            'segmentation_id': 101,
+            'segmentation_type': 'vlan'
+        }, {
+            'physnet_name': 'physnet2',
+            'segmentation_id': 101,
+            'segmentation_type': 'vlan'
+        }]
+        name = data_utils.rand_name('test-l2bridge-dualipv6')
+        bridge = self.create_l2bridge(name, physnets)
+        kwargs = {
+            'segments': [
+                {
+                    'provider:network_type': 'vlan',
+                    'provider:segmentation_id': 101,
+                    'provider:physical_network': 'physnet1'},
+                {
+                    'provider:network_type': 'vxlan'
+                }
+            ]
+        }
+        n1 = self.create_network(network_name=name + '-1',
+                                 client=self.admin_manager,
+                                 **kwargs)
+        kwargs = {
+            'segments': [
+                {
+                    'provider:network_type': 'vlan',
+                    'provider:segmentation_id': 101,
+                    'provider:physical_network': 'physnet2'},
+                {
+                    'provider:network_type': 'vxlan'
+                }
+            ]
+        }
+        n2 = self.create_network(network_name=name + '-2',
+                                 client=self.admin_manager,
+                                 **kwargs)
+        if self.is_dhcp_agent_present():
+            msg = ("Bad request: A network cannot be attached to an l2bridge"
+                   " when neutron-dhcp-agent is enabled'")
+            self.assertRaisesRegex(exceptions.BadRequest,
+                                   msg,
+                                   self.create_subnet,
+                                   n1, subnet_name=name + '-subnet-14',
+                                   client=self.admin_manager,
+                                   cidr=IPNetwork('10.10.1.0/24'),
+                                   mask_bits=24)
+        else:
+            self.create_subnet(n1, subnet_name=name + '-subnet-14',
+                               client=self.admin_manager,
+                               cidr=IPNetwork('10.10.1.0/24'),
+                               mask_bits=24)
+            self.create_subnet(n2, subnet_name=name + '-subnet-26',
+                               client=self.admin_manager,
+                               ip_version=6,
+                               cidr=IPNetwork('cafe::babe/64'),
+                               mask_bits=64)
+            self.create_subnet(n2, subnet_name=name + '-subnet-24',
+                               client=self.admin_manager,
+                               cidr=IPNetwork('10.10.1.0/24'),
+                               mask_bits=24)
+
+            bridge = self.get_l2bridge(bridge['id'])
+            l2domain = self.vsd.get_l2domain(
+                vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
+            self.assertEqual('cafe::/64', l2domain.ipv6_address)
+            expected_ext_id = bridge['id'] + '@' + CONF.nuage.nuage_cms_id
+            self._validate_l2domain_on_vsd(bridge, expected_ext_id, l2domain)
+            # Validate subnet mapping of second ipv6?
+
     @decorators.attr(type='smoke')
     def test_nuage_l2bridge_ipv4_ipv6_same_cidr(self):
         physnets = [{

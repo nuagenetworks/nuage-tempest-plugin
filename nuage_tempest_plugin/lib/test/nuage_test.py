@@ -674,7 +674,6 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         self.remove_router_interface(router['id'], subnet['id'])
 
     @staticmethod
-    # NOTE : not used at the moment ; but kept in codebase for now
     def osc_get_database_table_row(db_name, db_username, db_password,
                                    table_name, row=0,
                                    assert_table_size=None):

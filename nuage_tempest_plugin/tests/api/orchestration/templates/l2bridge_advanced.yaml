@@ -1,0 +1,171 @@
+heat_template_version: '2015-04-30'
+description: |
+  Template which creates vlanunaware segmentation network
+parameters:
+  os_gateway_ip:
+    type: string
+    default: "28.0.0.1"
+
+  cidr4:
+    type: string
+    default: "28.0.0.0/24"
+
+  image_id:
+    type: string
+    default: "ubuntu1604"
+
+  cidr6:
+    type: string
+    default: "cafe:babd::/64"
+
+  ipv6_gw:
+    type: string
+    default: "cafe:babd::1"
+
+  subnet1_start:
+    type: string
+    default: "28.0.0.10"
+
+  subnet1_end:
+    type: string
+    default: "28.0.0.20"
+
+  subnet1_ipv6_start:
+    type: string
+    default: "cafe:babd::10"
+
+  subnet1_ipv6_end:
+    type: string
+    default: "cafe:babd::20"
+
+  subnet2_start:
+    type: string
+    default: "28.0.0.30"
+
+  subnet2_end:
+    type: string
+    default: "28.0.0.40"
+
+  subnet2_ipv6_start:
+    type: string
+    default: "cafe:babd::30"
+
+  subnet2_ipv6_end:
+    type: string
+    default: "cafe:babd::40"
+
+  network1_physnet:
+    type: string
+    default: "physnet1"
+
+  network1_vlan:
+    type: string
+    default: "10"
+
+  network2_physnet:
+    type: string
+    default: "physnet2"
+
+  network2_vlan:
+    type: string
+    default: "10"
+
+resources:
+  Network1:
+    type: OS::Neutron::Net
+    properties:
+      name: Network1
+      value_specs: { segments : [ { "provider:physical_network": { get_param: network1_physnet}, "provider:network_type": "vlan", "provider:segmentation_id" : { get_param: network1_vlan}}, { "provider:physical_network": "", "provider:network_type": "vxlan"} ]}
+
+  Subnet1:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: Network1 }
+      name: NewSubnet
+      ip_version: 4
+      cidr: { get_param: cidr4}
+      gateway_ip: { get_param: os_gateway_ip}
+      allocation_pools: [{"start":{ get_param: subnet1_start},"end" : { get_param: subnet1_end}}]
+
+  Subnet1_ipv6:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: Network1 }
+      cidr: { get_param: cidr6 }
+      ip_version: 6
+      gateway_ip: { get_param: ipv6_gw}
+      allocation_pools: [{"start":{ get_param: subnet1_ipv6_start},"end" : { get_param: subnet1_ipv6_end}}]
+
+
+  Network2:
+    type: OS::Neutron::Net
+    properties:
+      name: Network2
+      value_specs: { segments : [ { "provider:physical_network": { get_param: network2_physnet}, "provider:network_type": "vlan", "provider:segmentation_id" : { get_param: network2_vlan}}, { "provider:physical_network": "", "provider:network_type": "vxlan"} ]}
+
+  Subnet2:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: Network2 }
+      name: NewSubnet2
+      ip_version: 4
+      cidr: { get_param: cidr4}
+      gateway_ip: { get_param: os_gateway_ip}
+      allocation_pools: [{"start": { get_param: subnet2_start},"end" : { get_param: subnet2_end}}]
+
+  Subnet2_ipv6:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: Network2 }
+      cidr: { get_param: cidr6 }
+      ip_version: 6
+      gateway_ip: { get_param: ipv6_gw}
+      allocation_pools: [{"start":{ get_param: subnet2_ipv6_start},"end" : { get_param: subnet2_ipv6_end}}]
+
+#  port1:
+#    type: OS::Neutron::Port
+#    properties:
+#      network: { get_resource: Network1 }
+#      binding:vnic_type: direct
+#      port_security_enabled: false
+#
+#  port2:
+#    type: OS::Neutron::Port
+#    properties:
+#      network: { get_resource: Network2 }
+#      binding:vnic_type: direct
+#      port_security_enabled: false
+#
+#  port3:
+#    type: OS::Neutron::Port
+#    properties:
+#      network: { get_resource: Network1 }
+#      binding:vnic_type: direct
+#      port_security_enabled: false
+#
+#  port4:
+#    type: OS::Neutron::Port
+#    properties:
+#      network: { get_resource: Network2 }
+#      binding:vnic_type: direct
+#      port_security_enabled: false
+
+
+#  server1:
+#        type: OS::Nova::Server
+#        properties:
+#          name: Server1
+#          image: { get_param: image_id }
+#          flavor: m1.small
+#          networks:
+#                - port: { get_resource: port1 }
+#                - port: { get_resource: port2 }
+#  server2:
+#        type: OS::Nova::Server
+#        properties:
+#          name: Server2
+#          image: { get_param: image_id }
+#          flavor: m1.small
+#          networks:
+#                - port: { get_resource: port3 }
+#                - port: { get_resource: port4 }
