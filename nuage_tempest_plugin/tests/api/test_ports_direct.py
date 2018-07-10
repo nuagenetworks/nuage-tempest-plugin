@@ -181,6 +181,7 @@ class PortsDirectTest(network_mixin.NetworkMixin,
         super(PortsDirectTest, cls).setUpClass()
         cls.expected_vport_type = constants.VPORT_TYPE_BRIDGE
         cls.expected_vlan = 123
+        cls.expected_vlan_subport_2 = 321
 
     @classmethod
     def setup_clients(cls):
@@ -262,8 +263,10 @@ class PortsDirectTest(network_mixin.NetworkMixin,
         topology = self._create_topology(with_router=True, for_trunk=True)
         trunk_topology = self._test_direct_port(topology, update=True,
                                                 is_trunk=True)
-        sub_topology = self._create_topology_with_subport(trunk_topology,
-                                                          with_router=True)
+        sub_topology, sub_topology2 = self._create_topology_with_subports(
+            trunk_topology,
+            with_router=True)
+
         verify_topology = SriovTopology(
             topology.vsd_client,
             sub_topology.subport_network,
@@ -274,7 +277,28 @@ class PortsDirectTest(network_mixin.NetworkMixin,
             trunk=trunk_topology.trunk)
         verify_topology.direct_port = sub_topology.direct_subport
         verify_topology._direct_port_is_subport = True
-        self._test_direct_subport(verify_topology)
+        subport_mapping = {'switch_id': self.gateway['systemID'],
+                           'port_id': self.gw_port['physicalName'],
+                           'host_id': 'host-hierarchical',
+                           'pci_slot': '0000:03:10.5'}
+        self._test_direct_subport(verify_topology, subport_mapping)
+
+        verify_topology = SriovTopology(
+            topology.vsd_client,
+            sub_topology2.subport_network,
+            sub_topology2.subport_subnet,
+            topology.router,
+            port=None,
+            subnetv6=sub_topology2.subport_subnet_ipv6,
+            trunk=trunk_topology.trunk)
+        verify_topology.direct_port = sub_topology2.direct_subport
+        verify_topology._direct_port_is_subport = True
+        subport2_mapping = {'switch_id': self.gateway['systemID'],
+                            'port_id': self.gw_port['physicalName'],
+                            'host_id': 'host-hierarchical',
+                            'pci_slot': '0000:03:50.5'}
+        self._test_direct_subport(verify_topology, subport2_mapping,
+                                  use_subport_check=True)
 
     def test_direct_port_l3_update(self):
         topology = self._create_topology(with_router=True)
@@ -297,8 +321,9 @@ class PortsDirectTest(network_mixin.NetworkMixin,
         topology = self._create_topology(with_router=False, for_trunk=True)
         trunk_topology = self._test_direct_port(topology, update=True,
                                                 is_trunk=True)
-        sub_topology = self._create_topology_with_subport(trunk_topology,
-                                                          with_router=False)
+        sub_topology, sub_topology2 = self._create_topology_with_subports(
+            trunk_topology,
+            with_router=False)
         verify_topology = SriovTopology(
             topology.vsd_client,
             sub_topology.subport_network,
@@ -309,7 +334,28 @@ class PortsDirectTest(network_mixin.NetworkMixin,
             trunk=trunk_topology.trunk)
         verify_topology.direct_port = sub_topology.direct_subport
         verify_topology._direct_port_is_subport = True
-        self._test_direct_subport(verify_topology)
+        subport_mapping = {'switch_id': self.gateway['systemID'],
+                           'port_id': self.gw_port['physicalName'],
+                           'host_id': 'host-hierarchical',
+                           'pci_slot': '0000:03:10.5'}
+        self._test_direct_subport(verify_topology, subport_mapping)
+
+        verify_topology = SriovTopology(
+            topology.vsd_client,
+            sub_topology2.subport_network,
+            sub_topology2.subport_subnet,
+            topology.router,
+            port=None,
+            subnetv6=sub_topology2.subport_subnet_ipv6,
+            trunk=trunk_topology.trunk)
+        verify_topology.direct_port = sub_topology2.direct_subport
+        verify_topology._direct_port_is_subport = True
+        subport2_mapping = {'switch_id': self.gateway['systemID'],
+                            'port_id': self.gw_port['physicalName'],
+                            'host_id': 'host-hierarchical',
+                            'pci_slot': '0000:03:50.5'}
+        self._test_direct_subport(verify_topology, subport2_mapping,
+                                  use_subport_check=True)
 
     def test_direct_port_l2_update(self):
         topology = self._create_topology(with_router=False)
@@ -632,7 +678,7 @@ class PortsDirectTest(network_mixin.NetworkMixin,
                              subnet, router, port, subnetv6, trunk,
                              vsd_l2dom)
 
-    def _create_topology_with_subport(self, topology, with_router=False):
+    def _create_topology_with_subports(self, topology, with_router=False):
         kwargs = {'segments': [
             {"provider:network_type": "vxlan"},
             {"provider:network_type": "vlan",
@@ -644,21 +690,35 @@ class PortsDirectTest(network_mixin.NetworkMixin,
                                             subport_network['id'])
         subport_subnet_ipv6 = self.create_subnet(
             "2001:5f74:c4a5:b82e::/64", subport_network['id'])
+        subport2_network = self.create_network()
+        subport2_subnet = self.create_subnet('2.2.2.0/24',
+                                             subport2_network['id'])
         if with_router and topology.router:
             self.add_router_interface(topology.router['id'],
                                       subnet_id=subport_subnet['id'])
+            self.add_router_interface(topology.router['id'],
+                                      subnet_id=subport2_subnet['id'])
         create_data = {'binding:vnic_type': 'direct',
                        'security_groups': [],
                        'port_security_enabled': False}
         sub_port = self.create_port(subport_network['id'], **create_data)
+        sub_port2 = self.create_port(subport2_network['id'], **create_data)
         subportkwargs = [{'port_id': sub_port['id'],
                           'segmentation_type': 'vlan',
-                          'segmentation_id': '123'}]
+                          'segmentation_id': '123'},
+                         {'port_id': sub_port2['id'],
+                          'segmentation_type': 'vlan',
+                          'segmentation_id': '321'}
+                         ]
         if topology.trunk:
             self.add_subports(topology.trunk['id'], subportkwargs)
-        return SubPortTopology(subport_network, subport_subnet,
-                               subport_subnet_ipv6,
-                               sub_port)
+        sub_top1 = SubPortTopology(subport_network, subport_subnet,
+                                   subport_subnet_ipv6,
+                                   sub_port)
+        sub_top2 = SubPortTopology(subport2_network, subport2_subnet,
+                                   None,
+                                   sub_port2)
+        return sub_top1, sub_top2
 
     def _test_direct_port(self, topology, update=False,
                           with_port_security=False, aap=False,
@@ -722,11 +782,8 @@ class PortsDirectTest(network_mixin.NetworkMixin,
             self._validate_os(topology, is_trunk=is_trunk)
         return topology
 
-    def _test_direct_subport(self, subport_topology):
-        subport_mapping = {'switch_id': self.gateway['systemID'],
-                           'port_id': self.gw_port['physicalName'],
-                           'host_id': 'host-hierarchical',
-                           'pci_slot': '0000:03:10.5'}
+    def _test_direct_subport(self, subport_topology, subport_mapping,
+                             use_subport_check=False):
         with self.switchport_mapping(do_delete=False, **subport_mapping) as sm:
             self.addCleanup(
                 self.switchport_mapping_client_admin.delete_switchport_mapping,
@@ -738,14 +795,17 @@ class PortsDirectTest(network_mixin.NetworkMixin,
                             subport_topology.direct_port['id'],
                             as_admin=True,
                             **self.clear_binding)
-        self._validate_vsd(subport_topology)
-        self._validate_os(subport_topology, is_subport=True)
+        self._validate_vsd(subport_topology, is_trunk=False,
+                           use_subport_check=use_subport_check)
+        self._validate_os(subport_topology, is_subport=True,
+                          use_subport_vlan=use_subport_check)
 
     # Validation part
 
-    def _validate_vsd(self, topology, is_trunk=False, nr_vports=1):
+    def _validate_vsd(self, topology, is_trunk=False, nr_vports=1,
+                      use_subport_check=False):
         self._validate_direct_vport(topology)
-        self._validate_vlan(topology, is_trunk)
+        self._validate_vlan(topology, is_trunk, use_subport_check)
         self._validate_interface(topology)
         if not topology.vsd_managed:
             self._validate_policygroup(
@@ -756,16 +816,18 @@ class PortsDirectTest(network_mixin.NetworkMixin,
                         matchers.Equals(self.expected_vport_type),
                         message="Vport has wrong type")
 
-    def _validate_vlan(self, topology, is_trunk=False):
+    def _validate_vlan(self, topology, is_trunk=False, use_subport_vlan=False):
         vsd_vlan = self.vsd_client.get_gateway_vlan_by_id(
             topology.vsd_direct_vport['VLANID'])
+        expected_vlan = (self.expected_vlan_subport_2 if use_subport_vlan
+                         else self.expected_vlan)
         if is_trunk:
             self.assertThat(
                 vsd_vlan['value'], matchers.Equals(0),
                 message="Vport has unexpected vlan")
         else:
             self.assertThat(
-                vsd_vlan['value'], matchers.Equals(self.expected_vlan),
+                vsd_vlan['value'], matchers.Equals(expected_vlan),
                 message="Vport has unexpected vlan")
 
     def _validate_interface(self, topology):
@@ -781,7 +843,7 @@ class PortsDirectTest(network_mixin.NetworkMixin,
 
     def _validate_policygroup(self, topology, pg_name=None, nr_vports=1):
         if topology.router and topology._direct_port_is_subport:
-            expected_pgs = 2  # Expecting only hardware
+            expected_pgs = 3  # Expecting only hardware
         else:
             expected_pgs = 1  # Expecting only hardware
         self.assertThat(topology.vsd_policygroups,
@@ -822,10 +884,13 @@ class PortsDirectTest(network_mixin.NetworkMixin,
                 self.assertThat(dhcp_opt['actualValues'][0],
                                 matchers.Equals(os_dhcp_opt['opt_value']))
 
-    def _validate_os(self, topology, is_trunk=False, is_subport=False):
+    def _validate_os(self, topology, is_trunk=False, is_subport=False,
+                     use_subport_vlan=False):
         port = topology.direct_port
         profile = port.get('binding:profile')
         vif_details = port.get('binding:vif_details')
+        expected_vlan = (self.expected_vlan_subport_2 if use_subport_vlan
+                         else self.expected_vlan)
         if is_trunk:
             self.assertThat(
                 profile,
@@ -839,16 +904,20 @@ class PortsDirectTest(network_mixin.NetworkMixin,
         else:
             self.assertThat(
                 vif_details.get('vlan'),
-                matchers.Equals(str(self.expected_vlan)),
+                matchers.Equals(str(expected_vlan)),
                 message="Port has unexpected vlan")
             if is_subport:
-                sub_port_details = self.get_subports(
-                    topology.trunk['id'])[0]
-                expected = {'port_id': topology.direct_port['id'],
-                            'segmentation_id': self.expected_vlan,
-                            'segmentation_type': 'vlan'}
-                self.assertThat(expected, matchers.Equals(sub_port_details),
-                                message="SubPort does not match expected")
+                for sub_port_details in self.get_subports(topology.trunk['id']
+                                                          ):
+                    if (sub_port_details['port_id'] ==
+                            topology.direct_port['id']):
+                        expected = {'port_id': topology.direct_port['id'],
+                                    'segmentation_id': expected_vlan,
+                                    'segmentation_type': 'vlan'}
+                        self.assertThat(expected,
+                                        matchers.Equals(sub_port_details),
+                                        message="SubPort does not match"
+                                                " expected")
                 del profile['vlan']
                 self.assertThat(
                     profile,
