@@ -379,6 +379,15 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         network = body['network']
         return network
 
+    def get_subnet(self, subnet_id, client=None, **kwargs):
+        """Wrapper utility that gets a test subnet."""
+        if not client:
+            client = self.manager
+
+        body = client.subnets_client.show_subnet(subnet_id, **kwargs)
+        subnet = body['subnet']
+        return subnet
+
     def create_subnet(self, network, subnet_name=None, gateway='', cidr=None,
                       mask_bits=None,
                       ip_version=None, client=None, cleanup=True,
@@ -1398,6 +1407,13 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         return self.assert_ping(server1, server2, network, 6,
                                 should_pass, interface, address, ping_count,
                                 return_boolean_to_indicate_success)
+
+    def assertDictEqual(self, d1, d2, ignore, msg):
+        for k in d1:
+            if k in ignore:
+                continue
+            self.assertIn(k, d2, "{} for key {}".format(msg, k))
+            self.assertEqual(d1[k], d2[k], "{} for key {}".format(msg, k))
 
     def start_webserver(self, vm_handle, port_number):
         # pkill not present on cirros

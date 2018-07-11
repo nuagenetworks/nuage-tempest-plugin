@@ -32,6 +32,8 @@ from nuage_tempest_plugin.services.nuage_network_client \
 from nuage_tempest_plugin.tests.api.vsd_managed.base_vsd_managed_networks \
     import BaseVSDManagedNetwork
 
+import uuid
+
 CONF = Topology.get_conf()
 
 
@@ -179,6 +181,8 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
         }
         if pool:
             kwargs['allocation_pools'] = [pool]
+
+        subnet = None
         if should_pass:
             subnet = self.create_subnet(network, **kwargs)
             verify_subnet_info(subnet, vsd_l2dom, cidr, pool, dhcp_option_3,
@@ -194,7 +198,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
         else:
             self.assertRaises(self.failure_type, self.create_subnet,
                               network, **kwargs)
-        return vsd_l2dom
+        return vsd_l2dom, subnet
 
     @nuage_test.header(tags=['smoke'])
     def test_link_subnet_l2_no_gw(self):
@@ -206,6 +210,72 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
     @nuage_test.header(tags=['smoke'])
     def test_link_subnet_l2_with_gw(self):
         self.link_subnet_l2(dhcp_option_3='10.10.100.2', create_server=True)
+
+    @nuage_test.header(tags=['smoke'])
+    def test_update_linked_subnet_l2(self):
+        initial_pool = {"start": "10.10.100.10", "end": "10.10.100.20"}
+        updated_pool = {"start": "10.10.100.5", "end": "10.10.100.25"}
+        new_pool = {"start": "10.10.100.50", "end": "10.10.100.60"}
+        overlapping_pool = {"start": "10.10.100.60", "end": "10.10.100.70"}
+
+        vsd_l2dom, subnet = self.link_subnet_l2(pool=initial_pool)
+        self.assertIsNotNone(subnet)
+
+        # change the name, and description (should be allowed)
+        new_name = str(uuid.uuid4())
+        new_desc = str(uuid.uuid4())
+        self.update_subnet(subnet, name=new_name, description=new_desc)
+        updated_subnet = self.get_subnet(subnet['id'])
+
+        subnet['name'] = new_name
+        subnet['description'] = new_desc
+        self.assertDictEqual(
+            subnet,
+            updated_subnet,
+            ['updated_at', 'revision_number'],
+            "Original subnet and updated subnet unexpectedly differ")
+
+        # change/add allocation pool
+        self.update_subnet(subnet, allocation_pools=[updated_pool, new_pool])
+        updated_subnet = self.get_subnet(subnet['id'])
+        self.assertItemsEqual(updated_subnet['allocation_pools'],
+                              [updated_pool, new_pool])
+        self.assertDictEqual(
+            subnet,
+            updated_subnet,
+            ['updated_at', 'revision_number', 'allocation_pools'],
+            "Original subnet and updated subnet unexpectedly differ")
+
+        # remove an allocation pool
+        self.update_subnet(subnet, allocation_pools=[new_pool])
+        updated_subnet = self.get_subnet(subnet['id'])
+        self.assertItemsEqual(updated_subnet['allocation_pools'], [new_pool])
+        self.assertDictEqual(
+            subnet,
+            updated_subnet,
+            ['updated_at', 'revision_number', 'allocation_pools'],
+            "Original subnet and updated subnet unexpectedly differ")
+
+        # change another attribute (should not be allowed)
+        self.assertRaisesRegexp(
+            exceptions.BadRequest,
+            ".*Update is not supported for attributes other than.*",
+            self.update_subnet,
+            subnet,
+            enable_dhcp=False   # the attribute that should not be changed
+        )
+
+        # set an overlapping allocation pool (should not be allowed)
+        _, subnet2 = self.link_subnet_l2(pool=initial_pool,
+                                         vsd_l2dom=vsd_l2dom)
+        self.assertIsNotNone(subnet2)
+        self.assertRaisesRegexp(
+            exceptions.BadRequest,
+            ".*Found overlapping allocation pools.*",
+            self.update_subnet,
+            subnet2,
+            allocation_pools=[overlapping_pool]
+        )
 
     # @nuage_test.header(tags=['smoke'])
     # def test_link_subnet_l2_using_preconfigured_netpartition_id(self):
@@ -223,8 +293,8 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
         dhcp_port = dhcp_port or '10.10.100.1'
 
         # 1st net
-        vsd_l2dom = self.link_subnet_l2(cidr, mask_bits, dhcp_port,
-                                        dhcp_option_3, pool1)
+        vsd_l2dom, _ = self.link_subnet_l2(cidr, mask_bits, dhcp_port,
+                                           dhcp_option_3, pool1)
         # 2nd net
         self.link_subnet_l2(cidr, mask_bits, dhcp_port, dhcp_option_3, pool2,
                             vsd_l2dom=vsd_l2dom, should_pass=should_pass)
