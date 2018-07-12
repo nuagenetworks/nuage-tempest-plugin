@@ -1446,6 +1446,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             expected_ext_id = bridge['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(bridge, expected_ext_id, l2domain)
 
+    @decorators.attr(type='smoke')
     def test_nuage_l2bridge_same_cidr_one_bridged_other_non_bridged(self):
         physnets = [{
             'physnet_name': 'physnet1',
