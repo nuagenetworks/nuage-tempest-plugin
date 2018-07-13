@@ -146,6 +146,7 @@ class Ipv4OsManagedConnectivityTest(NuageBaseTest):
         self.assert_ping(server12, server1, network1)
         self.assert_ping(server12, server2, network2)
 
+    @decorators.attr(type='smoke')
     def test_icmp_connectivity_multiple_subnets_in_shared_network(self):
         """test_icmp_connectivity_multiple_subnets_in_shared_network
 
