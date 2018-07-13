@@ -149,3 +149,11 @@ class OrchestrationRouterTest(nuage_base.NuageBaseOrchestrationTest):
         self.assertEqual(default_tunnel_type, router['tunnel_type'],
                          "Domain tunnel type")
         self._verify_router_with_vsd_l3domain(router)
+
+    def test_multiple_subnets_in_external_network(self):
+        stack_file_name = 'multiple_subnets_in_external_network'
+        self.launch_stack(stack_file_name, {})
+        network = self.verify_created_network('Network')
+        subnet1 = self.verify_created_subnet('Subnet1', network)
+        subnet2 = self.verify_created_subnet('Subnet2', network)
+        self.assertEqual(subnet1['nuage_uplink'], subnet2['nuage_uplink'])

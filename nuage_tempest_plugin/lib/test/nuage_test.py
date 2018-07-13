@@ -346,9 +346,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         body = client.networks_client.create_network(
             name=network_name, **kwargs)
         network = body['network']
-
         self.assertIsNotNone(network)
-
         if cleanup:
             self.addCleanup(
                 client.networks_client.delete_network, network['id'])
@@ -434,7 +432,8 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         subnet = body['subnet']
 
         dhcp_enabled = subnet['enable_dhcp']
-        if self.is_dhcp_agent_present() and dhcp_enabled:
+        if (self.is_dhcp_agent_present() and dhcp_enabled and
+                not network.get('router:external')):
             current_time = time.time()
             LOG.info("Waiting for dhcp port resolution")
             dhcp_subnets = []
@@ -725,14 +724,14 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         return router
 
     def create_floatingip(self, external_network_id=None,
-                          client=None, cleanup=True):
+                          client=None, cleanup=True, **kwargs):
         """Wrapper utility that creates a floating IP."""
         if not external_network_id:
             external_network_id = CONF.network.public_network_id
         if not client:
             client = self.manager
         body = client.floating_ips_client.create_floatingip(
-            floating_network_id=external_network_id)
+            floating_network_id=external_network_id, **kwargs)
         fip = body['floatingip']
         if cleanup:
             self.addCleanup(client.floating_ips_client.delete_floatingip,
@@ -1265,14 +1264,16 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 LOG.exception('Stopping server %s failed', server_id)
 
     def assert_ping(self, server1, server2, network, ip_type=4,
-                    should_pass=True, interface=None, ping_count=3,
+                    should_pass=True, interface=None, address=None,
+                    ping_count=3,
                     return_boolean_to_indicate_success=False):
         if not server1.console():
             self.skipTest('This test cannot complete assert_ping request '
                           'as it has no console access.')
 
-        address2 = server2.get_server_ip_in_network(
+        address2 = address or server2.get_server_ip_in_network(
             network['name'], ip_type)
+
         ping_pass = None  # keeps pycharm happy
 
         for attempt in range(1, Topology.nbr_retries_for_test_robustness + 1):
@@ -1301,10 +1302,10 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             self.fail('Ping unexpectedly ' + ping_pass)
 
     def assert_ping6(self, server1, server2, network,
-                     should_pass=True, interface=None, ping_count=3,
-                     return_boolean_to_indicate_success=False):
+                     should_pass=True, interface=None, address=None,
+                     ping_count=3, return_boolean_to_indicate_success=False):
         return self.assert_ping(server1, server2, network, 6,
-                                should_pass, interface, ping_count,
+                                should_pass, interface, address, ping_count,
                                 return_boolean_to_indicate_success)
 
     def start_webserver(self, vm_handle, port_number):
