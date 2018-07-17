@@ -1167,6 +1167,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             self.assertIsNotNone(vport_1,
                                  "Vport not created for port in network 1")
 
+    @decorators.attr(type='smoke')
     def test_nuage_l2bridge_first_ipv6_then_ipv4(self):
         physnets = [{
             'physnet_name': 'physnet1',
@@ -1247,6 +1248,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             self.assertIsNone(l2domain.ipv6_address,
                               "l2domain is still dualstack")
 
+    @decorators.attr(type='smoke')
     def test_nuage_l2bridge_first_ipv4_then_ipv4_then_ipv6(self):
         physnets = [{
             'physnet_name': 'physnet1',
