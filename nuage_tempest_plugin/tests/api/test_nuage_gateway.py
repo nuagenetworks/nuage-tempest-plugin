@@ -26,7 +26,7 @@ from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
     import ExternalId
 
-import base_nuage_gateway as base
+from . import base_nuage_gateway as base
 
 LOG = Topology.get_logger(__name__)
 

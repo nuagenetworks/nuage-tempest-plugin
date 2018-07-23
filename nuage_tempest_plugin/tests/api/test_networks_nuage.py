@@ -13,6 +13,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from future.utils import listitems
+
 import netaddr
 import random
 
@@ -103,7 +105,7 @@ class NetworksTestJSONNuage(test_networks.NetworksTest):
                                     **kwargs)
         compare_args_full = dict(gateway_ip=gateway, cidr=cidr,
                                  mask_bits=mask_bits, **kwargs)
-        compare_args = dict((k, v) for k, v in compare_args_full.items()
+        compare_args = dict((k, v) for k, v in listitems(compare_args_full)
                             if v is not None)
 
         if 'dns_nameservers' in set(subnet).intersection(compare_args):

@@ -12,13 +12,14 @@
 
 import netaddr
 
-import nuage_base
+from . import nuage_base
 
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils.data_utils import nextitem
 
 CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
@@ -50,7 +51,7 @@ class OrchestrationNeutronResourcesTest(nuage_base.NuageBaseOrchestrationTest):
 
         tenant_cidr = netaddr.IPNetwork(CONF.network.project_network_cidr)
         mask_bits = CONF.network.project_network_mask_bits
-        cls.subnet_cidr = tenant_cidr.subnet(mask_bits).next()
+        cls.subnet_cidr = next(tenant_cidr.subnet(mask_bits))
 
         # create the stack
         cls.stack_identifier = cls.create_stack(
@@ -155,18 +156,18 @@ class OrchestrationNeutronResourcesTest(nuage_base.NuageBaseOrchestrationTest):
         subnet_id = self.test_resources.get('Subnet')['physical_resource_id']
         body = self.ports_client.list_ports()
         ports = body['ports']
-        router_ports = filter(lambda port: port['device_id'] ==
-                              router_id, ports)
-        created_network_ports = filter(lambda port: port['network_id'] ==
-                                       network_id, router_ports)
+        router_ports = [port for port in ports if port['device_id'] ==
+                        router_id]
+        created_network_ports = [port for port in router_ports
+                                 if port['network_id'] == network_id]
         self.assertEqual(1, len(created_network_ports))
         router_interface = created_network_ports[0]
         fixed_ips = router_interface['fixed_ips']
-        subnet_fixed_ips = filter(lambda port: port['subnet_id'] ==
-                                  subnet_id, fixed_ips)
+        subnet_fixed_ips = [port for port in fixed_ips if port['subnet_id'] ==
+                            subnet_id]
         self.assertEqual(1, len(subnet_fixed_ips))
         router_interface_ip = subnet_fixed_ips[0]['ip_address']
-        self.assertEqual(str(self.subnet_cidr.iter_hosts().next()),
+        self.assertEqual(str(nextitem(self.subnet_cidr.iter_hosts())),
                          router_interface_ip)
 
     @decorators.idempotent_id('75d85316-4ac2-4c0e-a1a9-edd2148fc10e')

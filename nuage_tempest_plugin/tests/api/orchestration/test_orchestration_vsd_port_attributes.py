@@ -6,7 +6,7 @@ from netaddr import IPAddress
 from tempest.common import utils
 from tempest.lib.common.utils import data_utils
 
-import nuage_base
+from . import nuage_base
 
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants

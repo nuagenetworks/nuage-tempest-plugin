@@ -31,6 +31,7 @@ from nuage_tempest_plugin.services.nuage_network_client \
 from nuage_tempest_plugin.tests.api.baremetal.baremetal_topology \
     import BaremetalTopology
 
+CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
 
 
@@ -52,6 +53,13 @@ class BaremetalRedcyTest(network_mixin.NetworkMixin,
                             "'nuage_baremetal_driver'")
         cls.expected_vlan_normal = 0
         cls.expected_vlan_transparent = 4095
+
+    @classmethod
+    def skip_checks(cls):
+        super(BaremetalRedcyTest, cls).skip_checks()
+        if not CONF.service_available.neutron:
+            # this check prevents this test to be run in unittests
+            raise cls.skipException("Neutron support is required")
 
     @classmethod
     def setup_clients(cls):

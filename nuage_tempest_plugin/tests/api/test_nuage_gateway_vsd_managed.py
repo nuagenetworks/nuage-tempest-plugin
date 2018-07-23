@@ -13,7 +13,7 @@
 #    under the License.
 #
 
-import base_nuage_gateway as base
+from . import base_nuage_gateway as base
 
 from netaddr import IPNetwork
 from nuage_tempest_plugin.tests.api.vsd_managed \
@@ -181,7 +181,7 @@ class NuageGatewayTestVSDManaged(base.BaseNuageGatewayTest,
         vsd_l2dom = self.create_vsd_l2domain(name=name,
                                              tid=vsd_l2dom_tmplt[0]['ID'])
 
-        self.assertEqual(vsd_l2dom[0][u'name'], name)
+        self.assertEqual(vsd_l2dom[0]['name'], name)
         # create subnet on OS with nuagenet param set to l2domain UUID
         net_name = data_utils.rand_name('network-')
         net = self.create_network(network_name=net_name)

@@ -13,15 +13,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from __future__ import print_function
-
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.test import nuage_test
 
-import base_nuage_fip_underlay
+from . import base_nuage_fip_underlay
 
 
 class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):

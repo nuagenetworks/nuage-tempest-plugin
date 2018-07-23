@@ -5,7 +5,7 @@ from netaddr import IPNetwork
 
 from tempest.lib.common.utils import data_utils
 
-import nuage_base
+from . import nuage_base
 
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
@@ -51,7 +51,7 @@ class OrchestrationVsdManagedNetworkTest(
             name=name, tid=vsd_l2domain_template[0]['ID'])
 
         self.assertIsInstance(vsd_l2domain, list)
-        self.assertEqual(vsd_l2domain[0][u'name'], name)
+        self.assertEqual(vsd_l2domain[0]['name'], name)
 
         # launch a heat stack
         stack_file_name = 'nuage_vsd_managed_network_minimal'
@@ -106,7 +106,7 @@ class OrchestrationVsdManagedNetworkTest(
             name=name, tid=vsd_l2domain_template[0]['ID'])
 
         self.assertIsInstance(vsd_l2domain, list)
-        self.assertEqual(vsd_l2domain[0][u'name'], name)
+        self.assertEqual(vsd_l2domain[0]['name'], name)
 
         # launch a heat stack
         stack_file_name = 'nuage_vsd_managed_network'
@@ -164,7 +164,7 @@ class OrchestrationVsdManagedNetworkTest(
             name=name, tid=vsd_l2domain_template[0]['ID'])
 
         self.assertIsInstance(vsd_l2domain, list)
-        self.assertEqual(vsd_l2domain[0][u'name'], name)
+        self.assertEqual(vsd_l2domain[0]['name'], name)
 
         # launch a heat stack
         stack_file_name = 'nuage_vsd_managed_network'
@@ -219,7 +219,7 @@ class OrchestrationVsdManagedNetworkTest(
             name=name, tid=vsd_l3domain_template[0]['ID'])
 
         self.assertIsInstance(vsd_l3domain, list)
-        self.assertEqual(vsd_l3domain[0][u'name'], name)
+        self.assertEqual(vsd_l3domain[0]['name'], name)
 
         zone_name = data_utils.rand_name('l3domain-zone-')
         vsd_zone = self.create_vsd_zone(name=zone_name,

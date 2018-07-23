@@ -163,7 +163,7 @@ class TestNuageFipUnderlayCli(client_testcase.CLIClientTestCase,
         template_id = vsd_l2dom_template[0]['ID']
         vsd_l2domain = self.nuage_client.create_l2domain(
             name=name, templateId=template_id)
-        self.assertEqual(vsd_l2domain[0][u'name'], name)
+        self.assertEqual(vsd_l2domain[0]['name'], name)
         # Try to create subnet on OS with nuagenet param set to l2domain UUID
         # Must fails with message = exp+message
         network_name = data_utils.rand_name('ext-pat-network')
@@ -186,7 +186,7 @@ class TestNuageFipUnderlayCli(client_testcase.CLIClientTestCase,
                                  '--net-partition',
                                  Topology.def_netpartition,
                                  '--nuagenet',
-                                 vsd_l2domain[0][u'ID'],
+                                 vsd_l2domain[0]['ID'],
                                  '--underlay=True')
         # Delete the VSD manged subnet
         self.nuage_client.delete_l2domain(vsd_l2domain[0]['ID'])

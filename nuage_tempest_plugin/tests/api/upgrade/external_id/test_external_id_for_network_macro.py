@@ -19,7 +19,7 @@ from tempest.lib.common.utils import test_utils
 
 import testtools
 
-from external_id import ExternalId
+from .external_id import ExternalId
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test import nuage_test

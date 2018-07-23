@@ -1,6 +1,8 @@
 # Copyright 2017 NOKIA
 # All Rights Reserved.
 
+from future.utils import lrange
+
 import base64
 import json
 import logging
@@ -43,7 +45,7 @@ class RESTProxyBaseException(Exception):
                 super(RESTProxyBaseException, self).__init__(self.message)
 
     def __unicode__(self):
-        return unicode(self.msg)
+        return str(self.msg)
 
     def use_fatal_exceptions(self):
         return False
@@ -84,7 +86,7 @@ class RESTProxyServer(object):
         self.timeout = servertimeout
         self.max_retries = MAX_RETRIES
         self.auth = None
-        self.success_codes = range(200, 207)
+        self.success_codes = lrange(200, 207)
 
     def _rest_call(self, action, resource, data, extra_headers=None):
         uri = self.base_uri + resource
@@ -118,7 +120,7 @@ class RESTProxyServer(object):
                           resp_data)
                 if response.status in self.success_codes:
                     try:
-                        resp_data = json.loads(resp_str)
+                        resp_data = json.loads(resp_str.decode('utf8'))
                     except ValueError:
                         # response was not JSON, ignore the exception
                         pass
@@ -184,7 +186,8 @@ class RESTProxyServer(object):
 
     def generate_nuage_auth(self):
         data = ''
-        encoded_auth = base64.encodestring(self.serverauth).strip()
+        encoded_auth = base64.b64encode(
+            self.serverauth.encode()).decode()
         self.auth = 'Basic ' + encoded_auth
         resp = self.rest_call('GET',
                               self.auth_resource, data)
@@ -198,7 +201,8 @@ class RESTProxyServer(object):
                 assert 0, 'Could not authenticate to REST server. Abort'
         uname = self.serverauth.split(':')[0]
         new_uname_pass = uname + ':' + respkey
-        auth = 'Basic ' + base64.encodestring(new_uname_pass).strip()
+        encoded_auth = base64.b64encode(new_uname_pass.encode()).decode()
+        auth = 'Basic ' + encoded_auth
         self.auth = auth
 
     def rest_call(self, action, resource, data, extra_headers=None):

@@ -24,6 +24,9 @@ class BaseNuageFipRateLimit(
     @classmethod
     def skip_checks(cls):
         super(BaseNuageFipRateLimit, cls).skip_checks()
+        if not CONF.service_available.neutron:
+            # this check prevents this test to be run in unittests
+            raise cls.skipException("Neutron support is required")
         if not utils.is_extension_enabled('nuage-floatingip', 'network'):
             msg = 'Extension nuage_floatingip not enabled.'
             raise cls.skipException(msg)

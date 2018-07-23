@@ -228,7 +228,7 @@ class VSDManagedDualStackL2DHCPUnmanagedTest(VSDManagedDualStackCommonBase):
             net_partition=Topology.def_netpartition)
         self.assertEqual(
             ipv4_subnet['cidr'],
-            str(IPNetwork(self.cidr4).subnet(self.mask_bits4).next()))
+            str(next(IPNetwork(self.cidr4).subnet(self.mask_bits4))))
 
         # create a port in the network
         port_ipv4_only = self.create_port(network)
@@ -290,7 +290,7 @@ class VSDManagedDualStackL2DHCPUnmanagedTest(VSDManagedDualStackCommonBase):
             net_partition=Topology.def_netpartition)
         self.assertEqual(
             ipv4_subnet['cidr'],
-            str(IPNetwork(self.cidr4).subnet(self.mask_bits4).next()))
+            str(next(IPNetwork(self.cidr4).subnet(self.mask_bits4))))
 
         # create a port in the network
         port_ipv4_only = self.create_port(network)
@@ -375,7 +375,7 @@ class VSDManagedDualStackL2DHCPUnmanagedTest(VSDManagedDualStackCommonBase):
             net_partition=Topology.def_netpartition)
         self.assertEqual(
             ipv4_subnet['cidr'],
-            str(IPNetwork(self.cidr4).subnet(self.mask_bits4).next()))
+            str(next(IPNetwork(self.cidr4).subnet(self.mask_bits4))))
 
         # shall not create a port with fixed-ip IPv6 in ipv4 subnet
         port_args = {'fixed_ips':

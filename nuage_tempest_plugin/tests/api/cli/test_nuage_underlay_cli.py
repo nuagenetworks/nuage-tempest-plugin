@@ -28,7 +28,7 @@ class TestNuageUnderlayCli(CLIClientTestCase):
 
     @classmethod
     def skip_checks(cls):
-        super(CLIClientTestCase, cls).skip_checks()
+        super(TestNuageUnderlayCli, cls).skip_checks()
         if not NUAGE_FEATURES.route_to_underlay:
             msg = "Route to underlay not enabled"
             raise cls.skipException(msg)

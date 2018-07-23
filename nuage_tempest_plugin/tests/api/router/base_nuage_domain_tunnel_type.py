@@ -20,6 +20,13 @@ class NuageDomainTunnelTypeBase(test.BaseTestCase):
         cls.client = cls.os_admin.networks_client
         cls.nuage_client = nuage_client.NuageRestClient()
 
+    @classmethod
+    def skip_checks(cls):
+        super(NuageDomainTunnelTypeBase, cls).skip_checks()
+        if not CONF.service_available.neutron:
+            # this check prevents this test to be run in unittests
+            raise cls.skipException("Neutron support is required")
+
     def _create_router(self, **kwargs):
         # Create a router
         name = data_utils.rand_name('router-')

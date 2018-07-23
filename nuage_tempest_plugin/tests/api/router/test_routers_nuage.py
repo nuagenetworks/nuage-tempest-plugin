@@ -13,6 +13,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from future.utils import listitems
+
 import netaddr
 from random import randint
 import testtools
@@ -122,7 +124,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
         rtr_id = create_body['router']['id']
         nuage_domain = self.nuage_client.get_l3domain(
             filters='externalID', filter_value=rtr_id)
-        self.assertEqual(nuage_domain[0][u'description'], name)
+        self.assertEqual(nuage_domain[0]['description'], name)
         if Topology.within_ext_id_release():
             nuage_zones = self.nuage_client.get_zone(
                 parent_id=nuage_domain[0]['ID'])
@@ -235,7 +237,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
         nuage_l2dom = self.nuage_client.get_l2domain(
             filters='externalID',
             filter_value=subnet['id'])
-        self.assertEqual(nuage_l2dom[0][u'name'], subnet['id'])
+        self.assertEqual(nuage_l2dom[0]['name'], subnet['id'])
 
         router = self._create_router(data_utils.rand_name('router-'))
         nuage_domain = self.nuage_client.get_l3domain(
@@ -245,8 +247,8 @@ class NuageRoutersTest(base.BaseNetworkTest):
             router['id'], subnet_id=subnet['id'])
         self.addCleanup(self._remove_router_interface_with_subnet_id,
                         router['id'], subnet['id'])
-        self.assertIn('subnet_id', interface.keys())
-        self.assertIn('port_id', interface.keys())
+        self.assertIn('subnet_id', interface)
+        self.assertIn('port_id', interface)
         # Verify router id is equal to device id in port details
         show_port_body = self.ports_client.show_port(
             interface['port_id'])
@@ -261,7 +263,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
         nuage_domain_subnet = self.nuage_client.get_domain_subnet(
             parent=n_constants.DOMAIN, parent_id=nuage_domain[0]['ID'])
 
-        self.assertEqual(nuage_domain_subnet[0][u'name'], subnet['id'])
+        self.assertEqual(nuage_domain_subnet[0]['name'], subnet['id'])
 
     @decorators.attr(type='smoke')
     def test_add_remove_router_interface_with_port_id(self):
@@ -271,7 +273,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
         nuage_l2dom = self.nuage_client.get_l2domain(
             filters='externalID',
             filter_value=subnet['id'])
-        self.assertEqual(nuage_l2dom[0][u'name'], subnet['id'])
+        self.assertEqual(nuage_l2dom[0]['name'], subnet['id'])
 
         router = self._create_router(data_utils.rand_name('router-'))
         nuage_domain = self.nuage_client.get_l3domain(
@@ -283,8 +285,8 @@ class NuageRoutersTest(base.BaseNetworkTest):
             router['id'], port_id=port_body['port']['id'])
         self.addCleanup(self.routers_client.remove_router_interface,
                         router['id'], port_id=port_body['port']['id'])
-        self.assertIn('subnet_id', interface.keys())
-        self.assertIn('port_id', interface.keys())
+        self.assertIn('subnet_id', interface)
+        self.assertIn('port_id', interface)
         # Verify router id is equal to device id in port details
         show_port_body = self.ports_client.show_port(
             interface['port_id'])
@@ -298,7 +300,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
             nuage_l2dom, '', "L2 domain is not deleted in VSD")
         nuage_domain_subnet = self.nuage_client.get_domain_subnet(
             n_constants.DOMAIN, nuage_domain[0]['ID'])
-        self.assertEqual(nuage_domain_subnet[0][u'name'], subnet['id'])
+        self.assertEqual(nuage_domain_subnet[0]['name'], subnet['id'])
 
     @utils.requires_ext(extension='extraroute', service='network')
     @decorators.attr(type='smoke')
@@ -314,7 +316,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
         nuage_domain = self.nuage_client.get_l3domain(
             filters='externalID', filter_value=self.router['id'])
         self.assertEqual(
-            nuage_domain[0][u'description'], self.router['name'])
+            nuage_domain[0]['description'], self.router['name'])
 
         self.create_router_interface(self.router['id'], self.subnet['id'])
         self.addCleanup(
@@ -342,7 +344,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
         nuage_static_route = self.nuage_client.get_staticroute(
             parent=n_constants.DOMAIN, parent_id=nuage_domain[0]['ID'])
         self.assertEqual(
-            nuage_static_route[0][u'nextHopIp'], next_hop, "wrong nexthop")
+            nuage_static_route[0]['nextHopIp'], next_hop, "wrong nexthop")
 
         if Topology.from_nuage('4.0R5'):
             self.assertEqual(nuage_static_route[0]['externalID'],
@@ -669,7 +671,7 @@ class NuageRoutersAdminTest(base.BaseAdminNetworkTest):
             self.assertIsNone(actual_ext_gw_info)
             return
         # Verify only keys passed in exp_ext_gw_info
-        for k, v in exp_ext_gw_info.items():
+        for k, v in listitems(exp_ext_gw_info):
             self.assertEqual(v, actual_ext_gw_info[k])
 
     def _verify_gateway_port(self, router_id):
@@ -867,7 +869,7 @@ class NuageRoutersAdminTest(base.BaseAdminNetworkTest):
         nuage_perm = self.nuage_client.get_permissions(
             n_constants.L2_DOMAIN, nuage_l2dom[0]['ID'])
         self.assertIsNotNone(nuage_perm[0])
-        self.assertEqual(nuage_perm[0]['permittedEntityName'], u'Everybody')
+        self.assertEqual(nuage_perm[0]['permittedEntityName'], 'Everybody')
 
     @decorators.attr(type='smoke')
     def test_router_create_update_show_delete_with_backhaul_vnid_rt_rd(
@@ -899,11 +901,11 @@ class NuageRoutersAdminTest(base.BaseAdminNetworkTest):
             rtr_id)
         nuage_domain = self.nuage_client.get_l3domain(
             filters='externalID', filter_value=l3dom_ext_id)
-        self.assertEqual(nuage_domain[0][u'description'], name)
-        self.assertEqual(nuage_domain[0][u'backHaulVNID'], bkhaul_vnid)
-        self.assertEqual(nuage_domain[0][u'backHaulRouteTarget'],
+        self.assertEqual(nuage_domain[0]['description'], name)
+        self.assertEqual(nuage_domain[0]['backHaulVNID'], bkhaul_vnid)
+        self.assertEqual(nuage_domain[0]['backHaulRouteTarget'],
                          bkhaul_rt)
-        self.assertEqual(nuage_domain[0][u'backHaulRouteDistinguisher'],
+        self.assertEqual(nuage_domain[0]['backHaulRouteDistinguisher'],
                          bkhaul_rd)
         # Show details of the created router
         show_body = self.admin_routers_client.show_router(
@@ -941,11 +943,11 @@ class NuageRoutersAdminTest(base.BaseAdminNetworkTest):
                          updated_bkhaul_rd)
         nuage_domain = self.nuage_client.get_l3domain(
             filters='externalID', filter_value=l3dom_ext_id)
-        self.assertEqual(nuage_domain[0][u'backHaulVNID'],
+        self.assertEqual(nuage_domain[0]['backHaulVNID'],
                          updated_bkhaul_vnid)
-        self.assertEqual(nuage_domain[0][u'backHaulRouteTarget'],
+        self.assertEqual(nuage_domain[0]['backHaulRouteTarget'],
                          updated_bkhaul_rt)
-        self.assertEqual(nuage_domain[0][u'backHaulRouteDistinguisher'],
+        self.assertEqual(nuage_domain[0]['backHaulRouteDistinguisher'],
                          updated_bkhaul_rd)
 
     @decorators.attr(type='smoke')
@@ -1015,8 +1017,8 @@ class NuageRoutersV6Test(NuageRoutersTest):
             router['id'], subnet_id=subnet['id'])
         self.addCleanup(self._remove_router_interface_with_subnet_id,
                         router['id'], subnet['id'])
-        self.assertIn('subnet_id', interface.keys())
-        self.assertIn('port_id', interface.keys())
+        self.assertIn('subnet_id', interface)
+        self.assertIn('port_id', interface)
         # Verify router id is equal to device id in port details
         show_port_body = self.ports_client.show_port(
             interface['port_id'])
@@ -1041,8 +1043,8 @@ class NuageRoutersV6Test(NuageRoutersTest):
             port_id=port_body['port']['id'])
         self.addCleanup(self.routers_client.remove_router_interface,
                         router['id'], port_id=port_body['port']['id'])
-        self.assertIn('subnet_id', interface.keys())
-        self.assertIn('port_id', interface.keys())
+        self.assertIn('subnet_id', interface)
+        self.assertIn('port_id', interface)
         # Verify router id is equal to device id in port details
         show_port_body = self.ports_client.show_port(
             interface['port_id'])
@@ -1068,7 +1070,7 @@ class NuageRoutersV6Test(NuageRoutersTest):
         for i in range(routes_num):
             network = self.create_network()
             subnet = self.create_subnet(network, cidr=next_cidr)
-            next_cidr = next_cidr.next()
+            next_cidr = next(next_cidr)
 
             # Add router interface with subnet id
             self.create_router_interface(router['id'], subnet['id'])
@@ -1126,13 +1128,13 @@ class NuageRoutersV6Test(NuageRoutersTest):
             network_name=data_utils.rand_name('router-network02-'))
 
         # NUAGE non-compliance: Must have IPv4 subnet
-        subnet02_ipv4_cidr = netaddr.IPNetwork(subnet01_ipv4['cidr']).next()
+        subnet02_ipv4_cidr = next(netaddr.IPNetwork(subnet01_ipv4['cidr']))
         subnet02_ipv4 = self.create_subnet(
             network02, ip_version=4, cidr=subnet02_ipv4_cidr, enable_dhcp=True)
         self.addCleanup(self.subnets_client.delete_subnet, subnet02_ipv4['id'])
 
         subnet01 = self.create_subnet(network01)
-        sub02_cidr = netaddr.IPNetwork(self.cidr).next()
+        sub02_cidr = next(netaddr.IPNetwork(self.cidr))
         subnet02 = self.create_subnet(network02, cidr=sub02_cidr)
         router = self._create_router()
         interface01 = self._add_router_interface_with_subnet_id(router['id'],

@@ -6,6 +6,7 @@ from testtools.matchers import Not
 
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils.data_utils import nextitem
 from nuage_tempest_plugin.services.vpnaas.vpnaas_mixins import VPNMixin
 
 CONF = Topology.get_conf()
@@ -33,8 +34,8 @@ class VPNaaSTest(VPNaaSBase):
         routers = routers['routers']
         dummy_router_name = 'r_d_' + router_id
         dummy_router = (
-            (router for router in routers
-             if router['name'] == dummy_router_name).next()
+            nextitem(router for router in routers
+                     if router['name'] == dummy_router_name)
         )
         return dummy_router
 
@@ -48,8 +49,8 @@ class VPNaaSTest(VPNaaSBase):
         subnets = subnets['subnets']
         dummy_subnet_name = 's_d_' + subnet_id
         dummy_subnet = (
-            (subnet for subnet in subnets
-             if subnet['name'] == dummy_subnet_name).next()
+            nextitem(subnet for subnet in subnets
+                     if subnet['name'] == dummy_subnet_name)
         )
         return dummy_subnet
 

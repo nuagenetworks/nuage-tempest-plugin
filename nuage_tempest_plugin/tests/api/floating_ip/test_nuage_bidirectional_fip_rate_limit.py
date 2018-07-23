@@ -7,7 +7,7 @@ from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 
-import base_nuage_bidirectional_fip_rate_limit
+from . import base_nuage_bidirectional_fip_rate_limit
 
 LOG = Topology.get_logger(__name__)
 
@@ -114,7 +114,7 @@ class TestNuageBidirectionalFipRateLimit(
         self.assertIn(fip2['id'],
                       [fip['id'] for fip in fip_list])
 
-        get_fips = filter(lambda _fip: _fip['id'] == fip1['id'], fip_list)
+        get_fips = [_fip for _fip in fip_list if _fip['id'] == fip1['id']]
         self.assertRaises(KeyError, get_attr, get_fips[0], 'nuage_fip_rate')
 
     # ONLY INGRESS DIRECTION TESTS

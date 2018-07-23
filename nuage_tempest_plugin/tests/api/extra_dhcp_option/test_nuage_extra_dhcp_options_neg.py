@@ -3,7 +3,7 @@
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
-import base_nuage_extra_dhcp_options
+from . import base_nuage_extra_dhcp_options
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test import nuage_test

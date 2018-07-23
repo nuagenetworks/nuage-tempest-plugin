@@ -19,7 +19,7 @@ from tempest.lib.common.utils import data_utils
 from tempest.lib.common.utils.data_utils import rand_name
 from tempest.test import decorators
 
-import base_nuage_gateway as base
+from . import base_nuage_gateway as base
 
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants

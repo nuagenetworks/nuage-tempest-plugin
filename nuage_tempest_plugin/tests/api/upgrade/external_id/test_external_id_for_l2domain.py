@@ -25,7 +25,7 @@ from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
-from external_id import ExternalId
+from .external_id import ExternalId
 
 LOG = Topology.get_logger(__name__)
 

@@ -25,8 +25,9 @@ from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
-# TODO(TEAM) - make inherit from NuageBaseTest ?
+# TODO(TEAM) Make inherit from NuageBaseTest
 
+CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
 
 
@@ -52,6 +53,13 @@ class BaseNuageNetworksIpv6TestCase(test.BaseTestCase):
     @classmethod
     def resource_setup(cls):
         NuageBaseTest.setup_network_resources(cls)
+
+    @classmethod
+    def skip_checks(cls):
+        super(BaseNuageNetworksIpv6TestCase, cls).skip_checks()
+        if not CONF.service_available.neutron:
+            # this check prevents this test to be run in unittests
+            raise cls.skipException("Neutron support is required")
 
     @classmethod
     def is_dhcp_agent_present(cls):

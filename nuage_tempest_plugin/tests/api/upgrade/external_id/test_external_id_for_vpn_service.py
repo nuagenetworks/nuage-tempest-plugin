@@ -17,7 +17,7 @@ from tempest.api.network import base
 from tempest.common import utils
 from tempest.lib.common.utils import data_utils
 
-from external_id import ExternalId
+from .external_id import ExternalId
 
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology

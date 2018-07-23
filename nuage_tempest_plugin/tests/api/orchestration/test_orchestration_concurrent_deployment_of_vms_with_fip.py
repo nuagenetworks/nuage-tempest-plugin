@@ -10,7 +10,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import nuage_base
+from . import nuage_base
 
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions

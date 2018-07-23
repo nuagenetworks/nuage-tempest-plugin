@@ -41,6 +41,9 @@ class BgpvpnBase(BGPVPNMixin):
     @classmethod
     def skip_checks(cls):
         super(BgpvpnBase, cls).skip_checks()
+        if not CONF.service_available.neutron:
+            # this check prevents this test to be run in unittests
+            raise cls.skipException("Neutron support is required")
         if not utils.is_extension_enabled('bgpvpn', 'network'):
             msg = "Bgpvpn Extension not enabled."
             raise cls.skipException(msg)
@@ -130,6 +133,13 @@ class BgpvpnTest(BgpvpnBase):
 
 
 class RouterAssociationTest(BgpvpnBase, L3Mixin):
+
+    @classmethod
+    def skip_checks(cls):
+        super(RouterAssociationTest, cls).skip_checks()
+        if not CONF.service_available.neutron:
+            # this check prevents this test to be run in unittests
+            raise cls.skipException("Neutron support is required")
 
     def test_router_association_create(self):
         with self.bgpvpn(tenant_id=self.tenant_id,
@@ -352,6 +362,13 @@ class RouterAssociationTest(BgpvpnBase, L3Mixin):
 
 
 class NetworkAssociationTest(BgpvpnBase, NetworkMixin):
+
+    @classmethod
+    def skip_checks(cls):
+        super(NetworkAssociationTest, cls).skip_checks()
+        if not CONF.service_available.neutron:
+            # this check prevents this test to be run in unittests
+            raise cls.skipException("Neutron support is required")
 
     def test_network_association_unsupported(self):
         with self.network() as net, \

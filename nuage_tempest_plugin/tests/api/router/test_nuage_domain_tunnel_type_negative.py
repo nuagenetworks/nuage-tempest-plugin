@@ -7,7 +7,7 @@ from tempest.test import decorators
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 
-import base_nuage_domain_tunnel_type
+from . import base_nuage_domain_tunnel_type
 
 
 class NuageDomainTunnelTypeNegativeTest(

@@ -448,7 +448,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
         vsd_l2dom = self.create_vsd_l2domain(name=name,
                                              tid=vsd_l2dom_tmplt[0]['ID'])
 
-        self.assertEqual(vsd_l2dom[0][u'name'], name)
+        self.assertEqual(vsd_l2dom[0]['name'], name)
         # create subnet on OS with nuagenet param set to l2domain UUID
         net_name = data_utils.rand_name('network-')
         network = self.create_network(network_name=net_name)
@@ -470,7 +470,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
         vsd_l2dom = self.create_vsd_l2domain(name=name,
                                              tid=vsd_l2dom_tmplt[0]['ID'])
 
-        self.assertEqual(vsd_l2dom[0][u'name'], name)
+        self.assertEqual(vsd_l2dom[0]['name'], name)
         # create subnet on OS with nuagenet param set to l2domain UUID
         net_name = data_utils.rand_name('network-')
         network = self.create_network(network_name=net_name)
@@ -495,7 +495,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
         vsd_l2dom = self.create_vsd_l2domain(name=name,
                                              tid=vsd_l2dom_tmplt[0]['ID'])
 
-        self.assertEqual(vsd_l2dom[0][u'name'], name)
+        self.assertEqual(vsd_l2dom[0]['name'], name)
         # create subnet on OS with nuagenet param set to l2domain UUID
         net_name = data_utils.rand_name('network-')
         network = self.create_network(network_name=net_name)
@@ -516,7 +516,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
         vsd_l2dom = self.create_vsd_l2domain(name=name,
                                              tid=vsd_l2dom_tmplt[0]['ID'])
 
-        self.assertEqual(vsd_l2dom[0][u'name'], name)
+        self.assertEqual(vsd_l2dom[0]['name'], name)
         # create subnet on OS with nuagenet param set to l2domain UUID
         net_name = data_utils.rand_name('network-')
         network = self.create_network(network_name=net_name)

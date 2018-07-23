@@ -20,7 +20,7 @@ from tempest.lib.common.utils import data_utils
 
 import testtools
 
-from external_id import ExternalId
+from .external_id import ExternalId
 
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology

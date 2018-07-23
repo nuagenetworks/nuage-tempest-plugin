@@ -16,7 +16,7 @@ from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.topology import Topology
 
-import nuage_base
+from . import nuage_base
 
 LOG = Topology.get_logger(__name__)
 

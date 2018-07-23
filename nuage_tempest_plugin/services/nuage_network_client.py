@@ -54,6 +54,30 @@ class NuageNetworkClientJSON(service_client.RestClient):
             disable_ssl_certificate_validation, ca_certs,
             trace_requests, name, http_timeout, proxy_url)
 
+    def post(self, url, body, headers=None, extra_headers=False,
+             chunked=False):
+        resp, body = super(NuageNetworkClientJSON, self).post(
+            url, body, headers=headers, extra_headers=extra_headers,
+            chunked=chunked)
+        return resp, body.decode()
+
+    def get(self, url, headers=None, extra_headers=False):
+        resp, body = super(NuageNetworkClientJSON, self).get(
+            url, headers=headers, extra_headers=extra_headers)
+        return resp, body.decode()
+
+    def delete(self, url, headers=None, body=None, extra_headers=False):
+        resp, body = super(NuageNetworkClientJSON, self).delete(
+            url, headers=headers, body=body, extra_headers=extra_headers)
+        return resp, body.decode()
+
+    def put(self, url, body, headers=None, extra_headers=False,
+            chunked=False):
+        resp, body = super(NuageNetworkClientJSON, self).put(
+            url, body, headers=headers, extra_headers=extra_headers,
+            chunked=chunked)
+        return resp, body.decode()
+
     def _get_request(self, uri):
         resp, body = self.get(uri)
         self.expected_success(200, resp.status)

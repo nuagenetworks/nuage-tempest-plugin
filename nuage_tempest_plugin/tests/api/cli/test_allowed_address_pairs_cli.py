@@ -4,7 +4,7 @@
 from netaddr import IPAddress
 from netaddr import IPNetwork
 
-from base_nuage_networks_cli import BaseNuageNetworksCliTestCase
+from .base_nuage_networks_cli import BaseNuageNetworksCliTestCase
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology

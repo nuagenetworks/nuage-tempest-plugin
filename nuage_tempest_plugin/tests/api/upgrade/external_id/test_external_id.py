@@ -16,7 +16,7 @@
 import tempest.test
 import testtools
 
-from external_id import ExternalId
+from .external_id import ExternalId
 
 from nuage_tempest_plugin.lib.release import Release
 

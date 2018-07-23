@@ -172,10 +172,14 @@ class NuageRestClient(object):
 
     def get(self, url, extra_headers=None, body=None):
         resp = self.request('GET', url, extra_headers=extra_headers)
+        if not resp.data:
+            return ''
         return resp.data
 
     def post(self, url, body, extra_headers=None):
         resp = self.request('POST', url, body, extra_headers)
+        if not resp.data:
+            return ''
         return resp.data
 
     def put(self, url, body, extra_headers=None):

@@ -81,12 +81,12 @@ CIDR_TO_NETMASK = {
 }
 
 PROTO_NAME_TO_NUM = {
-    'tcp': u'6',
-    'udp': u'17',
-    'icmp': u'1',
-    'icmp6': u'58',
-    'IPv4': u'0x0800',
-    'IPv6': u'0x86DD'
+    'tcp': '6',
+    'udp': '17',
+    'icmp': '1',
+    'icmp6': '58',
+    'IPv4': '0x0800',
+    'IPv6': '0x86DD'
 }
 
 # Application Designer

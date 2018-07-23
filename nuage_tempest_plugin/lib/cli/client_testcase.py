@@ -9,8 +9,8 @@ import netaddr
 import re
 from six import iteritems
 
-import client
-import output_parser as cli_output_parser
+from . import client
+from . import output_parser as cli_output_parser
 
 from tempest.lib.common import cred_client
 from tempest.lib.common.utils import data_utils
@@ -186,6 +186,13 @@ class CLIClientTestCase(test.BaseTestCase):
         cls.creds_client.delete_project(cls.project['id'])
 
         super(CLIClientTestCase, cls).resource_cleanup()
+
+    @classmethod
+    def skip_checks(cls):
+        super(CLIClientTestCase, cls).skip_checks()
+        if not CONF.service_available.neutron:
+            # this check prevents this test to be run in unittests
+            raise cls.skipException("Neutron support is required")
 
     def setUp(self):
         super(CLIClientTestCase, self).setUp()

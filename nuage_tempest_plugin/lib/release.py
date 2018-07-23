@@ -58,6 +58,9 @@ class Release(object):
         :param other: Release object to compare with
         :return: True when self is less than other..
         """
+        def cmp(a, b):
+            return (a > b) - (a < b)
+
         if (self.major_release == other.major_release and
                 self.sub_release == other.sub_release):
             # eg. kilo 3.2R5 < liberty 3.2R5

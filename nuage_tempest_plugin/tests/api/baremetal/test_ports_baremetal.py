@@ -30,16 +30,17 @@ from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.tests.api.baremetal.baremetal_topology \
     import BaremetalTopology
 
+CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
 
 
-class BaremetalTest(network_mixin.NetworkMixin,
-                    l3.L3Mixin, sg_mixin.SGMixin):
+class BaremetalPortsTest(network_mixin.NetworkMixin,
+                         l3.L3Mixin, sg_mixin.SGMixin):
     credentials = ['admin']
 
     @classmethod
     def setUpClass(cls):
-        super(BaremetalTest, cls).setUpClass()
+        super(BaremetalPortsTest, cls).setUpClass()
         if (Topology.nuage_baremetal_driver ==
                 constants.BAREMETAL_DRIVER_BRIDGE):
             cls.expected_vport_type = constants.VPORT_TYPE_BRIDGE
@@ -53,13 +54,20 @@ class BaremetalTest(network_mixin.NetworkMixin,
         cls.expected_vlan_transparent = 4095
 
     @classmethod
+    def skip_checks(cls):
+        super(BaremetalPortsTest, cls).skip_checks()
+        if not CONF.service_available.neutron:
+            # this check prevents this test to be run in unittests
+            raise cls.skipException("Neutron support is required")
+
+    @classmethod
     def setup_clients(cls):
-        super(BaremetalTest, cls).setup_clients()
+        super(BaremetalPortsTest, cls).setup_clients()
         cls.vsd_client = NuageRestClient()
 
     @classmethod
     def resource_setup(cls):
-        super(BaremetalTest, cls).resource_setup()
+        super(BaremetalPortsTest, cls).resource_setup()
         # Only gateway here, to support parallel testing each tests makes its
         # own gateway port so no VLAN overlap should occur.
         cls.gateway = cls.vsd_client.create_gateway(
@@ -68,11 +76,11 @@ class BaremetalTest(network_mixin.NetworkMixin,
 
     @classmethod
     def resource_cleanup(cls):
-        super(BaremetalTest, cls).resource_cleanup()
+        super(BaremetalPortsTest, cls).resource_cleanup()
         cls.vsd_client.delete_gateway(cls.gateway['ID'])
 
     def setUp(self):
-        super(BaremetalTest, self).setUp()
+        super(BaremetalPortsTest, self).setUp()
         gw_port_name = data_utils.rand_name(name='gw-port')
         self.gw_port = self.vsd_client.create_gateway_port(
             gw_port_name, gw_port_name, 'ACCESS', self.gateway['ID'],

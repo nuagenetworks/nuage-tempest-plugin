@@ -4,7 +4,7 @@
 from tempest.lib import exceptions as lib_exc
 from tempest.test import decorators
 
-import base_nuage_fip_rate_limit
+from . import base_nuage_fip_rate_limit
 
 from nuage_tempest_plugin.lib.test import nuage_test
 

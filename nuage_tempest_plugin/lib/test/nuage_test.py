@@ -72,19 +72,19 @@ def header(tags=None, since=None, until=None):
         @functools.wraps(f)
         def wrapper(self, *func_args, **func_kwargs):
 
-            if f.func_code.co_name != 'wrapper':
-                LOG.info('TEST CASE STARTED: {}'.format(f.func_code.co_name))
+            if f.__code__.co_name != 'wrapper':
+                LOG.info('TEST CASE STARTED: {}'.format(f.__code__.co_name))
 
                 # Dump the message + the name of this function to the log.
                 LOG.info("in {}:{}".format(
-                    f.func_code.co_filename,
-                    f.func_code.co_firstlineno
+                    f.__code__.co_filename,
+                    f.__code__.co_firstlineno
                 ))
 
             result = f(self, *func_args, **func_kwargs)
 
-            if f.func_code.co_name != 'wrapper':
-                LOG.info('TEST CASE COMPLETED: {}'.format(f.func_code.co_name))
+            if f.__code__.co_name != 'wrapper':
+                LOG.info('TEST CASE COMPLETED: {}'.format(f.__code__.co_name))
             return result
 
         _add_tags_to_method(tags, wrapper)
@@ -169,6 +169,13 @@ class NuageBaseTest(manager.NetworkScenarioTest):
     def resource_setup(cls):
         super(NuageBaseTest, cls).resource_setup()
         cls.setup_network_resources(cls)
+
+    @classmethod
+    def skip_checks(cls):
+        super(NuageBaseTest, cls).skip_checks()
+        if not CONF.service_available.neutron:
+            # this check prevents this test to be run in unittests
+            raise cls.skipException("Neutron support is required")
 
     def skipTest(self, reason):
         LOG.warn('TEST SKIPPED: ' + reason)
@@ -923,12 +930,12 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         if tenant_networks:
             params.update({"networks": []})
             for network in tenant_networks:
-                if 'id' in network.keys():
+                if 'id' in network:
                     params['networks'].append({'uuid': network['id']})
         if ports:
             params.update({"networks": []})
             for port in ports:
-                if 'id' in port.keys():
+                if 'id' in port:
                     params['networks'].append({'port': port['id']})
 
         kwargs = copy.copy(params) or {}

@@ -1,7 +1,7 @@
 # Copyright 2015 Alcatel-Lucent
 # All Rights Reserved.
 
-import nuage_base
+from . import nuage_base
 
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology

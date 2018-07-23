@@ -131,7 +131,7 @@ class BaseAllowedAddressPair(NuageBaseTest):
                     {'ip_address': str(IPAddress(cls.cidr6.first) + 8)}
                 ],
                 'allowed-address-pairs': [
-                    {'ip_address': str(cls.cidr4.subnet(24, 1).next())},
+                    {'ip_address': str(next(cls.cidr4.subnet(24, 1)))},
                     {'ip_address': str(IPAddress(cls.cidr6.first) + 10)}],
                 'l2-disable-anti-spoofing': True,
                 'l3-disable-anti-spoofing': True,
@@ -145,8 +145,8 @@ class BaseAllowedAddressPair(NuageBaseTest):
                     {'ip_address': str(IPAddress(cls.cidr6.first) + 8)}
                 ],
                 'allowed-address-pairs': [
-                    {'ip_address': str(cls.cidr4.subnet(24, 1).next())},
-                    {'ip_address': str(cls.cidr6.subnet(64, 1).next())}],
+                    {'ip_address': str(next(cls.cidr4.subnet(24, 1)))},
+                    {'ip_address': str(next(cls.cidr6.subnet(64, 1)))}],
                 'l2-disable-anti-spoofing': True,
                 'l3-disable-anti-spoofing': True,
                 'vip-created-on-vsd': False},

@@ -24,7 +24,7 @@ from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.lib.utils import exceptions as n_exceptions
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
-from external_id import ExternalId
+from .external_id import ExternalId
 
 LOG = Topology.get_logger(__name__)
 

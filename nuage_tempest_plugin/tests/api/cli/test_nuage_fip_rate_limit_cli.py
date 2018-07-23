@@ -9,7 +9,7 @@ from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 
-from base_nuage_fip_rate_limit_cli import BaseNuageFipRateLimit
+from .base_nuage_fip_rate_limit_cli import BaseNuageFipRateLimit
 
 MSG_INVALID_INPUT = "Invalid input for nuage_fip_rate. " \
                     "Reason: \'nuage_fip_rate\' " + \

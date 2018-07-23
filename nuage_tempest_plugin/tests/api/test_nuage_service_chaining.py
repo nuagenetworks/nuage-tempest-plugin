@@ -184,7 +184,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
         security_group_id = body['security_groups'][0]['id']
 
         # Creating Redirect Target Rule
-        rtid = str(rt[u'nuage_redirect_target']['id'])
+        rtid = str(rt['nuage_redirect_target']['id'])
         rule_body = {'priority': '100',
                      'redirect_target_id': rtid,
                      'protocol': '6',
@@ -264,7 +264,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
         security_group_id = body['security_groups'][0]['id']
 
         # Creating Redirect Target Rule
-        rtid = str(rt[u'nuage_redirect_target']['id'])
+        rtid = str(rt['nuage_redirect_target']['id'])
         rule_body = {'priority': '200',
                      'redirect_target_id': rtid,
                      'protocol': '17',
@@ -342,7 +342,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
         security_group_id = body['security_groups'][0]['id']
 
         # Creating Redirect Target Rule
-        rtid = str(rt[u'nuage_redirect_target']['id'])
+        rtid = str(rt['nuage_redirect_target']['id'])
         rule_body = {'priority': '200',
                      'redirect_target_id': rtid,
                      'protocol': '17',
@@ -419,7 +419,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
         security_group_id = body['security_groups'][0]['id']
 
         # Creating Redirect Target Rule
-        rtid = str(rt[u'nuage_redirect_target']['id'])
+        rtid = str(rt['nuage_redirect_target']['id'])
         rule_body = {'priority': '300',
                      'redirect_target_id': rtid,
                      'protocol': '1',
@@ -504,7 +504,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
         # Creating Redirect Target Rule
         rule_body = {
             'priority': '300',
-            'redirect_target_id': str(rt[u'nuage_redirect_target']['id']),
+            'redirect_target_id': str(rt['nuage_redirect_target']['id']),
             'protocol': '1',
             'origin_group_id': str(security_group_id),
             'remote_ip_prefix': '10.0.0.0/24',

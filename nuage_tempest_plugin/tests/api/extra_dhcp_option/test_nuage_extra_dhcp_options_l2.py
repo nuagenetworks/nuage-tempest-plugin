@@ -4,8 +4,8 @@ from netaddr import IPNetwork
 
 from tempest.lib.common.utils import data_utils
 
-import base_nuage_extra_dhcp_options
-from base_nuage_extra_dhcp_options import NUAGE_NETWORK_TYPE
+from . import base_nuage_extra_dhcp_options
+from .base_nuage_extra_dhcp_options import NUAGE_NETWORK_TYPE
 
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology

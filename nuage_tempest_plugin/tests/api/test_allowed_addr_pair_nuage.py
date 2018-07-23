@@ -848,4 +848,4 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         nuage_static_route = self.nuage_client.get_staticroute(
             parent=n_constants.DOMAIN, parent_id=nuage_domain[0]['ID'])
         self.assertEqual(
-            nuage_static_route[0][u'nextHopIp'], next_hop, "wrong nexthop")
+            nuage_static_route[0]['nextHopIp'], next_hop, "wrong nexthop")

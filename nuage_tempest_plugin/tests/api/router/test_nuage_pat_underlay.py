@@ -18,7 +18,7 @@ from netaddr import IPNetwork
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
-import base_nuage_pat_underlay
+from . import base_nuage_pat_underlay
 
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
@@ -164,7 +164,7 @@ class TestNuagePatUnderlay(base_nuage_pat_underlay.NuagePatUnderlayBase):
         template_id = vsd_l2dom_template[0]['ID']
         vsd_l2domain = self.nuage_client.create_l2domain(
             name=name, templateId=template_id)
-        self.assertEqual(vsd_l2domain[0][u'name'], name)
+        self.assertEqual(vsd_l2domain[0]['name'], name)
         # create subnet on OS with nuagenet param set to l2domain UUID
         net_name = data_utils.rand_name('os-ext-network-')
         # create the external network
@@ -184,7 +184,7 @@ class TestNuagePatUnderlay(base_nuage_pat_underlay.NuagePatUnderlayBase):
             'ip_version': self._ip_version,
             'name': subnet_name,
             'net_partition': Topology.def_netpartition,
-            'nuagenet': vsd_l2domain[0][u'ID']
+            'nuagenet': vsd_l2domain[0]['ID']
         }
         self.assertRaises(exceptions.BadRequest,
                           self.admin_subnets_client.create_subnet,

@@ -2,12 +2,15 @@
 # All Rights Reserved.
 
 from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 
-import base_nuage_domain_tunnel_type
+from . import base_nuage_domain_tunnel_type
+
+CONF = Topology.get_conf()
 
 
-class NuageDomainTunnelType(
+class NuageDomainTunnelTypeTest(
         base_nuage_domain_tunnel_type.NuageDomainTunnelTypeBase):
 
     @nuage_test.header()

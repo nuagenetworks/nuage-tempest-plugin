@@ -7,7 +7,7 @@ from tempest import exceptions
 from tempest.lib.common.utils import data_utils
 from tempest.test import decorators
 
-import nuage_base
+from . import nuage_base
 
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
@@ -34,7 +34,7 @@ class VsdManagedNetworkTest(nuage_base.NuageBaseOrchestrationTest):
             name=name, tid=vsd_l2domain_template[0]['ID'])
 
         self.assertIsInstance(vsd_l2domain, list)
-        self.assertEqual(vsd_l2domain[0][u'name'], name)
+        self.assertEqual(vsd_l2domain[0]['name'], name)
 
         # launch a heat stack
         stack_file_name = 'nuage_vsd_managed_network_minimal'
@@ -70,7 +70,7 @@ class VsdManagedNetworkTest(nuage_base.NuageBaseOrchestrationTest):
             name=name, tid=vsd_l2domain_template[0]['ID'])
 
         self.assertIsInstance(vsd_l2domain, list)
-        self.assertEqual(vsd_l2domain[0][u'name'], name)
+        self.assertEqual(vsd_l2domain[0]['name'], name)
 
         # launch a heat stack
         stack_file_name = 'nuage_vsd_managed_network_no_netpartition'
