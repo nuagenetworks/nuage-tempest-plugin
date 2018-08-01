@@ -1,0 +1,277 @@
+heat_template_version: 2013-05-23
+description: Simple template to create Servers in new NetPartition/Router/Network with FIP's
+parameters:
+  public_net:
+    type: string
+    description: >
+      ID or name of public network for which floating IP addresses will be allocated
+  private_net_name:
+    type: string
+    description: Name of private network to be created
+  private_net_cidr:
+    type: string
+    description: Private network address (CIDR notation)
+  private_net_gateway:
+    type: string
+    description: Private network gateway address
+  private_net_pool_start:
+    type: string
+    description: Start of private network IP address allocation pool
+  private_net_pool_end:
+    type: string
+    description: End of private network IP address allocation pool
+  image:
+    type: string
+    description: Name of image to use for servers
+  flavor:
+    type: string
+    description: Flavor to use for servers
+
+resources:
+  private_net:
+    type: OS::Neutron::Net
+    properties:
+      name: { get_param: private_net_name }
+
+  private_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: { get_resource: private_net }
+      cidr: { get_param: private_net_cidr }
+      gateway_ip: { get_param: private_net_gateway }
+      allocation_pools:
+        - start: { get_param: private_net_pool_start }
+          end: { get_param: private_net_pool_end }
+
+  router:
+    type: OS::Neutron::Router
+    properties:
+        name: R1
+        external_gateway_info:
+          network: { get_param: public_net }
+
+
+  router_interface:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router_id: { get_resource: router }
+      subnet_id: { get_resource: private_subnet }
+
+  vm1:
+    type: OS::Nova::Server
+    properties:
+      name: vm1
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      networks:
+        - port: { get_resource: vm1_port }
+
+  vm1_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: private_net }
+      fixed_ips:
+        - subnet_id: { get_resource: private_subnet }
+      security_groups: [{ get_resource: vm_security_group }]
+
+  vm1_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: { get_param: public_net }
+      port_id: { get_resource: vm1_port }
+
+  vm2:
+    type: OS::Nova::Server
+    properties:
+      name: vm2
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      networks:
+        - port: { get_resource: vm2_port }
+
+  vm2_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: private_net }
+      fixed_ips:
+        - subnet_id: { get_resource: private_subnet }
+      security_groups: [{ get_resource: vm_security_group }]
+
+  vm2_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: { get_param: public_net }
+      port_id: { get_resource: vm2_port }
+
+  vm3:
+    type: OS::Nova::Server
+    properties:
+      name: vm3
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      networks:
+        - port: { get_resource: vm3_port }
+
+  vm3_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: private_net }
+      fixed_ips:
+        - subnet_id: { get_resource: private_subnet }
+      security_groups: [{ get_resource: vm_security_group }]
+
+  vm3_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: { get_param: public_net }
+      port_id: { get_resource: vm3_port }
+
+  vm4:
+    type: OS::Nova::Server
+    properties:
+      name: vm4
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      networks:
+        - port: { get_resource: vm4_port }
+
+  vm4_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: private_net }
+      fixed_ips:
+        - subnet_id: { get_resource: private_subnet }
+      security_groups: [{ get_resource: vm_security_group }]
+
+  vm4_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: { get_param: public_net }
+      port_id: { get_resource: vm4_port }
+
+  vm5:
+    type: OS::Nova::Server
+    properties:
+      name: vm5
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      networks:
+        - port: { get_resource: vm5_port }
+
+  vm5_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: private_net }
+      fixed_ips:
+        - subnet_id: { get_resource: private_subnet }
+      security_groups: [{ get_resource: vm_security_group }]
+
+  vm5_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: { get_param: public_net }
+      port_id: { get_resource: vm5_port }
+
+  vm6:
+    type: OS::Nova::Server
+    properties:
+      name: vm6
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      networks:
+        - port: { get_resource: vm6_port }
+
+  vm6_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: private_net }
+      fixed_ips:
+        - subnet_id: { get_resource: private_subnet }
+      security_groups: [{ get_resource: vm_security_group }]
+
+  vm6_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: { get_param: public_net }
+      port_id: { get_resource: vm6_port }
+
+  vm7:
+    type: OS::Nova::Server
+    properties:
+      name: vm7
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      networks:
+        - port: { get_resource: vm7_port }
+
+  vm7_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: private_net }
+      fixed_ips:
+        - subnet_id: { get_resource: private_subnet }
+      security_groups: [{ get_resource: vm_security_group }]
+
+  vm7_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: { get_param: public_net }
+      port_id: { get_resource: vm7_port }
+
+  vm_security_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      description: Add security group rules for server
+      name: security-group
+      rules:
+        - remote_ip_prefix: 0.0.0.0/0
+          protocol: tcp
+          port_range_min: 22
+          port_range_max: 22
+        - remote_ip_prefix: 0.0.0.0/0
+          protocol: icmp
+
+
+outputs:
+  vm1_private_ip:
+    description: IP address of server1 in private network
+    value: { get_attr: [ vm1, first_address ] }
+  vm1_public_ip:
+    description: Floating IP address of server1 in public network
+    value: { get_attr: [ vm1_floating_ip, floating_ip_address ] }
+  vm2_private_ip:
+    description: IP address of server2 in private network
+    value: { get_attr: [ vm2, first_address ] }
+  vm2_public_ip:
+    description: Floating IP address of server2 in public network
+    value: { get_attr: [ vm2_floating_ip, floating_ip_address ] }
+  vm3_private_ip:
+    description: IP address of server3 in private network
+    value: { get_attr: [ vm3, first_address ] }
+  vm3_public_ip:
+    description: Floating IP address of server3 in public network
+    value: { get_attr: [ vm3_floating_ip, floating_ip_address ] }
+  vm4_private_ip:
+    description: IP address of server4 in private network
+    value: { get_attr: [ vm4, first_address ] }
+  vm4_public_ip:
+    description: Floating IP address of server4 in public network
+    value: { get_attr: [ vm4_floating_ip, floating_ip_address ] }
+  vm5_private_ip:
+    description: IP address of server5 in private network
+    value: { get_attr: [ vm5, first_address ] }
+  vm5_public_ip:
+    description: Floating IP address of server5 in public network
+    value: { get_attr: [ vm5_floating_ip, floating_ip_address ] }
+  vm6_private_ip:
+    description: IP address of server6 in private network
+    value: { get_attr: [ vm6, first_address ] }
+  vm6_public_ip:
+    description: Floating IP address of server6 in public network
+    value: { get_attr: [ vm6_floating_ip, floating_ip_address ] }
+  vm7_private_ip:
+    description: IP address of server7 in private network
+    value: { get_attr: [ vm7, first_address ] }
+  vm7_public_ip:
+    description: Floating IP address of server7 in public network
+    value: { get_attr: [ vm7_floating_ip, floating_ip_address ] }
