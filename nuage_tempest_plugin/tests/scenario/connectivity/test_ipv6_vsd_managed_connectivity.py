@@ -4,7 +4,6 @@
 from netaddr import IPAddress
 from netaddr import IPNetwork
 import testtools
-import time
 
 from tempest.lib import decorators
 
@@ -14,8 +13,6 @@ from nuage_tempest_plugin.lib.topology import Topology
 
 
 class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
-
-    include_negative_testing = False  # TODO(Kris) FIXME
 
     @decorators.attr(type='smoke')
     @testtools.skipIf(not Topology.run_connectivity_tests(),
@@ -51,43 +48,63 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
         # Launch tenant servers in OpenStack network
         server2 = self.create_reachable_tenant_server_in_l2_network(
             network, ssh_security_group)
+
+        server3 = self.create_reachable_tenant_server_in_l2_network(
+            network, ssh_security_group)
+
+        server4 = self.create_reachable_tenant_server_in_l2_network(
+            network, ssh_security_group)
+
         server1 = self.create_reachable_tenant_server_in_l2_network(
             network, ssh_security_group)
 
         # Test IPv4 connectivity between peer servers
-        self.assert_ping(server1, server2, network)
+        success_rate = int(self.assert_ping(
+            server1, server2, network,
+            return_boolean_to_indicate_success=True))
+        success_rate += int(self.assert_ping(
+            server1, server3, network,
+            return_boolean_to_indicate_success=True))
+        success_rate += int(self.assert_ping(
+            server1, server4, network,
+            return_boolean_to_indicate_success=True))
 
-        # Define IPv6 interface in the guest VM's
+        self.assertEqual(3, success_rate, 'Success rate not met!')
+
+        # Define IPv6 interface in the guest VMs
         # as VSP does not support DHCPv6 for IPv6 addresses
-        server1_ipv6 = server1.get_server_ip_in_network(
-            network['name'], ip_type=6)
         server2_ipv6 = server2.get_server_ip_in_network(
             network['name'], ip_type=6)
-
-        server1.configure_dualstack_interface(
-            server1_ipv6, subnet=ipv6_subnet, device="eth1")
         server2.configure_dualstack_interface(
-            server2_ipv6, subnet=ipv6_subnet, device="eth1")
+            server2_ipv6, subnet=ipv6_subnet, device='eth1')
+
+        server3_ipv6 = server3.get_server_ip_in_network(
+            network['name'], ip_type=6)
+        server3.configure_dualstack_interface(
+            server3_ipv6, subnet=ipv6_subnet, device='eth1')
+
+        server4_ipv6 = server4.get_server_ip_in_network(
+            network['name'], ip_type=6)
+        server4.configure_dualstack_interface(
+            server4_ipv6, subnet=ipv6_subnet, device='eth1')
+
+        server1_ipv6 = server1.get_server_ip_in_network(
+            network['name'], ip_type=6)
+        server1.configure_dualstack_interface(
+            server1_ipv6, subnet=ipv6_subnet, device='eth1')
 
         # Test IPv6 connectivity between peer servers
-        self.assert_ping6(server1, server2, network)
+        success_rate = int(self.assert_ping6(
+            server1, server2, network,
+            return_boolean_to_indicate_success=True))
+        success_rate += int(self.assert_ping6(
+            server1, server3, network,
+            return_boolean_to_indicate_success=True))
+        success_rate += int(self.assert_ping6(
+            server1, server4, network,
+            return_boolean_to_indicate_success=True))
 
-        if self.include_negative_testing:
-            # Allow IPv6 only
-            self.vsd.define_any_to_any_acl(
-                vsd_l2domain, allow_ipv4=False, allow_ipv6=True)
-            time.sleep(3)
-
-            self.assert_ping(server1, server2, network, should_pass=False)
-            self.assert_ping6(server1, server2, network, should_pass=True)
-
-            # Allow IPv4 only
-            self.vsd.define_any_to_any_acl(
-                vsd_l2domain, allow_ipv4=True, allow_ipv6=False)
-            time.sleep(3)
-
-            self.assert_ping(server1, server2, network, should_pass=True)
-            self.assert_ping6(server1, server2, network, should_pass=False)
+        self.assertEqual(3, success_rate, 'Success rate not met!')
 
     def icmp_connectivity_l3_vsd_managed(
             self, cidr4, vsd_gateway4=None, gateway4=None,

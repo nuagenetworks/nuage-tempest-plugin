@@ -1112,9 +1112,12 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         else:
             self.fail('Ping unexpectedly ' + ping_pass)
 
-    def assert_ping6(self, server1, server2, network, should_pass=True):
-        self.assert_ping(server1, server2, network, ip_type=6,
-                         should_pass=should_pass)
+    def assert_ping6(self, server1, server2, network,
+                     should_pass=True, interface=None, ping_count=3,
+                     return_boolean_to_indicate_success=False):
+        return self.assert_ping(server1, server2, network, 6,
+                                should_pass, interface, ping_count,
+                                return_boolean_to_indicate_success)
 
     def start_webserver(self, vm_handle, port_number):
         # pkill not present on cirros
