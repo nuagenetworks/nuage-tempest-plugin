@@ -137,6 +137,48 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                                self.create_port,
                                network=network, fixed_ips=fixed_ips)
 
+    def test_nuage_os_managed_subnet_port_create_with_nuage_policy_negative(
+            self):
+
+        network = self.create_network()
+        self.assertIsNotNone(network, "Unable to create network")
+
+        subnet = self.create_subnet(network, cidr=IPNetwork("10.0.0.0/24"),
+                                    mask_bits=28)
+        self.assertIsNotNone(subnet, "Unable to create subnet")
+
+        msg = ("Cannot use VSP policy groups on OS managed subnets,"
+               " use neutron security groups instead.")
+
+        self.assertRaisesRegex(exceptions.BadRequest,
+                               msg,
+                               self.create_port,
+                               network=network,
+                               nuage_policy_groups=['Random_value'])
+
+    def test_nuage_os_managed_subnet_port_update_with_nuage_policy_negative(
+            self):
+
+        network = self.create_network()
+        self.assertIsNotNone(network, "Unable to create network")
+
+        subnet = self.create_subnet(network, cidr=IPNetwork("10.0.0.0/24"),
+                                    mask_bits=28)
+        self.assertIsNotNone(subnet, "Unable to create subnet")
+
+        port = self.create_port(network=network)
+
+        self.assertIsNotNone(port, "Unable to create port")
+
+        msg = ("Cannot use VSP policy groups on OS managed subnets,"
+               " use neutron security groups instead.")
+
+        self.assertRaisesRegex(exceptions.BadRequest,
+                               msg,
+                               self.update_port,
+                               port=port,
+                               nuage_policy_groups=['Random_value'])
+
     @decorators.attr(type='smoke')
     def test_nuage_port_update_fixed_ips_negative(self):
         if self.is_dhcp_agent_present():
