@@ -58,9 +58,6 @@ class Ipv4VsdManagedConnectivityTest(NuageBaseTest):
             network, ssh_security_group)
 
         # Test IPv4 connectivity between peer servers
-        self.assert_ping(server1, server2, network)
-
-        # Test IPv4 connectivity between peer servers
         success_rate = int(self.assert_ping(
             server1, server2, network,
             return_boolean_to_indicate_success=True))
