@@ -60,6 +60,9 @@ BAD_INTEGER_TYPE_VALUES = [
 ]
 
 
+#
+# ... THESE ARE SKIPPED! ...
+#
 class NuageExtraDHCPOptionsNegativeTest(
         base_nuage_extra_dhcp_options.NuageExtraDHCPOptionsBase):
 
@@ -88,6 +91,10 @@ class NuageExtraDHCPOptionsNegativeTest(
             'externalID',
             cls.nuage_client.get_vsd_external_id(cls.osmgd_l2_subnet['id'])
         )
+
+    @classmethod
+    def skip_checks(cls):
+        raise cls.skipException('Skipping negative DHCP tests.')
 
     def _assert_nuage_create_port_with_dhcp_opts(self, network_id,
                                                  extra_dhcp_opts):
