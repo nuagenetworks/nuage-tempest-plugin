@@ -253,7 +253,6 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
         # When I add an IPv6 subnet
         ipv6_subnet = self.create_subnet(
             network, ip_version=6, enable_dhcp=False)
-        self.assertIsNotNone(ipv6_subnet)
 
         # Then no L2 domain is created
         vsd_l2_domain = self.vsd.get_l2domain(
@@ -263,7 +262,6 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
 
         # When I create an IPv4 subnet
         ipv4_subnet = self.create_subnet(network)
-        self.assertIsNotNone(ipv4_subnet)
 
         # Then the VSD L2 domain is changed to IPtype DualStack
         self._verify_ipv6_subnet_with_vsd_l2_domain(
@@ -276,19 +274,17 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
         network = self.create_network()
         ipv4_subnet = self.create_subnet(network, cleanup=False)
         self.assertIsNotNone(ipv4_subnet)
-        ipv6_subnet = self.create_subnet(
+        self.create_subnet(
             network,
             ip_version=6,
             gateway=None,
             enable_dhcp=False)
-        self.assertIsNotNone(ipv6_subnet)
 
         # delete IPv4 subnet
         self.manager.subnets_client.delete_subnet(ipv4_subnet['id'])
 
         # create again
-        ipv4_subnet = self.create_subnet(network)
-        self.assertIsNotNone(ipv4_subnet)
+        self.create_subnet(network)
 
     @decorators.attr(type='smoke')
     @nuage_test.header()

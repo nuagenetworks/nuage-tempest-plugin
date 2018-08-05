@@ -3,11 +3,9 @@
 
 from netaddr import IPAddress
 from netaddr import IPNetwork
-import testtools
 from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
 
-from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as nuage_constants
@@ -338,9 +336,6 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
 
         self.link_dualstack_net_l2(pool4=pool4, pool6=pool6)
 
-    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsd_mgd_subnets,
-                      'Multi-linked VSD mgd subnets are not supported in this '
-                      'release')
     @decorators.attr(type='smoke')
     def test_dual_ds_vsd_mgd_l2dom_dhcp_mgd_disjunct_allocation_pools(self):
         pool4 = {'start': '10.10.100.100', 'end': '10.10.100.109'}
@@ -354,9 +349,6 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
         self.link_dualstack_net_l2(pool4=pool4, pool6=pool6,
                                    vsd_l2dom=vsd_l2dom)
 
-    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsd_mgd_subnets,
-                      'Multi-linked VSD mgd subnets are not supported in this '
-                      'release')
     @decorators.attr(type='smoke')
     def test_dual_ds_vsd_mgd_l2dom_dhcp_mgd_non_disj_v4_alloc_pools_neg(self):
         pool4 = {'start': '10.10.100.100', 'end': '10.10.100.110'}
@@ -370,9 +362,6 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
         self.link_dualstack_net_l2(pool4=pool4, pool6=pool6,
                                    vsd_l2dom=vsd_l2dom, should_pass4=False)
 
-    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsd_mgd_subnets,
-                      'Multi-linked VSD mgd subnets are not supported in this '
-                      'release')
     @decorators.attr(type='smoke')
     def test_dual_ds_vsd_mgd_l2dom_dhcp_mgd_non_disj_v6_alloc_pools_neg(self):
         pool4 = {'start': '10.10.100.100', 'end': '10.10.100.109'}

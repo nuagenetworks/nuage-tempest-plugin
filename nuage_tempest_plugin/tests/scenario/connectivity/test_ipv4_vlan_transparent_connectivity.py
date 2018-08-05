@@ -1,8 +1,6 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
 
-import testtools
-
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
@@ -36,28 +34,28 @@ class VlanTransparentConnectivityTest(NuageBaseTest):
         super(VlanTransparentConnectivityTest, cls).resource_setup()
 
     @decorators.attr(type='smoke')
-    @testtools.skipIf(not Topology.run_connectivity_tests(),
-                      'Connectivity tests are disabled.')
     def test_l2_transparent_network(self):
         kwargs = {
             'vlan_transparent': 'true'
         }
-        l2network = self.create_network(**kwargs)
-        self.create_subnet(l2network, gateway=None)
+        network = self.create_network(**kwargs)
+        self.create_subnet(network, gateway=None)
 
-        # Create open-ssh sg (allow icmp and ssh from anywhere)
-        ssh_security_group = self._create_security_group(
-            namestart='tempest-open-ssh')
+        # create open-ssh security group
+        ssh_security_group = self.create_open_ssh_security_group()
 
-        vm1 = self.create_reachable_tenant_server_in_l2_network(
-            l2network, ssh_security_group,
-            name='vm1', image_profile=self.image_profile)
-        vm2 = self.create_reachable_tenant_server_in_l2_network(
-            l2network, ssh_security_group,
-            name='vm2', image_profile=self.image_profile)
+        # Launch tenant servers in OpenStack network
+        vm1 = self.create_tenant_server(
+            tenant_networks=[network],
+            security_groups=[ssh_security_group],
+            make_reachable=True)
+        vm2 = self.create_tenant_server(
+            tenant_networks=[network],
+            security_groups=[ssh_security_group],
+            make_reachable=True)
 
-        vm1_ip = vm1.get_server_ip_in_network(l2network['name'])
-        vm2_ip = vm2.get_server_ip_in_network(l2network['name'])
+        vm1_ip = vm1.get_server_ip_in_network(network['name'])
+        vm2_ip = vm2.get_server_ip_in_network(network['name'])
 
         try:
             vm1.configure_vlan_interface(vm1_ip, 'eth1', vlan='10')
@@ -68,10 +66,8 @@ class VlanTransparentConnectivityTest(NuageBaseTest):
         vm1.bring_down_interface('eth1')
         vm2.bring_down_interface('eth0')
 
-        self.assert_ping(vm1, vm2, l2network, interface='eth1.10')
+        self.assert_ping(vm1, vm2, network, interface='eth1.10')
 
-    @testtools.skipIf(not Topology.run_connectivity_tests(),
-                      'Connectivity tests are disabled.')
     def test_l3_transparent_network(self):
         kwargs = {
             'vlan_transparent': 'true'
@@ -81,21 +77,22 @@ class VlanTransparentConnectivityTest(NuageBaseTest):
         subnet = self.create_subnet(l3network)
         self.router_attach(router, subnet)
 
-        ssh_security_group = self._create_security_group(
-            namestart='tempest-open-ssh')
+        # create open-ssh security group
+        ssh_security_group = self.create_open_ssh_security_group()
 
         vm1 = self.create_tenant_server(
             tenant_networks=[l3network],
-            security_groups=[{'name': ssh_security_group['name']}],
-            name='vm1', image_profile=self.image_profile)
+            security_groups=[ssh_security_group],
+            name='vm1',
+            image_profile=self.image_profile,
+            make_reachable=True)
 
         vm2 = self.create_tenant_server(
             tenant_networks=[l3network],
-            security_groups=[{'name': ssh_security_group['name']}],
-            name='vm2', image_profile=self.image_profile)
-
-        self.prepare_for_nic_provisioning(vm1)
-        self.prepare_for_nic_provisioning(vm2)
+            security_groups=[ssh_security_group],
+            name='vm2',
+            image_profile=self.image_profile,
+            make_reachable=True)
 
         vm1_ip = vm1.get_server_ip_in_network(l3network['name'])
         vm2_ip = vm2.get_server_ip_in_network(l3network['name'])

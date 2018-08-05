@@ -48,9 +48,7 @@ class NuageFeatures(object):
                 Topology.from_nuage('5.1') and self.ipv6_enabled)
             self.project_name_in_vsd = Topology.from_nuage('5.1')
             self.stateless_security_groups = Topology.from_nuage('5.2')
-            self.multi_linked_vsd_mgd_subnets = Topology.from_nuage('5.2')
             self.route_to_underlay = Topology.from_nuage('5.2')
-            self.multi_linked_os_mgd_subnets = Topology.from_nuage('5.2.2')
 
     def _log_features(self):
         LOG.info('RELEASES:')
@@ -74,10 +72,6 @@ class NuageFeatures(object):
                  format(self.os_managed_dualstack_subnets))
         LOG.info('stateless_security_groups        : {}'.
                  format(self.stateless_security_groups))
-        LOG.info('multi_linked_vsd_mgd_subnets     : {}'.
-                 format(self.multi_linked_vsd_mgd_subnets))
-        LOG.info('multi_linked_os_mgd_subnets     : {}'.
-                 format(self.multi_linked_vsd_mgd_subnets))
         LOG.info('route_to_underlay                : {}'.
                  format(self.route_to_underlay))
 
@@ -95,8 +89,6 @@ class NuageFeatures(object):
         self.ipv6_enabled = CONF.network_feature_enabled.ipv6
         self.stateless_security_groups = False
         self.route_to_underlay = False
-        self.multi_linked_vsd_mgd_subnets = False
-        self.multi_linked_os_mgd_subnets = False
         self._set_features()
         self._log_features()
 

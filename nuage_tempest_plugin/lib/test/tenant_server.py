@@ -15,76 +15,7 @@ CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
 
 
-class Console(object):
-
-    def __init__(self, **kwargs):
-        pass
-
-    def send(self, cmd, timeout=5):
-        pass
-
-    def ping(self, destination, cnt, interface=None, ip_type=4):
-        pass
-
-    def close(self):
-        pass
-
-
-class TelnetConsole(Console):
-
-    def __init__(self, username, password, host, port, prompt=None):
-        super(TelnetConsole, self).__init__()
-        self.username = username
-        self.password = password
-        self.telnet_port = host
-        self.telnet_host = port
-        self.session = None
-        self.login_prompt = prompt if prompt else '\$'
-
-    def send(self, cmd, timeout=5):
-        LOG.info('TelnetConsole: send: %s.', cmd)
-        return self().send(cmd, timeout)
-
-    def __call__(self, *args, **kwargs):
-        assert Topology.telnet_console_access_to_vm_enabled()
-
-        if self.session:
-            return self.session
-        else:
-            LOG.error('libduts dependency has been removed from package!!')
-            assert False
-
-            # TODO(QA TEAM) : to be replaced
-            # from libduts import ssh
-            ssh = None
-
-            self.session = ssh.ExpectTelnetSession(
-                address=self.telnet_host,
-                user=self.username,
-                password=self.password,
-                port=self.telnet_port,
-                prompt=self.login_prompt)
-
-            self.session.open_while(timeout=180, retry_interval=5)
-            return self.session
-
-    def ping(self, destination, cnt, interface=None, ip_type=4):
-        ping = 'ping' if ip_type == 4 else 'ping6'
-
-        ping_cmd = ping + ' -c ' + str(cnt) + ' ' + destination
-        if interface:
-            ping_cmd += ' -I ' + interface,
-
-        ping_out = self.send(ping_cmd, CONF.validation.ssh_timeout)
-
-        return str(ping_out).strip('[]')
-
-    def close(self):
-        if self.session:
-            self.session.close()
-
-
-class FipAccessConsole(RemoteClient, Console):
+class FipAccessConsole(RemoteClient):
 
     def __init__(self, tenant_server):
         super(FipAccessConsole, self).__init__(
@@ -123,9 +54,6 @@ class FipAccessConsole(RemoteClient, Console):
             return self.ping_host(destination, cnt)
         except lib_exc.SSHExecCommandFailed:
             return "SSHExecCommandFailed"
-
-    def close(self):
-        pass
 
 
 class TenantServer(object):
@@ -185,23 +113,6 @@ class TenantServer(object):
 
     def console(self):
         return self.vm_console
-
-    def cleanup(self):
-        self.close_console()
-
-    def init_console(self):
-        if Topology.telnet_console_access_to_vm_enabled():
-            # TELNET CONSOLE
-            host, port = self.get_telnet_host_port()
-            self.vm_console = TelnetConsole(
-                self.username, self.password, host, port, self.prompt)
-        else:
-            # FIP BASED SSH ACCESS
-            self.vm_console = None  # delayed initialization, see associateFip
-
-    def close_console(self):
-        if self.vm_console:
-            self.vm_console.close()
 
     def is_cirros(self):
         return 'cirros' in self.image_name

@@ -116,10 +116,6 @@ class Topology(object):
         return Topology.api_workers == 1
 
     @staticmethod
-    def run_connectivity_tests():
-        return Topology.is_devstack()
-
-    @staticmethod
     def telnet_console_access_to_vm_enabled():
         return bool(CONF.nuage_sut.console_access_to_vm)
 

@@ -15,14 +15,12 @@
 
 from netaddr import IPAddress
 from netaddr import IPNetwork
-import testtools
 
 from tempest.api.network import base
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
-from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.test import tags
 from nuage_tempest_plugin.lib.topology import Topology
@@ -266,16 +264,10 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
         self.link_subnet_l2(cidr, mask_bits, dhcp_port, dhcp_option_3, pool2,
                             vsd_l2dom=vsd_l2dom, should_pass=should_pass)
 
-    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsd_mgd_subnets,
-                      'Multi-linked VSD mgd subnets are not supported in this '
-                      'release')
     @nuage_test.header(tags=['smoke'])
     def test_double_link_subnet_l2_no_gw_no_allocation_pools(self):
         self.double_link_subnet_l2(should_pass=False)
 
-    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsd_mgd_subnets,
-                      'Multi-linked VSD mgd subnets are not supported in this '
-                      'release')
     @nuage_test.header(tags=['smoke'])
     def test_double_link_subnet_l2_no_gw_non_disjunct_allocation_pools(self):
         self.double_link_subnet_l2(
@@ -283,9 +275,6 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
             pool2={'start': '10.10.100.110', 'end': '10.10.100.120'},
             should_pass=False)
 
-    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsd_mgd_subnets,
-                      'Multi-linked VSD mgd subnets are not supported in this '
-                      'release')
     @nuage_test.header(tags=['smoke'])
     def test_double_link_subnet_l2_no_gw_disjunct_allocation_pools(self):
         self.double_link_subnet_l2(
@@ -293,9 +282,6 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
             pool2={'start': '10.10.100.110', 'end': '10.10.100.120'},
             should_pass=True)
 
-    @testtools.skipIf(not NUAGE_FEATURES.multi_linked_vsd_mgd_subnets,
-                      'Multi-linked VSD mgd subnets are not supported in this '
-                      'release')
     @nuage_test.header(tags=['smoke'])
     def test_double_link_subnet_l2_with_gw_disjunct_allocation_pools(self):
         self.double_link_subnet_l2(
@@ -379,15 +365,6 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
         self.assertEqual(
             subnet['enable_dhcp'],
             vsd_unmanaged_shared_l2dom['DHCPManaged'])
-
-    @nuage_test.header(tags=['smoke'])
-    def test_link_subnet_without_gw_l2(self):
-        # create l2domain on VSD
-        pass
-
-    @nuage_test.header(tags=['smoke'])
-    def test_link_subnet_with_incorrect_gw_l2(self):
-        pass
 
     @nuage_test.header(tags=['smoke'])
     def test_link_subnet_wo_netpartition_l2(self):
@@ -708,12 +685,11 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
                                              tid=vsd_l2dom_tmplt[0]['ID'])[0]
 
         network = self.create_network(network_name=net_name, cleanup=False)
-        subnet = self.create_subnet(
+        self.create_subnet(
             network, gateway=None, cidr=cidr,
             mask_bits=24, nuagenet=vsd_l2dom['ID'],
             net_partition=Topology.def_netpartition,
             enable_dhcp=True, cleanup=False)
-        self.assertIsNotNone(subnet, "Subnet should be created.")
 
         port = self.create_port(network, cleanup=False)
         nuage_vport = self.nuage_client.get_vport(constants.L2_DOMAIN,
@@ -886,9 +862,6 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
 
 
 class VSDManagedAdminTestNetworks(base.BaseAdminNetworkTest):
-    @decorators.attr(type='smoke')
-    def test_link_subnet_on_provider_net_l2(self):
-        pass
 
     @decorators.attr(type='smoke')
     def test_link_subnet_on_external_net_l2(self):

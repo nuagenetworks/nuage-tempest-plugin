@@ -51,8 +51,6 @@ class OsManagedDualStackOrchestrationTest(NuageBaseOrchestrationTest):
                               self.admin_manager.servers_client)
         server.openstack_data = server.admin_client.show_server(
             server_id)['server']
-        server.init_console()
-        self.addCleanup(server.cleanup)
         return server
 
     @decorators.attr(type='slow')

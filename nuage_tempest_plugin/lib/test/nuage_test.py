@@ -154,6 +154,8 @@ class NuageBaseTest(manager.NetworkScenarioTest):
     image_name_to_id_cache = {}
     dhcp_agent_present = None
 
+    ssh_security_group = None
+
     @classmethod
     def setup_clients(cls):
         super(NuageBaseTest, cls).setup_clients()
@@ -231,6 +233,63 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         cls.addClassResourceCleanup(client.delete_network, network['id'])
         return network
 
+    def vsd_create_l2domain_template(
+            self, name=None, enterprise=None,
+            dhcp_managed=True, ip_type="IPV4",
+            cidr4=None, gateway4=None,
+            cidr6=None, gateway6=None, cleanup=True, **kwargs):
+        l2domain_template = self.vsd.create_l2domain_template(
+            name, enterprise, dhcp_managed, ip_type,
+            cidr4, gateway4, cidr6, gateway6, **kwargs)
+        self.assertIsNotNone(l2domain_template)
+        if cleanup:
+            self.addCleanup(l2domain_template.delete)
+        return l2domain_template
+
+    def vsd_create_l2domain(self, name=None, enterprise=None, template=None,
+                            cleanup=True):
+        vsd_l2domain = self.vsd.create_l2domain(name, enterprise, template)
+        self.assertIsNotNone(vsd_l2domain)
+        if cleanup:
+            self.addCleanup(vsd_l2domain.delete)
+        return vsd_l2domain
+
+    def vsd_create_l3domain_template(
+            self, name=None, enterprise=None, cleanup=True):
+        l3domain_template = self.vsd.create_l3domain_template(
+            name, enterprise)
+        self.assertIsNotNone(l3domain_template)
+        if cleanup:
+            self.addCleanup(l3domain_template.delete)
+        return l3domain_template
+
+    def vsd_create_l3domain(
+            self, name=None, enterprise=None, template_id=None, cleanup=True):
+        vsd_domain = self.vsd.create_l3domain(
+            name, enterprise, template_id)
+        self.assertIsNotNone(vsd_domain)
+        if cleanup:
+            self.addCleanup(vsd_domain.delete)
+        return vsd_domain
+
+    def vsd_create_zone(self, name=None, domain=None, cleanup=False):
+        vsd_zone = self.vsd.create_zone(name, domain)
+        self.assertIsNotNone(vsd_zone)
+        if cleanup:
+            self.addCleanup(vsd_zone.delete)
+        return vsd_zone
+
+    def create_vsd_subnet(self, name=None, zone=None, ip_type="IPV4",
+                          cidr4=None, gateway4=None,
+                          cidr6=None, gateway6=None, cleanup=True, **kwargs):
+        vsd_subnet = self.vsd.create_subnet(name, zone, ip_type,
+                                            cidr4, gateway4, cidr6, gateway6,
+                                            **kwargs)
+        self.assertIsNotNone(vsd_subnet)
+        if cleanup:
+            self.addCleanup(vsd_subnet.delete)
+        return vsd_subnet
+
     def create_network(self, network_name=None, client=None,
                        cleanup=True, **kwargs):
         """Wrapper utility that returns a test network."""
@@ -242,6 +301,9 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         body = client.networks_client.create_network(
             name=network_name, **kwargs)
         network = body['network']
+
+        self.assertIsNotNone(network)
+
         if cleanup:
             self.addCleanup(
                 client.networks_client.delete_network, network['id'])
@@ -325,6 +387,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             raise ValueError(message)
 
         subnet = body['subnet']
+
         dhcp_enabled = subnet['enable_dhcp']
         if self.is_dhcp_agent_present() and dhcp_enabled:
             current_time = time.time()
@@ -346,8 +409,23 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 dhcp_subnets = [x['subnet_id'] for x in dhcp_port['fixed_ips']]
             LOG.info("DHCP port resolved")
 
+        self.assertIsNotNone(subnet)
+
         if cleanup:
             self.addCleanup(client.subnets_client.delete_subnet, subnet['id'])
+
+        # add parent network
+        subnet['parent_network'] = network
+
+        # add me to network
+        if ip_version == 4:
+            network['v4_subnet'] = subnet  # keeps last created only
+        else:
+            network['v6_subnet'] = subnet  # keeps last created only
+
+        if 'nuagenet' in kwargs:
+            network['vsd_managed'] = True
+
         return subnet
 
     def update_subnet(self, subnet, client=None, **kwargs):
@@ -385,9 +463,12 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             net_partition=vsd_l2domain.parent_object.name,
             **subnet_kwargs)
 
+        # add vsd mgd info to network
+        subnet['parent_network']['vsd_l2_domain'] = vsd_l2domain
+
         return subnet
 
-    def create_l3_vsd_managed_subnet(self, network, vsd_subnet,
+    def create_l3_vsd_managed_subnet(self, network, vsd_domain, vsd_subnet,
                                      dhcp_managed=True, ip_version=4,
                                      gateway=None,
                                      **subnet_kwargs):
@@ -420,6 +501,10 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             net_partition=net_partition,
             **subnet_kwargs)
 
+        # add vsd mgd info to network
+        subnet['parent_network']['vsd_l3_domain'] = vsd_domain
+        subnet['parent_network']['vsd_l3_subnet'] = vsd_subnet
+
         return subnet
 
     def create_port(self, network, client=None, cleanup=True, **kwargs):
@@ -431,6 +516,10 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         port = body['port']
         if cleanup:
             self.addCleanup(client.ports_client.delete_port, port['id'])
+
+        # add parent network
+        port['parent_network'] = network
+
         return port
 
     def update_port(self, port, client=None, **kwargs):
@@ -498,16 +587,22 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                                    by_port_id=port['id'])
         self.assertEqual(port['id'], vport.name)
 
-    def create_test_router(self):
-        if Topology.access_to_l2_supported():
-            return self.create_router()  # can be an isolated router
-        else:
-            return self.create_public_router()  # needs FIP access
+    def create_open_ssh_security_group(self):
+        if not self.ssh_security_group:
+            self.ssh_security_group = self._create_security_group(
+                namestart='tempest-open-ssh')
+        return self.ssh_security_group
 
-    def create_public_router(self, retry_on_router_delete=False):
+    def create_test_router(self, client=None):
+        if Topology.access_to_l2_supported():
+            return self.create_router(client=client)  # can be isolated router
+        else:
+            return self.create_public_router(client=client)  # needs FIP access
+
+    def create_public_router(self, client=None, retry_on_router_delete=False):
         return self.create_router(
             external_network_id=CONF.network.public_network_id,
-            retry_on_router_delete=retry_on_router_delete)
+            client=client, retry_on_router_delete=retry_on_router_delete)
 
     def create_router(self, router_name=None, admin_state_up=True,
                       external_network_id=None, enable_snat=None,
@@ -667,12 +762,18 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         client.routers_client.remove_router_interface(
             router_id, subnet_id=subnet_id)
 
-    def router_attach(self, router, subnet, cleanup=True):
+    def router_attach(self, router, subnet, client=None, cleanup=True):
         self.create_router_interface(router['id'], subnet['id'],
-                                     cleanup=cleanup)
+                                     client=client, cleanup=cleanup)
+
+        # mark network as L3
+        subnet['parent_network']['is_l3'] = True
 
     def router_detach(self, router, subnet):
         self.remove_router_interface(router['id'], subnet['id'])
+
+        # unmark network as l3
+        subnet['parent_network']['is_l3'] = False
 
     @staticmethod
     def osc_get_database_table_row(db_name, db_username, db_password,
@@ -774,7 +875,8 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
     # noinspection PyBroadException
     def osc_create_test_server(self, client=None, tenant_networks=None,
-                               ports=None, wait_until='ACTIVE',
+                               ports=None, security_groups=None,
+                               wait_until='ACTIVE',
                                volume_backed=False, name=None, flavor=None,
                                image_id=None, cleanup=True,
                                deploy_attempt_count=1,
@@ -784,6 +886,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
         :param client: Client manager which provides OpenStack Tempest clients.
         :param tenant_networks: Tenant networks used for creating the server.
+        :param security_groups: Tenant security groups for the server.
         :param ports: Tenant ports used for creating the server.
         :param wait_until: Server status to wait for the server to reach after
         its creation.
@@ -844,6 +947,12 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
         vm = None
 
+        if security_groups:
+            sg_name_dicts = []  # nova requires sg names in dicts
+            for sg in security_groups:
+                sg_name_dicts.append({'name': sg['name']})
+            kwargs['security_groups'] = sg_name_dicts
+
         def cleanup_server():
             client.servers_client.delete_server(vm['id'])
             waiters.wait_for_server_termination(
@@ -851,7 +960,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
         for attempt in range(deploy_attempt_count):
 
-            LOG.info("Deploying server %s", name)
+            LOG.info("Deploying server %s (attempt %d)", name, attempt + 1)
 
             body = client.servers_client.create_server(name=name,
                                                        imageRef=image_id,
@@ -920,13 +1029,30 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             else:
                 self.fail('Deploying server %s failed' % name)
 
+    @staticmethod
+    def is_l2_network(network):
+        return not network.get('is_l3') and not network.get('vsd_l3_subnet')
+
     def create_tenant_server(self, client=None, tenant_networks=None,
-                             ports=None, wait_until='ACTIVE',
+                             ports=None, security_groups=None,
+                             wait_until='ACTIVE',
                              volume_backed=False, name=None, flavor=None,
                              image_profile='default', cleanup=True,
-                             wait_until_server_is_initialized=True,
-                             return_none_on_failure=False,
+                             make_reachable=False,
+                             configure_dualstack_itf=None,
+                             wait_until_initialized=True,
                              **kwargs):
+
+        assert not (wait_until_initialized and wait_until != 'ACTIVE')
+        assert not (tenant_networks and ports)  # one of both, not both
+        assert tenant_networks or ports  # but one at least
+        assert not (ports and security_groups)  # one of both, not both
+        assert not (configure_dualstack_itf and not make_reachable)
+
+        # the 1st network/port determines for l2/l3
+        first_network = (tenant_networks[0] if tenant_networks
+                         else ports[0].get('parent_network'))
+        l2_deployment = self.is_l2_network(first_network)
 
         name = name or data_utils.rand_name('test-server')
 
@@ -938,74 +1064,125 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             if not image_id:
                 self.skipTest('Image ' + server.image_name +
                               ' could not be found on setup.')
-        server.openstack_data = self.osc_create_test_server(
-            client, tenant_networks, ports, wait_until, volume_backed,
-            name, flavor, image_id, cleanup,
-            return_none_on_failure=return_none_on_failure,
-            **kwargs)
 
-        if not server.openstack_data and return_none_on_failure:
-            return None
-
-        server.nbr_nics_configured = len(tenant_networks) \
-            if tenant_networks else 0
-
-        if wait_until_server_is_initialized:
-            self.sleep(5, 'Give time for server to initialize')
-
-        server.init_console()
-
-        self.addCleanup(server.cleanup)
-        return server
-
-    def create_reachable_tenant_server_in_l2_network(
-            self, network_l2, security_group, name=None,
-            image_profile='default'):
-        """Create a server with a FIP for eth0 and a second interface eth1
-
-           in the given l2 network
-
-        :param network_l2    : The L2 network for the second interface
-        :param security_group: Security group to for the L3 port of the server
-        :param name          : Server name
-        :param image_profile :
-        :return              : The created server
-        """
+        server_networks = tenant_networks
+        server_ports = ports
+        server_security_groups = security_groups
+        data_interface = 'eth0'
 
         for attempt in range(3):  # retrying seems to pay off (CI evidence)
 
-            router = self.create_test_router()
-            network = self.create_network()
-            subnet = self.create_subnet(
-                network, cidr=IPNetwork("192.168.0.0/24"))
-            self.assertIsNotNone(subnet)
-            self.router_attach(router, subnet)
+            if l2_deployment and make_reachable:
+                LOG.info("create_tenant_server %s: PREPARE FOR L2 -> L3 "
+                         "(attempt %d)", name, attempt + 1)
 
-            port_l2 = self.create_port(network_l2)
-            port_l3 = self.create_port(network,
-                                       security_groups=[security_group['id']])
+                server_networks = None
+                server_ports = self.prepare_l3_topology_for_l2_network(
+                    tenant_networks, ports, security_groups)
+                server_security_groups = None
+                data_interface = 'eth1'
 
-            # boot with user_data to configure eth1
-            server = self.create_tenant_server(
-                ports=[port_l3, port_l2],
-                user_data=b64encode("#!/bin/sh\n/sbin/cirros-dhcpc up eth1"),
-                name=name,
-                image_profile=image_profile,
-                return_none_on_failure=True)
+                # add user date for configuring eth 1
+                kwargs['user_data'] = b64encode(
+                    "#!/bin/sh\n/sbin/cirros-dhcpc up eth1")
 
-            if server:
-                self.prepare_for_ping_test(server, port=port_l3)  # create FIP
+            LOG.info("create_tenant_server %s: START (attempt %d)", name,
+                     attempt + 1)
 
-                return server
+            server.openstack_data = self.osc_create_test_server(
+                client, server_networks, server_ports, server_security_groups,
+                wait_until, volume_backed, name, flavor, image_id, cleanup,
+                return_none_on_failure=True, **kwargs)
 
+            if server.openstack_data:
+                break
+
+        assert server.openstack_data
+
+        LOG.info("create_tenant_server %s: server is %s", name, wait_until)
+
+        server.nbr_nics_configured = (len(server_networks) if server_networks
+                                      else 0)
+
+        if wait_until_initialized:
+            self.sleep(5, 'Give time for server to initialize')
+
+        if make_reachable:
+            LOG.info("create_tenant_server %s: make reachable", name)
+
+            # make reachable over the 1st port
+            first_port = (self.osc_get_server_port_in_network(
+                server, server_networks[0]) if server_networks
+                else server_ports[0])
+
+            if server_networks and server_networks[0].get('vsd_l3_subnet'):
+                # vsd managed l3
+                self.create_fip_to_server(
+                    server, first_port,
+                    vsd_domain=server_networks[0].get('vsd_l3_domain'),
+                    vsd_subnet=server_networks[0].get('vsd_l3_subnet'),
+                    client=client)
             else:
-                LOG.error('create_reachable_tenant_server_in_l2_network '
-                          'failed (attempt {}); retrying'.format(attempt + 1))
+                # os mgd or vsd managed l2
+                self.create_fip_to_server(server, first_port)
 
-        self.fail('create_reachable_tenant_server_in_l2_network failed')
+        if configure_dualstack_itf:
+            LOG.info("create_tenant_server %s: configure dualstack", name)
+
+            configured_dualstack = False
+
+            if not server_networks:
+                server_networks = []
+                for port in server_ports:
+                    if port.get('parent_network'):
+                        server_networks.append(port['parent_network'])
+
+            for network in server_networks:
+                server_ipv6 = server.get_server_ip_in_network(
+                    network['name'], ip_type=6)
+
+                if network.get('v6_subnet'):
+                    server.configure_dualstack_interface(
+                        server_ipv6, subnet=network['v6_subnet'],
+                        device=data_interface)
+                    configured_dualstack = True
+
+            assert configured_dualstack  # assert we did the job
+
+        LOG.info("create_tenant_server %s: DONE!", name)
+        return server
+
+    def prepare_l3_topology_for_l2_network(
+            self, networks, ports, security_groups=None, client=None):
+
+        # L2 (existing)
+        l2_network = (networks[0] if networks
+                      else ports[0]['parent_network'])
+        if security_groups:
+            l2_sgs = []
+            for sg in security_groups:
+                l2_sgs.append(sg['id'])
+            l2_port = self.create_port(l2_network, client,
+                                       security_groups=l2_sgs)
+        else:
+            l2_port = self.create_port(l2_network, client)
+
+        # L3 (new)
+        fip_network = self.create_network(client=client)
+        subnet = self.create_subnet(
+            fip_network, cidr=IPNetwork("192.168.0.0/24"),
+            client=client)
+        router = self.create_test_router(client=client)
+        self.router_attach(router, subnet, client=client)
+
+        # l3 port
+        open_ssh_sg = self.create_open_ssh_security_group()
+        l3_port = self.create_port(fip_network, client,
+                                   security_groups=[open_ssh_sg['id']])
+        return [l3_port, l2_port]
 
     def create_fip_to_server(self, server, port=None, validate_access=False,
-                             vsd_domain=None, vsd_subnet=None):
+                             vsd_domain=None, vsd_subnet=None, client=None):
         """Create a fip and connect it to the given server
 
         :param server:
@@ -1013,10 +1190,11 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         :param validate_access:
         :param vsd_domain: L3Domain VSPK object
         :param vsd_subnet: L3Subnet VSPK object
+        :param client: os client
         :return:
         """
-        LOG.debug("create_fip_to_server: vsd_domain=%s, vsd_subnet=%s",
-                  str(vsd_domain), str(vsd_subnet))
+        LOG.info("create_fip_to_server: vsd_domain=%s, vsd_subnet=%s",
+                 str(vsd_domain), str(vsd_subnet))
 
         if not server.associated_fip:
             if vsd_domain:
@@ -1029,29 +1207,17 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             else:
                 fip = self.create_floating_ip(
                     server.get_server_details(),
-                    port_id=port['id'] if port else None
+                    port_id=port['id'] if port else None, client=client
                 )['floating_ip_address']
 
             server.associate_fip(fip)
-            LOG.debug("create_fip_to_server: fip associated: %s", str(fip))
+            LOG.info("create_fip_to_server: fip associated: %s", str(fip))
 
             if validate_access:
                 assert server.check_connectivity(3)
-                LOG.debug("create_fip_to_server: server connectivity verified")
+                LOG.info("create_fip_to_server: server connectivity verified")
 
         return server.associated_fip
-
-    def prepare_for_ping_test(self, server, port=None, vsd_domain=None,
-                              vsd_subnet=None):
-        if server.needs_fip_access():
-            self.create_fip_to_server(server, port, vsd_domain=vsd_domain,
-                                      vsd_subnet=vsd_subnet)
-
-    def prepare_for_nic_provisioning(self, server, port=None, vsd_domain=None,
-                                     vsd_subnet=None):
-        if server.needs_fip_access():
-            self.create_fip_to_server(server, port, vsd_domain=vsd_domain,
-                                      vsd_subnet=vsd_subnet)
 
     def start_tenant_server(self, server, wait_until=None):
         self.servers_client.start_server(server.openstack_data['id'])
@@ -1063,7 +1229,6 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             except Exception:
                 LOG.exception('Starting server %s failed',
                               server.openstack_data['id'])
-        server.init_console()
 
     def stop_tenant_server(self, server_id, wait_until='SHUTOFF'):
         self.servers_client.stop_server(server_id)  # changed for dev ci
