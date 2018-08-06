@@ -1,7 +1,6 @@
 # Copyright 2017 Alcatel-Lucent
 # All Rights Reserved.
 
-from base64 import b64encode
 import copy
 import functools
 import inspect
@@ -422,9 +421,6 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             network['v4_subnet'] = subnet  # keeps last created only
         else:
             network['v6_subnet'] = subnet  # keeps last created only
-
-        if 'nuagenet' in kwargs:
-            network['vsd_managed'] = True
 
         return subnet
 
@@ -1033,42 +1029,33 @@ class NuageBaseTest(manager.NetworkScenarioTest):
     def is_l2_network(network):
         return not network.get('is_l3') and not network.get('vsd_l3_subnet')
 
-    def create_tenant_server(self, client=None, tenant_networks=None,
+    def create_tenant_server(self, client=None, networks=None,
                              ports=None, security_groups=None,
                              wait_until='ACTIVE',
                              volume_backed=False, name=None, flavor=None,
                              image_profile='default', cleanup=True,
                              make_reachable=False,
-                             configure_dualstack_itf=None,
+                             configure_dualstack_itf=False,
                              wait_until_initialized=True,
                              **kwargs):
 
         assert not (wait_until_initialized and wait_until != 'ACTIVE')
-        assert not (tenant_networks and ports)  # one of both, not both
-        assert tenant_networks or ports  # but one at least
+        assert not (networks and ports)  # one of both, not both
+        assert networks or ports  # but one at least
         assert not (ports and security_groups)  # one of both, not both
         assert not (configure_dualstack_itf and not make_reachable)
 
         # the 1st network/port determines for l2/l3
-        first_network = (tenant_networks[0] if tenant_networks
+        first_network = (networks[0] if networks
                          else ports[0].get('parent_network'))
         l2_deployment = self.is_l2_network(first_network)
 
         name = name or data_utils.rand_name('test-server')
-
-        server = TenantServer(client, self.admin_manager.servers_client,
-                              image_profile, tenant_networks)
-        image_id = None
-        if image_profile != 'default':
-            image_id = self.osc_get_image_id(server.image_name)
-            if not image_id:
-                self.skipTest('Image ' + server.image_name +
-                              ' could not be found on setup.')
-
-        server_networks = tenant_networks
-        server_ports = ports
-        server_security_groups = security_groups
         data_interface = 'eth0'
+
+        server = TenantServer(self, client, self.admin_manager.servers_client,
+                              name, networks, ports, security_groups,
+                              image_profile, flavor, volume_backed)
 
         for attempt in range(3):  # retrying seems to pay off (CI evidence)
 
@@ -1076,33 +1063,23 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 LOG.info("create_tenant_server %s: PREPARE FOR L2 -> L3 "
                          "(attempt %d)", name, attempt + 1)
 
-                server_networks = None
-                server_ports = self.prepare_l3_topology_for_l2_network(
-                    tenant_networks, ports, security_groups)
-                server_security_groups = None
+                server.networks = None
+                server.ports = self.prepare_l3_topology_for_l2_network(
+                    networks, ports, security_groups)
+                server.security_groups = None
                 data_interface = 'eth1'
-
-                # add user date for configuring eth 1
-                kwargs['user_data'] = b64encode(
-                    "#!/bin/sh\n/sbin/cirros-dhcpc up eth1")
 
             LOG.info("create_tenant_server %s: START (attempt %d)", name,
                      attempt + 1)
 
-            server.openstack_data = self.osc_create_test_server(
-                client, server_networks, server_ports, server_security_groups,
-                wait_until, volume_backed, name, flavor, image_id, cleanup,
-                return_none_on_failure=True, **kwargs)
-
-            if server.openstack_data:
+            if server.boot(wait_until, cleanup, True, **kwargs):
+                networks = server.networks
+                ports = server.ports
                 break
 
-        assert server.openstack_data
+        assert server.did_deploy()
 
         LOG.info("create_tenant_server %s: server is %s", name, wait_until)
-
-        server.nbr_nics_configured = (len(server_networks) if server_networks
-                                      else 0)
 
         if wait_until_initialized:
             self.sleep(5, 'Give time for server to initialize')
@@ -1112,15 +1089,14 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
             # make reachable over the 1st port
             first_port = (self.osc_get_server_port_in_network(
-                server, server_networks[0]) if server_networks
-                else server_ports[0])
+                server, networks[0]) if networks else ports[0])
 
-            if server_networks and server_networks[0].get('vsd_l3_subnet'):
+            if networks and networks[0].get('vsd_l3_subnet'):
                 # vsd managed l3
                 self.create_fip_to_server(
                     server, first_port,
-                    vsd_domain=server_networks[0].get('vsd_l3_domain'),
-                    vsd_subnet=server_networks[0].get('vsd_l3_subnet'),
+                    vsd_domain=networks[0].get('vsd_l3_domain'),
+                    vsd_subnet=networks[0].get('vsd_l3_subnet'),
                     client=client)
             else:
                 # os mgd or vsd managed l2
@@ -1131,13 +1107,13 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
             configured_dualstack = False
 
-            if not server_networks:
-                server_networks = []
-                for port in server_ports:
+            if not networks:
+                networks = []
+                for port in ports:
                     if port.get('parent_network'):
-                        server_networks.append(port['parent_network'])
+                        networks.append(port['parent_network'])
 
-            for network in server_networks:
+            for network in networks:
                 server_ipv6 = server.get_server_ip_in_network(
                     network['name'], ip_type=6)
 
@@ -1245,8 +1221,6 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         if not server1.console():
             self.skipTest('This test cannot complete assert_ping request '
                           'as it has no console access.')
-
-        server1.prepare_nics()  # server2 is assumed to be prepared
 
         address2 = server2.get_server_ip_in_network(
             network['name'], ip_type)

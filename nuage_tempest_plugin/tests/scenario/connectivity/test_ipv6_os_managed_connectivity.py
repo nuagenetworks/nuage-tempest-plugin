@@ -21,25 +21,25 @@ class Ipv6OsManagedConnectivityTest(NuageBaseTest):
 
         # Launch tenant servers in OpenStack network
         server2 = self.create_tenant_server(
-            tenant_networks=[network],
+            networks=[network],
             security_groups=[ssh_security_group],
             make_reachable=True,
             configure_dualstack_itf=True)
 
         server3 = self.create_tenant_server(
-            tenant_networks=[network],
+            networks=[network],
             security_groups=[ssh_security_group],
             make_reachable=True,
             configure_dualstack_itf=True)
 
         server4 = self.create_tenant_server(
-            tenant_networks=[network],
+            networks=[network],
             security_groups=[ssh_security_group],
             make_reachable=True,
             configure_dualstack_itf=True)
 
         server1 = self.create_tenant_server(
-            tenant_networks=[network],
+            networks=[network],
             security_groups=[ssh_security_group],
             make_reachable=True,
             configure_dualstack_itf=True)
@@ -85,13 +85,13 @@ class Ipv6OsManagedConnectivityTest(NuageBaseTest):
 
         # Launch tenant servers in OpenStack network
         server2 = self.create_tenant_server(
-            tenant_networks=[network],
+            networks=[network],
             security_groups=[ssh_security_group],
             make_reachable=True,
             configure_dualstack_itf=True)
 
         server1 = self.create_tenant_server(
-            tenant_networks=[network],
+            networks=[network],
             security_groups=[ssh_security_group],
             make_reachable=True,
             configure_dualstack_itf=True)

@@ -20,7 +20,7 @@ class RouterAttachmentTest(NuageBaseTest):
         router = self.create_router()
         network = self.create_network()
         subnet = self.create_subnet(network)
-        self.create_tenant_server(tenant_networks=[network])
+        self.create_tenant_server(networks=[network])
         self.router_attach(router, subnet)
 
     # TODO(KRIS) OPENSTACK-1880 - TAKING OUT OF SMOKE .....
@@ -28,7 +28,7 @@ class RouterAttachmentTest(NuageBaseTest):
     def test_router_attachment_add_server_before_attach(self):
         network = self.create_network()
         subnet = self.create_subnet(network)
-        self.create_tenant_server(tenant_networks=[network])
+        self.create_tenant_server(networks=[network])
 
         router = self.create_router()
         self.router_attach(router, subnet)
@@ -44,7 +44,7 @@ class RouterAttachmentTest(NuageBaseTest):
     def test_router_attachment_add_server_before_attach_delayed(self):
         network = self.create_network()
         subnet = self.create_subnet(network)
-        self.create_tenant_server(tenant_networks=[network])
+        self.create_tenant_server(networks=[network])
 
         # TODO(KRIS) - adding retry_on_router_delete fixes the above test
         router = self.create_router(retry_on_router_delete=True)
