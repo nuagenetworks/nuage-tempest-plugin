@@ -226,6 +226,19 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             LOG.warning("Sleeping for {}s. {}.".format(seconds, msg))
         time.sleep(seconds)
 
+    def assert_success_rate(self, expected_success_rate, actual_success_rate,
+                            be_tolerant_for=0):
+        if (actual_success_rate != expected_success_rate and
+                be_tolerant_for > 0 and
+                actual_success_rate >= (expected_success_rate -
+                                        be_tolerant_for)):
+            # hit a case of accepted failure tolerance
+            self.skipTest('ATTENTION: success_rate is %d; skipping test' %
+                          actual_success_rate)
+        else:
+            self.assertEqual(expected_success_rate, actual_success_rate,
+                             'Success rate not met!')
+
     @classmethod
     def create_network_at_class_level(cls, network_name, client, **kwargs):
         body = client.create_network(name=network_name, **kwargs)
