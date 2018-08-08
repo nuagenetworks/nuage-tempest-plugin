@@ -47,10 +47,9 @@ class OsManagedDualStackOrchestrationTest(NuageBaseOrchestrationTest):
     def get_resource_server(self, resource_name):
         resource = self.test_resources.get(resource_name)
         server_id = resource['physical_resource_id']
-        server = TenantServer(self.manager.servers_client,
+        server = TenantServer(self, self.manager.servers_client,
                               self.admin_manager.servers_client)
-        server.openstack_data = server.admin_client.show_server(
-            server_id)['server']
+        server.sync_with(server_id)
         return server
 
     @decorators.attr(type='slow')

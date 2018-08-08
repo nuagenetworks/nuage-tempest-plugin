@@ -46,11 +46,11 @@ class VlanTransparentConnectivityTest(NuageBaseTest):
 
         # Launch tenant servers in OpenStack network
         vm1 = self.create_tenant_server(
-            tenant_networks=[network],
+            networks=[network],
             security_groups=[ssh_security_group],
             make_reachable=True)
         vm2 = self.create_tenant_server(
-            tenant_networks=[network],
+            networks=[network],
             security_groups=[ssh_security_group],
             make_reachable=True)
 
@@ -81,14 +81,14 @@ class VlanTransparentConnectivityTest(NuageBaseTest):
         ssh_security_group = self.create_open_ssh_security_group()
 
         vm1 = self.create_tenant_server(
-            tenant_networks=[l3network],
+            networks=[l3network],
             security_groups=[ssh_security_group],
             name='vm1',
             image_profile=self.image_profile,
             make_reachable=True)
 
         vm2 = self.create_tenant_server(
-            tenant_networks=[l3network],
+            networks=[l3network],
             security_groups=[ssh_security_group],
             name='vm2',
             image_profile=self.image_profile,

@@ -1,6 +1,7 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
 
+from base64 import b64encode
 import re
 
 from netaddr import IPNetwork
@@ -65,7 +66,7 @@ class TenantServer(object):
     - a tenant VM on a KVM hypervisor
     - a baremetal server
     """
-    tenant_client = None
+    client = None
     admin_client = None
     image_profiles = {
         'default': {
@@ -88,14 +89,25 @@ class TenantServer(object):
         }
     }
 
-    def __init__(self, client, admin_client, image_profile='default',
-                 networks=None):
-        self.tenant_client = client
+    def __init__(self, parent_test, client, admin_client,
+                 name=None, networks=None, ports=None, security_groups=None,
+                 image_profile='default', flavor=None,
+                 volume_backed=False):
+        self.parent_test = parent_test
+        self.client = client
         self.admin_client = admin_client
+
+        self.name = name
+        self.networks = networks
+        self.ports = ports
+        self.security_groups = security_groups
+        self.flavor = flavor
+        self.volume_backed = volume_backed
 
         assert image_profile in self.image_profiles
         self.image_profile = self.image_profiles[image_profile]
         self.image_name = self.image_profile['image_name']
+        self._image_id = None
         self.username = self.image_profile['username']
         self.password = self.image_profile['password']
         self.prompt = self.image_profile['prompt']
@@ -106,16 +118,25 @@ class TenantServer(object):
         self.server_details = None
         self.associated_fip = None
         self.server_connectivity_verified = False
-        self.nbr_nics_configured = 0
-        self.nbr_nics_prepared_for = 0
-
-        self.networks = networks
 
     def console(self):
         return self.vm_console
 
     def is_cirros(self):
         return 'cirros' in self.image_name
+
+    @property
+    def image_id(self):
+        if not self._image_id:
+            if self.image_profile == 'default':
+                self._image_id = CONF.compute.image_ref
+            else:
+                self._image_id = self.parent_test.osc_get_image_id(
+                    self.image_name)
+                if not self._image_id:
+                    self.parent_test('Image ' + self.image_name +
+                                     ' could not be found on setup.')
+        return self._image_id
 
     def get_telnet_host_port(self):
         server = self.get_server_details()
@@ -137,6 +158,29 @@ class TenantServer(object):
 
     def id(self):
         return self.openstack_data['id']
+
+    def boot(self, wait_until='ACTIVE', cleanup=True,
+             return_none_on_failure=False, **kwargs):
+
+        # add user data for configuring extra nics on cirros
+        user_data = self.get_user_data_for_nic_prep()
+        if user_data:
+            kwargs['user_data'] = user_data
+
+        self.openstack_data = self.parent_test.osc_create_test_server(
+            self.client, self.networks, self.ports, self.security_groups,
+            wait_until, self.volume_backed, self.name, self.flavor,
+            self.image_id, cleanup,
+            return_none_on_failure=return_none_on_failure, **kwargs)
+
+        return self.openstack_data
+
+    def did_deploy(self):
+        return bool(self.openstack_data)
+
+    def sync_with(self, osc_server_id):
+        self.openstack_data = \
+            self.admin_client.show_server(osc_server_id)['server']
 
     def get_server_details(self):
         server_id = self.id()
@@ -231,21 +275,18 @@ class TenantServer(object):
     def unmount_config_drive(self):
         self.send('umount /mnt')
 
-    def prepare_nics(self):
+    def get_user_data_for_nic_prep(self):
         if self.is_cirros():
-            while self.nbr_nics_prepared_for < self.nbr_nics_configured:
-                next_nic = self.nbr_nics_prepared_for
-                if next_nic:  # the first nic (nic 0) never needs preparation
-                    self.prepare_cirros_for_extra_nic('eth' + str(next_nic))
-                self.nbr_nics_prepared_for += 1
-        # else nothing to be done
+            nbr_nics = len(self.networks) if self.networks else len(self.ports)
+            if nbr_nics > 1:
+                s = '#!/bin/sh\n'
+                for nic in range(1, nbr_nics):
+                    s += '/sbin/cirros-dhcpc up eth%s\n' % nic
 
-    def prepare_cirros_for_extra_nic(self, nic):
-        self.send('echo \"auto ' + nic +
-                  '\"|sudo tee -a /etc/network/interfaces;' +
-                  'echo \"iface ' + nic + ' inet dhcp' +
-                  '\"|sudo tee -a /etc/network/interfaces;' +
-                  'sudo /sbin/cirros-dhcpc up ' + nic, False)
+                LOG.info('get_user_data_for_nic_prep:\n---\n%s---', s)
+                return b64encode(s)
+        # else
+        return None
 
     def needs_fip_access(self):
         return not self.console()

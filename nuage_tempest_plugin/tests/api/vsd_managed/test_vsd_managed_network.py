@@ -79,7 +79,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
     def _create_and_verify_vm(self, network):
         name = data_utils.rand_name('server-smoke')
         server = self.create_tenant_server(name=name,
-                                           tenant_networks=[network])
+                                           networks=[network])
         ip_addr_on_openstack = server.get_server_details()['addresses'][
             network['name']][0]['addr']
         ip_addr_on_vsd = self.get_server_ip_from_vsd(server.id())

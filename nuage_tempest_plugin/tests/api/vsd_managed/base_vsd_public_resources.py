@@ -480,5 +480,5 @@ class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
         return secgroup
 
     def _create_server(self, name, network):
-        vm = self.create_tenant_server(tenant_networks=[network], name=name)
+        vm = self.create_tenant_server(networks=[network], name=name)
         return vm.get_server_details()

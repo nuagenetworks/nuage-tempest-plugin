@@ -28,16 +28,16 @@ class Ipv4VsdManagedConnectivityTest(NuageBaseTest):
 
         # Launch tenant servers in OpenStack network
         server2 = self.create_tenant_server(
-            tenant_networks=[network])
+            networks=[network])
 
         server3 = self.create_tenant_server(
-            tenant_networks=[network])
+            networks=[network])
 
         server4 = self.create_tenant_server(
-            tenant_networks=[network])
+            networks=[network])
 
         server1 = self.create_tenant_server(
-            tenant_networks=[network],
+            networks=[network],
             make_reachable=True)
 
         # Test IPv4 connectivity between peer servers
@@ -73,8 +73,8 @@ class Ipv4VsdManagedConnectivityTest(NuageBaseTest):
         self.create_l3_vsd_managed_subnet(network, vsd_l3domain, vsd_subnet)
 
         # Launch tenant servers in OpenStack network
-        server2 = self.create_tenant_server(tenant_networks=[network])
-        server1 = self.create_tenant_server(tenant_networks=[network],
+        server2 = self.create_tenant_server(networks=[network])
+        server1 = self.create_tenant_server(networks=[network],
                                             make_reachable=True)
 
         # Test IPv4 connectivity between peer servers
