@@ -107,6 +107,7 @@ class TenantServer(object):
         assert image_profile in self.image_profiles
         self.image_profile = self.image_profiles[image_profile]
         self.image_name = self.image_profile['image_name']
+        assert self.image_name
         self._image_id = None
         self.username = self.image_profile['username']
         self.password = self.image_profile['password']
@@ -134,8 +135,8 @@ class TenantServer(object):
                 self._image_id = self.parent_test.osc_get_image_id(
                     self.image_name)
                 if not self._image_id:
-                    self.parent_test('Image ' + self.image_name +
-                                     ' could not be found on setup.')
+                    self.parent_test.skipTest('Image ' + self.image_name +
+                                              ' could not be found on setup.')
         return self._image_id
 
     def get_telnet_host_port(self):
