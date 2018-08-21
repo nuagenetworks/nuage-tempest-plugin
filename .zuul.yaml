@@ -2,6 +2,7 @@
     check:
       jobs:
         - openstack-tox-pep8
+        - openstack-tox-py35
         - legacy-tempest-aio-ml2:
             required-projects:
               - OpenStack/nuage-openstack-neutron
@@ -24,6 +25,7 @@
     gate:
       jobs:
         - openstack-tox-pep8
+        - openstack-tox-py35
         - legacy-tempest-aio-ml2:
             required-projects:
               - OpenStack/nuage-openstack-neutron
