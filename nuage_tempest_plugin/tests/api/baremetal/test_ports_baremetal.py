@@ -265,9 +265,132 @@ class BaremetalPortsTest(network_mixin.NetworkMixin,
         self._validate_interface(topology)
         self._validate_policygroup(topology, pg_name='PG_FOR_LESS_SECURITY')
 
+    # @decorators.attr(type='smoke')
+    def test_l2_create_baremetal_port_with_max_security_groups(self):
+        topology = self._create_topology(with_router=False,
+                                         with_security_group=False)
+        self._test_create_port_with_security_groups(
+            topology, constants.MAX_SG_PER_PORT)
+
+    # @decorators.attr(type='smoke')
+    def test_l2_create_baremetal_port_with_overflow_security_groups(self):
+        topology = self._create_topology(with_router=False,
+                                         with_security_group=False)
+        self._test_create_port_with_security_groups(
+            topology, constants.MAX_SG_PER_PORT + 1)
+
+    # @decorators.attr(type='smoke')
+    def test_l2_update_baremetal_port_with_max_security_groups(self):
+        topology = self._create_topology(with_router=False)
+        self._test_update_port_with_security_groups(
+            topology, constants.MAX_SG_PER_PORT)
+
+    # @decorators.attr(type='smoke')
+    def test_l2_update_baremetal_port_with_overflow_security_groups_neg(self):
+        topology = self._create_topology(with_router=False)
+        self._test_update_port_with_security_groups(
+            topology, constants.MAX_SG_PER_PORT + 1)
+
+    # @decorators.attr(type='smoke')
+    def test_l3_create_baremetal_port_with_max_security_groups(self):
+        topology = self._create_topology(with_router=True,
+                                         with_security_group=False)
+        self._test_create_port_with_security_groups(
+            topology, constants.MAX_SG_PER_PORT)
+
+    # @decorators.attr(type='smoke')
+    def test_l3_create_baremetal_port_with_overflow_security_groups_neg(self):
+        topology = self._create_topology(with_router=True,
+                                         with_security_group=False)
+        self._test_create_port_with_security_groups(
+            topology, constants.MAX_SG_PER_PORT + 1)
+
+    # @decorators.attr(type='smoke')
+    def test_l3_update_baremetal_port_with_max_security_groups(self):
+        topology = self._create_topology(with_router=True)
+        self._test_update_port_with_security_groups(
+            topology, constants.MAX_SG_PER_PORT)
+
+    # @decorators.attr(type='smoke')
+    def test_l3_update_baremetal_port_with_overflow_security_groups_neg(self):
+        topology = self._create_topology(with_router=True)
+        self._test_update_port_with_security_groups(
+            topology, constants.MAX_SG_PER_PORT + 1)
+
+    def _test_create_port_with_security_groups(self, topology, sg_num):
+        security_groups_list = []
+        sg_max = constants.MAX_SG_PER_PORT
+        for i in range(sg_num):
+            security_group = self.create_security_group()
+            security_groups_list.append(security_group['id'])
+
+        data = {
+            "security_groups": security_groups_list
+        }
+
+        if sg_num <= sg_max:
+            data.update(self.binding_data)
+            baremetal_port = self.create_port(topology.network['id'], **data)
+            topology.baremetal_port = self.get_port(baremetal_port['id'])
+            vport = topology.vsd_baremetal_vport
+            vsd_policy_grps = self.vsd_client.get_policygroup(
+                constants.VPORT,
+                vport['ID'])
+            self.assertEqual(sg_num, len(vsd_policy_grps))
+        else:
+            msg = (("Number of %s specified security groups exceeds the "
+                    "maximum of %s security groups on a port "
+                    "supported on nuage VSP") % (sg_num, sg_max))
+            self.assertRaisesRegex(
+                lib_exc.BadRequest,
+                msg,
+                self.create_port,
+                topology.network['id'],
+                **data)
+
+    def _test_update_port_with_security_groups(self, topology, sg_num):
+        create_data = {'security_groups': [topology.security_group['id']]}
+        create_data.update(self.binding_data)
+        baremetal_port = self.create_port(topology.network['id'],
+                                          **create_data)
+        topology.baremetal_port = baremetal_port
+
+        security_groups_list = []
+        sg_max = constants.MAX_SG_PER_PORT
+        for i in range(sg_num):
+            security_group = self.create_security_group()
+            security_groups_list.append(security_group['id'])
+
+        data = {"security_groups": security_groups_list}
+
+        if sg_num <= sg_max:
+            topology.baremetal_port = self.update_port(
+                topology.baremetal_port['id'],
+                **data)
+            vport = topology.vsd_baremetal_vport
+            vsd_policy_grps = self.vsd_client.get_policygroup(
+                constants.VPORT,
+                vport['ID'])
+            self.assertEqual(sg_num, len(vsd_policy_grps))
+
+            # clear sgs such that cleanup will work fine
+            sg_body = {"security_groups": []}
+            self.update_port(topology.baremetal_port['id'],
+                             **sg_body)
+        else:
+            msg = (("Number of %s specified security groups exceeds the "
+                    "maximum of %s security groups on a port "
+                    "supported on nuage VSP") % (sg_num, sg_max))
+            self.assertRaisesRegex(
+                lib_exc.BadRequest,
+                msg,
+                self.update_port,
+                topology.baremetal_port['id'],
+                **data)
+
     def _create_topology(self, with_router=False, with_port=False,
-                         vlan_transparent=False):
-        router = port = None
+                         vlan_transparent=False, with_security_group=True):
+        router = port = security_group = None
         if with_router:
             router = self.create_router()
         if vlan_transparent:
@@ -279,7 +402,8 @@ class BaremetalPortsTest(network_mixin.NetworkMixin,
             self.add_router_interface(router['id'], subnet_id=subnet['id'])
         if with_port:
             port = self.create_port(network['id'])
-        security_group = self.create_security_group()
+        if with_security_group:
+            security_group = self.create_security_group()
         return BaremetalTopology(self.vsd_client, network, subnet,
                                  router, port, security_group)
 

@@ -38,6 +38,9 @@ SUBNET_TEMPLATE = 'subnettemplates'
 ZONE = 'zones'
 ZONE_TEMPLATE = 'zonetemplates'
 
+# SECURITY GROUPS
+MAX_SG_PER_PORT = 30
+
 # POLICY
 EGRESS_ACL_TEMPLATE = 'egressacltemplates'
 EGRESS_ACL_ENTRY_TEMPLATE = 'egressaclentrytemplates'

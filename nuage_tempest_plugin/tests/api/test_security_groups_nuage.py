@@ -12,13 +12,13 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-
 from six import iteritems
 
 import uuid
 
 from tempest.api.network import base_security_groups as base
 from tempest.lib.common.utils import data_utils
+from tempest.lib import exceptions
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.topology import Topology
@@ -382,6 +382,99 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
             port_range_max=port_range_max,
             remote_ip_prefix=ip_prefix, nuage_domains=nuage_domains)
 
+    def _delete_security_group(self, secgroup_id):
+        self.security_groups_client.delete_security_group(secgroup_id)
+
+    def _delete_security_group_rule(self, rule_id):
+        self.security_group_rules_client.delete_security_group_rule(rule_id)
+
+    def _create_port(self, **post_body):
+        port = self.ports_client.create_port(**post_body)['port']
+        self.addCleanup(self.ports_client.delete_port, port['id'])
+        return port
+
+    def _test_create_port_with_security_groups(self, sg_num,
+                                               nuage_domain=None):
+        # Test the maximal number of security groups when creating a port
+        if not nuage_domain:
+            nuage_domain = self.nuage_any_domain
+        security_groups_list = []
+        sg_max = n_constants.MAX_SG_PER_PORT
+        for i in range(sg_num):
+            group_create_body, name = self._create_security_group()
+            security_groups_list.append(group_create_body['security_group']
+                                        ['id'])
+        post_body = {
+            "network_id": self.network['id'],
+            "name": data_utils.rand_name('port-'),
+            "security_groups": security_groups_list
+        }
+        if sg_num <= sg_max:
+            port = self._create_port(**post_body)
+            vport = self.nuage_client.get_vport(
+                self.nuage_domain_type,
+                nuage_domain[0]['ID'],
+                filters='externalID',
+                filter_value=port['id'])
+            nuage_policy_grps = self.nuage_client.get_policygroup(
+                n_constants.VPORT,
+                vport[0]['ID'])
+            self.assertEqual(sg_num, len(nuage_policy_grps))
+        else:
+            msg = (("Number of %s specified security groups exceeds the "
+                    "maximum of %s security groups on a port "
+                    "supported on nuage VSP") % (sg_num, sg_max))
+            self.assertRaisesRegex(
+                exceptions.BadRequest,
+                msg,
+                self._create_port,
+                **post_body)
+
+    def _test_update_port_with_security_groups(self, sg_num,
+                                               nuage_domain=None):
+        # Test the maximal number of security groups when updating a port
+        if not nuage_domain:
+            nuage_domain = self.nuage_any_domain
+        group_create_body, name = self._create_security_group()
+        post_body = {
+            "network_id": self.network['id'],
+            "name": data_utils.rand_name('port-'),
+            "security_groups": [group_create_body['security_group']['id']]
+        }
+        port = self._create_port(**post_body)
+
+        security_groups_list = []
+        sg_max = n_constants.MAX_SG_PER_PORT
+        for i in range(sg_num):
+            group_create_body, name = self._create_security_group()
+            security_groups_list.append(group_create_body['security_group']
+                                        ['id'])
+        sg_body = {"security_groups": security_groups_list}
+        if sg_num <= sg_max:
+            self.update_port(port, **sg_body)
+            vport = self.nuage_client.get_vport(self.nuage_domain_type,
+                                                nuage_domain[0]['ID'],
+                                                filters='externalID',
+                                                filter_value=port['id'])
+            nuage_policy_grps = self.nuage_client.get_policygroup(
+                n_constants.VPORT,
+                vport[0]['ID'])
+            self.assertEqual(sg_num, len(nuage_policy_grps))
+
+            # clear sgs such that cleanup will work fine
+            sg_body = {"security_groups": []}
+            self.ports_client.update_port(port['id'], **sg_body)
+        else:
+            msg = (("Number of %s specified security groups exceeds the "
+                    "maximum of %s security groups on a port "
+                    "supported on nuage VSP") % (sg_num, sg_max))
+            self.assertRaisesRegex(
+                exceptions.BadRequest,
+                msg,
+                self.ports_client.update_port,
+                port['id'],
+                **sg_body)
+
 
 class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
     @classmethod
@@ -425,6 +518,26 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
     @decorators.attr(type='smoke')
     def test_create_security_group_rule_in_multiple_domains(self):
         self._test_create_security_group_rule_in_multiple_domains()
+
+    # @decorators.attr(type='smoke')
+    def test_create_port_with_max_security_groups(self):
+        self._test_create_port_with_security_groups(
+            n_constants.MAX_SG_PER_PORT)
+
+    # @decorators.attr(type='smoke')
+    def test_create_port_with_overflow_security_groups_neg(self):
+        self._test_create_port_with_security_groups(
+            n_constants.MAX_SG_PER_PORT + 1)
+
+    # @decorators.attr(type='smoke')
+    def test_update_port_with_max_security_groups(self):
+        self._test_update_port_with_security_groups(
+            n_constants.MAX_SG_PER_PORT)
+
+    # @decorators.attr(type='smoke')
+    def test_update_port_with_overflow_security_groups_neg(self):
+        self._test_update_port_with_security_groups(
+            n_constants.MAX_SG_PER_PORT + 1)
 
 
 class TestSecGroupTestNuageL3Domain(SecGroupTestNuageBase):
@@ -555,6 +668,26 @@ class TestSecGroupTestNuageL3Domain(SecGroupTestNuageBase):
     @decorators.attr(type='smoke')
     def test_create_security_group_rule_in_multiple_domains(self):
         self._test_create_security_group_rule_in_multiple_domains(l3=True)
+
+    # @decorators.attr(type='smoke')
+    def test_create_port_with_max_security_groups(self):
+        self._test_create_port_with_security_groups(
+            n_constants.MAX_SG_PER_PORT)
+
+    # @decorators.attr(type='smoke')
+    def test_create_port_with_overflow_security_groups_neg(self):
+        self._test_create_port_with_security_groups(
+            n_constants.MAX_SG_PER_PORT + 1)
+
+    # @decorators.attr(type='smoke')
+    def test_update_port_with_max_security_groups(self):
+        self._test_update_port_with_security_groups(
+            n_constants.MAX_SG_PER_PORT)
+
+    # @decorators.attr(type='smoke')
+    def test_update_port_with_overflow_security_groups_net(self):
+        self._test_update_port_with_security_groups(
+            n_constants.MAX_SG_PER_PORT + 1)
 
 
 # NEEDS MORE WORK
