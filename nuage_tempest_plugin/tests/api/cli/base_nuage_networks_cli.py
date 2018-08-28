@@ -34,11 +34,11 @@ class BaseNuageNetworksCliTestCase(
 
         subnet_name = data_utils.rand_name('cli-subnet')
         # cidr = str(base_vsd_managed_networks.VSD_L2_SHARED_MGD_CIDR.cidr)
-        prefixlen = mask_to_prefix(vsd_l2_subnet['netmask'])
-        cidr4 = "%s/%d" % (vsd_l2_subnet['address'], prefixlen)
+        prefixlen = mask_to_prefix(vsd_l2_subnet.netmask)
+        cidr4 = "%s/%d" % (vsd_l2_subnet.address, prefixlen)
 
         net_partition = Topology.def_netpartition
-        nuagenet = vsd_l2_subnet['ID']
+        nuagenet = vsd_l2_subnet.id
         subnet4 = self.create_subnet_with_args(
             network['name'], cidr4,
             "--name ", subnet_name + "-4",
@@ -47,7 +47,7 @@ class BaseNuageNetworksCliTestCase(
         self.addCleanup(self._delete_subnet, subnet4['id'])
         self.subnets.remove(subnet4)
 
-        cidr6 = vsd_l2_subnet['IPv6Address']
+        cidr6 = vsd_l2_subnet.ipv6_address
         subnet6 = None
         if cidr6:
             subnet6 = self.create_subnet_with_args(
@@ -71,7 +71,7 @@ class BaseNuageNetworksCliTestCase(
 
         subnet_name = data_utils.rand_name('cli-subnet')
         net_partition = Topology.def_netpartition
-        nuagenet = vsd_l2_subnet['ID']
+        nuagenet = vsd_l2_subnet.id
         subnet4 = self.create_subnet_with_args(
             network['name'], str(cidr4),
             "--name ", subnet_name + "-4",

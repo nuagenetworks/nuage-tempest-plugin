@@ -80,29 +80,29 @@ class VSDManagedDualStackCommonBase(BaseVSDManagedNetworksIPv6Test):
                 # not that this is just for future use ..........
 
                 if self.dhcp_managed:
-                    vsd_l2domain_template = self.create_vsd_l2domain_template(
+                    vsd_l2domain_template = self.vsd_create_l2domain_template(
                         ip_type="DUALSTACK",
                         cidr4=self.cidr4,
                         dhcp_managed=True,
-                        IPv6Address=ipv6_cidr,
-                        IPv6Gateway=dhcp_v6_port_in_vsd_for_future_use)
+                        ipv6_address=ipv6_cidr,
+                        ipv6_gateway=dhcp_v6_port_in_vsd_for_future_use)
 
                     self._verify_vsd_l2domain_template(
                         vsd_l2domain_template, ip_type="DUALSTACK",
                         dhcp_managed=True, cidr4=self.cidr4,
-                        IPv6Address=ipv6_cidr,
-                        IPv6Gateway=dhcp_v6_port_in_vsd_for_future_use)
+                        ipv6_address=ipv6_cidr,
+                        ipv6_gateway=dhcp_v6_port_in_vsd_for_future_use)
                 else:
-                    vsd_l2domain_template = self.create_vsd_l2domain_template(
+                    vsd_l2domain_template = self.vsd_create_l2domain_template(
                         dhcp_managed=False)
 
                     self._verify_vsd_l2domain_template(
                         vsd_l2domain_template, dhcp_managed=False,
-                        IPType=None, netmask=None, address=None, gateway=None,
-                        IPv6Address=None, IPv6Gateway=None)
+                        ip_type=None, netmask=None, address=None, gateway=None,
+                        ipv6_address=None, ipv6_gateway=None)
 
-                vsd_l2domain = self.create_vsd_l2domain(
-                    vsd_l2domain_template['ID'])
+                vsd_l2domain = self.vsd_create_l2domain(
+                    template=vsd_l2domain_template)
                 self._verify_vsd_l2domain_with_template(
                     vsd_l2domain, vsd_l2domain_template)
 
@@ -118,7 +118,7 @@ class VSDManagedDualStackCommonBase(BaseVSDManagedNetworksIPv6Test):
                     'mask_bits': mask_bits,
                     # gateway is not set (VSD in any case doesn't mind ...)
                     'enable_dhcp': False,
-                    'nuagenet': vsd_l2domain['ID'],
+                    'nuagenet': vsd_l2domain.id,
                     'net_partition': self.net_partition
                 }
 
@@ -137,7 +137,7 @@ class VSDManagedDualStackCommonBase(BaseVSDManagedNetworksIPv6Test):
                 if self.dhcp_managed:
                     self.assertEqual(
                         IPNetwork(ipv6_subnet['cidr']),
-                        IPNetwork(vsd_l2domain_template['IPv6Address']))
+                        IPNetwork(vsd_l2domain_template.ipv6_address))
                 self.assertEqual(
                     start6,
                     IPAddress(ipv6_subnet['allocation_pools'][0]['start']),
@@ -152,7 +152,7 @@ class VSDManagedDualStackCommonBase(BaseVSDManagedNetworksIPv6Test):
                     'mask_bits': self.mask_bits4_unsliced,
                     'enable_dhcp': self.dhcp_managed,
                     # gateway is not set (which ~ to option 3 not set)
-                    'nuagenet': vsd_l2domain['ID'],
+                    'nuagenet': vsd_l2domain.id,
                     'net_partition': self.net_partition
                 }
                 if use_allocation_pool:
@@ -224,7 +224,7 @@ class VSDManagedDualStackL2DHCPUnmanagedTest(VSDManagedDualStackCommonBase):
             enable_dhcp=False,
             cidr=self.cidr4,
             mask_bits=self.mask_bits4,
-            nuagenet=vsd_l2_domain['ID'],
+            nuagenet=vsd_l2_domain.id,
             net_partition=Topology.def_netpartition)
         self.assertEqual(
             ipv4_subnet['cidr'],
@@ -247,7 +247,7 @@ class VSDManagedDualStackL2DHCPUnmanagedTest(VSDManagedDualStackCommonBase):
             cidr=self.cidr6,
             mask_bits=self.mask_bits6,
             enable_dhcp=False,
-            nuagenet=vsd_l2_domain['ID'],
+            nuagenet=vsd_l2_domain.id,
             net_partition=Topology.def_netpartition)
 
         # create a port in the network
@@ -286,7 +286,7 @@ class VSDManagedDualStackL2DHCPUnmanagedTest(VSDManagedDualStackCommonBase):
             enable_dhcp=False,
             cidr=self.cidr4,
             mask_bits=self.mask_bits4,
-            nuagenet=vsd_l2_domain['ID'],
+            nuagenet=vsd_l2_domain.id,
             net_partition=Topology.def_netpartition)
         self.assertEqual(
             ipv4_subnet['cidr'],
@@ -308,14 +308,14 @@ class VSDManagedDualStackL2DHCPUnmanagedTest(VSDManagedDualStackCommonBase):
     # see OPENSTACK-1668
     def test_create_port_in_ipv6_subnet_linked_to_vsd_l2domain_unmanaged_neg(
             self):
-        vsd_l2domain_template = self.create_vsd_l2domain_template(
+        vsd_l2domain_template = self.vsd_create_l2domain_template(
             dhcp_managed=False)
 
         self._verify_vsd_l2domain_template(vsd_l2domain_template,
                                            dhcp_managed=False)
 
-        vsd_l2domain = self.create_vsd_l2domain(
-            vsd_l2domain_template['ID'])
+        vsd_l2domain = self.vsd_create_l2domain(
+            template=vsd_l2domain_template)
         self._verify_vsd_l2domain_with_template(
             vsd_l2domain, vsd_l2domain_template)
 
@@ -327,7 +327,7 @@ class VSDManagedDualStackL2DHCPUnmanagedTest(VSDManagedDualStackCommonBase):
             network,
             ip_version=6,
             enable_dhcp=False,
-            nuagenet=vsd_l2domain['ID'],
+            nuagenet=vsd_l2domain.id,
             net_partition=Topology.def_netpartition)
 
         if Topology.from_openstack('Newton'):
@@ -355,10 +355,9 @@ class VSDManagedDualStackL2DHCPUnmanagedTest(VSDManagedDualStackCommonBase):
         - create OS port
         """
         # create l2domain on VSD
-        vsd_l2domain_template = self.create_vsd_l2domain_template(
+        vsd_l2domain_template = self.vsd_create_l2domain_template(
             dhcp_managed=False)
-        vsd_l2domain = self.create_vsd_l2domain(
-            vsd_l2domain_template['ID'])
+        vsd_l2domain = self.vsd_create_l2domain(template=vsd_l2domain_template)
         self._verify_vsd_l2domain_with_template(
             vsd_l2domain, vsd_l2domain_template)
 
@@ -371,7 +370,7 @@ class VSDManagedDualStackL2DHCPUnmanagedTest(VSDManagedDualStackCommonBase):
             gateway=self.gateway4,
             cidr=self.cidr4,
             mask_bits=self.mask_bits4,
-            nuagenet=vsd_l2domain['ID'],
+            nuagenet=vsd_l2domain.id,
             net_partition=Topology.def_netpartition)
         self.assertEqual(
             ipv4_subnet['cidr'],
@@ -393,11 +392,11 @@ class VSDManagedDualStackL2DHCPUnmanagedTest(VSDManagedDualStackCommonBase):
         ipv6_subnet = self.create_subnet(
             network,
             ip_version=6,
-            gateway=vsd_l2domain_template['IPv6Gateway'],
+            gateway=vsd_l2domain_template.ipv6_gateway,
             cidr=self.cidr6,
             mask_bits=self.cidr6.prefixlen,
             enable_dhcp=False,
-            nuagenet=vsd_l2domain['ID'],
+            nuagenet=vsd_l2domain.id,
             net_partition=Topology.def_netpartition)
 
         # shall not create port with IP already in use
@@ -502,10 +501,10 @@ class VSDManagedDualStackL2DHCPUnmanagedTest(VSDManagedDualStackCommonBase):
         - create OS port
         """
         # create l2domain on VSD
-        vsd_l2domain_template = self.create_vsd_l2domain_template(
+        vsd_l2domain_template = self.vsd_create_l2domain_template(
             ip_type="DUALSTACK",
             dhcp_managed=False)
-        vsd_l2domain = self.create_vsd_l2domain(vsd_l2domain_template['ID'])
+        vsd_l2domain = self.vsd_create_l2domain(template=vsd_l2domain_template)
 
         # create Openstack IPv4 subnet on Openstack based on VSD l2domain
         net_name = data_utils.rand_name('network-')
@@ -516,7 +515,7 @@ class VSDManagedDualStackL2DHCPUnmanagedTest(VSDManagedDualStackCommonBase):
             cidr=self.cidr4,
             enable_dhcp=False,
             mask_bits=self.mask_bits4,
-            nuagenet=vsd_l2domain['ID'],
+            nuagenet=vsd_l2domain.id,
             net_partition=Topology.def_netpartition)
 
         ipv6_subnet = self.create_subnet(
@@ -526,7 +525,7 @@ class VSDManagedDualStackL2DHCPUnmanagedTest(VSDManagedDualStackCommonBase):
             cidr=self.cidr6,
             mask_bits=self.mask_bits6,
             enable_dhcp=False,
-            nuagenet=vsd_l2domain['ID'],
+            nuagenet=vsd_l2domain.id,
             net_partition=Topology.def_netpartition)
 
         # noinspection PyPep8

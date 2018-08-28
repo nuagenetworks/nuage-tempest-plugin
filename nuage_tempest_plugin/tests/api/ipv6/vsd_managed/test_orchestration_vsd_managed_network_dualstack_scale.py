@@ -29,7 +29,7 @@ class OrchestrationDualStackScaleTest(
         OpenStack network is created with minimal attributes.
         """
         # create l2domain on VSD
-        vsd_l2domain_template = self.create_vsd_l2domain_template(
+        vsd_l2domain_template = self.vsd_create_l2domain_template(
             ip_type="DUALSTACK",
             dhcp_managed=True,
             cidr4=self.cidr4,
@@ -42,10 +42,10 @@ class OrchestrationDualStackScaleTest(
                                            dhcp_managed=True,
                                            cidr4=self.cidr4,
                                            cidr6=self.cidr6,
-                                           IPv6Gateway=self.gateway6,
+                                           ipv6_gateway=self.gateway6,
                                            gateway=self.gateway4)
 
-        vsd_l2domain = self.create_vsd_l2domain(vsd_l2domain_template['ID'])
+        vsd_l2domain = self.vsd_create_l2domain(template=vsd_l2domain_template)
         self._verify_vsd_l2domain_with_template(
             vsd_l2domain, vsd_l2domain_template)
 
@@ -78,7 +78,7 @@ class OrchestrationDualStackScaleTest(
         template = template + extra_template
 
         stack_parameters = {
-            'vsd_subnet_id': vsd_l2domain['ID'],
+            'vsd_subnet_id': vsd_l2domain.id,
             'netpartition_name': self.net_partition_name,
             'net_name': self.private_net_name,
             'cidr4': str(self.cidr4),
@@ -111,17 +111,15 @@ class OrchestrationDualStackScaleTest(
         """
 
         name = data_utils.rand_name('l3domain-')
-        vsd_l3domain_template = self.create_vsd_l3dom_template(
+        vsd_l3domain_template = self.vsd_create_l3domain_template(
             name=name)
-        vsd_l3domain = self.create_vsd_l3domain(
-            name=name, tid=vsd_l3domain_template['ID'])
+        vsd_l3domain = self.vsd_create_l3domain(
+            name=name, template_id=vsd_l3domain_template.id)
 
-        self.assertEqual(vsd_l3domain['name'], name)
+        self.assertEqual(vsd_l3domain.name, name)
         zone_name = data_utils.rand_name('zone-')
-        extra_params = None
-        vsd_zone = self.create_vsd_zone(name=zone_name,
-                                        domain_id=vsd_l3domain['ID'],
-                                        extra_params=extra_params)
+        vsd_zone = self.vsd_create_zone(name=zone_name,
+                                        domain=vsd_l3domain)
 
         subnet_name = data_utils.rand_name('l3domain-subnet-')
         subnet_cidr = IPNetwork('10.10.100.0/24')
@@ -130,11 +128,12 @@ class OrchestrationDualStackScaleTest(
         subnet_ipv6_cidr = IPNetwork("2001:5f74:c4a5:b82e::/64")
         subnet_ipv6_gateway = str(IPAddress(subnet_ipv6_cidr) + 1)
 
-        vsd_l3domain_subnet = self.create_vsd_l3domain_dualstack_subnet(
-            zone_id=vsd_zone['ID'],
-            subnet_name=subnet_name,
-            cidr=subnet_cidr,
-            gateway=subnet_gateway,
+        vsd_l3domain_subnet = self.create_vsd_subnet(
+            name=subnet_name,
+            zone=vsd_zone,
+            ip_type="DUALSTACK",
+            cidr4=subnet_cidr,
+            gateway4=subnet_gateway,
             cidr6=subnet_ipv6_cidr,
             gateway6=subnet_ipv6_gateway)
 
@@ -159,7 +158,7 @@ class OrchestrationDualStackScaleTest(
 
         # launch a heat stack
         stack_parameters = {
-            'vsd_subnet_id': vsd_l3domain_subnet['ID'],
+            'vsd_subnet_id': vsd_l3domain_subnet.id,
             'netpartition_name': self.net_partition_name,
             'net_name': self.private_net_name,
             'cidr4': str(subnet_cidr),
@@ -167,8 +166,7 @@ class OrchestrationDualStackScaleTest(
             'maskbits4': subnet_cidr.prefixlen,
             'cidr6': str(subnet_ipv6_cidr),
             'gateway6': subnet_ipv6_gateway,
-            'maskbits6': IPNetwork(
-                vsd_l3domain_subnet['IPv6Address']).prefixlen,
+            'maskbits6': IPNetwork(vsd_l3domain_subnet.ipv6_address).prefixlen,
             'pool_start6': str(IPAddress(subnet_ipv6_gateway) + 1),
             'pool_end6': str(IPAddress(subnet_ipv6_cidr.last)),
             'image': CONF.compute.image_ref
@@ -194,17 +192,15 @@ class OrchestrationDualStackScaleTest(
         dhcp-managed l3 domain
         """
         name = data_utils.rand_name('l3domain-')
-        vsd_l3domain_template = self.create_vsd_l3dom_template(
+        vsd_l3domain_template = self.vsd_create_l3domain_template(
             name=name)
-        vsd_l3domain = self.create_vsd_l3domain(
-            name=name, tid=vsd_l3domain_template['ID'])
+        vsd_l3domain = self.vsd_create_l3domain(
+            name=name, template_id=vsd_l3domain_template.id)
 
-        self.assertEqual(vsd_l3domain['name'], name)
+        self.assertEqual(vsd_l3domain.name, name)
         zone_name = data_utils.rand_name('zone-')
-        extra_params = None
-        vsd_zone = self.create_vsd_zone(name=zone_name,
-                                        domain_id=vsd_l3domain['ID'],
-                                        extra_params=extra_params)
+        vsd_zone = self.vsd_create_zone(name=zone_name,
+                                        domain=vsd_l3domain)
 
         subnet_name = data_utils.rand_name('l3domain-subnet-')
         subnet_cidr = IPNetwork('10.10.100.0/24')
@@ -213,11 +209,12 @@ class OrchestrationDualStackScaleTest(
         subnet_ipv6_cidr = IPNetwork("2001:5f74:c4a5:b82e::/64")
         subnet_ipv6_gateway = str(IPAddress(subnet_ipv6_cidr) + 1)
 
-        vsd_l3domain_subnet = self.create_vsd_l3domain_dualstack_subnet(
-            zone_id=vsd_zone['ID'],
-            subnet_name=subnet_name,
-            cidr=subnet_cidr,
-            gateway=subnet_gateway,
+        vsd_l3domain_subnet = self.create_vsd_subnet(
+            name=subnet_name,
+            zone=vsd_zone,
+            ip_type="DUALSTACK",
+            cidr4=subnet_cidr,
+            gateway4=subnet_gateway,
             cidr6=subnet_ipv6_cidr,
             gateway6=subnet_ipv6_gateway)
 
@@ -252,7 +249,7 @@ class OrchestrationDualStackScaleTest(
         # launch a heat stack
         stack_file_name = 'nuage_vsd_managed_network_dualstack_vm_on_port'
         stack_parameters = {
-            'vsd_subnet_id': vsd_l3domain_subnet['ID'],
+            'vsd_subnet_id': vsd_l3domain_subnet.id,
             'netpartition_name': self.net_partition_name,
             'net_name': self.private_net_name,
             'cidr4': str(subnet_cidr),
@@ -261,7 +258,7 @@ class OrchestrationDualStackScaleTest(
             'cidr6': str(subnet_ipv6_cidr),
             'gateway6': subnet_ipv6_gateway,
             'maskbits6': IPNetwork(
-                vsd_l3domain_subnet['IPv6Address']).prefixlen,
+                vsd_l3domain_subnet.ipv6_address).prefixlen,
             'image': CONF.compute.image_ref
         }
         self.launch_stack_template(stack_name, template, stack_parameters)

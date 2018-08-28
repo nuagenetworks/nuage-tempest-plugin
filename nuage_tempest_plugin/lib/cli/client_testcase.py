@@ -408,7 +408,7 @@ class CLIClientTestCase(test.BaseTestCase):
             the_params += ' '
             the_params += arg
         response = self.cli.neutron('port-update ',
-                                    params=the_params + ' ' + port_id)
+                                    params=port_id + ' ' + the_params)
         self.assertFirstLineStartsWith(response.split('\n'), 'Updated port:')
 
     def show_port(self, port_id):
