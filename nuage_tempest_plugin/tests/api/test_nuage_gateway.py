@@ -688,7 +688,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
             self.assertThat(nuage_eacl_template[0],
                             ContainsDict({'externalID':
                                          Equals(ExternalId(
-                                             self.routers[0]['id']
+                                             self.router['id']
                                          ).at_cms_id())}))
         else:
             self.assertThat(nuage_eacl_template[0],
@@ -744,7 +744,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
             self.assertThat(nuage_iacl_template[0],
                             ContainsDict({'externalID':
                                          Equals(ExternalId(
-                                             self.routers[0]['id']
+                                             self.router['id']
                                          ).at_cms_id())}))
         else:
             self.assertThat(nuage_iacl_template[0],

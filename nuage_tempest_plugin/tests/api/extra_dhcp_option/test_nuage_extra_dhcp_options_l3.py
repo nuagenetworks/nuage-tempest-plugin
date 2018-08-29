@@ -31,7 +31,6 @@ class NuageExtraDHCPOptionsBaseL3(
                 nuage_network_type, extra_dhcp_opts, new_extra_dhcp_opts)
         else:
             self.assertTrue(False, 'Unknown NUAGE_NETWORK_TYPE detected')
-        pass
 
 
 class NuageExtraDHCPOptionsOSManagedL3Test(
@@ -73,10 +72,6 @@ class NuageExtraDHCPOptionsOSManagedL3Test(
             filters='externalID',
             filter_value=cls.nuage_client.get_vsd_external_id(
                 cls.osmgd_l3_subnet['id']))
-
-    @classmethod
-    def resource_cleanup(cls):
-        super(NuageExtraDHCPOptionsBaseL3, cls).resource_cleanup()
 
     # @nuage_test.header()
     # def test_nuage_os_mgd_l3_port_with_dhcp_opts_001_netmask(self):

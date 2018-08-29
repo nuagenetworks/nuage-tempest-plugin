@@ -195,21 +195,6 @@ class NetworksTestJSONNuage(test_networks.NetworksTest):
 
         self._compare_resource_attrs(subnet, compare_args)
         self.networks_client.delete_network(net_id)
-        self.subnets.pop()
-
-    @decorators.attr(type='smoke')
-    def test_create_update_delete_network_subnet(self):
-        super(NetworksTestJSONNuage,
-              self).test_create_update_delete_network_subnet()
-
-        # # ipv4 only as for ipv6 subnet we don't create on vsd yet
-        if self._ip_version == 4:
-            # VSD validation
-            # Validate that an L2Domain is created on VSD at subnet creation
-            nuage_l2dom = self.nuage_client.get_l2domain(
-                filters='externalID', filter_value=self.subnets[-1]['id'])
-
-            self.assertEqual(nuage_l2dom[0]['name'], self.subnets[-1]['id'])
 
     @decorators.attr(type='smoke')
     def test_delete_network_with_subnet(self):
@@ -235,7 +220,7 @@ class NetworksTestJSONNuage(test_networks.NetworksTest):
             self.assertEqual(nuage_l2dom[0]['name'], subnet['id'])
 
         # Delete network while the subnet still exists
-        body = self.networks_client.delete_network(net_id)
+        self.networks_client.delete_network(net_id)
 
         # Verify that the subnet got automatically deleted.
         self.assertRaises(exceptions.NotFound, self.subnets_client.show_subnet,
@@ -249,11 +234,6 @@ class NetworksTestJSONNuage(test_networks.NetworksTest):
                 filter_value=subnet['id'])
 
             self.assertEqual(nuage_dell2dom, '')
-
-        # Since create_subnet adds the subnet to the delete list, and it is
-        # is actually deleted here - this will create and issue, hence remove
-        # it from the list.
-        self.subnets.pop()
 
     @decorators.attr(type='smoke')
     def test_create_delete_subnet_with_gw(self):

@@ -10,7 +10,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from . import nuage_base
+from nuage_tempest_plugin.tests.api.orchestration import nuage_base
 
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
@@ -55,15 +55,14 @@ class OrchestrationVMwithFIP(nuage_base.NuageBaseOrchestrationTest):
         stack_identifier = self.create_stack(
             stack_name,
             template,
-            parameters
-            )
+            parameters)
         stack_id = stack_identifier.split('/')[1]
         try:
             self.client.wait_for_stack_status(stack_id, 'CREATE_COMPLETE')
             resources = (self.client.list_resources(stack_identifier)
                          ['resources'])
-        except exceptions.TimeoutException as e:
-            raise e
+        except exceptions.TimeoutException:
+            raise
 
         test_resources = {}
         for resource in resources:

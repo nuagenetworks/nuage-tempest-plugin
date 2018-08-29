@@ -50,7 +50,8 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
         for i in range(2):
             post_body = {
                 "device_owner": "compute:None", "device_id": str(uuid.uuid1())}
-            cls.create_port(cls.network, **post_body)
+            port = cls.create_port(cls.network, **post_body)
+            cls.ports.append(port)
 
     def _verify_fip_on_vsd(self, created_floating_ip,
                            router_id, port_id, subnet_id, associated=True):

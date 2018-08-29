@@ -166,7 +166,6 @@ class NuageNetworksIpV6TestAttrs(tempest_test_networks.NetworksIpV6TestAttrs):
         port = self.create_port(slaac_network)
         self.assertIsNotNone(port['fixed_ips'][0]['ip_address'])
         self.subnets_client.delete_subnet(subnet_slaac['id'])
-        self.subnets.pop()
         subnets = self.subnets_client.list_subnets()
         subnet_ids = [subnet['id'] for subnet in subnets['subnets']]
         self.assertNotIn(subnet_slaac['id'], subnet_ids,

@@ -171,6 +171,32 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         cls.setup_network_resources(cls)
 
     @classmethod
+    def clear_credentials(cls):
+        if cls.is_dhcp_agent_present():
+            # need to add robustness for delete thanks to our great external
+            # dhcp solution within Nuage
+            for attempt in range(Topology.nbr_retries_for_test_robustness):
+                try:
+                    super(NuageBaseTest, cls).clear_credentials()
+                    return
+
+                except Exception as e:
+                    if ('Nuage API: vPort has VMInterface network interfaces '
+                            'associated with it.' not in str(e)):
+                        raise
+
+                    # else
+
+                    LOG.error('VSD-21337: entity deletion failed (%d)',
+                              attempt + 1)
+                    cls.sleep(msg='Give time for VSD-21337')
+
+            LOG.error('=== ROBUSTNESS AIDS DID NOT WORK!!! GIVING UP ===')
+            # TODO(KRIS) - a way to overcome could be to overrule Credsprovider
+
+        super(NuageBaseTest, cls).clear_credentials()
+
+    @classmethod
     def skip_checks(cls):
         super(NuageBaseTest, cls).skip_checks()
         if not CONF.service_available.neutron:
@@ -669,7 +695,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 except Exception as e:
                     if ('Nuage API: vPort has VMInterface network interfaces '
                             'associated with it.' not in str(e)):
-                        raise e
+                        raise
                     LOG.error('VSD-21337: Domain deletion failed (%d)',
                               attempt + 1)
                     self.sleep(msg='Give time for VSD-21337')
@@ -1528,6 +1554,7 @@ class NuageBaseOrchestrationTest(NuageBaseTest):
         return self.stack_output(body, output_key)
 
 
+# TODO(KRIS) NEED TO INTEGRATE BELOW CLASS WITH NUAGEBASETEST SOMEHOW
 class NuageAdminNetworksTest(base.BaseAdminNetworkTest):
 
     dhcp_agent_present = None
@@ -1544,3 +1571,38 @@ class NuageAdminNetworksTest(base.BaseAdminNetworkTest):
                 cls.dhcp_agent_present = False
 
         return cls.dhcp_agent_present
+
+    @classmethod
+    def clear_credentials(cls):
+        if cls.is_dhcp_agent_present():
+            # need to add robustness for delete thanks to our great external
+            # dhcp solution within Nuage
+            for attempt in range(Topology.nbr_retries_for_test_robustness):
+                try:
+                    super(NuageAdminNetworksTest, cls).clear_credentials()
+                    return
+
+                except Exception as e:
+                    if ('Nuage API: vPort has VMInterface network interfaces '
+                            'associated with it.' not in str(e)):
+                        raise
+
+                    # else
+                    LOG.error('VSD-21337: entity deletion failed (%d)',
+                              attempt + 1)
+                    cls.sleep(msg='Give time for VSD-21337')
+
+            LOG.error('=== ROBUSTNESS AIDS DID NOT WORK!!! GIVING UP ===')
+            # TODO(KRIS) - a way to overcome could be to overrule Credsprovider
+
+        super(NuageAdminNetworksTest, cls).clear_credentials()
+
+    @staticmethod
+    def sleep(seconds=1, msg=None):
+        if not msg:
+            LOG.error(
+                "Added a {}s sleep without clarification. "
+                "Please add motivation for this sleep.".format(seconds))
+        else:
+            LOG.warning("Sleeping for {}s. {}.".format(seconds, msg))
+        time.sleep(seconds)

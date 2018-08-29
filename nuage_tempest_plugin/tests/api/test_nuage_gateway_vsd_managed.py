@@ -36,10 +36,6 @@ class NuageGatewayTestVSDManaged(base.BaseNuageGatewayTest,
         # create test topology
         cls.create_test_gateway_topology()
 
-    @classmethod
-    def resource_cleanup(cls):
-        super(NuageGatewayTestVSDManaged, cls).resource_cleanup()
-
     @decorators.attr(type='smoke')
     def test_vport_l3(self):
         name = data_utils.rand_name('l3domain-')

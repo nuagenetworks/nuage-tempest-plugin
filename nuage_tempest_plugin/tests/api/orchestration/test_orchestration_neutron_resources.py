@@ -12,7 +12,7 @@
 
 import netaddr
 
-from . import nuage_base
+from nuage_tempest_plugin.tests.api.orchestration import nuage_base
 
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
@@ -71,7 +71,7 @@ class OrchestrationNeutronResourcesTest(nuage_base.NuageBaseOrchestrationTest):
             cls.client.wait_for_stack_status(cls.stack_id, 'CREATE_COMPLETE')
             resources = (cls.client.list_resources(cls.stack_identifier)
                          ['resources'])
-        except exceptions.TimeoutException as e:
+        except exceptions.TimeoutException:
             if CONF.compute_feature_enabled.console_output:
                 # attempt to log the server console to help with debugging
                 # the cause of the server not signalling the waitcondition
@@ -83,7 +83,7 @@ class OrchestrationNeutronResourcesTest(nuage_base.NuageBaseOrchestrationTest):
                 output = cls.servers_client.get_console_output(
                     server_id)['output']
                 LOG.debug(output)
-            raise e
+            raise
 
         cls.test_resources = {}
         for resource in resources:

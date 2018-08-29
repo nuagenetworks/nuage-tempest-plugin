@@ -2,41 +2,27 @@
 # All Rights Reserved.
 
 from tempest.lib.common.utils import data_utils
-from tempest import test
 
+from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.services import nuage_client
 
 CONF = Topology.get_conf()
 
 
-class NuageDomainTunnelTypeBase(test.BaseTestCase):
+# TODO(TEAM) - Further clean up this class
+class NuageDomainTunnelTypeBase(NuageBaseTest):
     _interface = 'json'
-
-    @classmethod
-    def setup_clients(cls):
-        super(NuageDomainTunnelTypeBase, cls).setup_clients()
-        cls.os_admin = cls.get_client_manager(credential_type='admin')
-        cls.client = cls.os_admin.networks_client
-        cls.nuage_client = nuage_client.NuageRestClient()
-
-    @classmethod
-    def skip_checks(cls):
-        super(NuageDomainTunnelTypeBase, cls).skip_checks()
-        if not CONF.service_available.neutron:
-            # this check prevents this test to be run in unittests
-            raise cls.skipException("Neutron support is required")
 
     def _create_router(self, **kwargs):
         # Create a router
         name = data_utils.rand_name('router-')
-        create_body = self.os_admin.routers_client.create_router(
+        create_body = self.admin_manager.routers_client.create_router(
             name=name, external_gateway_info={
                 "network_id": CONF.network.public_network_id},
             admin_state_up=False,
             **kwargs)
 
-        self.addCleanup(self.os_admin.routers_client.delete_router,
+        self.addCleanup(self.admin_manager.routers_client.delete_router,
                         create_body['router']['id'])
         router = create_body['router']
 
@@ -51,7 +37,7 @@ class NuageDomainTunnelTypeBase(test.BaseTestCase):
 
     def _upstream_update_router(self, router_id, set_enable_snat, **kwargs):
         uri = '/routers/%s' % router_id
-        body = self.os_admin.routers_client.show_resource(uri)
+        body = self.admin_manager.routers_client.show_resource(uri)
 
         # patch for tunnel_type
         update_body = {'name':
@@ -78,7 +64,8 @@ class NuageDomainTunnelTypeBase(test.BaseTestCase):
         if 'distributed' in kwargs:
             update_body['distributed'] = kwargs['distributed']
         update_body = dict(router=update_body)
-        return self.os_admin.routers_client.update_resource(uri, update_body)
+        return self.admin_manager.routers_client.update_resource(
+            uri, update_body)
 
     def upstream_update_router(self, router_id, **kwargs):
         """Update a router leaving enable_snat to its default value."""
@@ -107,21 +94,21 @@ class NuageDomainTunnelTypeBase(test.BaseTestCase):
         return router
 
     def _show_router(self, router_id):
-        show_body = self.os_admin.routers_client.show_router(router_id)
+        show_body = self.admin_manager.routers_client.show_router(router_id)
         router = show_body['router']
 
         self.assertEqual(router['id'], router_id)
         return router
 
     def _list_routers(self):
-        body = self.os_admin.routers_client.list_routers()
+        body = self.admin_manager.routers_client.list_routers()
         return body['routers']
 
     def _delete_router(self, router_id):
-        self.os_admin.routers_client.delete_router(router_id)
+        self.admin_manager.routers_client.delete_router(router_id)
         # Asserting that the router is not found in the list
         # after deletion
-        list_body = self.os_admin.routers_client.list_routers()
+        list_body = self.admin_manager.routers_client.list_routers()
         routers_list = list()
         for router in list_body['routers']:
             routers_list.append(router['id'])

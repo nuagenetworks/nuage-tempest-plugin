@@ -15,6 +15,7 @@
 import time
 import uuid
 
+from nuage_tempest_plugin.lib.test.nuage_test import NuageAdminNetworksTest
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.lib.utils import exceptions
@@ -25,15 +26,15 @@ from nuage_tempest_plugin.services.nuage_network_client \
 from tempest.api.network import base
 from tempest.lib.common.utils import data_utils
 from tempest.lib.common.utils.data_utils import rand_name
+from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions as lib_exc
 
 CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
 
 
-class BaseNuageGatewayTest(base.BaseAdminNetworkTest):
+class BaseNuageGatewayTest(NuageAdminNetworksTest):
     _interface = 'json'
-    dhcp_agent_present = None
 
     @classmethod
     def create_gateway(cls, type):
@@ -85,11 +86,6 @@ class BaseNuageGatewayTest(base.BaseAdminNetworkTest):
     def setup_clients(cls):
         super(BaseNuageGatewayTest, cls).setup_clients()
         cls.nuage_client = NuageRestClient()
-
-        # cls.client = cls.networks_client
-        # cls.admin_client = cls.admin_networks_client
-        # Overriding cls.client with Nuage network client
-        # for nuage specific extensions support
         cls.client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
             **cls.os_primary.default_params)
@@ -98,10 +94,16 @@ class BaseNuageGatewayTest(base.BaseAdminNetworkTest):
             cls.os_admin.auth_provider,
             **cls.os_admin.default_params)
 
+    # TODO(TEAM) - THIS IS A COPY OF UPSTREAM CODE BUT NOW USING ADMIN CLIENT
+    # WE SHOULD PUT COMMIT UPSTREAM WHICH MAKES CLIENT CONFIGURABLE
+    # ------------------------- START OF COPY -------------------------
     @classmethod
     def create_router(cls, router_name=None, admin_state_up=False,
                       external_network_id=None, enable_snat=None,
                       **kwargs):
+        router_name = router_name or data_utils.rand_name(
+            cls.__name__ + "-router")
+
         ext_gw_info = {}
         if external_network_id:
             ext_gw_info['network_id'] = external_network_id
@@ -111,7 +113,8 @@ class BaseNuageGatewayTest(base.BaseAdminNetworkTest):
             name=router_name, external_gateway_info=ext_gw_info,
             admin_state_up=admin_state_up, **kwargs)
         router = body['router']
-        cls.routers.append(router)
+        cls.addClassResourceCleanup(test_utils.call_and_ignore_notfound_exc,
+                                    cls.delete_router, router)
         return router
 
     @classmethod
@@ -119,8 +122,18 @@ class BaseNuageGatewayTest(base.BaseAdminNetworkTest):
         """Wrapper utility that returns a router interface."""
         interface = cls.admin_routers_client.add_router_interface(
             router_id, subnet_id=subnet_id)
-        cls.router_interfaces.append(interface)
         return interface
+
+    @classmethod
+    def delete_router(cls, router):
+        body = cls.admin_ports_client.list_ports(device_id=router['id'])
+        interfaces = body['ports']
+        for i in interfaces:
+            test_utils.call_and_ignore_notfound_exc(
+                cls.admin_routers_client.remove_router_interface, router['id'],
+                subnet_id=i['fixed_ips'][0]['subnet_id'])
+        cls.admin_routers_client.delete_router(router['id'])
+    # ------------------------- END OF COPY -------------------------
 
     @classmethod
     def resource_setup(cls):
@@ -204,23 +217,8 @@ class BaseNuageGatewayTest(base.BaseAdminNetworkTest):
                 LOG.exception(exc)
                 has_exception = True
 
-        for router_interface in cls.router_interfaces:
-            try:
-                cls.admin_routers_client.remove_router_interface(
-                    router_interface['id'],
-                    subnet_id=router_interface['subnet_id'])
-            except Exception as exc:
-                LOG.exception(exc)
-                has_exception = True
-
-        for router in cls.routers:
-            try:
-                cls.admin_routers_client.delete_router(router['id'])
-            except Exception as exc:
-                LOG.exception(exc)
-                has_exception = True
-
         super(BaseNuageGatewayTest, cls).resource_cleanup()
+
         try:
             cls.client.delete_netpartition(cls.nondef_netpart['id'])
         except Exception as exc:
@@ -229,19 +227,6 @@ class BaseNuageGatewayTest(base.BaseAdminNetworkTest):
 
         if has_exception:
             raise exceptions.TearDownException()
-
-    @classmethod
-    def is_dhcp_agent_present(cls):
-        if cls.dhcp_agent_present is None:
-            agents = cls.admin_agents_client.list_agents().get('agents')
-            if agents:
-                cls.dhcp_agent_present = any(
-                    agent for agent in agents if agent['alive'] and
-                    agent['binary'] == 'neutron-dhcp-agent')
-            else:
-                cls.dhcp_agent_present = False
-
-        return cls.dhcp_agent_present
 
     @classmethod
     def create_subnet(cls, network, gateway='', cidr=None, mask_bits=None,

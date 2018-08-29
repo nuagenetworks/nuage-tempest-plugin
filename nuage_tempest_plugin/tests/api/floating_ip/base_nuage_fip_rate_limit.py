@@ -62,11 +62,12 @@ class NuageFipRateLimitBase(base.BaseNetworkTest):
                                        external_network_id=cls.ext_net_id)
 
         cls.create_router_interface(cls.router['id'], cls.subnet['id'])
-        cls.port = list()
+        cls.ports = []
 
         # Create two ports one each for Creation and Updating of floatingIP
         for i in range(2):
-            cls.create_port(cls.network)
+            port = cls.create_port(cls.network)
+            cls.ports.append(port)
 
     @classmethod
     def _create_fip_for_port_with_rate_limit(cls, port_id, rate_limit):

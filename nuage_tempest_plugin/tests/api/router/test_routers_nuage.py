@@ -28,6 +28,7 @@ from tempest.lib import exceptions
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
+from nuage_tempest_plugin.lib.test.nuage_test import NuageAdminNetworksTest
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
@@ -62,16 +63,12 @@ class NuageRoutersTest(base.BaseNetworkTest):
 
     # copy of RoutersTest - start
 
-    def _cleanup_router(self, router):
-        self.delete_router(router)
-        self.routers.remove(router)
-
     def _create_router(self, name=None, admin_state_up=False,
                        external_network_id=None, enable_snat=None):
         # associate a cleanup with created routers to avoid quota limits
         router = self.create_router(name, admin_state_up,
                                     external_network_id, enable_snat)
-        self.addCleanup(self._cleanup_router, router)
+        self.addCleanup(self.delete_router, router)
         return router
 
     def _delete_extra_routes(self, router_id):
@@ -102,7 +99,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
             except Exception as e:
                 if 'Nuage API: vPort has VMInterface network interfaces ' \
                    'associated with it.' not in str(e):
-                    raise e
+                    raise
                 LOG.error('VSD-21337: Domain deletion failed! (%d)',
                           attempt + 1)
                 time.sleep(1)
@@ -620,48 +617,55 @@ class NuageRoutersTest(base.BaseNetworkTest):
         self.assertEqual(rd, nuage_domain[0]['routeDistinguisher'])
 
 
-class NuageRoutersAdminTest(base.BaseAdminNetworkTest):
+class NuageRoutersAdminTest(NuageAdminNetworksTest):
 
     @classmethod
-    def skip_checks(cls):
-        super(NuageRoutersAdminTest, cls).skip_checks()
-        if not utils.is_extension_enabled('router', 'network'):
-            msg = "router extension not enabled."
-            raise cls.skipException(msg)
+    def setup_clients(cls):
+        super(NuageRoutersAdminTest, cls).setup_clients()
+        cls.nuage_client = NuageRestClient()
 
-    def _cleanup_router(self, router):
-        self.delete_router(router)
-        self.routers.remove(router)
+    @classmethod
+    def delete_router(cls, router):
+        if cls.is_dhcp_agent_present():
+            for attempt in range(Topology.nbr_retries_for_test_robustness):
+                try:
+                    super(NuageRoutersAdminTest, cls).delete_router(router)
+                    return
+                except Exception as e:
+                    if 'Nuage API: vPort has VMInterface network interfaces ' \
+                       'associated with it.' not in str(e):
+                        raise
+                    LOG.error('VSD-21337: Domain deletion failed! (%d)',
+                              attempt + 1)
+                    time.sleep(1)
+
+            LOG.error('=== ROBUSTNESS AIDS DID NOT WORK!!! GIVING UP ===')
+
+        super(NuageRoutersAdminTest, cls).delete_router(router)
+
+    @staticmethod
+    def delete_router_from_client(client, router_id):
+        for attempt in range(Topology.nbr_retries_for_test_robustness):
+            try:
+                client.delete_router(router_id)
+                return
+            except Exception as e:
+                if 'Nuage API: vPort has VMInterface network interfaces ' \
+                   'associated with it.' not in str(e):
+                    raise
+                LOG.error('VSD-21337: Domain deletion failed! (%d)',
+                          attempt + 1)
+                time.sleep(1)
+
+        client.delete_router(router_id)
 
     def _create_router(self, name=None, admin_state_up=False,
                        external_network_id=None, enable_snat=None):
         # associate a cleanup with created routers to avoid quota limits
         router = self.create_router(name, admin_state_up,
                                     external_network_id, enable_snat)
-        self.addCleanup(self._cleanup_router, router)
+        self.addCleanup(self.delete_router, router)
         return router
-
-    @classmethod
-    def delete_router(cls, router):
-        # TODO(TEAM: FOLLOW UP ON THIS) - VSD-21337
-        for attempt in range(Topology.nbr_retries_for_test_robustness):
-            try:
-                super(NuageRoutersAdminTest, cls).delete_router(router)
-                return
-            except Exception as e:
-                if 'Nuage API: vPort has VMInterface network interfaces ' \
-                   'associated with it.' not in str(e):
-                    raise e
-                LOG.error('VSD-21337: Domain deletion failed! (%d)',
-                          attempt + 1)
-                time.sleep(1)
-
-        super(NuageRoutersAdminTest, cls).delete_router(router)
-
-    @classmethod
-    def setup_clients(cls):
-        super(NuageRoutersAdminTest, cls).setup_clients()
-        cls.nuage_client = NuageRestClient()
 
     # Start of copy from upstream
     def _verify_router_gateway(self, router_id, exp_ext_gw_info=None):
@@ -709,7 +713,7 @@ class NuageRoutersAdminTest(base.BaseAdminNetworkTest):
         # End of copy from upstream
 
         nuage_domain = self.nuage_client.get_l3domain(
-            filters='externalID', filter_value=self.routers[-1]['id'])
+            filters='externalID', filter_value=router[-1]['id'])
         self.assertEqual(nuage_domain[0]['PATEnabled'], NUAGE_PAT_DISABLED)
 
     @utils.requires_ext(extension='ext-gw-mode', service='network')
@@ -732,7 +736,7 @@ class NuageRoutersAdminTest(base.BaseAdminNetworkTest):
         # End of copy from upstream
 
         nuage_domain = self.nuage_client.get_l3domain(
-            filters='externalID', filter_value=self.routers[-1]['id'])
+            filters='externalID', filter_value=router['id'])
         self.assertEqual(nuage_domain[0]['PATEnabled'], NUAGE_PAT_ENABLED)
 
     @utils.requires_ext(extension='ext-gw-mode', service='network')
@@ -753,7 +757,7 @@ class NuageRoutersAdminTest(base.BaseAdminNetworkTest):
         # End of copy from upstream
 
         nuage_domain = self.nuage_client.get_l3domain(
-            filters='externalID', filter_value=self.routers[-1]['id'])
+            filters='externalID', filter_value=router['id'])
         self.assertEqual(nuage_domain[0]['PATEnabled'], NUAGE_PAT_DISABLED)
 
     @utils.requires_ext(extension='ext-gw-mode', service='network')
@@ -833,8 +837,15 @@ class NuageRoutersAdminTest(base.BaseAdminNetworkTest):
         }
 
         rtr_body = self.admin_routers_client.create_router(**router)
-        self.addCleanup(self.admin_routers_client.delete_router,
-                        rtr_body['router']['id'])
+
+        # i know this is dirty ...... better idea's?
+        if self.is_dhcp_agent_present():
+            self.addCleanup(self.delete_router_from_client,
+                            self.admin_routers_client,
+                            rtr_body['router']['id'])
+        else:
+            self.addCleanup(self.admin_routers_client.delete_router,
+                            rtr_body['router']['id'])
 
         # Verify Router is created in VSD
         nuage_domain = self.nuage_client.get_l3domain(
@@ -1145,7 +1156,6 @@ class NuageRoutersV6Test(NuageRoutersTest):
                                                                 subnet02['id'])
         self._verify_router_interface(router['id'], subnet02['id'],
                                       interface02['port_id'])
-        pass
 
     # OPENSTACK-1886: fails to remove router with only IPv6 subnet interface
     def test_router_interface_port_update_with_fixed_ip(self):

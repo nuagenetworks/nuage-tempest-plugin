@@ -101,7 +101,7 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest):
         subnet_name = 'non-underlay-subnet'
         body = self.admin_subnets_client.create_subnet(
             network_id=ext_network['id'],
-            cidr='135.30.0.0/24',
+            cidr=self.randomized_cidr(),
             ip_version=self._ip_version,
             name=subnet_name)
         subnet = body['subnet']
@@ -324,7 +324,7 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest):
                                                     " --router:external")
         ext_subnet_name = data_utils.rand_name('ext-non-underlay-subnet')
         subnet = self.create_subnet_with_args(ext_network['name'],
-                                              "135.134.133.0/24",
+                                              self.randomized_cidr(),
                                               "--name ", ext_subnet_name)
         compare_str = str(underlay_default)
         self.assertIn(compare_str.lower(), str(subnet['underlay']).lower())
@@ -340,10 +340,10 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest):
             filter_value=self.nuage_client.get_vsd_external_id(
                 subnet['id']))
         self.assertEqual(nuage_fippool, '')
-        # Remove it from the cleanup list, as we deleted it ourselves already
+        # Remove subnet from the cleanup list,
+        # as we deleted it ourselves already
         # to check change in VSD
         self.subnets.remove(subnet)
-        pass
 
     def _cli_create_external_fip_subnet_with_underlay(self):
         """_cli_create_external_fip_subnet_with_underlay
@@ -365,7 +365,7 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest):
             # and we require underlay=<value> without space
             underlay_str = "--underlay=" + str(underlay)
             subnet = self.create_subnet_with_args(ext_network['name'],
-                                                  "136.135.134.0/24",
+                                                  self.randomized_cidr(),
                                                   "--name ", ext_subnet_name,
                                                   underlay_str)
             # Compare the returned value with the given value, lowercased to
@@ -385,7 +385,7 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest):
                 filter_value=self.nuage_client.get_vsd_external_id(
                     subnet['id']))
             self.assertEqual(nuage_fippool, '')
-            # Remove it from the cleanup list, as we deleted it ourselves
+            # Remove subnet from the cleanup list, as we deleted it ourselves
             # already to check change in VSD
             self.subnets.remove(subnet)
 
@@ -406,7 +406,7 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest):
                                                     " --router:external")
         ext_subnet_name = "ext-fip-underlay-subnet-" + rand_name_str
         subnet = self.create_subnet_with_args(ext_network['name'],
-                                              "137.136.135.0/24",
+                                              self.randomized_cidr(),
                                               "--name ", ext_subnet_name)
         show_subnet = self.show_subnet(subnet['id'])
         # underlay value should match the default one

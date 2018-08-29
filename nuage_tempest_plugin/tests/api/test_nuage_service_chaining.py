@@ -299,7 +299,6 @@ class NuageServiceChaining(base.BaseNetworkTest):
             filter_value=rt['nuage_redirect_target']['id'])
         self.assertEqual(redirect_target, '')
 
-###
     @decorators.attr(type='smoke')
     def test_create_virtualwire_redirection_target_on_subnet_in_l3domain(self):
         # parameters for nuage redirection target

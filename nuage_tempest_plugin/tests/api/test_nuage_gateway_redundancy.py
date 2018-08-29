@@ -141,7 +141,8 @@ class NuageGatewayTestRedundancy(base.BaseNuageGatewayTest,
                                    personality))
                     cls.group_vlans.append(gw_vlan)
 
-    def get_item_by_id(self, id, item_list):
+    @staticmethod
+    def get_item_by_id(id, item_list):
         return next((elem for elem in item_list if elem['id'] == id), None)
 
     @decorators.attr(type='smoke')

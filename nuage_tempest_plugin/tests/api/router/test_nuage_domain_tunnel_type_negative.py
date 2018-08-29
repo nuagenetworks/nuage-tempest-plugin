@@ -20,10 +20,6 @@ class NuageDomainTunnelTypeNegativeTest(
 
     """
 
-    @classmethod
-    def resource_setup(cls):
-        super(NuageDomainTunnelTypeNegativeTest, cls).resource_setup()
-
     def _do_test_invalid_value(self, invalid_value):
         reported_value = invalid_value if invalid_value != '' else 'None'
         if Topology.at_openstack('newton'):
