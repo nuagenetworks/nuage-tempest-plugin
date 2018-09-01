@@ -106,7 +106,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
             rtport['id'],
             nuage_redirect_targets=str(rt['nuage_redirect_target']['id']))
         self.assertEqual(
-            port_body['port']['status'], 'ACTIVE')
+            port_body['port']['status'], 'DOWN')
         redirect_vport = self.nuage_client.get_redirection_target_vports(
             'redirectiontargets',
             rt['nuage_redirect_target']['id'])
@@ -128,7 +128,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
                 rtport['id'], nuage_redirect_targets='')
         )
         self.assertEqual(
-            port_body['port']['status'], 'ACTIVE')
+            port_body['port']['status'], 'DOWN')
         redirect_vport = self.nuage_client.get_redirection_target_vports(
             'redirectiontargets',
             rt['nuage_redirect_target']['id'])

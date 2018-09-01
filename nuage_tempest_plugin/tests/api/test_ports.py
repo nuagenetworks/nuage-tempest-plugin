@@ -1,8 +1,11 @@
 # Copyright 2017 NOKIA
 # All Rights Reserved.
-
 from netaddr import IPNetwork
 
+from tempest.common import compute
+from tempest.common import waiters
+from tempest.lib.common.utils import data_utils
+from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions
 from tempest.scenario import manager
 from tempest.test import decorators
@@ -23,14 +26,114 @@ class PortsTest(NuageAdminNetworksTest,
         super(PortsTest, cls).setup_clients()
         cls.vsd_client = NuageRestClient()
 
-    @decorators.attr(type='smoke')
-    def test_nuage_port_create(self):
-        network = self.create_network()
-        self.create_subnet(network, cidr=IPNetwork("10.0.0.0/24"),
-                           mask_bits=24)
-        self.create_port(network)
+    def show_port(self, port_id):
+        """Wrapper utility that shows a given port."""
+        body = self.ports_client.show_port(port_id)
+        return body['port']
 
-    def _create_server(self, name, network, port_id=None):
+    # TODO(KRIS) -- RESOLVE THIS EVENTUALLY THROUGH UPSTREAM COMMIT --
+    # The upstream 'manager' class has no means to create a server without
+    # automated cleanup. Below method is exact copy of upstream method; only
+    # adding a cleanup flag.
+    # ----------------------------- BEGIN OF COPY -----------------------------
+    def create_server(self, name=None, image_id=None, flavor=None,
+                      validatable=False, wait_until='ACTIVE',
+                      clients=None, cleanup=True, **kwargs):
+        """Wrapper utility that returns a test server.
+
+        This wrapper utility calls the common create test server and
+        returns a test server. The purpose of this wrapper is to minimize
+        the impact on the code of the tests already using this
+        function.
+        """
+
+        # Needed for the cross_tenant_traffic test:
+        if clients is None:
+            clients = self.os_primary
+
+        if name is None:
+            name = data_utils.rand_name(self.__class__.__name__ + "-server")
+
+        vnic_type = CONF.network.port_vnic_type
+        profile = CONF.network.port_profile
+
+        # If vnic_type or profile are configured create port for
+        # every network
+        if vnic_type or profile:
+            ports = []
+            create_port_body = {}
+
+            if vnic_type:
+                create_port_body['binding:vnic_type'] = vnic_type
+
+            if profile:
+                create_port_body['binding:profile'] = profile
+
+            if kwargs:
+                # Convert security group names to security group ids
+                # to pass to create_port
+                if 'security_groups' in kwargs:
+                    security_groups = \
+                        clients.security_groups_client.list_security_groups(
+                        ).get('security_groups')
+                    sec_dict = dict([(s['name'], s['id'])
+                                    for s in security_groups])
+
+                    sec_groups_names = [s['name'] for s in kwargs.pop(
+                        'security_groups')]
+                    security_groups_ids = [sec_dict[s]
+                                           for s in sec_groups_names]
+
+                    if security_groups_ids:
+                        create_port_body[
+                            'security_groups'] = security_groups_ids
+                networks = kwargs.pop('networks', [])
+            else:
+                networks = []
+
+            # If there are no networks passed to us we look up
+            # for the project's private networks and create a port.
+            # The same behaviour as we would expect when passing
+            # the call to the clients with no networks
+            if not networks:
+                networks = clients.networks_client.list_networks(
+                    **{'router:external': False, 'fields': 'id'})['networks']
+
+            # It's net['uuid'] if networks come from kwargs
+            # and net['id'] if they come from
+            # clients.networks_client.list_networks
+            for net in networks:
+                net_id = net.get('uuid', net.get('id'))
+                if 'port' not in net:
+                    port = self.create_port(network_id=net_id,
+                                            client=clients.ports_client,
+                                            **create_port_body)
+                    ports.append({'port': port['id']})
+                else:
+                    ports.append({'port': net['port']})
+            if ports:
+                kwargs['networks'] = ports
+            self.ports = ports
+
+        tenant_network = self.get_tenant_network()
+
+        body, _ = compute.create_test_server(
+            clients,
+            tenant_network=tenant_network,
+            wait_until=wait_until,
+            name=name, flavor=flavor,
+            image_id=image_id, **kwargs)
+
+        if cleanup:
+            self.addCleanup(waiters.wait_for_server_termination,
+                            clients.servers_client, body['id'])
+            self.addCleanup(test_utils.call_and_ignore_notfound_exc,
+                            clients.servers_client.delete_server, body['id'])
+        server = clients.servers_client.show_server(body['id'])['server']
+        return server
+    # ----------------------------- END OF COPY -------------------------------
+
+    def _create_server(self, name, network, port_id=None, cleanup=True):
         keypair = self.create_keypair()
         network = {'uuid': network['id']}
         if port_id is not None:
@@ -39,8 +142,39 @@ class PortsTest(NuageAdminNetworksTest,
             name=name,
             networks=[network],
             key_name=keypair['name'],
-            wait_until='ACTIVE')
+            wait_until='ACTIVE',
+            cleanup=cleanup)
         return server
+
+    def _delete_server(self, server_id, clients=None):
+        if clients is None:
+            clients = self.os_primary
+        clients.servers_client.delete_server(server_id)
+        waiters.wait_for_server_termination(clients.servers_client, server_id)
+
+    @decorators.attr(type='smoke')
+    def test_nuage_port_create_show_check_status(self):
+        network = self.create_network()
+        self.create_subnet(network, cidr=IPNetwork("10.0.0.0/24"),
+                           mask_bits=24)
+        port = self.create_port(network)
+        self.assertEqual('DOWN', port['status'])
+        port = self.show_port(port['id'])
+        # state has to remain DOWN as long as port is not bound
+        self.assertEqual('DOWN', port['status'])
+
+    @decorators.attr(type='smoke')
+    def test_nuage_port_create_server_create_delete_check_status(self):
+        network = self.create_network()
+        self.create_subnet(network, cidr=IPNetwork("10.0.0.0/24"),
+                           mask_bits=24)
+        port = self.create_port(network)
+        server = self._create_server('s1', network, port['id'], cleanup=False)
+        port = self.show_port(port['id'])
+        self.assertEqual('ACTIVE', port['status'])
+        self._delete_server(server['id'])
+        port = self.show_port(port['id'])
+        self.assertEqual('DOWN', port['status'])
 
     @decorators.attr(type='smoke')
     def test_nuage_port_create_fixed_ips_negative(self):
