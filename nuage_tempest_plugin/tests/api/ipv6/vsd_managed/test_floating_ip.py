@@ -22,11 +22,6 @@ VALID_MAC_ADDRESS_2B = 'fa:fa:3e:e8:e8:2b'
 
 class VSDManagedFloatingIpTest(BaseVSDManagedNetworksIPv6Test):
 
-    @classmethod
-    def resource_setup(cls):
-        super(VSDManagedFloatingIpTest, cls).resource_setup()
-        cls.net_partition = cls.net_partition[0]['name']
-
     @nuage_test.header()
     def test_create_port_with_vsd_floatingip(self):
         # Given I have a VSD-FloatingIP-pool
@@ -40,9 +35,9 @@ class VSDManagedFloatingIpTest(BaseVSDManagedNetworksIPv6Test):
 
         # And I have claimed a VSD-FloatingIP in the VSD-L3-Domain
         fip1 = self.nuage_client.claim_floatingip(
-            vsd_l3_domain['ID'], vsd_fip_pool['ID'])[0]
+            vsd_l3_domain.id, vsd_fip_pool['ID'])[0]
         fip2 = self.nuage_client.claim_floatingip(
-            vsd_l3_domain['ID'], vsd_fip_pool['ID'])[0]
+            vsd_l3_domain.id, vsd_fip_pool['ID'])[0]
 
         # When I retrieve the nuage-floatingIP-list of the OS IPv4 subnet
         fip_list = self.nuage_network_client.list_nuage_floatingip_by_subnet(

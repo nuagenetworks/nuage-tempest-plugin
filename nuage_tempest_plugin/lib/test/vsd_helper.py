@@ -5,10 +5,10 @@ import importlib
 import re
 from six import iteritems
 
-from tempest.lib.common.utils import data_utils
-
+from netaddr import IPAddress
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
+from tempest.lib.common.utils import data_utils
 
 LOG = Topology.get_logger(__name__)
 
@@ -130,10 +130,8 @@ class VsdHelper(object):
         if dhcp_managed:
             params['dhcp_managed'] = dhcp_managed
 
-        if ip_type == "IPV4":
-            params.update({'ip_type': "IPV4"})
-        elif ip_type == "DUALSTACK":
-            params.update({'ip_type': "DUALSTACK"})
+        if ip_type in ("IPV4", "IPV6", "DUALSTACK"):
+            params.update({'ip_type': ip_type})
 
         if cidr4:
             params.update({'address': str(cidr4.ip)})
@@ -143,14 +141,21 @@ class VsdHelper(object):
                 netmask = str(cidr4.netmask)
             params.update({'netmask': netmask})
 
-            if gateway4:
-                params.update({'gateway': gateway4})
+            if not gateway4:
+                gateway4 = str(IPAddress(cidr4) + 1)
+            params.update({'gateway': gateway4})
 
-        if ip_type == self.vspk.NUSubnet.CONST_IP_TYPE_DUALSTACK:
+        if cidr6:
             params.update({'ipv6_address': str(cidr6)})
+            if "netmask6" in kwargs:
+                netmask6 = kwargs['netmask6']
+            else:
+                netmask6 = str(cidr6.netmask)
+            params.update({'netmask6': netmask6})
 
-            if gateway6:
-                params.update({'ipv6_gateway': gateway6})
+            if not gateway6:
+                gateway6 = str(IPAddress(cidr6) + 1)
+            params.update({'ipv6_gateway': gateway6})
 
         # add all other kwargs as attributes (key,value) pairs
         for key, value in iteritems(kwargs):
@@ -349,7 +354,7 @@ class VsdHelper(object):
             if gateway4:
                 params.update({'gateway': gateway4})
 
-        if ip_type == self.vspk.NUSubnet.CONST_IP_TYPE_DUALSTACK:
+        if cidr6:
             params.update({'ipv6_address': str(cidr6)})
 
             if gateway6:

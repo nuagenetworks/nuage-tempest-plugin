@@ -263,16 +263,12 @@ class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
         subnet6 = self.create_subnet(
             network, ip_version=6, enable_dhcp=False)
 
-        subnet_ext_id = self.nuage_client.get_vsd_external_id(
-            subnet4['id'])
+        vsd_l2_domain = self.vsd.get_l2domain(by_subnet_id=subnet4['id'])
 
-        vsd_l2_domain = self.nuage_client.get_l2domain(
-            filters='externalID',
-            filter_value=subnet_ext_id)
         for scenario, port_config in iteritems(self.port_configs):
             LOG.info("TESTCASE scenario {}".format(scenario))
             self._check_crud_port(scenario, network, subnet4, subnet6,
-                                  vsd_l2_domain[0], constants.L2_DOMAIN)
+                                  vsd_l2_domain, constants.L2_DOMAIN)
 
     @decorators.attr(type='smoke')
     def test_provision_ports_with_address_pairs_in_l3_subnet(self):
@@ -283,28 +279,12 @@ class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
             network, ip_version=6, enable_dhcp=False)
         router = self.create_router()
         self.create_router_interface(router['id'], subnet4['id'])
-        router_ext_id = (
-            self.nuage_client.get_vsd_external_id(
-                router['id'])
-        )
 
-        domain = (
-            self.nuage_client.get_l3domain(
-                filters='externalID', filter_value=router_ext_id)
-        )
-
-        subnet_ext_id = (
-            self.nuage_client.get_vsd_external_id(
-                subnet4['id'])
-        )
-
-        vsd_subnet = (
-            self.nuage_client.get_domain_subnet(
-                'domains', domain[0]['ID'], filters='externalID',
-                filter_value=subnet_ext_id)
-        )
+        domain = self.vsd.get_domain(by_router_id=router['id'])
+        zone = self.vsd.get_zone(domain=domain, by_router_id=router['id'])
+        vsd_subnet = self.vsd.get_subnet(zone=zone, by_subnet_id=subnet4['id'])
 
         for scenario, port_config in iteritems(self.port_configs):
             LOG.info("TESTCASE scenario {}".format(scenario))
             self._check_crud_port(scenario, network, subnet4, subnet6,
-                                  vsd_subnet[0], constants.SUBNETWORK)
+                                  vsd_subnet, constants.SUBNETWORK)

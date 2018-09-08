@@ -81,7 +81,7 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
             self._cli_create_os_l2_vsd_managed_dualstack_subnet(vsd_l2_subnet)
         policy_group = self.nuage_client.create_policygroup(
             constants.L2_DOMAIN,
-            vsd_l2_subnet['ID'],
+            vsd_l2_subnet.id,
             name='cli-myVSDpg-1',
             type='SOFTWARE',
             extra_params=None)
@@ -147,7 +147,7 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
             self._cli_create_os_l2_vsd_managed_dualstack_subnet(vsd_l2_subnet)
         policy_group = self.nuage_client.create_policygroup(
             constants.L2_DOMAIN,
-            vsd_l2_subnet['ID'],
+            vsd_l2_subnet.id,
             name='cli-myVSDpg-1',
             type='SOFTWARE',
             extra_params=None)
@@ -216,7 +216,7 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
             policy_groups.append(
                 self.nuage_client.create_policygroup(
                     constants.L2_DOMAIN,
-                    vsd_l2_subnet['ID'],
+                    vsd_l2_subnet.id,
                     name='myVSDpg-%s' % i,
                     type='SOFTWARE',
                     extra_params=None))
@@ -289,7 +289,7 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
 
         policy_group_x = self.nuage_client.create_policygroup(
             constants.L2_DOMAIN,
-            vsd_l2_subnet_x['ID'],
+            vsd_l2_subnet_x.id,
             name='myVSDpg-X',
             type='SOFTWARE',
             extra_params=None)
@@ -304,7 +304,7 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
 
         policy_group_y = self.nuage_client.create_policygroup(
             constants.L2_DOMAIN,
-            vsd_l2_subnet_y['ID'],
+            vsd_l2_subnet_y.id,
             name='myVSDpg-2',
             type='SOFTWARE',
             extra_params=None)
@@ -373,7 +373,7 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
 
         policy_group_x = self.nuage_client.create_policygroup(
             constants.DOMAIN,
-            vsd_l3_domain_x['ID'],
+            vsd_l3_domain_x.id,
             name='myVSD-L3-pg-X',
             type='SOFTWARE',
             extra_params=None)
@@ -387,7 +387,7 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
                 vsd_l3_subnet_y)
         policy_group_y = self.nuage_client.create_policygroup(
             constants.DOMAIN,
-            vsd_l3_domain_y['ID'],
+            vsd_l3_domain_y.id,
             name='myVSD-L3-pg-Y',
             type='SOFTWARE',
             extra_params=None)
@@ -485,7 +485,7 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
         for i in range(SEVERAL_POLICY_GROUPS):
             policy_groups.append(self.nuage_client.create_policygroup(
                 constants.DOMAIN,
-                vsd_l3_domain['ID'],
+                vsd_l3_domain.id,
                 name='my-L3-VSDpg-%s' % i,
                 type='SOFTWARE',
                 extra_params=None))
@@ -561,7 +561,7 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
         for i in range(SEVERAL_POLICY_GROUPS):
             policy_groups.append(self.nuage_client.create_policygroup(
                 constants.L2_DOMAIN,
-                vsd_l2_subnet['ID'],
+                vsd_l2_subnet.id,
                 name='myVSDpg-%s' % i,
                 type='SOFTWARE',
                 extra_params=None))

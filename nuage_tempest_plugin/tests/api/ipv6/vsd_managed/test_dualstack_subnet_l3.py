@@ -1,15 +1,12 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
-
+import bambou
 from netaddr import IPAddress
 from netaddr import IPNetwork
-from testtools.matchers import ContainsDict
-from testtools.matchers import Equals
 
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.test import tags
 from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import exceptions as nuage_exceptions
 from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
     import BaseVSDManagedNetworksIPv6Test
 
@@ -32,17 +29,15 @@ class VSDManagedDualStackSubnetL3Test(BaseVSDManagedNetworksIPv6Test):
     @decorators.attr(type='smoke')
     def test_create_ipv6_subnet_in_vsd_managed_l3domain(self):
         name = data_utils.rand_name('l3domain-')
-        vsd_l3domain_template = self.create_vsd_l3dom_template(
+        vsd_l3domain_template = self.vsd_create_l3domain_template(
             name=name)
-        vsd_l3domain = self.create_vsd_l3domain(
-            name=name, tid=vsd_l3domain_template['ID'])
+        vsd_l3domain = self.vsd_create_l3domain(
+            name=name, template_id=vsd_l3domain_template.id)
 
-        self.assertEqual(vsd_l3domain['name'], name)
+        self.assertEqual(vsd_l3domain.name, name)
         zone_name = data_utils.rand_name('zone-')
-        extra_params = None
-        vsd_zone = self.create_vsd_zone(name=zone_name,
-                                        domain_id=vsd_l3domain['ID'],
-                                        extra_params=extra_params)
+        vsd_zone = self.vsd_create_zone(name=zone_name,
+                                        domain=vsd_l3domain)
 
         subnet_name = data_utils.rand_name('l3domain-subnet-')
         subnet_cidr = IPNetwork('10.10.100.0/24')
@@ -51,15 +46,16 @@ class VSDManagedDualStackSubnetL3Test(BaseVSDManagedNetworksIPv6Test):
         subnet_ipv6_cidr = IPNetwork("2001:5f74:c4a5:b82e::/64")
         subnet_ipv6_gateway = str(IPAddress(subnet_ipv6_cidr) + 1)
 
-        vsd_l3domain_subnet = self.create_vsd_l3domain_dualstack_subnet(
-            zone_id=vsd_zone['ID'],
-            subnet_name=subnet_name,
-            cidr=subnet_cidr,
-            gateway=subnet_gateway,
+        vsd_l3domain_subnet = self.create_vsd_subnet(
+            name=subnet_name,
+            zone=vsd_zone,
+            ip_type="DUALSTACK",
+            cidr4=subnet_cidr,
+            gateway4=subnet_gateway,
             cidr6=subnet_ipv6_cidr,
             gateway6=subnet_ipv6_gateway)
 
-        self.assertEqual(vsd_l3domain_subnet['name'], subnet_name)
+        self.assertEqual(vsd_l3domain_subnet.name, subnet_name)
 
         # create Openstack IPv4 subnet on Openstack based on VSD l3dom subnet
         net_name = data_utils.rand_name('network-')
@@ -70,7 +66,7 @@ class VSDManagedDualStackSubnetL3Test(BaseVSDManagedNetworksIPv6Test):
             cidr=subnet_cidr,
             enable_dhcp=True,
             mask_bits=IPNetwork(subnet_cidr).prefixlen,
-            nuagenet=vsd_l3domain_subnet['ID'],
+            nuagenet=vsd_l3domain_subnet.id,
             net_partition=Topology.def_netpartition)
         self.assertEqual(ipv4_subnet['cidr'], str(subnet_cidr))
 
@@ -78,15 +74,15 @@ class VSDManagedDualStackSubnetL3Test(BaseVSDManagedNetworksIPv6Test):
         ipv6_subnet = self.create_subnet(
             network,
             ip_version=6,
-            gateway=vsd_l3domain_subnet['IPv6Gateway'],
-            cidr=IPNetwork(vsd_l3domain_subnet['IPv6Address']),
-            mask_bits=IPNetwork(vsd_l3domain_subnet['IPv6Address']).prefixlen,
+            gateway=vsd_l3domain_subnet.ipv6_gateway,
+            cidr=IPNetwork(vsd_l3domain_subnet.ipv6_address),
+            mask_bits=IPNetwork(vsd_l3domain_subnet.ipv6_address).prefixlen,
             enable_dhcp=False,
-            nuagenet=vsd_l3domain_subnet['ID'],
+            nuagenet=vsd_l3domain_subnet.id,
             net_partition=Topology.def_netpartition)
 
         self.assertEqual(
-            ipv6_subnet['cidr'], vsd_l3domain_subnet['IPv6Address'])
+            ipv6_subnet['cidr'], vsd_l3domain_subnet.ipv6_address)
 
         # create a port in the network
         port = self.create_port(network)
@@ -106,72 +102,62 @@ class VSDManagedDualStackSubnetL3Test(BaseVSDManagedNetworksIPv6Test):
     ########################################
     def test_create_ipv4_subnet_in_vsd_managed_l3domain_ipv4(self):
         name = data_utils.rand_name('l3domain-')
-        vsd_l3domain_template = self.create_vsd_l3dom_template(
+        vsd_l3domain_template = self.vsd_create_l3domain_template(
             name=name)
-        vsd_l3domain = self.create_vsd_l3domain(
-            name=name, tid=vsd_l3domain_template['ID'])
+        vsd_l3domain = self.vsd_create_l3domain(
+            name=name, template_id=vsd_l3domain_template.id)
 
-        self.assertEqual(vsd_l3domain['name'], name)
+        self.assertEqual(vsd_l3domain.name, name)
         zone_name = data_utils.rand_name('zone-')
-        extra_params = None
-        vsd_zone = self.create_vsd_zone(name=zone_name,
-                                        domain_id=vsd_l3domain['ID'],
-                                        extra_params=extra_params)
+        vsd_zone = self.vsd_create_zone(name=zone_name,
+                                        domain=vsd_l3domain)
 
         subnet_name = data_utils.rand_name('l3domain-subnet-')
         subnet_cidr = IPNetwork('10.10.100.0/24')
         subnet_gateway = str(IPAddress(subnet_cidr) + 1)
 
-        vsd_l3domain_subnet = self.create_vsd_l3domain_subnet(
-            zone_id=vsd_zone['ID'],
-            subnet_name=subnet_name,
-            cidr=subnet_cidr,
-            gateway=subnet_gateway,
+        vsd_l3domain_subnet = self.create_vsd_subnet(
+            name=subnet_name,
+            zone=vsd_zone,
+            cidr4=subnet_cidr,
+            gateway4=subnet_gateway,
             ip_type="IPV4")
 
-        self.assertThat(vsd_l3domain_subnet,
-                        ContainsDict({'IPType': Equals("IPV4")}))
-        self.assertIsNone(vsd_l3domain_subnet['externalID'])
-        self.assertIsNone(vsd_l3domain_subnet['IPv6Address'])
-        self.assertIsNone(vsd_l3domain_subnet['IPv6Gateway'])
-        self.assertThat(vsd_l3domain_subnet,
-                        ContainsDict({'address': Equals(str(subnet_cidr.ip))}))
-        self.assertThat(vsd_l3domain_subnet,
-                        ContainsDict({'gateway': Equals(subnet_gateway)}))
+        self.assertEqual("IPV4", vsd_l3domain_subnet.ip_type)
+        self.assertIsNone(vsd_l3domain_subnet.external_id)
+        self.assertIsNone(vsd_l3domain_subnet.ipv6_address)
+        self.assertIsNone(vsd_l3domain_subnet.ipv6_gateway)
+        self.assertEqual(str(subnet_cidr.ip), vsd_l3domain_subnet.address)
+        self.assertEqual(subnet_gateway, vsd_l3domain_subnet.gateway)
 
     def test_create_ipv4_subnet_in_vsd_managed_l3domain_no_type(self):
         name = data_utils.rand_name('l3domain-')
-        vsd_l3domain_template = self.create_vsd_l3dom_template(
+        vsd_l3domain_template = self.vsd_create_l3domain_template(
             name=name)
-        vsd_l3domain = self.create_vsd_l3domain(
-            name=name, tid=vsd_l3domain_template['ID'])
+        vsd_l3domain = self.vsd_create_l3domain(
+            name=name, template_id=vsd_l3domain_template.id)
 
-        self.assertEqual(vsd_l3domain['name'], name)
+        self.assertEqual(vsd_l3domain.name, name)
         zone_name = data_utils.rand_name('zone-')
-        extra_params = None
-        vsd_zone = self.create_vsd_zone(name=zone_name,
-                                        domain_id=vsd_l3domain['ID'],
-                                        extra_params=extra_params)
+        vsd_zone = self.vsd_create_zone(name=zone_name,
+                                        domain=vsd_l3domain)
 
         subnet_name = data_utils.rand_name('l3domain-subnet-')
         subnet_cidr = IPNetwork('10.10.100.0/24')
         subnet_gateway = str(IPAddress(subnet_cidr) + 1)
 
-        vsd_l3domain_subnet = self.create_vsd_l3domain_subnet(
-            zone_id=vsd_zone['ID'],
-            subnet_name=subnet_name,
-            cidr=subnet_cidr,
-            gateway=subnet_gateway)
+        vsd_l3domain_subnet = self.create_vsd_subnet(
+            name=subnet_name,
+            zone=vsd_zone,
+            cidr4=subnet_cidr,
+            gateway4=subnet_gateway)
 
-        self.assertThat(vsd_l3domain_subnet,
-                        ContainsDict({'IPType': Equals("IPV4")}))
-        self.assertIsNone(vsd_l3domain_subnet['externalID'])
-        self.assertIsNone(vsd_l3domain_subnet['IPv6Address'])
-        self.assertIsNone(vsd_l3domain_subnet['IPv6Gateway'])
-        self.assertThat(vsd_l3domain_subnet,
-                        ContainsDict({'address': Equals(str(subnet_cidr.ip))}))
-        self.assertThat(vsd_l3domain_subnet,
-                        ContainsDict({'gateway': Equals(subnet_gateway)}))
+        self.assertEqual("IPV4", vsd_l3domain_subnet.ip_type)
+        self.assertIsNone(vsd_l3domain_subnet.external_id)
+        self.assertIsNone(vsd_l3domain_subnet.ipv6_address)
+        self.assertIsNone(vsd_l3domain_subnet.ipv6_gateway)
+        self.assertEqual(str(subnet_cidr.ip), vsd_l3domain_subnet.address)
+        self.assertEqual(subnet_gateway, vsd_l3domain_subnet.gateway)
 
     ########################################
     # minimal attributes - default values
@@ -184,27 +170,25 @@ class VSDManagedDualStackSubnetL3Test(BaseVSDManagedNetworksIPv6Test):
     @decorators.attr(type='smoke')
     def test_create_ipv6_subnet_in_vsd_managed_l3domain_ipv4(self):
         name = data_utils.rand_name('l3domain-')
-        vsd_l3domain_template = self.create_vsd_l3dom_template(
+        vsd_l3domain_template = self.vsd_create_l3domain_template(
             name=name)
-        vsd_l3domain = self.create_vsd_l3domain(
-            name=name, tid=vsd_l3domain_template['ID'])
+        vsd_l3domain = self.vsd_create_l3domain(
+            name=name, template_id=vsd_l3domain_template.id)
 
-        self.assertEqual(vsd_l3domain['name'], name)
+        self.assertEqual(vsd_l3domain.name, name)
         zone_name = data_utils.rand_name('zone-')
-        extra_params = None
-        vsd_zone = self.create_vsd_zone(name=zone_name,
-                                        domain_id=vsd_l3domain['ID'],
-                                        extra_params=extra_params)
+        vsd_zone = self.vsd_create_zone(name=zone_name,
+                                        domain=vsd_l3domain)
 
         subnet_name = data_utils.rand_name('l3domain-subnet-')
         subnet_cidr = IPNetwork('10.10.100.0/24')
         subnet_gateway = str(IPAddress(subnet_cidr) + 1)
 
-        vsd_l3domain_subnet = self.create_vsd_l3domain_subnet(
-            zone_id=vsd_zone['ID'],
-            subnet_name=subnet_name,
-            cidr=subnet_cidr,
-            gateway=subnet_gateway,
+        vsd_l3domain_subnet = self.create_vsd_subnet(
+            name=subnet_name,
+            zone=vsd_zone,
+            cidr4=subnet_cidr,
+            gateway4=subnet_gateway,
             ip_type="IPV4")
 
         # create Openstack IPv4 subnet on Openstack based on VSD l3dom subnet
@@ -233,33 +217,31 @@ class VSDManagedDualStackSubnetL3Test(BaseVSDManagedNetworksIPv6Test):
             cidr=subnet_ipv6_cidr,
             mask_bits=subnet_ipv6_cidr.prefixlen,
             enable_dhcp=False,
-            nuagenet=vsd_l3domain_subnet['ID'],
+            nuagenet=vsd_l3domain_subnet.id,
             net_partition=Topology.def_netpartition)
 
     @decorators.attr(type='smoke')
     def test_create_ipv4_subnet_without_dhcp_in_vsd_managed_l3domain(self):
         name = data_utils.rand_name('l3domain-')
-        vsd_l3domain_template = self.create_vsd_l3dom_template(
+        vsd_l3domain_template = self.vsd_create_l3domain_template(
             name=name)
-        vsd_l3domain = self.create_vsd_l3domain(
-            name=name, tid=vsd_l3domain_template['ID'])
+        vsd_l3domain = self.vsd_create_l3domain(
+            name=name, template_id=vsd_l3domain_template.id)
 
-        self.assertEqual(vsd_l3domain['name'], name)
+        self.assertEqual(vsd_l3domain.name, name)
         zone_name = data_utils.rand_name('zone-')
-        extra_params = None
-        vsd_zone = self.create_vsd_zone(name=zone_name,
-                                        domain_id=vsd_l3domain['ID'],
-                                        extra_params=extra_params)
+        vsd_zone = self.vsd_create_zone(name=zone_name,
+                                        domain=vsd_l3domain)
 
         subnet_name = data_utils.rand_name('l3domain-subnet-')
         subnet_cidr = IPNetwork('10.10.100.0/24')
         subnet_gateway = str(IPAddress(subnet_cidr) + 1)
 
-        vsd_l3domain_subnet = self.create_vsd_l3domain_subnet(
-            zone_id=vsd_zone['ID'],
-            subnet_name=subnet_name,
-            cidr=subnet_cidr,
-            gateway=subnet_gateway,
+        vsd_l3domain_subnet = self.create_vsd_subnet(
+            name=subnet_name,
+            zone=vsd_zone,
+            cidr4=subnet_cidr,
+            gateway4=subnet_gateway,
             ip_type="IPV4")
 
         # create Openstack IPv4 subnet on Openstack based on VSD l3dom subnet
@@ -283,7 +265,7 @@ class VSDManagedDualStackSubnetL3Test(BaseVSDManagedNetworksIPv6Test):
             cidr=subnet_cidr,
             mask_bits=subnet_cidr.prefixlen,
             enable_dhcp=False,
-            nuagenet=vsd_l3domain_subnet['ID'],
+            nuagenet=vsd_l3domain_subnet.id,
             net_partition=Topology.def_netpartition)
 
     # see VSD-18779 (CLOSED) - VSD should not allow creation of a l3 subnet
@@ -291,17 +273,15 @@ class VSDManagedDualStackSubnetL3Test(BaseVSDManagedNetworksIPv6Test):
     @decorators.attr(type='smoke')
     def test_create_vsd_managed_l3domain_subnet_ipv6_neg(self):
         name = data_utils.rand_name('l3domain-')
-        vsd_l3domain_template = self.create_vsd_l3dom_template(
+        vsd_l3domain_template = self.vsd_create_l3domain_template(
             name=name)
-        vsd_l3domain = self.create_vsd_l3domain(
-            name=name, tid=vsd_l3domain_template['ID'])
+        vsd_l3domain = self.vsd_create_l3domain(
+            name=name, template_id=vsd_l3domain_template.id)
 
-        self.assertEqual(vsd_l3domain['name'], name)
+        self.assertEqual(vsd_l3domain.name, name)
         zone_name = data_utils.rand_name('zone-')
-        extra_params = None
-        vsd_zone = self.create_vsd_zone(name=zone_name,
-                                        domain_id=vsd_l3domain['ID'],
-                                        extra_params=extra_params)
+        vsd_zone = self.vsd_create_zone(name=zone_name,
+                                        domain=vsd_l3domain)
 
         subnet_name = data_utils.rand_name('l3domain-subnet-')
         subnet_cidr = IPNetwork('10.10.100.0/24')
@@ -311,13 +291,13 @@ class VSDManagedDualStackSubnetL3Test(BaseVSDManagedNetworksIPv6Test):
         subnet_ipv6_gateway = str(IPAddress(subnet_ipv6_cidr) + 1)
 
         self.assertRaisesRegex(
-            nuage_exceptions.Conflict,
+            bambou.exceptions.BambouHTTPError,
             "Invalid IP type",
-            self.create_vsd_l3domain_subnet,
-            zone_id=vsd_zone['ID'],
-            subnet_name=subnet_name,
-            cidr=subnet_cidr,
-            gateway=subnet_gateway,
+            self.create_vsd_subnet,
+            name=subnet_name,
+            zone=vsd_zone,
+            cidr4=subnet_cidr,
+            gateway4=subnet_gateway,
             # cidr=None,
             # gateway=None,
             cidr6=subnet_ipv6_cidr,

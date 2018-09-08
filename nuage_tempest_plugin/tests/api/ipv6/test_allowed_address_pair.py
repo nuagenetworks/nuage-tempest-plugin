@@ -211,8 +211,9 @@ class BaseAllowedAddressPair(NuageBaseTest):
                 nuage_redirect_targets=[],
                 nuage_floatingip=None,
                 **kwargs)
+
             nuage_vports = self.nuage_client.get_vport(
-                vsd_subnet_type, vsd_subnet['ID'],
+                vsd_subnet_type, vsd_subnet.id,
                 filters='externalID', filter_value=port['id'])
             self.assertEqual(
                 len(nuage_vports), 1,

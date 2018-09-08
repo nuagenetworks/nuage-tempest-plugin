@@ -579,6 +579,9 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         client.ports_client.delete_port(port['id'])
 
     def _verify_port(self, port, subnet4=None, subnet6=None, **kwargs):
+        testcase = kwargs.pop('testcase', 'unknown')
+        message = 'testcase: %s' % testcase
+
         has_ipv4_ip = False
         has_ipv6_ip = False
 
@@ -588,14 +591,14 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 start_ip_address = subnet4['allocation_pools'][0]['start']
                 end_ip_address = subnet4['allocation_pools'][0]['end']
                 ip_range = IPRange(start_ip_address, end_ip_address)
-                self.assertIn(ip_address, ip_range)
+                self.assertIn(ip_address, ip_range, message=message)
                 has_ipv4_ip = True
 
             if subnet6 and fixed_ip['subnet_id'] == subnet6['id']:
                 start_ip_address = subnet6['allocation_pools'][0]['start']
                 end_ip_address = subnet6['allocation_pools'][0]['end']
                 ip_range = IPRange(start_ip_address, end_ip_address)
-                self.assertIn(ip_address, ip_range)
+                self.assertIn(ip_address, ip_range, message=message)
                 has_ipv6_ip = True
 
         if subnet4:

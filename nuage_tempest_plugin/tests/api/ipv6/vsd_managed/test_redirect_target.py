@@ -17,11 +17,6 @@ from tempest.lib.common.utils import data_utils
 
 class VSDManagedRedirectTargetTest(BaseVSDManagedNetworksIPv6Test):
 
-    @classmethod
-    def resource_setup(cls):
-        super(VSDManagedRedirectTargetTest, cls).resource_setup()
-        cls.net_partition = cls.net_partition[0]['name']
-
     def _verify_redirect_target(self, rt, parent, parentinfo, postinfo):
         redirect_target = self.nuage_client.get_redirection_target(
             parent, parentinfo['ID'], filters='ID',
@@ -221,7 +216,7 @@ class VSDManagedRedirectTargetTest(BaseVSDManagedNetworksIPv6Test):
                         "Did not find my redirect-target in the list")
         # and check on VSD
         vsd_redirect_target = self.nuage_client.get_redirection_target(
-            constants.DOMAIN, vsd_l3_domain['ID'], filters='ID',
+            constants.DOMAIN, vsd_l3_domain.id, filters='ID',
             filter_value=os_redirect_target['nuage_redirect_target']['id'])
         self.assertIsNotNone(
             vsd_redirect_target,
@@ -237,7 +232,7 @@ class VSDManagedRedirectTargetTest(BaseVSDManagedNetworksIPv6Test):
                         "Did not find my redirect-target in the list")
         # and check on VSD
         vsd_redirect_target = self.nuage_client.get_redirection_target(
-            constants.DOMAIN, vsd_l3_domain['ID'], filters='ID',
+            constants.DOMAIN, vsd_l3_domain.id, filters='ID',
             filter_value=os_redirect_target6['nuage_redirect_target']['id'])
         self.assertIsNotNone(
             vsd_redirect_target,
@@ -290,7 +285,7 @@ class VSDManagedRedirectTargetTest(BaseVSDManagedNetworksIPv6Test):
 
         # And the redirect target on VSD is gone as well
         vsd_redirect_target = self.nuage_client.get_redirection_target(
-            constants.DOMAIN, vsd_l3_domain['ID'], filters='ID',
+            constants.DOMAIN, vsd_l3_domain.id, filters='ID',
             filter_value=os_redirect_target['nuage_redirect_target']['id'])
         self.assertEqual(vsd_redirect_target, '')
 
@@ -304,7 +299,7 @@ class VSDManagedRedirectTargetTest(BaseVSDManagedNetworksIPv6Test):
                                  "present in subnet")
         # And the redirect target on VSD is gone as well
         vsd_redirect_target = self.nuage_client.get_redirection_target(
-            constants.DOMAIN, vsd_l3_domain['ID'], filters='ID',
+            constants.DOMAIN, vsd_l3_domain.id, filters='ID',
             filter_value=os_redirect_target6['nuage_redirect_target']['id'])
         self.assertEqual(vsd_redirect_target, '')
 
