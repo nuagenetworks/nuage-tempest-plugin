@@ -46,38 +46,6 @@ class PortsTest(NuageAdminNetworksTest,
         waiters.wait_for_server_termination(clients.servers_client, server_id)
 
     @decorators.attr(type='smoke')
-    def test_nuage_dhcp_port_create_check_status(self):
-        network = self.create_network()
-        self.create_subnet(network, cidr=IPNetwork("10.0.0.0/24"),
-                           mask_bits=24)
-        filters = {
-            'device_owner': 'network:dhcp:nuage',
-            'network_id': network['id']
-        }
-        dhcp_port = self.ports_client.list_ports(**filters)['ports'][0]
-        self.assertEqual('ACTIVE', dhcp_port['status'])
-
-    @decorators.attr(type='smoke')
-    def test_nuage_dhcp_port_with_router_detach_check_status(self):
-        network = self.create_network()
-        subnet = self.create_subnet(network, cidr=IPNetwork("10.0.0.0/24"),
-                                    mask_bits=24)
-        router = self.create_router(
-            admin_state_up=True,
-            external_network_id=CONF.network.public_network_id)
-        self.create_router_interface(router_id=router["id"],
-                                     subnet_id=subnet["id"])
-
-        self.routers_client.remove_router_interface(router_id=router["id"],
-                                                    subnet_id=subnet["id"])
-        filters = {
-            'device_owner': 'network:dhcp:nuage',
-            'network_id': network['id']
-        }
-        dhcp_port = self.ports_client.list_ports(**filters)['ports'][0]
-        self.assertEqual('ACTIVE', dhcp_port['status'])
-
-    @decorators.attr(type='smoke')
     def test_nuage_port_create_show_check_status(self):
         network = self.create_network()
         self.create_subnet(network, cidr=IPNetwork("10.0.0.0/24"),
