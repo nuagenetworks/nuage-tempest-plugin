@@ -479,6 +479,90 @@ class PortsDirectTest(network_mixin.NetworkMixin,
                     vif_type, matchers.Equals('binding_failed'),
                     message="Port has unexpected vif_type")
 
+    def test_update_binding_nova_evacuate(self):
+        topology = self._create_topology()
+        # Create a direct port
+
+        # Have two VM's on the first GW to check that migration still works.
+        mapping1_1 = {'switch_id': self.gateway['systemID'],
+                      'port_id': self.gw_port['physicalName'],
+                      'host_id': 'host1',
+                      'pci_slot': '0000:03:10.6'}
+        mapping1_2 = {'switch_id': self.gateway['systemID'],
+                      'port_id': self.gw_port['physicalName'],
+                      'host_id': 'host1',
+                      'pci_slot': '0000:03:10.8'}
+        # Create a new gateway
+        gw_port_name = data_utils.rand_name(name='gw-port')
+        self.gw_port = self.vsd_client.create_gateway_port(
+            gw_port_name, gw_port_name, 'ACCESS', self.gateway['ID'],
+            extra_params={'VLANRange': '0-4095'})[0]
+
+        mapping2 = {'switch_id': self.gateway['systemID'],
+                    'port_id': self.gw_port['physicalName'],
+                    'host_id': 'host2',
+                    'pci_slot': '0000:03:10.7'}
+
+        with self.switchport_mapping(do_delete=False, **mapping1_1) as map1_1,\
+                self.switchport_mapping(do_delete=False, **mapping1_2) \
+                as map1_2, \
+                self.switchport_mapping(do_delete=False, **mapping2) as map2:
+            self.addCleanup(
+                self.switchport_mapping_client_admin.delete_switchport_mapping,
+                map1_1['id'])
+            self.addCleanup(
+                self.switchport_mapping_client_admin.delete_switchport_mapping,
+                map1_2['id'])
+            self.addCleanup(
+                self.switchport_mapping_client_admin.delete_switchport_mapping,
+                map2['id'])
+
+            create_data1_1 = {'binding:vnic_type': 'direct',
+                              'binding:host_id': 'host1',
+                              'binding:profile': {
+                                  "pci_slot": "0000:03:10.6",
+                                  "physical_network": "physnet1",
+                                  "pci_vendor_info": "8086:10ed"
+                              }}
+            direct_port = self.create_port(topology.network['id'],
+                                           **create_data1_1)
+            create_data1_2 = {'binding:vnic_type': 'direct',
+                              'binding:host_id': 'host1',
+                              'binding:profile': {
+                                  "pci_slot": "0000:03:10.8",
+                                  "physical_network": "physnet1",
+                                  "pci_vendor_info": "8086:10ed"
+                              }}
+            self.create_port(topology.network['id'],
+                             **create_data1_2)
+            original_vport = topology.vsd_direct_vport
+            # Create another gw_port to move sriov port to evacuate to
+            # Create a second switchport mapping for this
+            update_data = {
+                'binding:host_id': 'host2',
+                'binding:profile': {
+                    "pci_slot": "0000:03:10.7",
+                    "physical_network": "physnet1",
+                    "pci_vendor_info": "8086:10ed"
+                }}
+            topology.direct_port = self.update_port(direct_port['id'],
+                                                    **update_data)
+            self.binding_data = update_data
+
+        # Verification using newly created bridge vport: filter out original
+        # bridge vport
+        vsd_vports = self.vsd_client.get_vport(
+            topology.vsd_vport_parent_resource,
+            topology.vsd_vport_parent['ID'],
+            filters='externalID',
+            filter_value=topology.subnet['id'])
+        vsd_vports = [v for v in vsd_vports if v['ID'] !=
+                      original_vport['ID']]
+        self.assertNotEmpty(vsd_vports, "No new bridge port made for migrate")
+        topology._vsd_direct_vport = vsd_vports[0]  # Reset for validation
+        self._validate_vsd(topology, nr_vports=2)
+        self._validate_os(topology)
+
     def _create_topology(self, with_router=False,
                          with_port=False, dualstack=False,
                          vsd_managed=False, for_trunk=False):
@@ -659,13 +743,13 @@ class PortsDirectTest(network_mixin.NetworkMixin,
 
     # Validation part
 
-    def _validate_vsd(self, topology, is_trunk=False):
+    def _validate_vsd(self, topology, is_trunk=False, nr_vports=1):
         self._validate_direct_vport(topology)
         self._validate_vlan(topology, is_trunk)
         self._validate_interface(topology)
         if not topology.vsd_managed:
             self._validate_policygroup(
-                topology, pg_name='defaultPG-VSG-BRIDGE')
+                topology, pg_name='defaultPG-VSG-BRIDGE', nr_vports=nr_vports)
 
     def _validate_direct_vport(self, topology):
         self.assertThat(topology.vsd_direct_vport['type'],
@@ -695,7 +779,7 @@ class PortsDirectTest(network_mixin.NetworkMixin,
                 topology.vsd_direct_interface['IPAddress'],
                 matchers.Equals(neutron_port['fixed_ips'][0]['ip_address']))
 
-    def _validate_policygroup(self, topology, pg_name=None):
+    def _validate_policygroup(self, topology, pg_name=None, nr_vports=1):
         if topology.router and topology._direct_port_is_subport:
             expected_pgs = 2  # Expecting only hardware
         else:
@@ -703,6 +787,7 @@ class PortsDirectTest(network_mixin.NetworkMixin,
         self.assertThat(topology.vsd_policygroups,
                         matchers.HasLength(expected_pgs),
                         message="Unexpected amount of PGs found")
+        vsd_pg_vports = []
         for vsd_policygroup in topology.vsd_policygroups:
             self.assertThat(vsd_policygroup['type'],
                             matchers.Equals('HARDWARE'))
@@ -710,15 +795,17 @@ class PortsDirectTest(network_mixin.NetworkMixin,
                 self.assertThat(vsd_policygroup['name'],
                                 matchers.Contains(pg_name))
 
-            vsd_pg_vports = self.vsd_client.get_vport(constants.POLICYGROUP,
-                                                      vsd_policygroup['ID'])
-            self.assertThat(vsd_pg_vports, matchers.HasLength(1),
-                            message="Expected to find exactly 1 vport in PG")
-            if topology.subnet['id'] in vsd_pg_vports[0]['externalID']:
-                self.assertThat(
-                    vsd_pg_vports[0]['ID'],
-                    matchers.Equals(topology.vsd_direct_vport['ID']),
-                    message="Vport should be part of HARDWARE PG")
+            pg_vports = self.vsd_client.get_vport(constants.POLICYGROUP,
+                                                  vsd_policygroup['ID'])
+            self.assertThat(pg_vports, matchers.HasLength(nr_vports),
+                            message="Expected to find exactly {} "
+                                    "vport(s) in PG".format(nr_vports))
+            vsd_pg_vports.extend(pg_vports)
+
+        vsd_pg_vport_ids = [v['ID'] for v in vsd_pg_vports]
+        self.assertIn(topology.vsd_direct_vport['ID'],
+                      vsd_pg_vport_ids,
+                      "Vport should be part of HARDWARE PG")
 
     def _validate_dhcp_option(self, topology):
         self.assertThat(topology.vsd_direct_dhcp_opts,
