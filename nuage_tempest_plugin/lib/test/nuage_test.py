@@ -155,6 +155,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
     credentials = ['primary', 'admin']
     default_netpartition_name = Topology.def_netpartition
+    shared_infrastructure = 'Shared Infrastructure'
     image_name_to_id_cache = {}
     dhcp_agent_present = None
 
@@ -303,8 +304,9 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             self.addCleanup(vsd_domain.delete)
         return vsd_domain
 
-    def vsd_create_zone(self, name=None, domain=None, cleanup=False):
-        vsd_zone = self.vsd.create_zone(name, domain)
+    def vsd_create_zone(self, name=None, domain=None, cleanup=False,
+                        **kwargs):
+        vsd_zone = self.vsd.create_zone(name, domain, **kwargs)
         self.assertIsNotNone(vsd_zone)
         if cleanup:
             self.addCleanup(vsd_zone.delete)

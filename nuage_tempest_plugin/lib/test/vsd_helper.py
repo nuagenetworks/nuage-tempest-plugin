@@ -369,13 +369,19 @@ class VsdHelper(object):
                         .format(vspk_filter))
         return domain
 
-    def create_zone(self, name=None, domain=None):
+    def create_zone(self, name=None, domain=None, **kwargs):
         zone_name = name or data_utils.rand_name('test-zone')
 
-        zone_data = self.vspk.NUZone(
-            name=zone_name),
+        params = {}
 
-        zone_tuple = domain.create_child(zone_data[0])
+        for key, value in iteritems(kwargs):
+            params.update({key: value})
+
+        zone_data = self.vspk.NUZone(
+            name=zone_name,
+            **params)
+
+        zone_tuple = domain.create_child(zone_data)
         return zone_tuple[0]
 
     def create_subnet(self, name=None, zone=None,
@@ -393,13 +399,13 @@ class VsdHelper(object):
 
         params = {}
 
+        for key, value in iteritems(kwargs):
+            params.update({key: value})
+
         if cidr4:
             params.update({'address': str(cidr4.ip)})
-            if "netmask" in kwargs:
-                netmask = kwargs['netmask']
-            else:
-                netmask = str(cidr4.netmask)
-            params.update({'netmask': netmask})
+            if "netmask" not in kwargs:
+                params.update({'netmask': str(cidr4.netmask)})
 
             if gateway4:
                 params.update({'gateway': gateway4})

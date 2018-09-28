@@ -60,7 +60,6 @@ class BaseVSDManagedNetwork(NuageBaseTest):
         cls.vsd_zones = []
         cls.vsd_subnets = []
         cls.vsd_shared_domains = []
-        cls.vsd_shared_subnets = []
         cls.vsd_policy_groups = []
 
     @classmethod
@@ -68,30 +67,30 @@ class BaseVSDManagedNetwork(NuageBaseTest):
         # cleanup the OpenStack managed objects first
         super(BaseVSDManagedNetwork, cls).resource_cleanup()
 
-        for vsd_policy_group in cls.vsd_policy_groups:
+        for vsd_policy_group in reversed(cls.vsd_policy_groups):
             cls.nuage_client.delete_policygroup(vsd_policy_group[0]['id'])
 
-        for vsd_l2domain in cls.vsd_l2domains:
+        for vsd_l2domain in reversed(cls.vsd_l2domains):
             cls.nuage_client.delete_l2domain(vsd_l2domain[0]['ID'])
 
-        for vsd_l2dom_template in cls.vsd_l2dom_templates:
+        for vsd_l2dom_template in reversed(cls.vsd_l2dom_templates):
             cls.nuage_client.delete_l2domaintemplate(
                 vsd_l2dom_template[0]['ID'])
 
-        for vsd_subnet in cls.vsd_subnets:
+        for vsd_subnet in reversed(cls.vsd_subnets):
             cls.nuage_client.delete_domain_subnet(vsd_subnet[0]['ID'])
 
-        for vsd_zone in cls.vsd_zones:
+        for vsd_zone in reversed(cls.vsd_zones):
             cls.nuage_client.delete_zone(vsd_zone[0]['ID'])
 
-        for vsd_l3domain in cls.vsd_l3domains:
+        for vsd_l3domain in reversed(cls.vsd_l3domains):
             cls.nuage_client.delete_domain(vsd_l3domain[0]['ID'])
 
-        for vsd_l3dom_template in cls.vsd_l3dom_templates:
+        for vsd_l3dom_template in reversed(cls.vsd_l3dom_templates):
             cls.nuage_client.delete_l3domaintemplate(
                 vsd_l3dom_template[0]['ID'])
 
-        for vsd_shared_domain in cls.vsd_shared_domains:
+        for vsd_shared_domain in reversed(cls.vsd_shared_domains):
             cls.nuage_client.delete_vsd_shared_resource(
                 vsd_shared_domain[0]['ID'])
 
@@ -113,7 +112,8 @@ class BaseVSDManagedNetwork(NuageBaseTest):
     def create_vsd_dhcpunmanaged_l2dom_template(cls, **kwargs):
         name = kwargs.get('name') or data_utils.rand_name('l2domain-noIPAM')
         vsd_l2dom_tmplt = cls.nuage_client.create_l2domaintemplate(
-            name + '-template')
+            name + '-template',
+            netpart_name=kwargs.get('netpart_name'))
         cls.vsd_l2dom_templates.append(vsd_l2dom_tmplt)
         return vsd_l2dom_tmplt
 
@@ -291,15 +291,6 @@ class BaseVSDManagedNetwork(NuageBaseTest):
             extra_params=extra_params)
         cls.vsd_policy_groups.append(policy_group)
         return policy_group
-
-    @classmethod
-    def create_vsd_managed_shared_resource(cls, **kwargs):
-        data = {}
-        data.update(kwargs)
-        vsd_shared_subnet = cls.nuage_client.restproxy.rest_call(
-            'POST', '/sharednetworkresources', data)
-        cls.vsd_shared_subnets.append(vsd_shared_subnet.data)
-        return vsd_shared_subnet.data[0]
 
     def get_server_ip_from_vsd(self, vm_id):
         vm_details = self.nuage_client.get_resource(
