@@ -374,6 +374,7 @@ class VSDPublicResourcesML2Test(
         )
 
     @nuage_test.header()
+    @decorators.attr(type='smoke')
     def test_vsd_l3_shared_mgd_l3_unmgd_with_gateway(self):
         # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
