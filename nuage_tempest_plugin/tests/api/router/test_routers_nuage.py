@@ -1081,7 +1081,7 @@ class NuageRoutersV6Test(NuageRoutersTest):
         for i in range(routes_num):
             network = self.create_network()
             subnet = self.create_subnet(network, cidr=next_cidr)
-            next_cidr = next(next_cidr)
+            next_cidr = next_cidr.next()
 
             # Add router interface with subnet id
             self.create_router_interface(router['id'], subnet['id'])
@@ -1139,13 +1139,13 @@ class NuageRoutersV6Test(NuageRoutersTest):
             network_name=data_utils.rand_name('router-network02-'))
 
         # NUAGE non-compliance: Must have IPv4 subnet
-        subnet02_ipv4_cidr = next(netaddr.IPNetwork(subnet01_ipv4['cidr']))
+        subnet02_ipv4_cidr = netaddr.IPNetwork(subnet01_ipv4['cidr']).next()
         subnet02_ipv4 = self.create_subnet(
             network02, ip_version=4, cidr=subnet02_ipv4_cidr, enable_dhcp=True)
         self.addCleanup(self.subnets_client.delete_subnet, subnet02_ipv4['id'])
 
         subnet01 = self.create_subnet(network01)
-        sub02_cidr = next(netaddr.IPNetwork(self.cidr))
+        sub02_cidr = netaddr.IPNetwork(self.cidr).next()
         subnet02 = self.create_subnet(network02, cidr=sub02_cidr)
         router = self._create_router()
         interface01 = self._add_router_interface_with_subnet_id(router['id'],

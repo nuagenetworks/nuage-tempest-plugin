@@ -253,8 +253,8 @@ class StatelessSecuritygroupTest(network_mixin.NetworkMixin,
                                             **sg_rule)
             self._validate_os(topology, stateless=True)
             self._validate_vsd(topology, stateless=True)
-            # verify, that no reverse rules created for icmp
-            self._validate_icmp_rules(topology, sg_rule['direction'])
+            self._validate_no_reverse_icmp_rules(
+                topology, sg_rule['direction'])
 
     @decorators.attr(type='smoke')
     def test_stateless_securitygroup_rule_icmp_type_code(self):
@@ -275,8 +275,8 @@ class StatelessSecuritygroupTest(network_mixin.NetworkMixin,
                                             **sg_rule)
             self._validate_os(topology, stateless=True)
             self._validate_vsd(topology, stateless=True)
-            # verify, that no reverse rules created for icmp
-            self._validate_icmp_rules(topology, sg_rule['direction'])
+            self._validate_no_reverse_icmp_rules(
+                topology, sg_rule['direction'])
 
     @decorators.attr(type='smoke')
     def test_stateless_securitygroup_rule_icmpv6(self):
@@ -294,8 +294,8 @@ class StatelessSecuritygroupTest(network_mixin.NetworkMixin,
                                             **sg_rule)
             self._validate_os(topology, stateless=True)
             self._validate_vsd(topology, stateless=True)
-            # verify, that no reverse rules created for icmp
-            self._validate_icmp_rules(topology, sg_rule['direction'])
+            self._validate_no_reverse_icmp_rules(
+                topology, sg_rule['direction'])
 
     def _create_topology(self, with_router=False, with_securitygroup=True,
                          stateless_sg=True):
@@ -348,11 +348,12 @@ class StatelessSecuritygroupTest(network_mixin.NetworkMixin,
                              "stateful attribute" %
                              acl['ID']))
 
-    def _validate_icmp_rules(self, topology, direction):
-        acls = (topology.vsd_ingress_acl_entries if direction == 'egress'
+    def _validate_no_reverse_icmp_rules(self, topology, direction):
+        # on VSD the ingress direction is the egress direction and vice versa
+        acls = (topology.vsd_ingress_acl_entries if direction == 'ingress'
                 else topology.vsd_egress_acl_entries)
         for acl in acls:
             if acl.get('locationID') == topology.vsd_policygroups[0]['ID']:
-                self.assertIsNot('1', acl.get('protocol'),
-                                 message='Found icmp reverse rule - ACL %s' %
-                                 acl['ID'])
+                self.assertNotEqual(
+                    '1', acl.get('protocol'),
+                    msg='Found icmp reverse rule - ACL %s' % acl['ID'])

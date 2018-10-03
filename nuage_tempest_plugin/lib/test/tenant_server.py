@@ -3,6 +3,7 @@
 
 from base64 import b64encode
 import re
+import textwrap
 
 from netaddr import IPNetwork
 
@@ -229,9 +230,9 @@ class TenantServer(object):
                 s = '#!/bin/sh\n'
                 for nic in range(1, nbr_nics):
                     s += '/sbin/cirros-dhcpc up eth%s\n' % nic
-
-            LOG.info('get_user_data_for_nic_prep:\n---\n%s---', s)
-            return b64encode(s)
+                script_clean = textwrap.dedent(s).lstrip().encode('utf8')
+                LOG.info('get_user_data_for_nic_prep:\n---\n%s---', s)
+                return b64encode(script_clean)
         return None
 
     def needs_fip_access(self):

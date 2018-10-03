@@ -90,7 +90,7 @@ function configure_tempest_nuage {
 if [[ "$1" == "stack" ]]; then
     if [[ "$2" == "install" ]]; then
         echo_summary "Installing Nuage tempest plugin"
-        pip_install -e $NUAGE_TEMPEST_DIR -r $NUAGE_TEMPEST_DIR/requirements.txt
+        pip_install -r $NUAGE_TEMPEST_DIR/requirements.txt -e $NUAGE_TEMPEST_DIR
     elif [[ "$1" == "stack" && "$2" == "extra" ]]; then
         configure_tempest_nuage
     elif [[ "$1" == "stack" && "$2" == "test-config" ]]; then
