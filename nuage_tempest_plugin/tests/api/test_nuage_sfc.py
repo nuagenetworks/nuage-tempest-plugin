@@ -1,6 +1,7 @@
 from netaddr import IPNetwork
 import time
 
+from tempest.common import utils
 from tempest.lib import exceptions as lib_exec
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
@@ -46,8 +47,8 @@ class NuageSfc(NuageBaseTest):
     @classmethod
     def skip_checks(cls):
         super(NuageSfc, cls).skip_checks()
-        if not Topology.support_sfc():
-            raise cls.skipException('Nuage-sfc not supported in current setup.'
+        if not utils.is_extension_enabled('sfc', 'network'):
+            raise cls.skipException('sfc service is not enabled.'
                                     ' Skipping tests.')
 
     def _create_server(self, ports, name='vm', cleanup=True):
