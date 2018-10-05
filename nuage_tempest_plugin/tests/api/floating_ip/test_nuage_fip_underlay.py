@@ -88,6 +88,29 @@ class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
         """
         self._verify_list_external_subnets_underlay()
 
+    @nuage_test.header()
+    def test_multiple_subnets_with_underlay(self):
+        """test_multiple_subnets_with_underlay
+
+        Check that when using underlay=True,
+        two subnets on two different networks go into the same domain
+        """
+        ext_network1 = self._create_network(external=True)
+        ext_network2 = self._create_network(external=True)
+        subnet_name = data_utils.rand_name(
+            'create-external-fip-subnet-with-underlay')
+        sub1 = self.admin_subnets_client.create_subnet(
+            network_id=ext_network1['id'],
+            cidr=self.randomized_cidr(),
+            ip_version=self._ip_version,
+            name=subnet_name, underlay=True)['subnet']
+        sub2 = self.admin_subnets_client.create_subnet(
+            network_id=ext_network2['id'],
+            cidr=self.randomized_cidr(),
+            ip_version=self._ip_version,
+            name=subnet_name, underlay=True)['subnet']
+        self.assertEqual(sub1['nuage_uplink'], sub2['nuage_uplink'])
+
     #
     #
     #  Negative test cases

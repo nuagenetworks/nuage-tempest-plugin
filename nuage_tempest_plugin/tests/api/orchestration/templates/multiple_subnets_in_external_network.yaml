@@ -1,0 +1,23 @@
+heat_template_version: '2013-05-23'
+description: |
+  Template which one external network with two subnets
+resources:
+  Network:
+    type: OS::Neutron::Net
+    properties:
+      name: network_ext
+      value_specs: {'router:external': True}
+  Subnet1:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: {Ref: Network}
+      name: NewSubnet
+      ip_version: 4
+      cidr: 50.0.0.0/24
+  Subnet2:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id: {Ref: Network}
+      name: NewSubnet
+      ip_version: 4
+      cidr: 51.0.0.0/24

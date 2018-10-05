@@ -128,6 +128,10 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
 
     @decorators.attr(type='smoke')
     def test_create_fipsubs_in_shared_domain(self):
+        """test_create_fipsubs_in_shared_domain
+
+        Check that when using nuage-uplink correct parent linkage is present
+        """
         # Create first FIP subnet
         cidr1 = "172.%s.%s.0/24" % (random.randint(0, 255),
                                     random.randint(0, 255))

@@ -352,10 +352,7 @@ class NuageBaseOrchestrationTest(BaseOrchestrationTest):
         # by default
         # Need to list 'vsd_managed' in the fields list in order to get the
         # attribute format: {'fields': ['id', 'name']}
-        body = self.admin_subnets_client.show_subnet(
-            subnet_id,
-            fields=['id', 'network_id', 'ip_version', 'vsd_managed',
-                    'enable_dhcp', 'cidr', 'gateway_ip', 'allocation_pools'])
+        body = self.admin_subnets_client.show_subnet(subnet_id)
 
         subnet = body['subnet']
 
@@ -363,9 +360,6 @@ class NuageBaseOrchestrationTest(BaseOrchestrationTest):
         self.assertIsInstance(subnet, dict)
         self.assertEqual(subnet_id, subnet['id'])
         self.assertEqual(network['id'], subnet['network_id'])
-
-        self.assertTrue(subnet['vsd_managed'])
-        self.assertEqual(4, subnet['ip_version'])
 
         return subnet
 
