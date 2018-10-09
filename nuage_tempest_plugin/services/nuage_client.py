@@ -484,7 +484,14 @@ class NuageRestClient(object):
         return self.post(res_path, data)
 
     def delete_vsd_shared_resource(self, shared_resource_id):
-        self.delete_resource(constants.SHARED_NET_RES, shared_resource_id)
+        try:
+            self.delete_resource(constants.SHARED_NET_RES, shared_resource_id)
+        except n_exceptions.MultipleChoices:
+            # Temporary fix to unblock CI, will need investigation on
+            # VSD behavior of asking for response choice although its
+            # child objects were deleted.
+            self.delete_resource(constants.SHARED_NET_RES, shared_resource_id,
+                                 responseChoice=True)
 
     # FloatingIp
     def create_floatingip(self, parent_id, shared_netid,
