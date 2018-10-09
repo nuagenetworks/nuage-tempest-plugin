@@ -130,9 +130,5 @@ class Topology(Singleton):
         return Topology.is_devstack()
 
     @staticmethod
-    def use_alpine_for_advanced_image():
-        return Topology.is_devstack()
-
-    @staticmethod
     def new_route_to_underlay_model_enabled():
         return CONF.nuage_sut.nuage_pat_legacy.lower() == 'disabled'

@@ -22,7 +22,9 @@ class FipAccessConsole(RemoteClient):
         super(FipAccessConsole, self).__init__(
             ip_address=tenant_server.associated_fip,
             username=tenant_server.username,
-            password=tenant_server.password)
+            password=tenant_server.password,
+            pkey=tenant_server.keypair['private_key'],
+            servers_client=tenant_server.admin_client)
         self.tenant_server = tenant_server
 
     def send(self, cmd, timeout=CONF.validation.ssh_timeout):
@@ -46,13 +48,7 @@ class FipAccessConsole(RemoteClient):
 
     def ping(self, destination, cnt, interface=None, ip_type=4):
         try:
-            # TODO(Kris) - pass on interface ...
-            # today, fail explicitly so we don't loose time investigating
-            if interface is not None:
-                LOG.error('TODO(Kris): ping to interface not yet supported.')
-                assert False
-
-            return self.ping_host(destination, cnt)
+            return self.ping_host(destination, cnt, nic=interface)
         except lib_exc.SSHExecCommandFailed:
             return "SSHExecCommandFailed"
 
@@ -68,30 +64,10 @@ class TenantServer(object):
     """
     client = None
     admin_client = None
-    image_profiles = {
-        'default': {
-            'image_name': 'cirros-0.3.5-x86_64-disk',
-            'username': 'cirros',
-            'password': 'cubswin:)',
-            'prompt': '\$'
-        },
-        'advanced': {
-            'image_name': 'alpine',
-            'username': 'root',
-            'password': 'tigris',
-            'prompt': '~#'
-        } if Topology.use_alpine_for_advanced_image() else {
-            'image_name': 'cirros-0.3.5-x86_64-disk',
-            'username': 'cirros',
-            'password': 'cubswin:)',
-            'prompt': '\$'
-        }
-    }
 
     def __init__(self, parent_test, client, admin_client,
                  name=None, networks=None, ports=None, security_groups=None,
-                 image_profile='default', flavor=None,
-                 volume_backed=False):
+                 flavor=None, keypair=None, volume_backed=False):
         self.parent_test = parent_test
         self.client = client
         self.admin_client = admin_client
@@ -103,15 +79,10 @@ class TenantServer(object):
         self.flavor = flavor
         self.volume_backed = volume_backed
 
-        assert image_profile in self.image_profiles
-        self.image_profile = self.image_profiles[image_profile]
-        self.image_name = self.image_profile['image_name']
-        assert self.image_name
         self._image_id = None
-        self.username = self.image_profile['username']
-        self.password = self.image_profile['password']
-        self.prompt = self.image_profile['prompt']
-        self.needs_sudo = self.username != 'root'
+        self.username = CONF.validation.image_ssh_user
+        self.password = CONF.validation.image_ssh_password
+        self.keypair = keypair
 
         self.vm_console = None
         self.openstack_data = None
@@ -122,39 +93,11 @@ class TenantServer(object):
     def console(self):
         return self.vm_console
 
-    def is_cirros(self):
-        return 'cirros' in self.image_name
-
     @property
     def image_id(self):
         if not self._image_id:
-            if self.image_profile == 'default':
-                self._image_id = CONF.compute.image_ref
-            else:
-                self._image_id = self.parent_test.osc_get_image_id(
-                    self.image_name)
-                if not self._image_id:
-                    self.parent_test.skipTest('Image ' + self.image_name +
-                                              ' could not be found on setup.')
+            self._image_id = CONF.compute.image_ref
         return self._image_id
-
-    def get_telnet_host_port(self):
-        server = self.get_server_details()
-
-        vm_name = server.get('OS-EXT-SRV-ATTR:instance_name')
-        instance, number = vm_name.split('-')
-        telnet_port = int(number, 16) + 2000
-
-        host = server.get('OS-EXT-SRV-ATTR:hypervisor_hostname')
-
-        LOG.info("VM details:\n"
-                 "  VM ID  : {}\n"
-                 "  VM name: {}\n"
-                 "  VM host: {}\n"
-                 "  VM port: {}\n"
-                 .format(server['id'], vm_name, host, telnet_port))
-
-        return host, telnet_port
 
     def id(self):
         return self.openstack_data['id']
@@ -162,15 +105,16 @@ class TenantServer(object):
     def boot(self, wait_until='ACTIVE', cleanup=True,
              return_none_on_failure=False, **kwargs):
 
-        # add user data for configuring extra nics on cirros
-        user_data = self.get_user_data_for_nic_prep()
+        # add user data for configuring extra nics
+        user_data = self.get_user_data_for_nic_prep(
+            dhcp_client=CONF.scenario.dhcp_client)
         if user_data:
             kwargs['user_data'] = user_data
 
         self.openstack_data = self.parent_test.osc_create_test_server(
             self.client, self.networks, self.ports, self.security_groups,
             wait_until, self.volume_backed, self.name, self.flavor,
-            self.image_id, cleanup,
+            self.image_id, self.keypair, cleanup,
             return_none_on_failure=return_none_on_failure, **kwargs)
 
         return self.openstack_data
@@ -204,12 +148,9 @@ class TenantServer(object):
                 break
         return ip_address
 
-    def send(self, cmd, check_sudo=True):
+    def send(self, cmd):
         assert self.console()
-        if check_sudo and self.needs_sudo:
-            return self.console().send('sudo ' + cmd)
-        else:
-            return self.console().send(cmd)
+        return self.console().send('sudo ' + cmd)
 
     def configure_dualstack_interface(self, ip, subnet, device='eth0'):
         LOG.info('VM configure_dualstack_interface:\n'
@@ -230,22 +171,18 @@ class TenantServer(object):
 
         LOG.info('VM configure_dualstack_interface: Done.\n')
 
-    def configure_vlan_interface(self, ip, interface, vlan, check_image=True):
-        # check support on the guest vm
-        if check_image and not self.send('lsmod | { grep 8021q || true; }'):
-            raise OSError('8021q not loaded on guest image ' + self.image_name)
-
+    def configure_vlan_interface(self, ip, interface, vlan):
         self.send('ip link add link %s name %s.%s type vlan id %s ' % (
             interface, interface, vlan, vlan))
-        self.send('ifconfig %s.%s %s  up' % (interface, vlan, ip))
-        self.send('ifconfig')
+        self.send('ip addr add %s dev %s.%s' % (
+            ip, interface, vlan))
+        self.send('ip link set dev %s.%s up' % (interface, vlan))
 
     def configure_ip_fwd(self):
         self.send('sysctl -w net.ipv4.ip_forward=1')
 
     def bring_down_interface(self, interface):
-        self.send('ifconfig %s 0.0.0.0' % interface)
-        self.send('ifconfig')
+        self.send('ip link set dev %s down' % interface)
 
     def configure_sfc_vm(self, vlan):
         self.send('ip link add link eth0 name eth0.%s type vlan id %s ' %
@@ -275,17 +212,20 @@ class TenantServer(object):
     def unmount_config_drive(self):
         self.send('umount /mnt')
 
-    def get_user_data_for_nic_prep(self):
-        if self.is_cirros():
-            nbr_nics = len(self.networks) if self.networks else len(self.ports)
-            if nbr_nics > 1:
+    def get_user_data_for_nic_prep(self, dhcp_client='udhcpc'):
+        nbr_nics = len(self.networks) if self.networks else len(self.ports)
+        if nbr_nics > 1:
+            supported_clients = ['udhcpc', 'dhclient']
+            if dhcp_client not in supported_clients:
+                raise lib_exc.exceptions.InvalidConfiguration(
+                    '%s DHCP client unsupported' % dhcp_client)
+            if dhcp_client == 'udhcpc':
                 s = '#!/bin/sh\n'
                 for nic in range(1, nbr_nics):
                     s += '/sbin/cirros-dhcpc up eth%s\n' % nic
 
-                LOG.info('get_user_data_for_nic_prep:\n---\n%s---', s)
-                return b64encode(s)
-        # else
+            LOG.info('get_user_data_for_nic_prep:\n---\n%s---', s)
+            return b64encode(s)
         return None
 
     def needs_fip_access(self):
@@ -331,4 +271,4 @@ class TenantServer(object):
                   "echo '----- ip route -----'; ip route; "
                   "echo '----- ip a     -----'; ip a; "
                   "echo '----- arp -a   -----'; arp -a; "
-                  "echo", CONF.validation.ssh_timeout)
+                  "echo")

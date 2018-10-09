@@ -3,6 +3,7 @@ import time
 
 from tempest.common import utils
 from tempest.lib import exceptions as lib_exec
+import testtools
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
@@ -18,7 +19,6 @@ CONF = Topology.get_conf()
 
 class NuageSfc(NuageBaseTest):
     _interface = 'json'
-    image_profile = 'advanced'
 
     @classmethod
     def setup_clients(cls):
@@ -54,7 +54,6 @@ class NuageSfc(NuageBaseTest):
     def _create_server(self, ports, name='vm', cleanup=True):
         return self.create_tenant_server(ports=ports,
                                          name=name,
-                                         image_profile=self.image_profile,
                                          cleanup=cleanup)
 
     @classmethod
@@ -731,6 +730,9 @@ class NuageSfc(NuageBaseTest):
         self.assertIsNotNone(rule_src_insfcvm1)
         self.assertIsNotNone(rule_sfcvm1_dest)
 
+    @testtools.skipUnless(
+        CONF.nuage_sut.image_is_advanced,
+        "Advanced image is required to run this test.")
     def test_create_delete_port_chain_one_ppg(self):
         network = self.create_network()
         subnet = self.create_subnet(network)
@@ -1168,6 +1170,9 @@ class NuageSfc(NuageBaseTest):
                                       src_port3, dest_port3,
                                       ppg_list_3, fc2, pc3, '14')
 
+    @testtools.skipUnless(
+        CONF.nuage_sut.image_is_advanced,
+        "Advanced image is required to run this test.")
     def test_vsd_managed_port_chain(self):
         vsd_l3domain_template = self.vsd.create_l3domain_template()
         self.addCleanup(vsd_l3domain_template.delete)
