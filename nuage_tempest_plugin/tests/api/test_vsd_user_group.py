@@ -104,7 +104,7 @@ class VSDUserGroup(nuage_test.NuageBaseTest):
                 self._validate_user_group_description(validate_equals, value,
                                                       vsd_group)
 
-    @decorators.attr(type='smoke')
+    @decorators.skip_because(bug='OPENSTACK-2321')
     @nuage_test.header()
     def test_os_managed_subnet_create_with_new_session_then_old_session(self):
         self._create_and_validate_os_managed_subnet(reload_session=False,
@@ -118,7 +118,7 @@ class VSDUserGroup(nuage_test.NuageBaseTest):
         self._create_and_validate_os_managed_subnet(reload_session=False,
                                                     validate_equals=False)
 
-    @decorators.attr(type='smoke')
+    @decorators.skip_because(bug='OPENSTACK-2321')
     @nuage_test.header()
     def test_os_managed_router_create_with_new_session_then_old_session(self):
         self._create_and_validate_on_router_create(reload_session=False,
