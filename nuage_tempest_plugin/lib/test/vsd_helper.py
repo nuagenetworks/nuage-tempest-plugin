@@ -1065,6 +1065,36 @@ class VsdHelper(object):
                         'the filter "{}"'.format(vspk_filter))
         return firewall_acl
 
+    def get_firewall_acls(self, ent=None, vspk_filter=None,
+                          by_fw_policy_id=None):
+        """get_firewall_acls
+
+        @params: enterprise object
+                 vspk_filter following vspk filter structure
+        @return: firewall_acl object
+        @Example:
+        self.vsd.get_firewall_acl(ent=ent1,
+            filter='externalID == "{}"'.format(ext_id))
+        """
+        if not by_fw_policy_id:
+            if ent and not isinstance(ent, self.vspk.NUEnterprise):
+                LOG.error('a enterprise is required')
+                return None
+            else:
+                ent = self.get_default_enterprise()
+            if vspk_filter:
+                firewall_acls = ent.firewall_acls.get(filter=vspk_filter)
+            else:
+                firewall_acls = ent.firewall_acls.get()
+        elif by_fw_policy_id:
+            firewall_acls = self.get_firewall_acls(
+                ent, self.get_external_id_filter(by_fw_policy_id))
+
+        if not firewall_acls:
+            LOG.warning('could not fetch the firewall_acls matching '
+                        'the filter "{}"'.format(vspk_filter))
+        return firewall_acls
+
     def get_firewall_rule(self, ent=None, vspk_filter=None,
                           by_fw_rule_id=None):
         """get_firewall_rule
