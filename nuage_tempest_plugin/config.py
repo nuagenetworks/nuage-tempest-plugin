@@ -81,4 +81,7 @@ NuageSutGroup = [
                default='enabled',
                choices=['enabled', 'disabled'],
                help="Nuage_pat legacy mode enabled or disabled."),
+    cfg.BoolOpt('image_is_advanced',
+                default=False,
+                help='Whether image supports advanced features like 8021q'),
 ]

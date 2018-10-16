@@ -2,20 +2,22 @@
 # All Rights Reserved.
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.test.nuage_test import skip_because
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
+from netaddr import IPNetwork
 from tempest.test import decorators
+import testtools
 
+CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
 
 
 class VlanTransparentConnectivityTest(NuageBaseTest):
     _interface = 'json'
-
-    image_profile = 'advanced'
 
     @classmethod
     def setup_clients(cls):
@@ -33,6 +35,9 @@ class VlanTransparentConnectivityTest(NuageBaseTest):
     def resource_setup(cls):
         super(VlanTransparentConnectivityTest, cls).resource_setup()
 
+    @testtools.skipUnless(
+        CONF.nuage_sut.image_is_advanced,
+        "Advanced image is required to run this test.")
     @decorators.attr(type='smoke')
     def test_l2_transparent_network(self):
         kwargs = {
@@ -54,20 +59,20 @@ class VlanTransparentConnectivityTest(NuageBaseTest):
             security_groups=[ssh_security_group],
             make_reachable=True)
 
-        vm1_ip = vm1.get_server_ip_in_network(network['name'])
-        vm2_ip = vm2.get_server_ip_in_network(network['name'])
+        vm1_ip = '13.13.13.13/24'
+        vm2_ip = '13.13.13.14/24'
+        ping_tgt = IPNetwork(vm2_ip)
 
-        try:
-            vm1.configure_vlan_interface(vm1_ip, 'eth1', vlan='10')
-            vm2.configure_vlan_interface(vm2_ip, 'eth0', vlan='10')
-        except OSError as e:
-            self.skipTest('Skipping test as of ' + str(e))
+        vm1.configure_vlan_interface(vm1_ip, 'eth1', vlan='10')
+        vm2.configure_vlan_interface(vm2_ip, 'eth1', vlan='10')
 
-        vm1.bring_down_interface('eth1')
-        vm2.bring_down_interface('eth0')
+        self.assert_ping(vm1, vm2, network,
+                         address=str(ping_tgt.ip), interface='eth1.10')
 
-        self.assert_ping(vm1, vm2, network, interface='eth1.10')
-
+    @testtools.skipUnless(
+        CONF.nuage_sut.image_is_advanced,
+        "Advanced image is required to run this test.")
+    @skip_because(bug='OPENSTACK-2325')
     def test_l3_transparent_network(self):
         kwargs = {
             'vlan_transparent': 'true'
@@ -84,26 +89,20 @@ class VlanTransparentConnectivityTest(NuageBaseTest):
             networks=[l3network],
             security_groups=[ssh_security_group],
             name='vm1',
-            image_profile=self.image_profile,
             make_reachable=True)
 
         vm2 = self.create_tenant_server(
             networks=[l3network],
             security_groups=[ssh_security_group],
             name='vm2',
-            image_profile=self.image_profile,
             make_reachable=True)
 
-        vm1_ip = vm1.get_server_ip_in_network(l3network['name'])
-        vm2_ip = vm2.get_server_ip_in_network(l3network['name'])
+        vm1_ip = '13.13.13.13/24'
+        vm2_ip = '13.13.13.14/24'
+        ping_tgt = IPNetwork(vm2_ip)
 
-        try:
-            vm1.configure_vlan_interface(vm1_ip, 'eth0', vlan='10')
-            vm2.configure_vlan_interface(vm2_ip, 'eth0', vlan='10')
-        except OSError as e:
-            self.skipTest('Skipping test as of ' + str(e))
+        vm1.configure_vlan_interface(vm1_ip, 'eth0', vlan='10')
+        vm2.configure_vlan_interface(vm2_ip, 'eth0', vlan='10')
 
-        vm1.bring_down_interface('eth0')
-        vm2.bring_down_interface('eth0')
-
-        self.assert_ping(vm1, vm2, l3network, interface='eth0.10')
+        self.assert_ping(vm1, vm2, l3network,
+                         address=str(ping_tgt.ip), interface='eth0.10')

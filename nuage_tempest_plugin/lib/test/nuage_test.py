@@ -154,6 +154,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
     dhcp_agent_present = None
 
     ssh_security_group = None
+    ssh_keypair = None
 
     @classmethod
     def setup_clients(cls):
@@ -819,6 +820,20 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         # unmark network as l3
         subnet['parent_network']['is_l3'] = False
 
+    def _create_keypair(self, client=None):
+        if not client:
+            client = self.manager.keypairs_client
+        name = data_utils.rand_name(self.__class__.__name__)
+        # We don't need to create a keypair by pubkey in scenario
+        body = client.create_keypair(name=name)
+        self.addCleanup(client.delete_keypair, name)
+        return body['keypair']
+
+    def create_keypair(self):
+        if not self.ssh_keypair:
+            self.ssh_keypair = self._create_keypair()
+        return self.ssh_keypair
+
     @staticmethod
     def osc_get_database_table_row(db_name, db_username, db_password,
                                    table_name, row=0,
@@ -922,7 +937,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                                ports=None, security_groups=None,
                                wait_until='ACTIVE',
                                volume_backed=False, name=None, flavor=None,
-                               image_id=None, cleanup=True,
+                               image_id=None, keypair=None, cleanup=True,
                                deploy_attempt_count=1,
                                return_none_on_failure=False,
                                **kwargs):
@@ -938,6 +953,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         :param name: Instance name.
         :param flavor: Instance flavor.
         :param image_id: Instance image ID.
+        :param keypair: Nova keypair for ssh access
         :param cleanup: Flag for cleanup (leave True for auto-cleanup).
         :param deploy_attempt_count: max deploy attempt count
         :param return_none_on_failure: if True, return None on failure instead
@@ -984,10 +1000,12 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                           'boot_index': 0,
                           'delete_on_termination': True}]
             kwargs['block_device_mapping_v2'] = bd_map_v2
-
             # Since this is boot from volume an image does not need
             # to be specified.
             image_id = ''
+
+        if keypair:
+            kwargs['key_name'] = keypair['name']
 
         vm = None
 
@@ -1081,7 +1099,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                              ports=None, security_groups=None,
                              wait_until='ACTIVE',
                              volume_backed=False, name=None, flavor=None,
-                             image_profile='default', cleanup=True,
+                             cleanup=True,
                              make_reachable=False,
                              configure_dualstack_itf=False,
                              wait_until_initialized=True,
@@ -1101,9 +1119,11 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         name = name or data_utils.rand_name('test-server')
         data_interface = 'eth0'
 
+        keypair = self.create_keypair()
+
         server = TenantServer(self, client, self.admin_manager.servers_client,
                               name, networks, ports, security_groups,
-                              image_profile, flavor, volume_backed)
+                              flavor, keypair, volume_backed)
 
         for attempt in range(3):  # retrying seems to pay off (CI evidence)
 
