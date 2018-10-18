@@ -27,32 +27,13 @@ class Ipv4OsManagedConnectivityTest(NuageBaseTest):
             networks=[network],
             security_groups=[ssh_security_group])
 
-        server3 = self.create_tenant_server(
-            networks=[network],
-            security_groups=[ssh_security_group])
-
-        server4 = self.create_tenant_server(
-            networks=[network],
-            security_groups=[ssh_security_group])
-
         server1 = self.create_tenant_server(
             networks=[network],
             security_groups=[ssh_security_group],
             make_reachable=True)
 
         # Test IPv4 connectivity between peer servers
-        success_rate = int(self.assert_ping(
-            server1, server2, network,
-            return_boolean_to_indicate_success=True))
-        success_rate += int(self.assert_ping(
-            server1, server3, network,
-            return_boolean_to_indicate_success=True))
-        success_rate += int(self.assert_ping(
-            server1, server4, network,
-            return_boolean_to_indicate_success=True))
-
-        # TODO(team) tolerance level to be cleared eventually
-        self.assert_success_rate(3, success_rate, be_tolerant_for=1)
+        self.assert_ping(server1, server2, network)
 
     @decorators.attr(type='smoke')
     def test_icmp_connectivity_l3_os_managed(self):
