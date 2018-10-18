@@ -38,7 +38,7 @@ class FipAccessConsole(RemoteClient):
                 LOG.info('FipAccessConsole: rcvd: %s.', cmd_out)
 
             except lib_exc.SSHExecCommandFailed:
-                LOG.warning('Failed to setup interface on %s.',
+                LOG.warning('Failed to execute command on %s.',
                             self.ssh_client.host)
                 return False
             return True
@@ -165,7 +165,13 @@ class TenantServer(object):
         self.send('ip -6 addr add {}/{} dev {}'.format(ip, mask_bits, device))
         self.send('ip link set dev {} up'.format(device))
         if gateway_ip:  # In L2 domains having a gateway does not make sense
-            self.send('ip -6 route add default via {}'.format(gateway_ip))
+            # gridinv - following may fail if default route does exist on host
+            try:
+                assert self.console()
+                self.console().exec_command(
+                    'sudo ip -6 route add default via {}'.format(gateway_ip))
+            except lib_exc.SSHExecCommandFailed:
+                LOG.warn("Failed to add default route for ipv6")
         self.send('ip a')
         self.send('route -n -A inet6')
 
