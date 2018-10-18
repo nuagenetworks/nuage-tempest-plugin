@@ -937,9 +937,11 @@ class VsdHelper(object):
                         'the filter "{}"'.format(filter))
         return floating_ip
 
-    def create_floating_ip(self, domain, shared_network_resource_id):
+    def create_floating_ip(self, domain,
+                           shared_network_resource_id, address=None):
         floating_ip_data = self.vspk.NUFloatingIp(
-            associated_shared_network_resource_id=shared_network_resource_id)
+            associated_shared_network_resource_id=shared_network_resource_id,
+            address=address)
 
         return domain.create_child(floating_ip_data)[0]
 
