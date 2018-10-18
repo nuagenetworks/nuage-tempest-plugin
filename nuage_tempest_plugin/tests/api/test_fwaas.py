@@ -189,6 +189,14 @@ class FWaaSExtensionTestJSON(BaseFWaaSTest):
                              "Expected 0 ACL for router "
                              "on VSD but got {}".format(nr_acls_for_router))
 
+        # Verify that firewall ACL is not deleted from VSD
+        if firewall.get('firewall_policy_id'):
+            acl = self.vsd.get_firewall_acl(
+                by_fw_policy_id=firewall['firewall_policy_id'])
+            self.assertIsNotNone(acl,
+                                 "Firewall ACL {} not found on "
+                                 "VSD".format(firewall['firewall_policy_id']))
+
     def verify_firewall_VSD(self, firewall, fw_policy, router=None,
                             should_have_router=True):
         # Get ACL from VSD
@@ -626,12 +634,8 @@ class FWaaSExtensionTestJSON(BaseFWaaSTest):
         # Delete firewall
         self.firewalls_client.delete_firewall(firewall_id)
 
-        try:
-            # Verify no block all ACL, ACL not connected to domain
-            self.verify_after_delete_firewall(firewall, router)
-            # TODO(TEAM) expected failure as of OPENSTACK-2320
-        except Exception as e:
-            LOG.error("Exception as of OPENSTACK-2320: {}".format(e.message))
+        # Verify no block all ACL, ACL not connected to domain
+        self.verify_after_delete_firewall(firewall, router)
 
     def test_create_show_update_delete_firewall_admin_down_no_router(self):
         """test_create_show_update_delete_firewall_admin_down
@@ -692,11 +696,7 @@ class FWaaSExtensionTestJSON(BaseFWaaSTest):
         updated_fw = self.firewalls_client.update_firewall(
             firewall['id'], router_ids=[router['id']])['firewall']
         self.assertEqual('DOWN', updated_fw['status'])
-        try:
-            self._verify_block_all_acl(firewall, router)
-            # TODO(TEAM) expected failure as of OPENSTACK-2327
-        except Exception as e:
-            LOG.error("Exception as of OPENSTACK-2327: {}".format(e.message))
+        self._verify_block_all_acl(firewall, router)
 
         # Update a down router to not have a router anymore
         router = self.create_router(
@@ -705,21 +705,13 @@ class FWaaSExtensionTestJSON(BaseFWaaSTest):
         updated_fw = self.firewalls_client.update_firewall(
             firewall['id'], router_ids=[router['id']])['firewall']
         self.assertEqual('DOWN', updated_fw['status'])
-        try:
-            self._verify_block_all_acl(firewall, router)
-            # TODO(TEAM)  expected failure as of OPENSTACK-2327
-        except Exception as e:
-            LOG.error("Exception as of OPENSTACK-2327: {}".format(e.message))
+        self._verify_block_all_acl(firewall, router)
 
         # Delete firewall
         self.firewalls_client.delete_firewall(firewall_id)
 
         # Verify no block all ACL, ACL not connected to domain
-        try:
-            self.verify_after_delete_firewall(firewall, router)
-            # TODO(TEAM) expected failure as of OPENSTACK-2327
-        except Exception as e:
-            LOG.error("Exception as of OPENSTACK-2327: {}".format(e.message))
+        self.verify_after_delete_firewall(firewall, router)
 
     @decorators.idempotent_id('1355cf5c-77d4-4bb9-87d7-e50c194d08b5')
     def test_firewall_insertion_mode_add_remove_router(self):
@@ -1142,3 +1134,158 @@ class FWaaSExtensionTestJSON(BaseFWaaSTest):
         self._wait_until_ready(firewall_id)
         self.verify_firewall_VSD(created_firewall, fw_policy, router1)
         self.verify_firewall_VSD(created_firewall, fw_policy, router2)
+
+    def test_create_firewall_delete_in_admin_down_state(self):
+        # Create firewall policy
+        body = self.firewall_policies_client.create_firewall_policy(
+            name=data_utils.rand_name("fw-policy"))
+        fw_policy = body['firewall_policy']
+        fw_policy_id = fw_policy['id']
+        self.addCleanup(self._try_delete_policy, fw_policy_id)
+        policy1 = self.vsd.get_firewall_acl(by_fw_policy_id=fw_policy_id)
+        self.assertEmpty(policy1.rule_ids)
+
+        # Create a router1
+        router1 = self.create_router(
+            data_utils.rand_name('router-'),
+            admin_state_up=True)
+
+        # Create firewall on a router1
+        body = self.firewalls_client.create_firewall(
+            name=data_utils.rand_name("firewall"),
+            firewall_policy_id=fw_policy_id,
+            router_ids=[router1['id']])
+        created_firewall = body['firewall']
+        firewall_id = created_firewall['id']
+
+        self.assertEqual([router1['id']], created_firewall['router_ids'])
+        # Wait for the firewall resource to become ready
+        self._wait_until_ready(firewall_id)
+        self.assertEqual('ACTIVE', created_firewall['status'])
+        self.verify_firewall_VSD(created_firewall, fw_policy, router=router1)
+
+        # create a router2
+        router2 = self.create_router(
+            data_utils.rand_name('router-'),
+            admin_state_up=True)
+
+        body = self.firewalls_client.update_firewall(
+            firewall_id, router_ids=[router1['id'], router2['id']],
+            admin_state_up=False)
+        updated_firewall = body['firewall']
+        self.assertEqual(2, len(updated_firewall['router_ids']))
+        self.assertEqual('DOWN', updated_firewall['status'])
+        self._verify_block_all_acl(updated_firewall, router1)
+        self._verify_block_all_acl(updated_firewall, router2)
+        block_all = self.vsd.get_firewall_acl(by_fw_policy_id=firewall_id)
+        domains = self.vsd.get_firewall_acl_domains(block_all)
+        list_of_ext_ids = [dom.external_id for dom in domains]
+        self.assertEqual(2, len(list_of_ext_ids),
+                         message="Expected number of domains in policy"
+                                 " do not match expected")
+
+        self.firewalls_client.delete_firewall(firewall_id)
+        # check if BLOCK_ALL_ACL was deleted
+        self.verify_after_delete_firewall(created_firewall, router1)
+        self.verify_after_delete_firewall(created_firewall, router2)
+
+        # check if policy mapped FirewallACL is not deleted
+        self.assertIsNotNone(
+            self.vsd.get_firewall_acl(by_fw_policy_id=fw_policy_id))
+
+    def test_create_update_firewall_in_admin_down_state(self):
+        # Create firewall policy
+        body = self.firewall_policies_client.create_firewall_policy(
+            name=data_utils.rand_name("fw-policy"))
+        fw_policy = body['firewall_policy']
+        fw_policy_id = fw_policy['id']
+        self.addCleanup(self._try_delete_policy, fw_policy_id)
+        policy1 = self.vsd.get_firewall_acl(by_fw_policy_id=fw_policy_id)
+        self.assertEmpty(policy1.rule_ids)
+
+        # Create a router1
+        router1 = self.create_router(
+            data_utils.rand_name('router-'),
+            admin_state_up=True)
+
+        # Create firewall on a router1
+        body = self.firewalls_client.create_firewall(
+            name=data_utils.rand_name("firewall"),
+            firewall_policy_id=fw_policy_id,
+            router_ids=[router1['id']],
+            admin_state_up=False)
+        created_firewall = body['firewall']
+        firewall_id = created_firewall['id']
+
+        self.assertEqual([router1['id']], created_firewall['router_ids'])
+        # Wait for the firewall resource to become ready
+        self._wait_until_ready(firewall_id)
+        self.assertEqual('DOWN', created_firewall['status'])
+
+        # Also verify on VSD whether association is created or not
+        self._verify_block_all_acl(created_firewall, router1)
+
+        # create a router2
+        router2 = self.create_router(
+            data_utils.rand_name('router-'),
+            admin_state_up=True)
+
+        body = self.firewalls_client.update_firewall(
+            firewall_id, router_ids=[router1['id'], router2['id']],
+            admin_state_up=False)
+        updated_firewall = body['firewall']
+        self.assertIn(router1['id'], updated_firewall['router_ids'])
+        self.assertIn(router2['id'], updated_firewall['router_ids'])
+        self.assertEqual(2, len(updated_firewall['router_ids']))
+        self.assertEqual('DOWN', created_firewall['status'])
+
+        # Verify on VSD whether association is accurate
+        self._verify_block_all_acl(created_firewall, router1)
+        self._verify_block_all_acl(created_firewall, router2)
+
+        block_all = self.vsd.get_firewall_acl(by_fw_policy_id=firewall_id)
+        domains = self.vsd.get_firewall_acl_domains(block_all)
+        list_of_ext_ids = [dom.external_id for dom in domains]
+        self.assertEqual(2, len(list_of_ext_ids),
+                         message="Expected number of domains in policy"
+                                 " do not match expected")
+
+        # update to only one router in firewall
+        body = self.firewalls_client.update_firewall(
+            firewall_id, router_ids=[router2['id']])
+        updated_firewall = body['firewall']
+        self.assertIn(router2['id'], updated_firewall['router_ids'])
+        self.assertEqual(1, len(updated_firewall['router_ids']))
+        self.assertEqual('DOWN', updated_firewall['status'])
+
+        # Verify on VSD whether association is accurate
+        self._verify_block_all_acl(created_firewall, router2)
+
+        block_all = self.vsd.get_firewall_acl(by_fw_policy_id=firewall_id)
+        domains = self.vsd.get_firewall_acl_domains(block_all)
+        list_of_ext_ids = [dom.external_id for dom in domains]
+        self.assertEqual(1, len(list_of_ext_ids),
+                         message="Expected number of domains in policy"
+                                 " do not match expected")
+        self.assertNotIn(self.vsd.external_id(router1['id']), list_of_ext_ids)
+
+        # Change to admin state up to clean up correctly
+        updated_firewall = self.firewalls_client.update_firewall(
+            firewall_id, router_ids=[router1['id'], router2['id']],
+            admin_state_up=True)['firewall']
+        # check if BLOCK_ALL_ACL was deleted
+        self.assertEqual('ACTIVE', updated_firewall['status'])
+
+        # verify on VSD whether association is accurate
+        self.verify_firewall_VSD(updated_firewall, fw_policy, router1)
+        self.verify_firewall_VSD(updated_firewall, fw_policy, router2)
+        domains = self.vsd.get_firewall_acl_domains(policy1)
+        list_of_ext_ids = [dom.external_id for dom in domains]
+        self.assertEqual(2, len(list_of_ext_ids),
+                         message="Expected number of domains in policy"
+                                 " do not match expected")
+
+        self.firewalls_client.delete_firewall(firewall_id)
+        # check if policy mapped FirewallACL is not deleted
+        self.verify_after_delete_firewall(updated_firewall, router1)
+        self.verify_after_delete_firewall(updated_firewall, router2)
