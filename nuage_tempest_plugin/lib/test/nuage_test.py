@@ -19,6 +19,7 @@ from tempest.api.network import base
 from tempest.common import waiters
 from tempest.lib.common import rest_client
 from tempest.lib.common.utils import data_utils
+from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions as lib_exc
 from tempest.scenario import manager
 from tempest.services import orchestration
@@ -750,7 +751,8 @@ class NuageBaseTest(manager.NetworkScenarioTest):
     def create_associate_vsd_managed_floating_ip(self, server, port_id=None,
                                                  vsd_domain=None,
                                                  vsd_subnet=None,
-                                                 external_network_id=None):
+                                                 external_network_id=None,
+                                                 ip_address=None):
         if not external_network_id:
             external_network_id = CONF.network.public_network_id
         if not port_id:
@@ -764,7 +766,8 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         # Create floating ip
         floating_ip = self.vsd.create_floating_ip(
             vsd_domain,
-            shared_network_resource_id=shared_network_resource_id)
+            shared_network_resource_id=shared_network_resource_id,
+            address=ip_address)
         self.addCleanup(floating_ip.delete)
 
         # Associate floating ip
@@ -1118,6 +1121,20 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             else:
                 self.fail('Deploying server %s failed' % name)
 
+    def osc_create_floatingip(self, external_network_id=None, client=None):
+        if not external_network_id:
+            external_network_id = CONF.network.public_network_id
+        if not client:
+            client = self.floating_ips_client
+        result = client.create_floatingip(
+            floating_network_id=external_network_id
+        )
+        floating_ip = result['floatingip']
+        self.addCleanup(test_utils.call_and_ignore_notfound_exc,
+                        client.delete_floatingip,
+                        floating_ip['id'])
+        return floating_ip
+
     @staticmethod
     def is_l2_network(network):
         return not network.get('is_l3') and not network.get('vsd_l3_subnet')
@@ -1269,11 +1286,14 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
         if not server.associated_fip:
             if vsd_domain:
+                ip = self.osc_create_floatingip(
+                    client=client).get('floating_ip_address')
                 fip = self.create_associate_vsd_managed_floating_ip(
                     server.get_server_details(),
                     port_id=port['id'] if port else None,
                     vsd_domain=vsd_domain,
-                    vsd_subnet=vsd_subnet
+                    vsd_subnet=vsd_subnet,
+                    ip_address=ip
                 ).address
             else:
                 fip = self.create_floating_ip(
