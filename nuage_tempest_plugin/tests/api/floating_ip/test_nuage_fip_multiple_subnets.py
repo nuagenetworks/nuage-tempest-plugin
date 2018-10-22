@@ -3,6 +3,7 @@
 
 from netaddr import IPNetwork
 
+from tempest.lib import decorators
 from tempest.lib import exceptions
 
 from nuage_tempest_plugin.lib.test import nuage_test
@@ -11,6 +12,7 @@ from nuage_tempest_plugin.lib.utils import data_utils
 
 class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
 
+    @decorators.attr(type='smoke')
     def test_nuage_uplink_subsequent_subnets(self):
         """test_nuage_uplink_subsequent_subnets
 
@@ -36,6 +38,7 @@ class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
                          "Subsequent subnet not connected to nuage_uplink "
                          "of previous subnets in the network.")
 
+    @decorators.attr(type='smoke')
     def test_no_nuage_uplink_subsequent_subnets(self):
         """test_no_nuage_uplink_subsequent_subnets
 
@@ -60,6 +63,7 @@ class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
         self.assertEqual(s1['nuage_uplink'], s2['nuage_uplink'],
                          "Subnet not created with implicit same nuage_uplink")
 
+    @decorators.attr(type='smoke')
     def test_nuage_underlay_on_off(self):
         """test_nuage_underlay_on_off
 
@@ -79,6 +83,7 @@ class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
             nuage_uplink=s1['nuage_uplink'],
             client=self.admin_manager)
 
+    @decorators.attr(type='smoke')
     def test_nuage_underlay_on(self):
         """test_nuage_underlay_on
 
@@ -103,6 +108,7 @@ class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
                          "Not all underlay=True subnets are in the same "
                          "underlay domain.")
 
+    @decorators.attr(type='smoke')
     def test_nuage_different_nuage_uplink(self):
         """test_nuage_different_nuage_uplink
 
@@ -127,6 +133,7 @@ class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
             mask_bits=24, underlay=False,
             client=self.admin_manager)
 
+    @decorators.attr(type='smoke')
     def test_nuage_uplink_provided_redundantly(self):
         """test_nuage_uplink_subsequent_subnets
 
@@ -144,6 +151,7 @@ class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
         self.assertEqual(s1['nuage_uplink'], s2['nuage_uplink'],
                          "Subnet not created with provided nuage_uplink")
 
+    @decorators.attr(type='smoke')
     def test_nuage_network_update_to_external(self):
         """test_nuage_network_update_to_external
 
@@ -168,6 +176,7 @@ class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
         self.assertEqual(s1['nuage_uplink'], s2['nuage_uplink'],
                          "Subnet not created with provided nuage_uplink")
 
+    @decorators.attr(type='smoke')
     def test_nuage_network_multiple_gw(self):
         """test_nuage_network_multiple_gw
 
