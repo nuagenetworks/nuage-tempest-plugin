@@ -2,12 +2,13 @@
 # All Rights Reserved.
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
-
+from nuage_tempest_plugin.lib.test.nuage_test import skip_because
 from tempest.test import decorators
 
 
 class Ipv6OsManagedConnectivityTest(NuageBaseTest):
 
+    @skip_because(bug='OPENSTACK-2333')
     @decorators.attr(type='smoke')
     def test_icmp_connectivity_l2_os_managed_dualstack(self):
         # Provision OpenStack network
