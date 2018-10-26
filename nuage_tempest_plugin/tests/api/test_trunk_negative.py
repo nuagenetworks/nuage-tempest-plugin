@@ -227,7 +227,9 @@ class TrunkTestJSON(test_trunk.TrunkTestJSONBase):
     def test_add_subport_without_fixed_ip(self):
         trunk = self._create_trunk_with_network_and_parent([])
         network = self.create_network()
-        port = self.create_port(network)
+        port_data = {}
+        self._configure_smart_nic_attributes(port_data)
+        port = self.create_port(network, **port_data)
         subports = [{'port_id': port['id'],
                      'segmentation_type': 'vlan',
                      'segmentation_id': 2}]

@@ -65,6 +65,7 @@ class VSDManagedPortSecurity(
 
         post_body = {'network_id': net['id'],
                      'port_security_enabled': 'False'}
+        self._configure_smart_nic_attributes(post_body)
         body = self.ports_client.create_port(**post_body)
         port = body['port']
 
@@ -96,6 +97,7 @@ class VSDManagedPortSecurity(
             enable_dhcp=True)
         post_body = {'network_id': net['id'],
                      'port_security_enabled': 'False'}
+        self._configure_smart_nic_attributes(post_body)
         body = self.ports_client.create_port(**post_body)
         port = body['port']
 
@@ -128,6 +130,7 @@ class VSDManagedPortSecurity(
             enable_dhcp=False)
         post_body = {'network_id': net['id'],
                      'port_security_enabled': 'False'}
+        self._configure_smart_nic_attributes(post_body)
         body = self.ports_client.create_port(**post_body)
         port = body['port']
 
@@ -169,6 +172,7 @@ class VSDManagedPortSecurity(
                            net_partition=np)
 
         post_body = {'network_id': net['id']}
+        self._configure_smart_nic_attributes(post_body)
         body = self.ports_client.create_port(**post_body)
         port = body['port']
 
@@ -221,6 +225,7 @@ class VSDManagedPortSecurity(
             enable_dhcp=True)
 
         post_body = {'network_id': net['id']}
+        self._configure_smart_nic_attributes(post_body)
         body = self.ports_client.create_port(**post_body)
         port = body['port']
 
@@ -273,6 +278,7 @@ class VSDManagedPortSecurity(
             net_partition=CONF.nuage.nuage_default_netpartition,
             enable_dhcp=False)
         post_body = {'network_id': net['id']}
+        self._configure_smart_nic_attributes(post_body)
         body = self.ports_client.create_port(**post_body)
         port = body['port']
 

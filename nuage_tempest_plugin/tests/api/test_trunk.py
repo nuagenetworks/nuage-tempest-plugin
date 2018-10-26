@@ -15,6 +15,7 @@
 import random
 
 from nuage_tempest_plugin.lib.test.nuage_test import skip_because
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
@@ -23,6 +24,8 @@ from tempest.common import utils
 from tempest.lib.common.utils import test_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions as lib_exc
+
+CONF = Topology.get_conf()
 
 
 def trunks_cleanup(client, trunks):
@@ -66,15 +69,26 @@ class TrunkTestJSONBase(base.BaseAdminNetworkTest):
         network = self.create_network()
         if create_subnet:
             self.create_subnet(network)
-        parent_port = self.create_port(network)
+        port_data = {}
+        self._configure_smart_nic_attributes(port_data)
+        parent_port = self.create_port(network, **port_data)
         trunk = self.client.create_trunk(parent_port['id'], subports, **kwargs)
         self.trunks.append(trunk['trunk'])
         return trunk
 
+    @staticmethod
+    def _configure_smart_nic_attributes(kwargs):
+        if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
+            kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
+        if CONF.network.port_profile and 'binding:profile' not in kwargs:
+            kwargs['binding:profile'] = CONF.network.port_profile
+
     def _create_port_for_trunk(self):
         network = self.create_network()
         self.create_subnet(network)
-        port = self.create_port(network)
+        port_data = {}
+        self._configure_smart_nic_attributes(port_data)
+        port = self.create_port(network, **port_data)
         return port
 
     def _show_trunk(self, trunk_id):

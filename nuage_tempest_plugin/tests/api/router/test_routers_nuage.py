@@ -276,8 +276,13 @@ class NuageRoutersTest(base.BaseNetworkTest):
         router = self._create_router(data_utils.rand_name('router-'))
         nuage_domain = self.nuage_client.get_l3domain(
             filters='externalID', filter_value=router['id'])
+        kwargs = {}
+        if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
+            kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
+        if CONF.network.port_profile and 'binding:profile' not in kwargs:
+            kwargs['binding:profile'] = CONF.network.port_profile
         port_body = self.ports_client.create_port(
-            network_id=network['id'])
+            network_id=network['id'], **kwargs)
         # add router interface to port created above
         interface = self.routers_client.add_router_interface(
             router['id'], port_id=port_body['port']['id'])
@@ -1064,8 +1069,14 @@ class NuageRoutersV6Test(NuageRoutersTest):
 
         self.create_subnet(network)
         router = self._create_router()
+        kwargs = {}
+        if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
+            kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
+        if CONF.network.port_profile and 'binding:profile' not in kwargs:
+            kwargs['binding:profile'] = CONF.network.port_profile
+
         port_body = self.ports_client.create_port(
-            network_id=network['id'])
+            network_id=network['id'], **kwargs)
         # add router interface to port created above
         interface = self.routers_client.add_router_interface(
             router['id'],

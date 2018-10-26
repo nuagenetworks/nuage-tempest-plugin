@@ -990,9 +990,12 @@ class BaseVSDManagedPortAttributes(
 
     def _create_port_with_allowed_address_pair(self, allowed_address_pairs,
                                                net_id):
+        kwargs = {}
+        self._configure_smart_nic_attributes(kwargs)
         body = self.ports_client.create_port(
             network_id=net_id,
-            allowed_address_pairs=allowed_address_pairs)
+            allowed_address_pairs=allowed_address_pairs,
+            **kwargs)
         self.addCleanup(self.ports_client.delete_port, body['port']['id'])
         return body
 

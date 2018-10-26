@@ -51,8 +51,14 @@ class NuageBidirectionalFipRateLimitBase(base.BaseNetworkTest):
         cls.ports = []
 
         # Create two ports one each for Creation and Updating of floatingIP
+        kwargs = {}
+        if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
+            kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
+        if CONF.network.port_profile and 'binding:profile' not in kwargs:
+            kwargs['binding:profile'] = CONF.network.port_profile
+
         for i in range(2):
-            port = cls.create_port(cls.network)
+            port = cls.create_port(cls.network, **kwargs)
             cls.ports.append(port)
 
     @staticmethod

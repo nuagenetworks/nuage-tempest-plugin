@@ -3,6 +3,7 @@
 from netaddr import IPNetwork
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageAdminNetworksTest
+from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
@@ -16,7 +17,7 @@ CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
 
 
-class PortsTest(NuageAdminNetworksTest,
+class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                 manager.NetworkScenarioTest):
     @classmethod
     def setup_clients(cls):
@@ -66,7 +67,8 @@ class PortsTest(NuageAdminNetworksTest,
             admin_state_up=True,
             external_network_id=CONF.network.public_network_id)
         self.create_router_interface(router_id=router["id"],
-                                     subnet_id=subnet["id"])
+                                     subnet_id=subnet["id"],
+                                     cleanup=False)
 
         self.routers_client.remove_router_interface(router_id=router["id"],
                                                     subnet_id=subnet["id"])
@@ -1396,7 +1398,7 @@ class PortsTest(NuageAdminNetworksTest,
         self.assertIsNotNone(router, "Unable to create router")
         # Attach subnet
         self.create_router_interface(router_id=router["id"],
-                                     subnet_id=subnet["id"])
+                                     subnet_id=subnet["id"], cleanup=False)
         fixed_ips = [
             {
                 "ip_address": "10.0.0.3",

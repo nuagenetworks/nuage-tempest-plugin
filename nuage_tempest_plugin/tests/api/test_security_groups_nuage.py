@@ -58,6 +58,7 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
                      "device_owner": "compute:None",
                      "device_id": str(uuid.uuid1()),
                      "security_groups": [sg_id]}
+        self._configure_smart_nic_attributes(post_body)
         body = self.ports_client.create_port(**post_body)
         self.addCleanup(self.ports_client.delete_port, body['port']['id'])
 
@@ -396,7 +397,15 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
     def _delete_security_group_rule(self, rule_id):
         self.security_group_rules_client.delete_security_group_rule(rule_id)
 
+    @staticmethod
+    def _configure_smart_nic_attributes(kwargs):
+        if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
+            kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
+        if CONF.network.port_profile and 'binding:profile' not in kwargs:
+            kwargs['binding:profile'] = CONF.network.port_profile
+
     def _create_port(self, **post_body):
+        self._configure_smart_nic_attributes(post_body)
         port = self.ports_client.create_port(**post_body)['port']
         self.addCleanup(self.ports_client.delete_port, port['id'])
         return port

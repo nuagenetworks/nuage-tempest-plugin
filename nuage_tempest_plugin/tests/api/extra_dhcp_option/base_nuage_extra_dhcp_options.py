@@ -5,11 +5,14 @@ from tempest.common import utils
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
+from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as constants
 from nuage_tempest_plugin.services import nuage_client
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
+
+CONF = Topology.get_conf()
 
 #
 # See http://tools.ietf.org/html/rfc2132
@@ -179,7 +182,7 @@ NUAGE_NETWORK_TYPE = {
 LOG = Topology.get_logger(__name__)
 
 
-class NuageExtraDHCPOptionsBase(base.BaseAdminNetworkTest):
+class NuageExtraDHCPOptionsBase(base.BaseAdminNetworkTest, NuageBaseTest):
 
     def __init__(self, *args, **kwargs):
         super(NuageExtraDHCPOptionsBase, self).__init__(*args, **kwargs)
@@ -241,10 +244,15 @@ class NuageExtraDHCPOptionsBase(base.BaseAdminNetworkTest):
             client = self.ports_client
 
         name = data_utils.rand_name('extra-dhcp-opt-port-name')
-        create_body = client.create_port(
-            name=name,
-            network_id=network_id,
-            extra_dhcp_opts=extra_dhcp_opts)
+        kwargs = {'name': name,
+                  'network_id': network_id,
+                  'extra_dhcp_opts': extra_dhcp_opts,
+                  }
+        if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
+            kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
+        if CONF.network.port_profile and 'binding:profile' not in kwargs:
+            kwargs['binding:profile'] = CONF.network.port_profile
+        create_body = client.create_port(**kwargs)
         self.addCleanup(client.delete_port, create_body['port']['id'])
 
     def _update_port_with_dhcp_opts(self, port_id, extra_dhcp_opts,
@@ -264,7 +272,7 @@ class NuageExtraDHCPOptionsBase(base.BaseAdminNetworkTest):
                                          extra_dhcp_opts)
 
     def _nuage_create_list_show_update_layer_x_port_with_dhcp_opts(
-            self, network_id,
+            self, network,
             vsd_network_id,
             nuage_network_type,
             extra_dhcp_opts,
@@ -272,14 +280,14 @@ class NuageExtraDHCPOptionsBase(base.BaseAdminNetworkTest):
         # Create a port with given extra DHCP Options on an Openstack layer X
         # managed network
         name = data_utils.rand_name('extra-dhcp-opt-port-name')
-        create_body = self.ports_client.create_port(
+        port = NuageBaseTest.create_port(
+            self, network=network, cleanup=False,
             name=name,
-            network_id=network_id,
             extra_dhcp_opts=extra_dhcp_opts)
-        port_id = create_body['port']['id']
+        port_id = port['id']
         self.addCleanup(self.ports_client.delete_port, port_id)
         # Does the response contain the dhcp options we passed in the request
-        self._confirm_extra_dhcp_options(create_body['port'], extra_dhcp_opts)
+        self._confirm_extra_dhcp_options(port, extra_dhcp_opts)
         # Confirm port created has Extra DHCP Options via show
         show_body = self.ports_client.show_port(port_id)
         self._confirm_extra_dhcp_options(show_body['port'], extra_dhcp_opts)

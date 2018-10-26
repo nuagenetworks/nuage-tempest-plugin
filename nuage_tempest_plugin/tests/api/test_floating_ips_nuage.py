@@ -50,6 +50,10 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
         for i in range(2):
             post_body = {
                 "device_owner": "compute:None", "device_id": str(uuid.uuid1())}
+            if CONF.network.port_vnic_type:
+                post_body['binding:vnic_type'] = CONF.network.port_vnic_type
+            if CONF.network.port_profile:
+                post_body['binding:profile'] = CONF.network.port_profile
             port = cls.create_port(cls.network, **post_body)
             cls.ports.append(port)
 

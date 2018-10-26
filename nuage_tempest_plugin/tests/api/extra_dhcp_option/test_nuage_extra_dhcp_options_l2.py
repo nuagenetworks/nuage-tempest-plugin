@@ -79,11 +79,11 @@ class NuageExtraDHCPOptionsBaseL2(
         # do the test for requested nuage network type
         if nuage_network_type == NUAGE_NETWORK_TYPE['OS_Managed_L2']:
             self._nuage_create_list_show_update_layer_x_port_with_dhcp_opts(
-                self.osmgd_l2_network['id'], self.l2domain[0]['ID'],
+                self.osmgd_l2_network, self.l2domain[0]['ID'],
                 nuage_network_type, extra_dhcp_opts, new_extra_dhcp_opts)
         elif nuage_network_type == NUAGE_NETWORK_TYPE['VSD_Managed_L2']:
             self._nuage_create_list_show_update_layer_x_port_with_dhcp_opts(
-                self.vsdmgd_l2_network['id'], self.vsd_l2dom[0]['ID'],
+                self.vsdmgd_l2_network, self.vsd_l2dom[0]['ID'],
                 nuage_network_type, extra_dhcp_opts, new_extra_dhcp_opts)
         else:
             self.assertTrue(False, 'Unknown NUAGE_NETWORK_TYPE detected')

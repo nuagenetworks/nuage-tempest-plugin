@@ -19,8 +19,11 @@ from tempest.common.utils import data_utils
 from tempest.lib import exceptions
 
 from nuage_tempest_plugin.lib.mixins import base
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
+
+CONF = Topology.get_conf()
 
 
 class NetworkMixin(base.BaseMixin):
@@ -188,6 +191,10 @@ class NetworkMixin(base.BaseMixin):
         port = {'name': data_utils.rand_name('port'),
                 'network_id': network_id}
         port.update(kwargs)
+        if CONF.network.port_vnic_type and 'binding:vnic_type' not in port:
+            port['binding:vnic_type'] = CONF.network.port_vnic_type
+        if CONF.network.port_profile and 'binding:profile' not in port:
+            port['binding:profile'] = CONF.network.port_profile
         port = client.create_port(**port)['port']
         if cleanup:
             self.addCleanup(self.delete_port, port['id'])

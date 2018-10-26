@@ -32,6 +32,7 @@ VSD_L3_SHARED_MGD_CIDR = IPNetwork('30.30.30.0/24')
 VSD_L3_SHARED_MGD_GW = '30.30.30.1'
 
 LOG = Topology.get_logger(__name__)
+CONF = Topology.get_conf()
 
 
 class BaseVSDManagedNetwork(NuageBaseTest):
@@ -307,3 +308,10 @@ class BaseVSDManagedNetwork(NuageBaseTest):
             filter_value=self.nuage_client.get_vsd_external_id(vm_id),
             flat_rest_path=True)[0]
         return vm_details.get('interfaces')[0]['IPAddress']
+
+    @staticmethod
+    def _configure_smart_nic_attributes(kwargs):
+        if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
+            kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
+        if CONF.network.port_profile and 'binding:profile' not in kwargs:
+            kwargs['binding:profile'] = CONF.network.port_profile

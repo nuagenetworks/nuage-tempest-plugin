@@ -57,6 +57,12 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
 
     def _create_port_with_allowed_address_pair(self, allowed_address_pairs,
                                                net_id, **kwargs):
+
+        if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
+            kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
+        if CONF.network.port_profile and 'binding:profile' not in kwargs:
+            kwargs['binding:profile'] = CONF.network.port_profile
+
         body = self.ports_client.create_port(
             network_id=net_id,
             allowed_address_pairs=allowed_address_pairs, **kwargs)

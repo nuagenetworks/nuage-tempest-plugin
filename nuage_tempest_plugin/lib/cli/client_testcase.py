@@ -386,6 +386,14 @@ class CLIClientTestCase(test.BaseTestCase):
         for arg in args:
             the_params += ' '
             the_params += arg
+        if (CONF.network.port_vnic_type == 'direct' and
+                'switchdev' in CONF.network.port_profile.get('capabilities',
+                                                             [])):
+            the_params += ' '
+            the_params += '--vnic-type direct'
+            the_params += ' '
+            the_params += ('--binding:profile type=dict'
+                           ' capabilities=[switchdev]')
 
         response = self.cli.neutron('port-create', params=the_params)
 

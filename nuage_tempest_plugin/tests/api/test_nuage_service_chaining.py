@@ -156,6 +156,13 @@ class NuageServiceChaining(base.BaseNetworkTest):
                              message="Port was not created with device_owner"
                                      " as nuage:vip for Redirect VIP")
 
+    @staticmethod
+    def _configure_smart_nic_attributes(kwargs):
+        if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
+            kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
+        if CONF.network.port_profile and 'binding:profile' not in kwargs:
+            kwargs['binding:profile'] = CONF.network.port_profile
+
     @decorators.attr(type='smoke')
     def test_create_delete_redirection_target_l2domain(self):
         # parameters for nuage redirection target
@@ -204,9 +211,10 @@ class NuageServiceChaining(base.BaseNetworkTest):
         self._verify_redirect_target_rules(
             rtrule, 'l2domains', vsd_subnet[0], rule_body,
             with_external_id=external_id)
-
+        kwargs = {}
+        self._configure_smart_nic_attributes(kwargs)
         # Associating port to Redirect Target
-        rtport = self.create_port(self.network_l2)
+        rtport = self.create_port(self.network_l2, **kwargs)
         self.addCleanup(self.ports_client.delete_port, rtport['id'])
 
         self._assign_unassign_rt_port(
@@ -285,9 +293,10 @@ class NuageServiceChaining(base.BaseNetworkTest):
         self._verify_redirect_target_rules(rtrule, 'domains',
                                            domain[0], rule_body,
                                            with_external_id=external_id)
-
+        kwargs = {}
+        self._configure_smart_nic_attributes(kwargs)
         # Associating port to Redirect Target
-        rtport = self.create_port(self.network_l3)
+        rtport = self.create_port(self.network_l3, **kwargs)
         self.addCleanup(self.ports_client.delete_port, rtport['id'])
         self._assign_unassign_rt_port(rtport, rt, 'subnets', vsd_subnet[0])
 
@@ -437,9 +446,10 @@ class NuageServiceChaining(base.BaseNetworkTest):
         self._verify_redirect_target_rules(rtrule, 'domains',
                                            domain[0], rule_body,
                                            with_external_id=external_id)
-
+        kwargs = {}
+        self._configure_smart_nic_attributes(kwargs)
         # Associating port to Redirect Target
-        rtport = self.create_port(self.network_l3)
+        rtport = self.create_port(self.network_l3, **kwargs)
         self.addCleanup(self.ports_client.delete_port, rtport['id'])
         self._assign_unassign_rt_port(rtport, rt, 'subnets', vsd_subnet[0])
 
@@ -521,9 +531,10 @@ class NuageServiceChaining(base.BaseNetworkTest):
         self._verify_redirect_target_rules(rtrule, 'domains',
                                            domain[0], rule_body,
                                            with_external_id=external_id)
-
+        kwargs = {}
+        self._configure_smart_nic_attributes(kwargs)
         # Associating port to Redirect Target
-        rtport = self.create_port(self.network_l3)
+        rtport = self.create_port(self.network_l3, **kwargs)
         self.addCleanup(self.ports_client.delete_port, rtport['id'])
         self._assign_unassign_rt_port(rtport, rt, 'subnets', vsd_subnet[0])
 

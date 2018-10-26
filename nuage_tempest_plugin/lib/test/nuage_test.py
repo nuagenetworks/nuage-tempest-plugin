@@ -595,6 +595,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         """Wrapper utility that returns a test port."""
         if not client:
             client = self.manager
+
         if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
             kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
         if CONF.network.port_profile and 'binding:profile' not in kwargs:
