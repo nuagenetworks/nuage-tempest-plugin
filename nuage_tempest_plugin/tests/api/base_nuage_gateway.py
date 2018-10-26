@@ -129,9 +129,11 @@ class BaseNuageGatewayTest(NuageAdminNetworksTest):
         body = cls.admin_ports_client.list_ports(device_id=router['id'])
         interfaces = body['ports']
         for i in interfaces:
-            test_utils.call_and_ignore_notfound_exc(
-                cls.admin_routers_client.remove_router_interface, router['id'],
-                subnet_id=i['fixed_ips'][0]['subnet_id'])
+            if i['device_owner'] == 'network:router_interface':
+                test_utils.call_and_ignore_notfound_exc(
+                    cls.admin_routers_client.remove_router_interface,
+                    router['id'],
+                    subnet_id=i['fixed_ips'][0]['subnet_id'])
         cls.admin_routers_client.delete_router(router['id'])
     # ------------------------- END OF COPY -------------------------
 
