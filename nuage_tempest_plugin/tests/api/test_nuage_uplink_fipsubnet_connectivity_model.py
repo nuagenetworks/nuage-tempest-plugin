@@ -13,6 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from netaddr import IPAddress
 import random
 import uuid
 
@@ -22,6 +23,7 @@ from tempest.lib import exceptions
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import data_utils as nuage_data_utils
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
@@ -81,13 +83,14 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
                 shared_enterprises[0]['ID'])
 
     def create_uplink_subnet(self, parent_id=None):
+        cidr, gateway, mask_bits = nuage_data_utils.gimme_a_cidr()
         uplink_subnet_dict = {
-            'name': "uplink-sub1",
-            'address': "210.20.0.0",
-            'netmask': "255.255.255.0",
-            'gateway': '210.20.0.1',
+            'name': data_utils.rand_name('uplink-'),
+            'address': str(cidr.ip),
+            'netmask': str(cidr.netmask),
+            'gateway': gateway,
             'uplinkVportName': 'vlan1',
-            'uplinkInterfaceIP': '210.20.0.2',
+            'uplinkInterfaceIP': str(IPAddress(cidr) + 2),
             'uplinkInterfaceMAC': "00:11:22:33:44:55",
             'uplinkGWVlanAttachmentID': self.gateway_vlan[0]['ID'],
             'sharedResourceParentID': parent_id
