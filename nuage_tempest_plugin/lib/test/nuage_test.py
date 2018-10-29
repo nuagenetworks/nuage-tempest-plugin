@@ -1354,6 +1354,10 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 return True
 
             LOG.error('assert_ping: ping attempt %d %s', attempt, ping_pass)
+            if should_pass:
+                LOG.debug('will clear arp cache for : %s', address2)
+                cmd = 'sudo arp -d {dest}'.format(dest=address2)
+                server1.console().send(cmd)
             self.sleep(msg='reattempting ping in 1 sec')
 
         LOG.error(

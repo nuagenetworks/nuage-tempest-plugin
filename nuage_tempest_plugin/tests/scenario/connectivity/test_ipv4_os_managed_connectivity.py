@@ -4,7 +4,6 @@
 from netaddr import IPNetwork
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
-from nuage_tempest_plugin.lib.test.nuage_test import skip_because
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import data_utils
 from tempest.lib import decorators
@@ -14,7 +13,6 @@ LOG = Topology.get_logger(__name__)
 
 class Ipv4OsManagedConnectivityTest(NuageBaseTest):
 
-    @skip_because(bug='OPENSTACK-2333')
     @decorators.attr(type='smoke')
     def test_icmp_connectivity_l2_os_managed(self):
         # Provision OpenStack network resources
