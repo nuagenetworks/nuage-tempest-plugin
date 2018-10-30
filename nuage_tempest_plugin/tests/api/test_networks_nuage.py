@@ -354,7 +354,7 @@ class NetworkNuageAdminTest(base.BaseAdminNetworkTest):
             self.admin_networks_client.delete_network, network['id'])
         return network
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_create_delete_external_subnet_with_underlay(self):
         subname = 'underlay-subnet'
         ext_network = self._create_network()
@@ -376,7 +376,7 @@ class NetworkNuageAdminTest(base.BaseAdminNetworkTest):
             filters='externalID', filter_value=subnet['id'])
         self.assertEqual(nuage_fippool, '')
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_create_delete_external_subnet_without_underlay(self):
         subname = 'non-underlay-subnet'
         ext_network = self._create_network()
