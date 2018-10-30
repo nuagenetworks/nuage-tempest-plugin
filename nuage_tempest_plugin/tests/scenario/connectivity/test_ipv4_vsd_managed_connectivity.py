@@ -30,29 +30,12 @@ class Ipv4VsdManagedConnectivityTest(NuageBaseTest):
         server2 = self.create_tenant_server(
             networks=[network])
 
-        server3 = self.create_tenant_server(
-            networks=[network])
-
-        server4 = self.create_tenant_server(
-            networks=[network])
-
         server1 = self.create_tenant_server(
             networks=[network],
             make_reachable=True)
 
         # Test IPv4 connectivity between peer servers
-        success_rate = int(self.assert_ping(
-            server1, server2, network,
-            return_boolean_to_indicate_success=True))
-        success_rate += int(self.assert_ping(
-            server1, server3, network,
-            return_boolean_to_indicate_success=True))
-        success_rate += int(self.assert_ping(
-            server1, server4, network,
-            return_boolean_to_indicate_success=True))
-
-        # TODO(team) tolerance level to be cleared eventually
-        self.assert_success_rate(3, success_rate, be_tolerant_for=1)
+        self.assert_ping(server1, server2, network)
 
     @decorators.attr(type='smoke')
     def test_icmp_connectivity_l3_vsd_managed(self):

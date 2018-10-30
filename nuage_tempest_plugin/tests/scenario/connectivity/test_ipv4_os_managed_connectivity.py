@@ -47,14 +47,14 @@ class Ipv4OsManagedConnectivityTest(NuageBaseTest):
         ssh_security_group = self.create_open_ssh_security_group()
 
         # Launch tenant servers in OpenStack network
+        server2 = self.create_tenant_server(
+            networks=[network],
+            security_groups=[ssh_security_group])
+
         server1 = self.create_tenant_server(
             networks=[network],
             security_groups=[ssh_security_group],
             make_reachable=True)
-
-        server2 = self.create_tenant_server(
-            networks=[network],
-            security_groups=[ssh_security_group])
 
         # Test IPv4 connectivity between peer servers
         self.assert_ping(server1, server2, network)
@@ -111,10 +111,6 @@ class Ipv4OsManagedConnectivityTest(NuageBaseTest):
             extra_dhcp_opts=[{'opt_name': 'router', 'opt_value': '0'}])
 
         # Launch tenant servers in OpenStack network
-        server12 = self.create_tenant_server(
-            ports=[p1, p2],
-            make_reachable=True)
-
         server1 = self.create_tenant_server(
             networks=[network1],
             security_groups=[ssh_security_group])
@@ -122,6 +118,10 @@ class Ipv4OsManagedConnectivityTest(NuageBaseTest):
         server2 = self.create_tenant_server(
             networks=[network2],
             security_groups=[ssh_security_group])
+
+        server12 = self.create_tenant_server(
+            ports=[p1, p2],
+            make_reachable=True)
 
         # Test IPv4 connectivity between peer servers
         self.assert_ping(server12, server1, network1)

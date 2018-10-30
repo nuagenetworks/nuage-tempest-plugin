@@ -1357,7 +1357,12 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             if should_pass:
                 LOG.debug('will clear arp cache for : %s', address2)
                 cmd = 'sudo arp -d {dest}'.format(dest=address2)
-                server1.console().send(cmd)
+                # following may fail
+                try:
+                    server1.console().exec_command(cmd)
+                except lib_exc.SSHExecCommandFailed:
+                    LOG.debug('Failed to execute command on %s.',
+                              server1.id())
             self.sleep(msg='reattempting ping in 1 sec')
 
         LOG.error(
