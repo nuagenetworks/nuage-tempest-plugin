@@ -92,7 +92,6 @@ class Ipv4OsManagedConnectivityTest(NuageBaseTest):
 
         network2 = self.create_network()
         self.create_subnet(network2,
-                           gateway='10.10.2.1',
                            cidr=IPNetwork('10.10.2.0/24'),
                            mask_bits=24)
 
