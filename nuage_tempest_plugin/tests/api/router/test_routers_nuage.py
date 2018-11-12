@@ -31,6 +31,7 @@ from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test.nuage_test import NuageAdminNetworksTest
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
+from nuage_tempest_plugin.lib.utils import data_utils as nuage_data_utils
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
@@ -820,9 +821,10 @@ class NuageRoutersAdminTest(NuageAdminNetworksTest):
         net_body = self.admin_networks_client.create_network(**network)
         self.addCleanup(self.admin_networks_client.delete_network,
                         net_body['network']['id'])
+        cidr = nuage_data_utils.gimme_a_cidr_str()
         subnet = {
             'network_id': net_body['network']['id'],
-            'cidr': '21.21.21.0/24',
+            'cidr': cidr,
             'name': data_utils.rand_name('subnet'),
             'ip_version': 4
         }
@@ -881,6 +883,36 @@ class NuageRoutersAdminTest(NuageAdminNetworksTest):
             n_constants.L2_DOMAIN, nuage_l2dom[0]['ID'])
         self.assertIsNotNone(nuage_perm[0])
         self.assertEqual(nuage_perm[0]['permittedEntityName'], 'Everybody')
+
+    # @decorators.attr(type='smoke')
+    def test_add_router_interface_to_external_subnet(self):
+        network = {
+            'name': data_utils.rand_name('external-network'),
+            'router:external': True
+        }
+        net_body = self.admin_networks_client.create_network(**network)
+        self.addCleanup(self.admin_networks_client.delete_network,
+                        net_body['network']['id'])
+        cidr = nuage_data_utils.gimme_a_cidr_str()
+        subnet = {
+            'network_id': net_body['network']['id'],
+            'cidr': cidr,
+            'name': data_utils.rand_name('subnet'),
+            'ip_version': 4
+        }
+        subn_body = self.admin_subnets_client.create_subnet(**subnet)
+        self.addCleanup(self.admin_subnets_client.delete_subnet,
+                        subn_body['subnet']['id'])
+
+        router = self._create_router(admin_state_up=True)
+
+        # Add router interface with external subnet id
+        msg = 'Subnet in external network cannot be an interface of a router'
+        self.assertRaisesRegex(exceptions.BadRequest,
+                               msg,
+                               self.admin_routers_client.add_router_interface,
+                               router['id'],
+                               subnet_id=subn_body['subnet']['id'])
 
     @decorators.attr(type='smoke')
     def test_router_create_update_show_delete_with_backhaul_vnid_rt_rd(
