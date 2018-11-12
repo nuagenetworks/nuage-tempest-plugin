@@ -410,6 +410,29 @@ class NetworkNuageAdminTest(base.BaseAdminNetworkTest):
             ext_network['id'], **kwargs)['network']
         self.assertFalse(int_network['router:external'])
 
+    @decorators.attr(type='smoke')
+    def test_make_network_with_routed_subnet_external(self):
+        int_network = self.create_network()
+        cidr = nuage_data_utils.gimme_a_cidr()
+        subnet = self.create_subnet(network=int_network,
+                                    cidr=cidr,
+                                    mask_bits=24,
+                                    ip_version=self._ip_version)
+        router = self.create_router(
+            external_network_id=CONF.network.public_network_id)
+        # Attach subnet
+        self.create_router_interface(router_id=router['id'],
+                                     subnet_id=subnet['id'])
+        kwargs = {'router:external': True}
+        msg = ('Network {} cannot be updated. There are one or more ports '
+               'still in use on the network.').format(int_network["id"])
+        self.assertRaisesRegex(
+            exceptions.BadRequest,
+            msg,
+            self.admin_networks_client.update_network,
+            int_network['id'],
+            **kwargs)
+
 
 class NuageNetworksIpV6Test(NetworksTestJSONNuage):
     _ip_version = 6
