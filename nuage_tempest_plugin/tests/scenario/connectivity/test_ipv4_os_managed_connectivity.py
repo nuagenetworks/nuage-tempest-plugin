@@ -81,7 +81,6 @@ class Ipv4OsManagedConnectivityTest(NuageBaseTest):
         # Test IPv4 connectivity between peer servers
         self.assert_ping(server1, server2, network, should_pass=False)
 
-    @decorators.attr(type='smoke')
     def test_icmp_connectivity_l3_os_managed_dual_nic(self):
         # Provision OpenStack network resources
         router = self.create_test_router()
