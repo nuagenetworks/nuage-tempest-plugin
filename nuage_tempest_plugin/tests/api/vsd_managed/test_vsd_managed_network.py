@@ -41,6 +41,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
     def __init__(self, *args, **kwargs):
         super(VSDManagedTestNetworks, self).__init__(*args, **kwargs)
         self.failure_type = exceptions.BadRequest
+        self.shared_infrastructure = 'Shared Infrastructure'
 
     @classmethod
     def setup_clients(cls):
@@ -97,51 +98,6 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
         cls.net_partitions.append(netpartition)
         return netpartition
 
-    @decorators.attr(type='smoke')
-    def test_create_list_verify_delete_netpartition(self):
-        name = data_utils.rand_name('tempest-np')
-        body = self.client.create_netpartition(name)
-        self.assertEqual('201', body.response['status'])
-        netpart = body['net_partition']
-        self.assertEqual(name, netpart['name'])
-        if Topology.within_ext_id_release():
-            net_partition = self.nuage_client.get_global_resource(
-                resource=constants.NET_PARTITION,
-                filters='externalID',
-                filter_value=netpart['id'] + '@openstack')
-            self.assertEqual(name, net_partition[0]['name'])
-            default_l2dom_template = self.nuage_client.get_resource(
-                resource=constants.L2_DOMAIN_TEMPLATE,
-                filters='externalID',
-                filter_value=netpart['id'] + '@openstack',
-                netpart_name=name)
-            self.assertIsNot(default_l2dom_template, "", "Default L2Domain "
-                                                         "Template Not Found")
-            default_dom_template = self.nuage_client.get_resource(
-                resource=constants.DOMAIN_TEMPLATE,
-                filters='externalID',
-                filter_value=netpart['id'] + '@openstack',
-                netpart_name=name)
-            self.assertIsNot(default_dom_template, "", "Default Domain "
-                                                       "Template Not Found")
-            zone_templates = self.nuage_client.get_child_resource(
-                resource=constants.DOMAIN_TEMPLATE,
-                resource_id=default_dom_template[0]['ID'],
-                child_resource=constants.ZONE_TEMPLATE,
-                filters='externalID',
-                filter_value=netpart['id'] + '@openstack')
-            self.assertEqual(2, len(zone_templates))
-        body = self.client.list_netpartition()
-        netpartition_idlist = list()
-        netpartition_namelist = list()
-        for netpartition in body['net_partitions']:
-            netpartition_idlist.append(netpartition['id'])
-            netpartition_namelist.append(netpartition['name'])
-        self.assertIn(netpart['id'], netpartition_idlist)
-        self.assertIn(netpart['name'], netpartition_namelist)
-        body = self.client.delete_netpartition(netpart['id'])
-        self.assertEqual('204', body.response['status'])
-
     def link_subnet_l2(self, cidr=None, mask_bits=None, dhcp_port=None,
                        dhcp_option_3=None,
                        pool=None, vsd_l2dom=None,
@@ -149,7 +105,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
                        should_pass=True, create_server=False, network=None):
 
         def verify_subnet_info(i_subnet, i_vsd_l2dom, i_cidr, i_pool,
-                               i_dhcp_option_3):
+                               i_dhcp_option_3, net_partition):
             self.assertEqual(i_subnet['cidr'], str(i_cidr))
             # self.assertEqual(i_subnet['vsd_managed'], True)
             # self.assertEqual(i_subnet['nuagenet'], i_vsd_l2dom['ID'])
@@ -183,6 +139,9 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
                 else:
                     self.assertEqual(sub_pool['start'], str(i_cidr[1]))
                     self.assertEqual(sub_pool['end'], str(i_cidr[-2]))
+            if net_partition:
+                self.assertEqual(i_subnet['net_partition'],
+                                 i_vsd_l2dom['parentID'])
 
         # create l2domain on VSD
         name = data_utils.rand_name('l2domain-')
@@ -198,6 +157,8 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
                 netpart_name=net_partition['name'] if net_partition else None,
                 name=name, tid=vsd_l2dom_tmplt['ID'])[0]
             self.assertEqual(vsd_l2dom['name'], name)
+            if net_partition:
+                self.assertEqual(net_partition['id'], vsd_l2dom['parentID'])
             if dhcp_option_3:
                 self.nuage_client.create_dhcpoption_on_l2dom(
                     vsd_l2dom['ID'], 3, [dhcp_option_3])
@@ -220,11 +181,13 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
             kwargs['allocation_pools'] = [pool]
         if should_pass:
             subnet = self.create_subnet(network, **kwargs)
-            verify_subnet_info(subnet, vsd_l2dom, cidr, pool, dhcp_option_3)
+            verify_subnet_info(subnet, vsd_l2dom, cidr, pool, dhcp_option_3,
+                               net_partition)
 
             # now refetch the subnet and verify again
             subnet = self.client.show_subnet(subnet['id'])['subnet']
-            verify_subnet_info(subnet, vsd_l2dom, cidr, pool, dhcp_option_3)
+            verify_subnet_info(subnet, vsd_l2dom, cidr, pool, dhcp_option_3,
+                               net_partition)
 
             if create_server:
                 self.assertTrue(self._create_and_verify_vm(network))
@@ -368,29 +331,45 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
             subnet['enable_dhcp'],
             vsd_unmanaged_shared_l2dom['DHCPManaged'])
 
+    @decorators.attr(type='smoke')
+    def test_link_subnet_with_diff_netpartition_l2(self):
+        # link l2domain on VSD in different net-partition
+        netpart_name = data_utils.rand_name('netpart-')
+        netpart = self.create_netpartition(netpart_name)
+        self.link_subnet_l2(net_partition=netpart)
+
     @nuage_test.header(tags=['smoke'])
     def test_link_subnet_wo_netpartition_l2(self):
         net_name = data_utils.rand_name('network-')
         network = self.create_network(network_name=net_name)
-        self.assertRaises(self.failure_type,
-                          self.create_subnet,
-                          network,
-                          cidr=IPNetwork('10.10.100.0/24'),
-                          mask_bits=24,
-                          nuagenet=data_utils.rand_uuid())
+        cidr = nuage_data_utils.gimme_a_cidr()
+        l2dom_id = data_utils.rand_uuid()
+        msg = "Cannot find l2domain with ID {}".format(l2dom_id)
+        self.assertRaisesRegex(self.failure_type,
+                               msg,
+                               self.create_subnet,
+                               network,
+                               cidr=cidr,
+                               mask_bits=24,
+                               nuagenet=l2dom_id)
 
     @nuage_test.header(tags=['smoke'])
     def test_link_subnet_with_unknown_netpartition_l2(self):
         # netpartition does not exist in neutron DB
         net_name = data_utils.rand_name('network-')
         network = self.create_network(network_name=net_name)
-        self.assertRaises(self.failure_type,
-                          self.create_subnet,
-                          network,
-                          cidr=IPNetwork('10.10.100.0/24'),
-                          mask_bits=24,
-                          nuagenet=data_utils.rand_uuid(),
-                          net_partition=data_utils.rand_name())
+        cidr = nuage_data_utils.gimme_a_cidr()
+        l2dom_id = data_utils.rand_uuid()
+        netpart_name = data_utils.rand_name()
+        msg = "Can't find netpartition '{}'".format(netpart_name)
+        self.assertRaisesRegex(self.failure_type,
+                               msg,
+                               self.create_subnet,
+                               network,
+                               cidr=cidr,
+                               mask_bits=24,
+                               nuagenet=l2dom_id,
+                               net_partition=netpart_name)
 
     @decorators.attr(type='smoke')
     def test_link_subnet_with_incorrect_netpartition_l2(self):
@@ -398,9 +377,10 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
         # where the l2domain is created
         # create l2domain on VSD in default net-partition
         name = data_utils.rand_name('l2domain-')
-        cidr = IPNetwork('10.10.100.0/24')
+        cidr = nuage_data_utils.gimme_a_cidr()
+        _, _, gateway = nuage_data_utils.get_cidr_attributes(cidr)
         vsd_l2dom_tmplt = self.create_vsd_dhcpmanaged_l2dom_template(
-            name=name, cidr=cidr, gateway='10.10.100.1')
+            name=name, cidr=cidr, gateway=gateway)
         vsd_l2dom = self.create_vsd_l2domain(name=name,
                                              tid=vsd_l2dom_tmplt[0]['ID'])
 
@@ -409,13 +389,15 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
         network = self.create_network(network_name=net_name)
         netpart_name = data_utils.rand_name('netpart-')
         netpart = self.create_netpartition(netpart_name)
-        self.assertRaises(self.failure_type,
-                          self.create_subnet,
-                          network,
-                          cidr=cidr,
-                          mask_bits=24,
-                          nuagenet=vsd_l2dom[0]['ID'],
-                          net_partition=netpart['name'])
+        msg = "Provided Nuage subnet not in the provided Nuage net-partition"
+        self.assertRaisesRegex(self.failure_type,
+                               msg,
+                               self.create_subnet,
+                               network,
+                               cidr=cidr,
+                               mask_bits=24,
+                               nuagenet=vsd_l2dom[0]['ID'],
+                               net_partition=netpart['name'])
 
     @nuage_test.header(tags=['smoke'])
     def test_link_subnet_with_incorrect_cidr_l2(self):
@@ -627,6 +609,92 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
                 mask_bits=24, nuagenet=vsd_domain_subnet['ID'],
                 gateway='10.10.100.5',
                 net_partition=Topology.def_netpartition)
+
+    @decorators.attr(type='smoke')
+    def test_link_subnet_with_diff_types_in_shared_infrastructure_l3(self):
+        # create l3domain on VSD
+        vsd_l3dom_tmplt = self.create_vsd_l3dom_template(
+            netpart_name=self.shared_infrastructure)[0]
+        vsd_l3dom = self.create_vsd_l3domain(
+            tid=vsd_l3dom_tmplt['ID'],
+            netpart_name=self.shared_infrastructure)[0]
+        vsd_zone = self.create_vsd_zone(domain_id=vsd_l3dom['ID'])[0]
+        # create shared subnet on VSD
+        shared_sub_cidr = nuage_data_utils.gimme_a_cidr()
+        _, _, shared_sub_gateway = nuage_data_utils.get_cidr_attributes(
+            shared_sub_cidr)
+        extra_params = {'resourceType': 'PUBLIC'}
+        shared_sub_name = data_utils.rand_name('public-subnet-')
+        vsd_shared_l3dom_subnet = self.create_vsd_l3domain_managed_subnet(
+            zone_id=vsd_zone['ID'],
+            name=shared_sub_name,
+            cidr=shared_sub_cidr,
+            gateway=shared_sub_gateway,
+            extra_params=extra_params)[0]
+        # create floating subnet on VSD
+        floating_sub_cidr = nuage_data_utils.gimme_a_cidr()
+        _, _, floating_sub_gateway = nuage_data_utils.get_cidr_attributes(
+            floating_sub_cidr)
+        extra_params = {'resourceType': 'FLOATING'}
+        floating_sub_name = data_utils.rand_name('floating-subnet-')
+        vsd_floating_l3dom_subnet = self.create_vsd_l3domain_managed_subnet(
+            zone_id=vsd_zone['ID'],
+            name=floating_sub_name,
+            cidr=floating_sub_cidr,
+            gateway=floating_sub_gateway,
+            extra_params=extra_params)[0]
+        # create standard subnet on VSD
+        standard_sub_cidr = nuage_data_utils.gimme_a_cidr()
+        _, _, standard_sub_gateway = nuage_data_utils.get_cidr_attributes(
+            standard_sub_cidr)
+        extra_params = {'resourceType': 'STANDARD'}
+        standard_sub_name = data_utils.rand_name('standard-subnet-')
+        vsd_standard_l3dom_subnet = self.create_vsd_l3domain_managed_subnet(
+            zone_id=vsd_zone['ID'],
+            name=standard_sub_name,
+            cidr=standard_sub_cidr,
+            gateway=standard_sub_gateway,
+            extra_params=extra_params)[0]
+
+        network = self.create_network()
+        msg = (("The nuage subnet type is {}. Only STANDARD type subnet is "
+                "allowed to be linked.")
+               .format(vsd_shared_l3dom_subnet['resourceType']))
+        # create os subnet linking to shared subnet on VSD
+        self.assertRaisesRegex(
+            exceptions.BadRequest,
+            msg,
+            self.create_subnet,
+            network,
+            cidr=shared_sub_cidr,
+            mask_bits=24,
+            nuagenet=vsd_shared_l3dom_subnet['ID'],
+            gateway=shared_sub_gateway,
+            net_partition=self.shared_infrastructure)
+        # create os subnet linking to floating subnet on VSD
+        msg = (("The nuage subnet type is {}. Only STANDARD type subnet is "
+                "allowed to be linked.")
+               .format(vsd_floating_l3dom_subnet['resourceType']))
+        self.assertRaisesRegex(
+            exceptions.BadRequest,
+            msg,
+            self.create_subnet,
+            network,
+            cidr=floating_sub_cidr,
+            mask_bits=24,
+            nuagenet=vsd_floating_l3dom_subnet['ID'],
+            gateway=floating_sub_gateway,
+            net_partition=self.shared_infrastructure)
+        # create os subnet linking to standard subnet on VSD
+        vsd_managed_standard_subnet = self.create_subnet(
+            network,
+            cidr=standard_sub_cidr,
+            mask_bits=24,
+            nuagenet=vsd_standard_l3dom_subnet['ID'],
+            gateway=standard_sub_gateway,
+            net_partition=self.shared_infrastructure)
+        self.assertEqual(str(standard_sub_cidr),
+                         vsd_managed_standard_subnet['cidr'])
 
     @nuage_test.header(tags=['smoke'])
     def test_link_vsd_shared_subnet_l3(self):

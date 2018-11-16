@@ -141,7 +141,7 @@ class BaseVSDManagedNetwork(NuageBaseTest):
         name = kwargs.get('name') or data_utils.rand_name('l3domain')
         extra_params = kwargs.get('extra_params')
         vsd_l3dom = cls.nuage_client.create_domain(
-            name, kwargs['tid'], kwargs.get('netpart_name'),
+            name, kwargs['tid'], netpart_name=kwargs.get('netpart_name'),
             extra_params=extra_params)
         cls.vsd_l3domains.append(vsd_l3dom)
         return vsd_l3dom

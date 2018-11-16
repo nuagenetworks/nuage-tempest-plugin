@@ -13,8 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from netaddr import IPNetwork
-
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
@@ -23,6 +21,7 @@ from . import base_nuage_pat_underlay
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
+from nuage_tempest_plugin.lib.utils import data_utils as nuage_data_utils
 
 
 class TestNuagePatUnderlay(base_nuage_pat_underlay.NuagePatUnderlayBase):
@@ -117,9 +116,9 @@ class TestNuagePatUnderlay(base_nuage_pat_underlay.NuagePatUnderlayBase):
                               **kwargs)
 
     @nuage_test.header()
-    def test_create_router_with_gw_with_non_existing_ext_network_neg(
+    def test_create_router_with_gw_with_non_existent_ext_network_neg(
             self):
-        """test_create_router_with_gw_with_non_existing_ext_network_neg
+        """test_create_router_with_gw_with_non_existent_ext_network_neg
 
         Try to create router with external gateway with a non-existing
         external network uuid
@@ -150,7 +149,7 @@ class TestNuagePatUnderlay(base_nuage_pat_underlay.NuagePatUnderlayBase):
         Should fail, as PAT is only for OS managed networks
         """
         name = data_utils.rand_name('vsd-l2domain-')
-        cidr = IPNetwork(self.randomized_cidr())
+        cidr = nuage_data_utils.gimme_a_cidr()
         params = {
             'DHCPManaged': True,
             'address': str(cidr.ip),
@@ -225,7 +224,7 @@ class TestNuagePatUnderlay(base_nuage_pat_underlay.NuagePatUnderlayBase):
 
         Must succeed
         """
-        cidr = IPNetwork(self.randomized_cidr())
+        cidr = nuage_data_utils.gimme_a_cidr()
         enable_snat_states = [False, True]
         for enable_snat in enable_snat_states:
             # create an external network

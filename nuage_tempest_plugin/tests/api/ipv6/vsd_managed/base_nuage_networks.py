@@ -4,7 +4,6 @@
 from netaddr import IPAddress
 from netaddr import IPNetwork
 
-import random
 from six import iteritems
 
 from tempest.lib.common.utils import data_utils
@@ -13,6 +12,7 @@ from testtools.matchers._basic import _FlippedEquals
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import data_utils as nuage_data_utils
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
@@ -113,7 +113,6 @@ class BaseNuageNetworksIpv6TestCase(NuageBaseTest):
 ############################################################
 
 class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
-    VSD_FIP_POOL_CIDR_BASE = '130.%s.%s.0/24'
 
     @classmethod
     def setup_clients(cls):
@@ -249,14 +248,9 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
 
         return vsd_l3domain, vsd_l3domain_subnet
 
-    def _create_vsd_floatingip_pool(
-            self, fip_pool_cidr_base=VSD_FIP_POOL_CIDR_BASE):  # mind format!
+    def _create_vsd_floatingip_pool(self):
         name = data_utils.rand_name('fip-pool')
-
-        # randomize fip cidr to avoid parallel runs issues
-        fip_pool_cidr = IPNetwork(
-            fip_pool_cidr_base % (random.randint(0, 255),
-                                  random.randint(0, 255)))
+        fip_pool_cidr = nuage_data_utils.gimme_a_cidr()
         address = IPAddress(fip_pool_cidr.first)
         netmask = fip_pool_cidr.netmask
         gateway = address + 1

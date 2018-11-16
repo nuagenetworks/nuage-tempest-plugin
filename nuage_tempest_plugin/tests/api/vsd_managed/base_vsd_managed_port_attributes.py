@@ -17,13 +17,14 @@ import collections
 import json
 from netaddr import IPAddress
 from netaddr import IPNetwork
-import random
 
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
+from nuage_tempest_plugin.lib.utils import data_utils as nuage_data_utils
+
 from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_networks
 
@@ -46,7 +47,6 @@ OS_CONNECTING_NW_GW = '33.33.33.1'
 #
 # VALID_MAC_ADDRESS = 'fa:fa:3e:e8:e8:c0'
 
-VSD_FIP_POOL_CIDR_BASE = '120.%s.%s.0/24'
 VSD_SECOND_SUBNET_CIDR = IPNetwork('30.31.32.0/24')
 
 Floating_IP_tuple = collections.namedtuple('Floating_IP_tuple',
@@ -1020,15 +1020,11 @@ class BaseVSDManagedPortAttributes(
         self.update_port(port, **kwargs)
 
     @classmethod
-    def _create_vsd_floatingip_pool(
-            cls, fip_pool_cidr_base=VSD_FIP_POOL_CIDR_BASE):  # mind its format
+    def _create_vsd_floatingip_pool(cls):
         name = data_utils.rand_name('fip-pool')
 
         # randomize fip cidr to avoid parallel runs issues
-        fip_pool_cidr = IPNetwork(
-            fip_pool_cidr_base % (random.randint(0, 255),
-                                  random.randint(0, 255)))
-
+        fip_pool_cidr = nuage_data_utils.gimme_a_cidr()
         address = IPAddress(fip_pool_cidr.first)
         netmask = fip_pool_cidr.netmask
         gateway = address + 1

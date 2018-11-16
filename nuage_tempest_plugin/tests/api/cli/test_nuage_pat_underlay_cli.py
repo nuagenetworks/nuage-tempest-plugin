@@ -106,8 +106,8 @@ class TestNuagePatUnderlayCli(client_testcase.CLIClientTestCase,
 
     @utils.requires_ext(extension='ext-gw-mode', service='network')
     @nuage_test.header()
-    def test_cli_create_router_with_gw_with_non_existing_ext_network_neg(self):
-        """test_cli_create_router_with_gw_with_non_existing_ext_network_neg
+    def test_cli_create_router_with_gw_with_non_existent_ext_network_neg(self):
+        """test_cli_create_router_with_gw_with_non_existent_ext_network_neg
 
         Try to create router with external gateway with a non-existing
         external network uuid

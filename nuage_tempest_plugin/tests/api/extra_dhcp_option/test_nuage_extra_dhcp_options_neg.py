@@ -778,8 +778,8 @@ class NuageExtraDHCPOptionsNegativeTest(
                           more_than_16_extra_dhcp_opts)
 
     @nuage_test.header()
-    def test_nuage_show_port_non_existing_neg(self):
-        # Try to show the extra dhcp options of a non-existing port
+    def test_nuage_show_port_non_existent_neg(self):
+        # Try to show the extra dhcp options of a non-existent port
         bad_port_id = 'blablablabla'
         self.assertRaises(exceptions.NotFound,
                           self.ports_client.show_port,

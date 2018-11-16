@@ -13,11 +13,14 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import netaddr
+
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.utils import data_utils as nuage_data_utils
 
 from . import base_nuage_fip_underlay
 
@@ -101,15 +104,87 @@ class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
             'create-external-fip-subnet-with-underlay')
         sub1 = self.admin_subnets_client.create_subnet(
             network_id=ext_network1['id'],
-            cidr=self.randomized_cidr(),
+            cidr=nuage_data_utils.gimme_a_cidr_address(),
             ip_version=self._ip_version,
             name=subnet_name, underlay=True)['subnet']
         sub2 = self.admin_subnets_client.create_subnet(
             network_id=ext_network2['id'],
-            cidr=self.randomized_cidr(),
+            cidr=nuage_data_utils.gimme_a_cidr_address(),
             ip_version=self._ip_version,
             name=subnet_name, underlay=True)['subnet']
         self.assertEqual(sub1['nuage_uplink'], sub2['nuage_uplink'])
+        self.admin_subnets_client.delete_subnet(sub2['id'])
+        self.admin_subnets_client.delete_subnet(sub1['id'])
+
+    @nuage_test.header()
+    def test_multiple_subnets_with_underlay_disabled(self):
+        """test_multiple_subnets_with_underlay_disabled
+
+        Check that when using underlay=False,
+        two subnets on two external network go into different domains
+        """
+        ext_network1 = self._create_network(external=True)
+        ext_network2 = self._create_network(external=True)
+        sub1 = self.admin_subnets_client.create_subnet(
+            network_id=ext_network1['id'],
+            cidr=nuage_data_utils.gimme_a_cidr_address(),
+            ip_version=self._ip_version,
+            underlay=False)['subnet']
+        sub2 = self.admin_subnets_client.create_subnet(
+            network_id=ext_network2['id'],
+            cidr=nuage_data_utils.gimme_a_cidr_address(),
+            ip_version=self._ip_version,
+            underlay=False)['subnet']
+        self.assertNotEqual(sub1['nuage_uplink'], sub2['nuage_uplink'])
+        self.admin_subnets_client.delete_subnet(sub2['id'])
+        self.admin_subnets_client.delete_subnet(sub1['id'])
+
+    @nuage_test.header()
+    def test_update_external_subnet_with_gateway(self):
+        underlay_states = [False, True]
+        for underlay in underlay_states:
+            ext_network = self._create_network(external=True)
+            cidr = nuage_data_utils.gimme_a_cidr()
+            allocation_pools = [{'start': str(netaddr.IPAddress(cidr) + 3),
+                                 'end': str(netaddr.IPAddress(cidr) + 6)}]
+            sub = self.admin_subnets_client.create_subnet(
+                network_id=ext_network['id'],
+                cidr=cidr,
+                ip_version=self._ip_version,
+                underlay=underlay,
+                allocation_pools=allocation_pools
+                )['subnet']
+            old_gateway = sub['gateway_ip']
+            new_gateway = str(netaddr.IPAddress(cidr) + 2)
+            updated_sub = self.admin_subnets_client.update_subnet(
+                sub['id'], gateway_ip=new_gateway)['subnet']
+            curr_gateway = updated_sub['gateway_ip']
+            self.assertNotEqual(old_gateway, curr_gateway)
+            self.assertEqual(new_gateway, curr_gateway)
+            self.admin_subnets_client.delete_subnet(sub['id'])
+
+    @nuage_test.header()
+    def test_update_external_subnet_with_wrong_gateway(self):
+        underlay_states = [False, True]
+        for underlay in underlay_states:
+            ext_network = self._create_network(external=True)
+            cidr = nuage_data_utils.gimme_a_cidr()
+            sub = self.admin_subnets_client.create_subnet(
+                network_id=ext_network['id'],
+                cidr=cidr,
+                ip_version=self._ip_version,
+                underlay=underlay
+            )['subnet']
+            new_gateway = '100.0.0.1'
+            msg = "Network Gateway IP Address {} is out of range.".format(
+                new_gateway)
+            self.assertRaisesRegex(
+                exceptions.BadRequest,
+                msg,
+                self.admin_subnets_client.update_subnet,
+                sub['id'],
+                gateway_ip=new_gateway)
+            self.admin_subnets_client.delete_subnet(sub['id'])
 
     #
     #

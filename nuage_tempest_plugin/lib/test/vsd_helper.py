@@ -2,14 +2,15 @@
 # All Rights Reserved.
 
 import importlib
+from netaddr import IPAddress
 import re
 from six import iteritems
 
+from tempest.lib.common.utils import data_utils
+
 from bambou.exceptions import BambouHTTPError
-from netaddr import IPAddress
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
-from tempest.lib.common.utils import data_utils
 
 LOG = Topology.get_logger(__name__)
 

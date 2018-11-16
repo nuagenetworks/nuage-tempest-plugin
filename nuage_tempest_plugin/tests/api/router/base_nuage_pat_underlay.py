@@ -14,7 +14,6 @@
 #    under the License.
 
 from netaddr import IPNetwork
-import random
 import re
 from six import iteritems
 
@@ -102,11 +101,6 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
     def assertCommandFailed(self, message, fun, *args, **kwds):
         self.assertRaisesRegex(exceptions.CommandFailed, message,
                                fun, *args, **kwds)
-
-    @staticmethod
-    def randomized_cidr():
-        return '99.%s.%s.0/24' % (random.randint(0, 255),
-                                  random.randint(0, 255))
 
     # Taken from test_external_network_extensions.py,trying to avoid issues
     # with the cli client

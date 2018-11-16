@@ -16,7 +16,6 @@
 from future.utils import listitems
 
 import netaddr
-import random
 
 from tempest.api.network import base
 from tempest.api.network import test_networks
@@ -27,6 +26,7 @@ from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
+from nuage_tempest_plugin.lib.utils import data_utils as nuage_data_utils
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
 CONF = Topology.get_conf()
@@ -358,8 +358,7 @@ class NetworkNuageAdminTest(base.BaseAdminNetworkTest):
     def test_create_delete_external_subnet_with_underlay(self):
         subname = 'underlay-subnet'
         ext_network = self._create_network()
-        cidr = "135.%s.%s.0/24" % (random.randint(0, 255),
-                                   random.randint(0, 255))
+        cidr = nuage_data_utils.gimme_a_cidr_address()
         body = self.admin_subnets_client.create_subnet(
             network_id=ext_network['id'],
             cidr=cidr,
@@ -380,8 +379,7 @@ class NetworkNuageAdminTest(base.BaseAdminNetworkTest):
     def test_create_delete_external_subnet_without_underlay(self):
         subname = 'non-underlay-subnet'
         ext_network = self._create_network()
-        cidr = "135.%s.%s.0/24" % (random.randint(0, 255),
-                                   random.randint(0, 255))
+        cidr = nuage_data_utils.gimme_a_cidr_address()
         body = self.admin_subnets_client.create_subnet(
             network_id=ext_network['id'],
             cidr=cidr,
@@ -398,6 +396,19 @@ class NetworkNuageAdminTest(base.BaseAdminNetworkTest):
         nuage_fippool = self.nuage_client.get_sharedresource(
             filters='externalID', filter_value=subnet['id'])
         self.assertEqual(nuage_fippool, '')
+
+    @decorators.attr(type='smoke')
+    def test_switch_network_external_vs_internal_without_subnets(self):
+        int_network = self.create_network()
+        self.assertFalse(int_network['router:external'])
+        kwargs = {'router:external': True}
+        ext_network = self.admin_networks_client.update_network(
+            int_network['id'], **kwargs)['network']
+        self.assertTrue(ext_network['router:external'])
+        kwargs = {'router:external': False}
+        int_network = self.admin_networks_client.update_network(
+            ext_network['id'], **kwargs)['network']
+        self.assertFalse(int_network['router:external'])
 
 
 class NuageNetworksIpV6Test(NetworksTestJSONNuage):

@@ -293,6 +293,12 @@ class NuageNetworkClientJSON(service_client.RestClient):
         body = json.loads(body)
         return service_client.ResponseBody(resp, body)
 
+    def list_netpartition_by_name(self, name):
+        uri = '{}/net-partitions?{}'.format(self.uri_prefix,
+                                            urlparse.urlencode({'name': name}))
+        body = self._get_request(uri)
+        return body['net_partitions']
+
     def list_tiers(self, app_id):
         uri = '%s/tiers?app_id=%s' % (self.uri_prefix, app_id)
         return self._get_request(uri)

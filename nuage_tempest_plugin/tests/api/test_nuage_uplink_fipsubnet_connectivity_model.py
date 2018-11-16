@@ -13,7 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import random
 import uuid
 
 from tempest.api.network import base
@@ -136,8 +135,7 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
         Check that when using nuage-uplink correct parent linkage is present
         """
         # Create first FIP subnet
-        cidr1 = "172.%s.%s.0/24" % (random.randint(0, 255),
-                                    random.randint(0, 255))
+        cidr1 = nuage_data_utils.gimme_a_cidr_address()
         fipsub1 = self.create_fip_subnet(cidr1)
         self.addCleanup(self.delete_fip_subnet, fipsub1['id'])
 
@@ -157,8 +155,7 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
         self.assertEqual(nuage_fipsubnet1[0]['parentID'],
                          uplink_subnet[0]['sharedResourceParentID'])
         # Create FIP subnet with nuage_uplink option
-        cidr2 = "198.%s.%s.0/24" % (random.randint(0, 255),
-                                    random.randint(0, 255))
+        cidr2 = nuage_data_utils.gimme_a_cidr_address()
         fipsub2 = self.create_fip_subnet(cidr2,
                                          nuage_fipsubnet1[0]['parentID'])
         self.addCleanup(self.delete_fip_subnet, fipsub2['id'])
@@ -172,9 +169,7 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
 
     @decorators.attr(type='smoke')
     def test_show_fipsubs_in_shared_domain(self):
-        cidr = "172.%s.%s.0/24" % (random.randint(0, 255),
-                                   random.randint(0, 255))
-
+        cidr = nuage_data_utils.gimme_a_cidr_address()
         fipsub = self.create_fip_subnet(cidr)
         self.addCleanup(self.delete_fip_subnet, fipsub['id'])
         # Check the nuage_uplink field in subnet-show
@@ -208,7 +203,8 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
                           **kwargs)
 
         # Creation FIP subnet with same cidr and nuage_uplink should fail
-        fipsub1 = self.create_fip_subnet('172.40.0.0/24')
+        cidr = nuage_data_utils.gimme_a_cidr_address()
+        fipsub1 = self.create_fip_subnet(cidr)
         self.addCleanup(self.delete_fip_subnet, fipsub1['id'])
         fip_ext_id = self.nuage_client.get_vsd_external_id(fipsub1['id'])
         nuage_fipsubnet1 = self.nuage_client.get_sharedresource(
@@ -217,19 +213,20 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
         kwargs = {'name': fipsub_name,
                   'network_id': pubnet['id'],
                   'ip_version': 4,
-                  'cidr': '172.40.0.0/24',
+                  'cidr': cidr,
                   'nuage_uplink': nuage_fipsubnet1[0]['parentID']}
+        stripped_cidr = cidr.split('/')[0]
         if Topology.from_openstack('Newton') and Topology.is_ml2:
             self.assertRaisesRegex(
                 exceptions.BadRequest,
-                "Network 172.40.0.0/255.255.255.0 overlaps with "
-                "existing network ",
+                "Network {}/255.255.255.0 overlaps with "
+                "existing network ".format(stripped_cidr),
                 self.admin_subnets_client.create_subnet, **kwargs)
         else:
             self.assertRaisesRegex(
                 exceptions.ServerFault,
-                "Network 172.40.0.0/255.255.255.0 overlaps with "
-                "existing network ",
+                "Network {}/255.255.255.0 overlaps with "
+                "existing network ".format(stripped_cidr),
                 self.admin_subnets_client.create_subnet, **kwargs)
 
     def test_fipsub_with_nuage_uplink_and_uplinksub_no_parent_id(self):
@@ -239,8 +236,8 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
         self.create_gateway_port_vlan()
         # Create uplink subnet without passing parentID
         uplink_subnet = self.create_uplink_subnet()
-
-        fipsub1 = self.create_fip_subnet('172.40.0.0/24',
+        cidr = nuage_data_utils.gimme_a_cidr_address()
+        fipsub1 = self.create_fip_subnet(cidr,
                                          uplink_subnet[0]['parentID'])
         self.addCleanup(self.delete_fip_subnet, fipsub1['id'])
         fip_ext_id = self.nuage_client.get_vsd_external_id(fipsub1['id'])

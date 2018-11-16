@@ -65,10 +65,10 @@ class NuageRoutersTest(base.BaseNetworkTest):
     # copy of RoutersTest - start
 
     def _create_router(self, name=None, admin_state_up=False,
-                       external_network_id=None, enable_snat=None):
+                       external_network_id=None, enable_snat=None, **kwargs):
         # associate a cleanup with created routers to avoid quota limits
         router = self.create_router(name, admin_state_up,
-                                    external_network_id, enable_snat)
+                                    external_network_id, enable_snat, **kwargs)
         self.addCleanup(self.delete_router, router)
         return router
 
@@ -468,33 +468,6 @@ class NuageRoutersTest(base.BaseNetworkTest):
                           admin_state_up=True,
                           **rtr_template)
 
-    def test_router_create_with_netpart(self):
-        netpart_name = data_utils.rand_name('netpart')
-        netpart = {
-            'net_partition': netpart_name
-        }
-
-        # Create net-partition
-        netpart_body = self.client.create_netpartition(netpart_name)
-        self.addCleanup(self.client.delete_netpartition,
-                        netpart_body['net_partition']['id'])
-
-        # Create router in that net-partition
-        rtr_body = self.routers_client.create_router(
-            name=data_utils.rand_name('router'), admin_state_up=True,
-            **netpart)
-        self.addCleanup(self.routers_client.delete_router,
-                        rtr_body['router']['id'])
-
-        # Verify Router is created in correct net-partition
-        nuage_domain = self.nuage_client.get_l3domain(
-            filters='externalID', filter_value=rtr_body['router']['id'],
-            netpart_name=netpart_name)
-        self.assertEqual(rtr_body['router']['name'], nuage_domain[0][
-            'description'])
-        self.assertEqual(netpart_body['net_partition']['id'],
-                         nuage_domain[0]['parentID'])
-
     @decorators.attr(type='smoke')
     def test_router_create_with_rt_rd(self):
         # Create a router with specific rt/rd values
@@ -616,6 +589,19 @@ class NuageRoutersTest(base.BaseNetworkTest):
         nuage_domain = self.nuage_client.get_l3domain(
             filters='externalID', filter_value=create_body['router']['id'])
         self.assertEqual(rd, nuage_domain[0]['routeDistinguisher'])
+
+    def test_create_router_in_shared_netpartition(self):
+        netpart_name = 'Shared Infrastructure'
+        kwargs = {
+            'net_partition': netpart_name
+        }
+        msg = ("It is not allowed to create routers in the net_partition {}"
+               .format(netpart_name))
+        self.assertRaisesRegex(
+            exceptions.BadRequest,
+            msg,
+            self._create_router,
+            **kwargs)
 
 
 class NuageRoutersAdminTest(NuageAdminNetworksTest):

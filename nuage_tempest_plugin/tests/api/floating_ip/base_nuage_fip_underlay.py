@@ -13,8 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from netaddr import IPNetwork
-import random
 import re
 
 from tempest.api.network import base
@@ -26,6 +24,8 @@ from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
 
 from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import data_utils as nuage_data_utils
+
 from nuage_tempest_plugin.services import nuage_client
 
 CONF = Topology.get_conf()
@@ -55,11 +55,6 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest):
         if nuage_fip_underlay_ini == '':
             nuage_fip_underlay_ini = None
         cls.nuage_fip_underlay_ini = nuage_fip_underlay_ini
-
-    @staticmethod
-    def randomized_cidr():
-        return '99.%s.%s.0/24' % (random.randint(0, 255),
-                                  random.randint(0, 255))
 
     @classmethod
     def needs_ini_nuage_fip_underlay(cls, underlay_value):
@@ -101,7 +96,7 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest):
         subnet_name = 'non-underlay-subnet'
         body = self.admin_subnets_client.create_subnet(
             network_id=ext_network['id'],
-            cidr=self.randomized_cidr(),
+            cidr=nuage_data_utils.gimme_a_cidr_address(),
             ip_version=self._ip_version,
             name=subnet_name)
         subnet = body['subnet']
@@ -133,7 +128,7 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest):
                 'create-external-fip-subnet-with-underlay')
             create_body = self.admin_subnets_client.create_subnet(
                 network_id=ext_network['id'],
-                cidr=self.randomized_cidr(),
+                cidr=nuage_data_utils.gimme_a_cidr_address(),
                 ip_version=self._ip_version,
                 name=subnet_name, underlay=underlay)
             subnet = create_body['subnet']
@@ -167,7 +162,7 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest):
             'show-external-fip-subnet-without-underlay')
         create_body = self.admin_subnets_client.create_subnet(
             network_id=ext_network['id'],
-            cidr=self.randomized_cidr(),
+            cidr=nuage_data_utils.gimme_a_cidr_address(),
             ip_version=self._ip_version,
             name=subnet_name)
         subnet = create_body['subnet']
@@ -192,7 +187,7 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest):
                 'external-fip-subnet-show-underlay')
             create_body = self.admin_subnets_client.create_subnet(
                 network_id=ext_network['id'],
-                cidr=self.randomized_cidr(),
+                cidr=nuage_data_utils.gimme_a_cidr_address(),
                 ip_version=self._ip_version,
                 name=subnet_name, underlay=underlay)
             subnet = create_body['subnet']
@@ -206,7 +201,7 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest):
     def _verify_update_external_subnet_with_underlay_neg(self):
         ext_network = self._create_network(external=True)
         underlay_states = [False, True]
-        cidr = IPNetwork(self.randomized_cidr())
+        cidr = nuage_data_utils.gimme_a_cidr()
         for underlay in underlay_states:
             subnet_name = data_utils.rand_name(
                 'underlay-subnet-update-not-allowed')
@@ -246,7 +241,7 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest):
         the same underlay value used during
         creation
         """
-        cidr = IPNetwork(self.randomized_cidr())
+        cidr = nuage_data_utils.gimme_a_cidr()
         my_subnet_list = ['subnet-underlay_false',
                           'subnet_underlay_true',
                           'subnet_underlay']
@@ -323,9 +318,9 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest):
         ext_network = self.create_network_with_args(ext_network_name,
                                                     " --router:external")
         ext_subnet_name = data_utils.rand_name('ext-non-underlay-subnet')
-        subnet = self.create_subnet_with_args(ext_network['name'],
-                                              self.randomized_cidr(),
-                                              "--name ", ext_subnet_name)
+        subnet = self.create_subnet_with_args(
+            ext_network['name'], nuage_data_utils.gimme_a_cidr_address(),
+            "--name ", ext_subnet_name)
         compare_str = str(underlay_default)
         self.assertIn(compare_str.lower(), str(subnet['underlay']).lower())
         nuage_fippool = self.nuage_client.get_sharedresource(
@@ -364,10 +359,9 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest):
             # adding spaces between arguments
             # and we require underlay=<value> without space
             underlay_str = "--underlay=" + str(underlay)
-            subnet = self.create_subnet_with_args(ext_network['name'],
-                                                  self.randomized_cidr(),
-                                                  "--name ", ext_subnet_name,
-                                                  underlay_str)
+            subnet = self.create_subnet_with_args(
+                ext_network['name'], nuage_data_utils.gimme_a_cidr_address(),
+                "--name ", ext_subnet_name, underlay_str)
             # Compare the returned value with the given value, lowercased to
             # avoid issues with upper/lowercase
             self.assertIn(str(underlay).lower(),
@@ -405,9 +399,9 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest):
         ext_network = self.create_network_with_args(ext_network_name,
                                                     " --router:external")
         ext_subnet_name = "ext-fip-underlay-subnet-" + rand_name_str
-        subnet = self.create_subnet_with_args(ext_network['name'],
-                                              self.randomized_cidr(),
-                                              "--name ", ext_subnet_name)
+        subnet = self.create_subnet_with_args(
+            ext_network['name'], nuage_data_utils.gimme_a_cidr_address(),
+            "--name ", ext_subnet_name)
         show_subnet = self.show_subnet(subnet['id'])
         # underlay value should match the default one
         check_str = str(default_underlay)\
@@ -433,7 +427,7 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest):
             cidr_addition = 20
         else:
             cidr_addition = 500
-        cidr_net = IPNetwork(self.randomized_cidr()).next(cidr_addition)
+        cidr_net = nuage_data_utils.gimme_a_cidr().next(cidr_addition)
         underlay_states = [False, True]
         for underlay in underlay_states:
             rand_name_str = data_utils.rand_name()
@@ -462,10 +456,9 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest):
             ext_subnet_name = "ext-fip-underlay-subnet-update_not-allowed" + \
                               rand_name_str
             underlay_str = "--underlay=" + str(underlay)
-            subnet = self.create_subnet_with_args(ext_network['name'],
-                                                  self.randomized_cidr(),
-                                                  "--name ", ext_subnet_name,
-                                                  underlay_str)
+            subnet = self.create_subnet_with_args(
+                ext_network['name'], nuage_data_utils.gimme_a_cidr_address(),
+                "--name ", ext_subnet_name, underlay_str)
             self.assertThat(subnet, ContainsDict({'underlay':
                                                   Equals(str(underlay))}))
 
@@ -510,7 +503,7 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest):
         my_subnet_list = ['list-subnet-underlay-false-',
                           'list-subnet_underlay-true-',
                           'list-subnet_underlay-']
-        cidr_net = IPNetwork(self.randomized_cidr()).next(cidr_addition)
+        cidr_net = nuage_data_utils.gimme_a_cidr().next(cidr_addition)
         for this_subnet in my_subnet_list:
             rand_name_str = data_utils.rand_name()
             ext_network_name = "ext-fip-network-" + rand_name_str

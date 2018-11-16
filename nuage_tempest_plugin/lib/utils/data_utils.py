@@ -5,10 +5,10 @@ import random
 
 
 def gimme_a_cidr_address(mask_bits=24):
-    return '1%s.%s.%s.0/%s' % (random.randint(0, 9),
-                               random.randint(0, 255),
-                               random.randint(0, 255),
-                               str(mask_bits))
+    return '%s.%s.%s.0/%s' % (random.randint(10, 99),
+                              random.randint(0, 255),
+                              random.randint(0, 255),
+                              str(mask_bits))
 
 
 def gimme_a_cidr(mask_bits=24):
