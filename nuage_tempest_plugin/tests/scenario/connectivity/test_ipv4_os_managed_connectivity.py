@@ -13,7 +13,6 @@ LOG = Topology.get_logger(__name__)
 
 class Ipv4OsManagedConnectivityTest(NuageBaseTest):
 
-    @decorators.attr(type='smoke')
     def test_icmp_connectivity_l2_os_managed(self):
         # Provision OpenStack network resources
         network = self.create_network()
@@ -126,7 +125,6 @@ class Ipv4OsManagedConnectivityTest(NuageBaseTest):
         self.assert_ping(server12, server1, network1)
         self.assert_ping(server12, server2, network2)
 
-    @decorators.attr(type='smoke')
     def test_icmp_connectivity_multiple_subnets_in_shared_network(self):
         """test_icmp_connectivity_multiple_subnets_in_shared_network
 

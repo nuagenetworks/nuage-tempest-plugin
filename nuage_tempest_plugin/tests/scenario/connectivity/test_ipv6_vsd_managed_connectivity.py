@@ -11,7 +11,6 @@ from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 
 class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
 
-    @decorators.attr(type='smoke')
     def test_icmp_connectivity_l2_vsd_managed_dualstack(self):
         # Provision VSD managed network resources
         l2domain_template = self.vsd_create_l2domain_template(

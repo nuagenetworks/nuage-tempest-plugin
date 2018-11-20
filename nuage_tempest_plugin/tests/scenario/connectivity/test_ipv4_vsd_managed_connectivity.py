@@ -11,7 +11,6 @@ LOG = Topology.get_logger(__name__)
 
 class Ipv4VsdManagedConnectivityTest(NuageBaseTest):
 
-    @decorators.attr(type='smoke')
     def test_icmp_connectivity_l2_vsd_managed(self):
         # Provision VSD managed network resources
         l2domain_template = self.vsd_create_l2domain_template(

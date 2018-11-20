@@ -7,7 +7,6 @@ from tempest.test import decorators
 
 class Ipv6OsManagedConnectivityTest(NuageBaseTest):
 
-    @decorators.attr(type='smoke')
     def test_icmp_connectivity_l2_os_managed_dualstack(self):
         # Provision OpenStack network
         network = self.create_network()
