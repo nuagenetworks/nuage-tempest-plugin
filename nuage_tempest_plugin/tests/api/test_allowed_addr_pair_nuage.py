@@ -16,6 +16,7 @@
 from netaddr import IPAddress
 import uuid
 
+from nuage_tempest_plugin.lib.test.nuage_test import skip_because
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
@@ -233,6 +234,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         self.assertEqual(n_constants.ENABLED,
                          nuage_vport[0]['addressSpoofing'])
 
+    @skip_because(bug='OPENSTACK-2145')
     @decorators.attr(type='smoke')
     def test_create_address_pair_on_l3subnet_with_mac(self):
         # Create port with allowed address pair attribute
@@ -292,6 +294,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
                              self.nuage_client.get_vsd_external_id(
                                  port['id']))
 
+    @skip_because(bug='OPENSTACK-2145')
     @decorators.attr(type='smoke')
     def test_create_address_pair_on_l3subnet_with_mac_routersubnetbind(self):
         # Create port with allowed address pair attribute
@@ -431,6 +434,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         self.assertEqual(n_constants.ENABLED,
                          nuage_vport[0]['addressSpoofing'])
 
+    @skip_because(bug='OPENSTACK-2145')
     def test_create_address_pair_on_l3subnet_with_cidr_routersubnetbind(self):
         # Create port with allowed address pair attribute
         ip_address = '30.30.0.0/24'
@@ -562,6 +566,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         self.assertEmpty(nuage_vip)
 
     # Subnet attach/detach are not fully synchronous
+    @skip_because(bug='OPENSTACK-2145')
     @decorators.attr(type='smoke')
     def test_update_address_pair_on_l3subnet_routersubnetbind(self):
         # Test now uses fixed ips, so random error when a port is created

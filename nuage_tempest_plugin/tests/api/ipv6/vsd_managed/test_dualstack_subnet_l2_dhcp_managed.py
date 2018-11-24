@@ -465,16 +465,6 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
         self._verify_port(port, subnet4=ipv4_subnet, subnet6=ipv6_subnet),
         self._verify_vport_in_l2_domain(port, vsd_l2domain)
 
-        # create a port with no fixed ip in the IPv4 subnet but
-        # fixed-ip IPv6
-        port_args = {'fixed_ips': [{'subnet_id': ipv4_subnet['id']},
-                                   {'subnet_id': ipv6_subnet['id'],
-                                    'ip_address': IPAddress(
-                                        self.cidr6.first + 21)}]}
-        port = self.create_port(network, **port_args)
-        self._verify_port(port, subnet4=None, subnet6=ipv6_subnet),
-        self._verify_vport_in_l2_domain(port, vsd_l2domain)
-
         # can have multiple fixed ip's in same subnet
         port_args = {'fixed_ips': [{'subnet_id': ipv4_subnet['id'],
                                     'ip_address': IPAddress(
