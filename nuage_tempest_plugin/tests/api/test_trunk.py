@@ -14,6 +14,7 @@
 
 import random
 
+from nuage_tempest_plugin.lib.test.nuage_test import skip_because
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
@@ -228,6 +229,7 @@ class TrunkTestJSON(TrunkTestJSONBase):
         observed_subports = trunk['sub_ports']
         self.assertEqual(1, len(observed_subports))
 
+    @skip_because(bug='VSD-27414')
     def test_update_subport(self):
         port = self._create_port_for_trunk()
         subports = [{'port_id': port['id'],
