@@ -12,16 +12,6 @@
               - ^doc/.*$
               - ^setup.cfg$
               - ^tox.ini$
-        - legacy-tempest-aio-agent:
-            voting: false
-            required-projects:
-              - OpenStack/nuage-openstack-neutron
-            irrelevant-files:
-              - ^(test-|)requirements.txt$
-              - ^.*\.rst$
-              - ^doc/.*$
-              - ^setup.cfg$
-              - ^tox.ini$
     gate:
       jobs:
         - openstack-tox-pep8
@@ -35,9 +25,31 @@
               - ^doc/.*$
               - ^setup.cfg$
               - ^tox.ini$
-    experimental:
+    full:
       jobs:
         - legacy-tempest-aio-full:
+            required-projects:
+              - OpenStack/nuage-openstack-neutron
+            irrelevant-files:
+              - ^(test-|)requirements.txt$
+              - ^.*\.rst$
+              - ^doc/.*$
+              - ^setup.cfg$
+              - ^tox.ini$
+    agent:
+      jobs:
+        - legacy-tempest-aio-agent:
+            required-projects:
+              - OpenStack/nuage-openstack-neutron
+            irrelevant-files:
+              - ^(test-|)requirements.txt$
+              - ^.*\.rst$
+              - ^doc/.*$
+              - ^setup.cfg$
+              - ^tox.ini$
+    sriov:
+      jobs:
+        - legacy-tempest-aio-sriov:
             required-projects:
               - OpenStack/nuage-openstack-neutron
             irrelevant-files:
