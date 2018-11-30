@@ -176,6 +176,21 @@ class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
         self.assertEqual(s1['nuage_uplink'], s2['nuage_uplink'],
                          "Subnet not created with provided nuage_uplink")
 
+    def test_update_network_to_external_with_port(self):
+        n1 = self.create_network(client=self.admin_manager)
+        self.create_port(n1, client=self.admin_manager)
+        kwargs = {'router:external': True}
+        msg = ("Network %s cannot be updated. "
+               "There are one or more ports still in "
+               "use on the network.") % n1['id']
+        self.assertRaisesRegex(
+            exceptions.BadRequest,
+            msg,
+            self.update_network,
+            n1['id'],
+            client=self.admin_manager,
+            **kwargs)
+
     @decorators.attr(type='smoke')
     def test_nuage_network_multiple_gw(self):
         """test_nuage_network_multiple_gw
