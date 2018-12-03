@@ -16,15 +16,14 @@
 from netaddr import IPAddress
 from netaddr import IPNetwork
 
+from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants
+from nuage_commons import constants
+
 from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_networks
-
-CONF = Topology.get_conf()
 
 OS_FULL_CIDR24_RANGE = 254  # .256 -1 (.0) -1 (.255)
 
@@ -45,6 +44,8 @@ EXPECT_GATEWAY_IP_MISMATCH = "Bad subnet request: " \
                              "VSD configuration"
 EXPECT_CIDR_IN_RANGE = "Bad request: cidr in subnet must be"
 EXPECT_GATEWAY_IN_CIDR = "Bad request: Gateway IP outside of the subnet CIDR"
+
+CONF = config.CONF
 
 
 class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
@@ -318,7 +319,7 @@ class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
             'enable_dhcp': enable_dhcp,
             'cidr': cidr,
             'mask_bits': cidr.prefixlen,
-            'net_partition': Topology.def_netpartition,
+            'net_partition': self.def_netpartition,
             'nuagenet': vsd_entity[0]['ID']
         }
         if gateway_ip is not '':
@@ -328,13 +329,8 @@ class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
             kwargs['client'] = self.os_admin
 
         if must_fail:
-            if Topology.before_openstack('Newton'):
-                failure_type = exceptions.ServerFault
-            else:
-                failure_type = exceptions.BadRequest
-
             self.assertRaises(
-                failure_type,
+                exceptions.BadRequest,
                 self.create_subnet,
                 **kwargs)
         else:

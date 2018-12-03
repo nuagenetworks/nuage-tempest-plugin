@@ -1,18 +1,19 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
+
 import bambou
 from netaddr import IPAddress
 from netaddr import IPNetwork
 
-from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.test import tags
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
-    import BaseVSDManagedNetworksIPv6Test
-
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions as tempest_exceptions
+
+from nuage_tempest_lib.topology import Topology
+
+from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
+    import BaseVSDManagedNetworksIPv6Test
+
 
 MSG_INVALID_GATEWAY = "Invalid IPv6 network gateway"
 MSG_INVALID_IPV6_ADDRESS = "Invalid network IPv6 address"
@@ -20,7 +21,6 @@ MSG_IP_ADDRESS_INVALID_OR_RESERVED = "IP Address is not valid or cannot be " \
                                      "in reserved address space"
 
 
-@nuage_test.class_header(tags=[tags.ML2])
 class VSDManagedDualStackSubnetL3Test(BaseVSDManagedNetworksIPv6Test):
 
     ###########################################################################
@@ -67,7 +67,7 @@ class VSDManagedDualStackSubnetL3Test(BaseVSDManagedNetworksIPv6Test):
             enable_dhcp=True,
             mask_bits=IPNetwork(subnet_cidr).prefixlen,
             nuagenet=vsd_l3domain_subnet.id,
-            net_partition=Topology.def_netpartition)
+            net_partition=self.def_netpartition)
         self.assertEqual(ipv4_subnet['cidr'], str(subnet_cidr))
 
         # create Openstack IPv6 subnet on Openstack based on VSD l3dom subnet
@@ -79,7 +79,7 @@ class VSDManagedDualStackSubnetL3Test(BaseVSDManagedNetworksIPv6Test):
             mask_bits=IPNetwork(vsd_l3domain_subnet.ipv6_address).prefixlen,
             enable_dhcp=False,
             nuagenet=vsd_l3domain_subnet.id,
-            net_partition=Topology.def_netpartition)
+            net_partition=self.def_netpartition)
 
         self.assertEqual(
             ipv6_subnet['cidr'], vsd_l3domain_subnet.ipv6_address)
@@ -218,7 +218,7 @@ class VSDManagedDualStackSubnetL3Test(BaseVSDManagedNetworksIPv6Test):
             mask_bits=subnet_ipv6_cidr.prefixlen,
             enable_dhcp=False,
             nuagenet=vsd_l3domain_subnet.id,
-            net_partition=Topology.def_netpartition)
+            net_partition=self.def_netpartition)
 
     @decorators.attr(type='smoke')
     def test_create_ipv4_subnet_without_dhcp_in_vsd_managed_l3domain(self):
@@ -266,7 +266,7 @@ class VSDManagedDualStackSubnetL3Test(BaseVSDManagedNetworksIPv6Test):
             mask_bits=subnet_cidr.prefixlen,
             enable_dhcp=False,
             nuagenet=vsd_l3domain_subnet.id,
-            net_partition=Topology.def_netpartition)
+            net_partition=self.def_netpartition)
 
     # see VSD-18779 (CLOSED) - VSD should not allow creation of a l3 subnet
     # with IPType=IPV6

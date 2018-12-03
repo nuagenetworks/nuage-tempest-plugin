@@ -2,15 +2,12 @@
 # All Rights Reserved.
 
 from tempest.common import utils
+from tempest import config
 from tempest.lib import decorators
 
-from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.tests.api.orchestration import nuage_base
 
-from . import nuage_base
-
-CONF = Topology.get_conf()
-LOG = Topology.get_logger(__name__)
+CONF = config.CONF
 
 
 class OrchestrationServerTest(nuage_base.NuageBaseOrchestrationTest):
@@ -40,15 +37,11 @@ class OrchestrationServerTest(nuage_base.NuageBaseOrchestrationTest):
         return nuage_domain[0]
 
     @decorators.attr(type=['smoke'])
-    @nuage_test.header()
     def test_servers_in_new_neutron_net_nokey(self):
-        # ext_net_id = self.public_net['id']
-        ext_net_id = CONF.network.public_network_id
-
         stack_file_name = 'servers_in_new_neutron_net_nokey'
         stack_parameters = {
             'image': CONF.compute.image_ref,
-            'public_net': ext_net_id,
+            'public_net': self.public_network_id,
             'private_net_name': "servers_in_new_neutron_net_nokey-net",
             'private_net_cidr': "8.7.6.0/24"}
         self.launch_stack(stack_file_name, stack_parameters)

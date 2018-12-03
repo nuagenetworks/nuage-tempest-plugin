@@ -1,16 +1,17 @@
 # Copyright 2015 Alcatel-Lucent
 # All Rights Reserved.
 
-from tempest.api.network import base
+from oslo_log import log as logging
+
 from tempest.common import utils
 from tempest.lib.common.utils import data_utils
 
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants
-from nuage_tempest_plugin.services import nuage_client
+from nuage_commons import constants
 
-CONF = Topology.get_conf()
-LOG = Topology.get_logger(__name__)
+from nuage_tempest_lib.tests.nuage_test import NuageBaseNetworkTest
+from nuage_tempest_lib.vsdclient import nuage_client
+
+LOG = logging.getLogger(__name__)
 
 
 def openstack_to_vsd(value):
@@ -27,7 +28,7 @@ def openstack_to_vsd(value):
     return vsd_value
 
 
-class NuageFipRateLimitBase(base.BaseNetworkTest):
+class NuageFipRateLimitBase(NuageBaseNetworkTest):
     _interface = 'json'
 
     """
@@ -53,13 +54,12 @@ class NuageFipRateLimitBase(base.BaseNetworkTest):
             msg = "Extension nuage_floatingip not enabled."
             raise cls.skipException(msg)
 
-        cls.ext_net_id = CONF.network.public_network_id
-
         # Create network, subnet, router and add interface
         cls.network = cls.create_network()
         cls.subnet = cls.create_subnet(cls.network)
-        cls.router = cls.create_router(data_utils.rand_name('router-'),
-                                       external_network_id=cls.ext_net_id)
+        cls.router = cls.create_router(
+            data_utils.rand_name('router-'),
+            external_network_id=cls.public_network_id)
 
         cls.create_router_interface(cls.router['id'], cls.subnet['id'])
         cls.ports = []
@@ -72,7 +72,7 @@ class NuageFipRateLimitBase(base.BaseNetworkTest):
     @classmethod
     def _create_fip_for_port_with_rate_limit(cls, port_id, rate_limit):
         body = cls.floating_ips_client.create_floatingip(
-            floating_network_id=cls.ext_net_id,
+            floating_network_id=cls.public_network_id,
             port_id=port_id,
             nuage_fip_rate=rate_limit)
 
@@ -82,7 +82,7 @@ class NuageFipRateLimitBase(base.BaseNetworkTest):
 
     def _do_create_fip_for_port_with_rate_limit(self, port_id, rate_limit):
         body = self.floating_ips_client.create_floatingip(
-            floating_network_id=self.ext_net_id,
+            floating_network_id=self.public_network_id,
             port_id=port_id,
             nuage_fip_rate=rate_limit)
 
@@ -115,7 +115,7 @@ class NuageFipRateLimitBase(base.BaseNetworkTest):
         self.assertIsNotNone(created_floating_ip['floating_ip_address'])
         self.assertEqual(created_floating_ip['port_id'], port['id'])
         self.assertEqual(created_floating_ip['floating_network_id'],
-                         self.ext_net_id)
+                         self.public_network_id)
         self.assertIn(created_floating_ip['fixed_ip_address'],
                       [ip['ip_address'] for ip in port['fixed_ips']])
 

@@ -1,14 +1,16 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
+
 import bambou
 from netaddr import IPAddress
 from netaddr import IPNetwork
 from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
 
-from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants as nuage_constants
+from nuage_commons import constants as nuage_constants
+from nuage_tempest_lib import decorators as nuage_decorators
+from nuage_tempest_lib.topology import Topology
+
 from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
     import BaseVSDManagedNetworksIPv6Test
 from nuage_tempest_plugin.tests.api.ipv6.vsd_managed. \
@@ -639,7 +641,7 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
     # minimal attributes - default values
     ########################################
 
-    @nuage_test.skip_because(bug='VSD-18509')
+    @nuage_decorators.skip_because(bug='VSD-18509')
     @decorators.attr(type='smoke')
     def test_create_vsd_l2domain_template_dualstack_valid_failing_at_vsd(self):
         valid_ipv6 = [
@@ -1105,14 +1107,14 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
             cidr=IPNetwork('10.0.0.0/24'),
             mask_bits=24,
             nuagenet=vsd_l2domain1.id,
-            net_partition=Topology.def_netpartition)
+            net_partition=self.def_netpartition)
         v6_1 = self.create_subnet(
             network,
             ip_version=6,
             cidr=IPNetwork('cafe:babe::/64'),
             mask_bits=self.mask_bits6,
             nuagenet=vsd_l2domain1.id,
-            net_partition=Topology.def_netpartition)
+            net_partition=self.def_netpartition)
         if self.is_dhcp_agent_present():
             self.assertRaises(
                 exceptions.BadRequest,
@@ -1121,7 +1123,7 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
                 cidr=IPNetwork('10.1.0.0/24'),
                 mask_bits=24,
                 nuagenet=vsd_l2domain2.id,
-                net_partition=Topology.def_netpartition)
+                net_partition=self.def_netpartition)
             self.assertRaises(
                 exceptions.BadRequest,
                 self.create_subnet,
@@ -1130,21 +1132,21 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
                 cidr=IPNetwork('cbfe:babe::/64'),
                 mask_bits=64,
                 nuagenet=vsd_l2domain2.id,
-                net_partition=Topology.def_netpartition)
+                net_partition=self.def_netpartition)
         else:
             v4_2 = self.create_subnet(
                 network,
                 cidr=IPNetwork('10.1.0.0/24'),
                 mask_bits=24,
                 nuagenet=vsd_l2domain2.id,
-                net_partition=Topology.def_netpartition)
+                net_partition=self.def_netpartition)
             v6_2 = self.create_subnet(
                 network,
                 ip_version=6,
                 cidr=IPNetwork('cbfe:babe::/64'),
                 mask_bits=self.mask_bits6,
                 nuagenet=vsd_l2domain2.id,
-                net_partition=Topology.def_netpartition)
+                net_partition=self.def_netpartition)
 
             # check ports
             # dualstack port of same l2domain
@@ -1206,7 +1208,7 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
             cidr=IPNetwork('10.0.0.0/24'),
             mask_bits=24,
             nuagenet=vsd_l2domain1.id,
-            net_partition=Topology.def_netpartition)
+            net_partition=self.def_netpartition)
         if self.is_dhcp_agent_present():
             self.assertRaises(
                 exceptions.BadRequest,
@@ -1216,7 +1218,7 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
                 cidr=IPNetwork('cbfe:babe::/64'),
                 mask_bits=64,
                 nuagenet=vsd_l2domain2.id,
-                net_partition=Topology.def_netpartition)
+                net_partition=self.def_netpartition)
         else:
             self.create_subnet(
                 network,
@@ -1224,7 +1226,7 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
                 cidr=IPNetwork('cbfe:babe::/64'),
                 mask_bits=64,
                 nuagenet=vsd_l2domain2.id,
-                net_partition=Topology.def_netpartition)
+                net_partition=self.def_netpartition)
 
     # TODO(team): shared VSD networks use case?
     # def test_create_vsd_shared_l2domain_dualstack_neg(self):
@@ -1256,7 +1258,7 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
     #         enable_dhcp=False,
     #         mask_bits=self.mask_bits4,
     #         nuagenet=vsd_l2domain.id,
-    #         net_partition=Topology.def_netpartition)
+    #         net_partition=self.def_netpartition)
     #
     #     ipv6_subnet = self.create_subnet(
     #         network,
@@ -1266,7 +1268,7 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
     #         mask_bits=self.mask_bits6,
     #         enable_dhcp=False,
     #         nuagenet=vsd_l2domain.id,
-    #         net_partition=Topology.def_netpartition)
+    #         net_partition=self.def_netpartition)
     #
     #     # shall not create port with IP already in use
     #     port_args = {'fixed_ips': [{'subnet_id': ipv4_subnet['id'],

@@ -13,18 +13,14 @@
 #    under the License.
 #
 
-from . import base_nuage_gateway as base
-
 from netaddr import IPNetwork
-from nuage_tempest_plugin.tests.api.vsd_managed \
-    import base_vsd_managed_networks as base_vsdman
 
 from tempest.lib.common.utils import data_utils
 from tempest.test import decorators
 
-from nuage_tempest_plugin.lib.topology import Topology
-
-LOG = Topology.get_logger(__name__)
+from nuage_tempest_plugin.tests.api import base_nuage_gateway as base
+from nuage_tempest_plugin.tests.api.vsd_managed \
+    import base_vsd_managed_networks as base_vsdman
 
 
 class NuageGatewayTestVSDManaged(base.BaseNuageGatewayTest,
@@ -57,7 +53,7 @@ class NuageGatewayTestVSDManaged(base.BaseNuageGatewayTest,
             extra_params=extra_params)
         net_name = data_utils.rand_name('network-vsd-managed-')
         net = self.create_network(network_name=net_name)
-        np = Topology.def_netpartition
+        np = self.def_netpartition
         subnet = self.create_subnet(net,
                                     cidr=cidr,
                                     mask_bits=24,
@@ -123,7 +119,7 @@ class NuageGatewayTestVSDManaged(base.BaseNuageGatewayTest,
         subnet = self.create_subnet(
             net, gateway=None,
             cidr=cidr, mask_bits=24, nuagenet=vsd_l2dom[0]['ID'],
-            net_partition=Topology.def_netpartition,
+            net_partition=self.def_netpartition,
             enable_dhcp=True)
         post_body = {"network_id": net['id'],
                      "device_owner": 'compute:ironic'}
@@ -185,7 +181,7 @@ class NuageGatewayTestVSDManaged(base.BaseNuageGatewayTest,
             net,
             cidr=IPNetwork('10.10.100.0/24'),
             mask_bits=24, nuagenet=vsd_l2dom[0]['ID'],
-            net_partition=Topology.def_netpartition,
+            net_partition=self.def_netpartition,
             enable_dhcp=False)
         post_body = {"network_id": net['id'],
                      "device_owner": 'compute:ironic'}

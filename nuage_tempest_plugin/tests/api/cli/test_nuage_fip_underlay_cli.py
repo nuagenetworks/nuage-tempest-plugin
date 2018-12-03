@@ -2,16 +2,16 @@
 # All Rights Reserved.
 
 from netaddr import IPNetwork
+from oslo_log import log as logging
 
 from tempest.lib.common.utils import data_utils
 
-from nuage_tempest_plugin.lib.cli import client_testcase
-from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_lib.cli import client_testcase
+
 from nuage_tempest_plugin.tests.api.floating_ip.base_nuage_fip_underlay \
     import NuageFipUnderlayBase
 
-LOG = Topology.get_logger(__name__)
+LOG = logging.getLogger(__name__)
 
 
 class TestNuageFipUnderlayCli(client_testcase.CLIClientTestCase,
@@ -25,37 +25,30 @@ class TestNuageFipUnderlayCli(client_testcase.CLIClientTestCase,
     def resource_setup(cls):
         super(TestNuageFipUnderlayCli, cls).resource_setup()
 
-    @nuage_test.header()
     def test_cli_create_delete_external_subnet_without_underlay(self):
         self._as_admin()
         self._cli_create_delete_external_subnet_without_underlay()
 
-    @nuage_test.header()
     def _test_cli_create_external_fip_subnet_with_underlay(self):
         self._as_admin()
         self._cli_create_external_fip_subnet_with_underlay()
 
-    @nuage_test.header()
     def test_cli_show_external_subnet_without_underlay(self):
         self._as_admin()
         self._cli_show_external_subnet_without_underlay()
 
-    @nuage_test.header()
     def test_cli_show_external_subnet_with_underlay(self):
         self._as_admin()
         self._cli_show_external_subnet_with_underlay()
 
-    @nuage_test.header()
     def test_cli_list_external_subnets_underlay(self):
         self._as_admin()
         self._cli_list_external_subnets_underlay()
 
-    @nuage_test.header()
     def test_cli_update_external_fip_subnet_neg(self):
         self._as_admin()
         self._cli_update_external_subnet_with_underlay_neg()
 
-    @nuage_test.header()
     def test_cli_update_internal_fip_subnet_neg(self):
         """test_cli_update_internal_fip_subnet_neg
 
@@ -79,7 +72,6 @@ class TestNuageFipUnderlayCli(client_testcase.CLIClientTestCase,
                                  int_subnet['id'],
                                  "--underlay=True")
 
-    @nuage_test.header()
     def test_cli_create_external_subnet_with_underlay_invalid_values_neg(self):
         """test_cli_create_external_subnet_with_underlay_invalid_values_neg
 
@@ -110,7 +102,6 @@ class TestNuageFipUnderlayCli(client_testcase.CLIClientTestCase,
                                      "--name ", ext_subnet_name,
                                      underlay_str)
 
-    @nuage_test.header()
     def test_cli_create_external_subnet_with_underlay_invalid_syntax_neg(self):
         """test_cli_create_external_subnet_with_underlay_invalid_syntax_neg
 
@@ -139,7 +130,6 @@ class TestNuageFipUnderlayCli(client_testcase.CLIClientTestCase,
                                      "--name ", ext_subnet_name,
                                      underlay_str)
 
-    @nuage_test.header()
     def test_cli_create_external_fip_subnet_with_vsd_managed_subnet_neg(self):
         """test_cli_create_external_fip_subnet_with_vsd_managed_subnet_neg
 
@@ -169,14 +159,8 @@ class TestNuageFipUnderlayCli(client_testcase.CLIClientTestCase,
         network_name = data_utils.rand_name('ext-pat-network')
         self.network = self.create_network_with_args(network_name,
                                                      ' --router:external')
-        if Topology.from_openstack('Newton') and Topology.is_ml2:
-            exp_message = "Bad request: " \
-                          "router:external in network must be False"
-        else:
-            exp_message = "Bad request: " \
-                          "VSD-Managed Subnet create not allowed on " \
-                          "external network"
-
+        exp_message = "Bad request: " \
+                      "router:external in network must be False"
         LOG.info("exp_message = " + exp_message)
         self.assertCommandFailed(exp_message,
                                  self.create_subnet_with_args,
@@ -184,7 +168,7 @@ class TestNuageFipUnderlayCli(client_testcase.CLIClientTestCase,
                                  str(cidr.cidr),
                                  '--name subnet-VSD-managed '
                                  '--net-partition',
-                                 Topology.def_netpartition,
+                                 self.def_netpartition,
                                  '--nuagenet',
                                  vsd_l2domain[0]['ID'],
                                  '--underlay=True')
@@ -193,7 +177,6 @@ class TestNuageFipUnderlayCli(client_testcase.CLIClientTestCase,
         self.nuage_client.delete_l2domaintemplate(
             vsd_l2dom_template[0]['ID'])
 
-    @nuage_test.header()
     def test_cli_create_external_fip_subnet_with_internal_network_neg(self):
         """test_cli_create_external_fip_subnet_with_internal_network_neg
 

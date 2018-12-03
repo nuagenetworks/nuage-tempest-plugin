@@ -15,20 +15,20 @@
 
 from netaddr import IPNetwork
 
-from tempest.api.network import base as base
+from tempest import config
+
 from tempest.lib.common.utils import data_utils
 
-import testtools
+from nuage_commons import constants as n_constants
 
-from .external_id import ExternalId
+from nuage_tempest_lib.common import exceptions as n_exceptions
+from nuage_tempest_lib.tests.nuage_test import NuageBaseAdminNetworkTest
+from nuage_tempest_lib.vsdclient.nuage_client import NuageRestClient
 
-from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants as n_constants
-from nuage_tempest_plugin.lib.utils import exceptions as n_exceptions
-from nuage_tempest_plugin.services.nuage_client import NuageRestClient
+from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
+    import ExternalId
 
-LOG = Topology.get_logger(__name__)
+CONF = config.CONF
 
 extra_dhcp_opts = [
     {'opt_value': '255.255.255.0', 'opt_name': 'netmask'},
@@ -40,7 +40,10 @@ extra_dhcp_opts = [
 ]
 
 
-class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
+class ExternalIdForVPortTest(NuageBaseAdminNetworkTest):
+
+    def_netpartition = CONF.nuage.nuage_default_netpartition
+
     class MatchingVsdVPort(object):
         def __init__(self, outer, port, subnet, vsd_l2domain):
             """Construct a Vsd_port. """
@@ -232,11 +235,6 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
                 self.vsd_vport['ID'])
 
     @classmethod
-    def setUpClass(cls):
-        super(ExternalIdForVPortTest, cls).setUpClass()
-        cls.test_upgrade = not Topology.within_ext_id_release()
-
-    @classmethod
     def setup_clients(cls):
         super(ExternalIdForVPortTest, cls).setup_clients()
         cls.nuage_client = NuageRestClient()
@@ -254,9 +252,6 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
                         vsd_l2dom_tmplt[0]['ID'])
         return vsd_l2dom_tmplt
 
-    @testtools.skipUnless(Topology.within_ext_id_release(),
-                          'No upgrade testing on vport')
-    @nuage_test.header()
     def test_port_dhcp_options_matches_to_port(self):
         net_name = data_utils.rand_name()
         cidr = IPNetwork('10.10.100.0/24')
@@ -284,7 +279,7 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
             'gateway_ip': None,
             'network_id': network['id'],
             'nuagenet': vsd_l2domain['ID'],
-            'net_partition': Topology.def_netpartition,
+            'net_partition': self.def_netpartition,
             'enable_dhcp': True,
             'ip_version': 4}
 

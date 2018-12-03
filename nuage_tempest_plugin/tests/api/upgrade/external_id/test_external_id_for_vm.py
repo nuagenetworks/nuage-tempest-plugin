@@ -17,21 +17,19 @@ from netaddr import IPNetwork
 
 from tempest.lib.common.utils import data_utils
 
-from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants as n_constants
-from nuage_tempest_plugin.lib.utils import exceptions as n_exceptions
-from nuage_tempest_plugin.services.nuage_client import NuageRestClient
+from nuage_commons import constants as n_constants
+
+from nuage_tempest_lib.common import exceptions as n_exceptions
+from nuage_tempest_lib.vsdclient.nuage_client import NuageRestClient
+
 from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
     import ExternalId
 from nuage_tempest_plugin.tests.scenario \
     import base_nuage_network_scenario_test
 
-LOG = Topology.get_logger(__name__)
-
 
 class ExternalIdForVmTest(
-        base_nuage_network_scenario_test.NuageNetworkScenarioTest):
+        base_nuage_network_scenario_test.CustomNuageNetworkScenarioTest):
 
     class MatchingVsdVm(object):
         def __init__(self, outer, vm):
@@ -99,11 +97,6 @@ class ExternalIdForVmTest(
         self.servers = []
 
     @classmethod
-    def skip_checks(cls):
-        super(ExternalIdForVmTest, cls).skip_checks()
-        cls.test_upgrade = not Topology.within_ext_id_release()
-
-    @classmethod
     def setup_clients(cls):
         super(ExternalIdForVmTest, cls).setup_clients()
         cls.nuage_client = NuageRestClient()
@@ -122,7 +115,6 @@ class ExternalIdForVmTest(
             wait_until='ACTIVE')
         return server
 
-    @nuage_test.header()
     def test_server_on_neutron_port_matching_vsd_vm(self):
         # Create a network
         network = self._create_network(namestart='network-')
@@ -140,7 +132,6 @@ class ExternalIdForVmTest(
         # Delete
         vsd_vm.verify_cannot_delete()
 
-    @nuage_test.header()
     def test_server_on_neutron_network_matching_vsd_vm(self):
         # Create a network
         network = self._create_network(namestart='network-')
@@ -176,7 +167,6 @@ class ExternalIdForVmTest(
                         vsd_l2dom_tmplt[0]['ID'])
         return vsd_l2dom_tmplt
 
-    @nuage_test.header()
     def test_server_on_vsd_managed_network_matching_vsd_vm(self):
         net_name = data_utils.rand_name()
         cidr = IPNetwork('10.10.100.0/24')
@@ -202,7 +192,7 @@ class ExternalIdForVmTest(
             'gateway_ip': None,
             'network_id': network['id'],
             'nuagenet': vsd_l2domain['ID'],
-            'net_partition': Topology.def_netpartition,
+            'net_partition': self.def_netpartition,
             'enable_dhcp': True,
             'ip_version': 4}
 
@@ -225,7 +215,6 @@ class ExternalIdForVmTest(
         # Delete
         vsd_vm.verify_cannot_delete()
 
-    @nuage_test.header()
     def test_server_on_neutron_port_in_vsd_managed_network_matching_vsd_vm(
             self):
         net_name = data_utils.rand_name()
@@ -252,7 +241,7 @@ class ExternalIdForVmTest(
             'gateway_ip': None,
             'network_id': network['id'],
             'nuagenet': vsd_l2domain['ID'],
-            'net_partition': Topology.def_netpartition,
+            'net_partition': self.def_netpartition,
             'enable_dhcp': True,
             'ip_version': 4}
 

@@ -12,16 +12,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+
 import time
 import uuid
 
-from nuage_tempest_plugin.lib.test.nuage_test import NuageAdminNetworksTest
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants as n_constants
-from nuage_tempest_plugin.lib.utils import exceptions
-from nuage_tempest_plugin.services.nuage_client import NuageRestClient
-from nuage_tempest_plugin.services.nuage_network_client \
-    import NuageNetworkClientJSON
+from oslo_log import log as logging
 
 from tempest.api.network import base
 from tempest.lib.common.utils import data_utils
@@ -29,11 +24,18 @@ from tempest.lib.common.utils.data_utils import rand_name
 from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions as lib_exc
 
-CONF = Topology.get_conf()
-LOG = Topology.get_logger(__name__)
+from nuage_commons import constants as n_constants
+
+from nuage_tempest_lib.common import exceptions
+from nuage_tempest_lib.tests.nuage_test import NuageAdminNetworkTest
+from nuage_tempest_lib.vsdclient.nuage_client import NuageRestClient
+from nuage_tempest_lib.vsdclient.nuage_network_client \
+    import NuageNetworkClientJSON
+
+LOG = logging.getLogger(__name__)
 
 
-class BaseNuageGatewayTest(NuageAdminNetworksTest):
+class BaseNuageGatewayTest(NuageAdminNetworkTest):
     _interface = 'json'
 
     @classmethod
@@ -147,13 +149,12 @@ class BaseNuageGatewayTest(NuageAdminNetworksTest):
         cls.gatewayvports = []
         cls.router_interfaces = []
 
-        cls.ext_net_id = CONF.network.public_network_id
         cls.network = cls.create_network()
 
         cls.subnet = cls.create_subnet(cls.network)
         cls.router = cls.create_router(
             data_utils.rand_name('router-'),
-            external_network_id=cls.ext_net_id,
+            external_network_id=cls.public_network_id,
             tunnel_type="VXLAN")
 
         cls.create_router_interface(
@@ -169,7 +170,7 @@ class BaseNuageGatewayTest(NuageAdminNetworksTest):
             net_partition=cls.nondef_netpart['id'])
         cls.nondef_router = cls.create_router(
             data_utils.rand_name('router-'),
-            external_network_id=cls.ext_net_id,
+            external_network_id=cls.public_network_id,
             tunnel_type='VXLAN',
             net_partition=cls.nondef_netpart['id'])
         cls.create_router_interface(
@@ -238,7 +239,7 @@ class BaseNuageGatewayTest(NuageAdminNetworksTest):
         dhcp_enabled = subnet['enable_dhcp']
         current_time = time.time()
         if cls.is_dhcp_agent_present() and dhcp_enabled:
-            LOG.info("Waiting for dhcp port resolution")
+            cls.info("Waiting for dhcp port resolution")
             dhcp_subnets = []
             while subnet['id'] not in dhcp_subnets:
                 if time.time() - current_time > 30:
@@ -255,7 +256,7 @@ class BaseNuageGatewayTest(NuageAdminNetworksTest):
                     continue
                 dhcp_port = dhcp_ports[0]
                 dhcp_subnets = [x['subnet_id'] for x in dhcp_port['fixed_ips']]
-            LOG.info("DHCP port resolved")
+            cls.info("DHCP port resolved")
         return subnet
 
     def verify_gateway_properties(self, actual_gw, expected_gw):
@@ -273,7 +274,7 @@ class BaseNuageGatewayTest(NuageAdminNetworksTest):
         self.assertEqual(actual_vlan['userMnemonic'],
                          expected_vlan['usermnemonic'])
         self.assertEqual(actual_vlan['value'], expected_vlan['value'])
-        if Topology.within_ext_id_release() and verify_ext:
+        if verify_ext:
             external_id = (expected_vlan['gatewayport'] + "." +
                            str(expected_vlan['value']))
             self.assertEqual(actual_vlan['externalID'],
@@ -284,12 +285,7 @@ class BaseNuageGatewayTest(NuageAdminNetworksTest):
         self.assertEqual(actual_vport['ID'], expected_vport['id'])
         self.assertEqual(actual_vport['type'], expected_vport['type'])
         self.assertEqual(actual_vport['name'], expected_vport['name'])
-        if Topology.within_ext_id_release():
-            if expected_vport['type'] == n_constants.BRIDGE_VPORT:
-                self.assertEqual(actual_vport['externalID'],
-                                 self.nuage_client.get_vsd_external_id(
-                                     expected_vport['subnet']))
-            else:
-                self.assertEqual(actual_vport['externalID'],
-                                 self.nuage_client.get_vsd_external_id(
-                                     expected_vport['port']))
+        if expected_vport['type'] == n_constants.BRIDGE_VPORT:
+            self.assertEqual(actual_vport['externalID'],
+                             self.nuage_client.get_vsd_external_id(
+                                 expected_vport['subnet']))

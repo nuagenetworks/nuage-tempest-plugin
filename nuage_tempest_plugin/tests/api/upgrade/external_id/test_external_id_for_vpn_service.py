@@ -17,17 +17,14 @@ from tempest.api.network import base
 from tempest.common import utils
 from tempest.lib.common.utils import data_utils
 
-from .external_id import ExternalId
+from nuage_commons import constants as n_constants
 
-from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants as n_constants
-from nuage_tempest_plugin.lib.utils import exceptions as n_exceptions
-from nuage_tempest_plugin.services.nuage_client import NuageRestClient
-from nuage_tempest_plugin.services.vpnaas.vpnaas_mixins import VPNMixin
+from nuage_tempest_lib.common import exceptions as n_exceptions
+from nuage_tempest_lib.services.vpnaas.vpnaas_mixins import VPNMixin
+from nuage_tempest_lib.vsdclient.nuage_client import NuageRestClient
 
-CONF = Topology.get_conf()
-LOG = Topology.get_logger(__name__)
+from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
+    import ExternalId
 
 
 class ExternalIdForVpnServiceTest(VPNMixin, base.BaseNetworkTest):
@@ -87,16 +84,10 @@ class ExternalIdForVpnServiceTest(VPNMixin, base.BaseNetworkTest):
                 n_constants.FLOATINGIP, self.vsd_floating_ip['ID'])
 
     @classmethod
-    def setUpClass(cls):
-        super(ExternalIdForVpnServiceTest, cls).setUpClass()
-        cls.test_upgrade = not Topology.within_ext_id_release()
-
-    @classmethod
     def setup_clients(cls):
         super(ExternalIdForVpnServiceTest, cls).setup_clients()
         cls.nuage_client = NuageRestClient()
 
-    @nuage_test.header()
     @utils.requires_ext(extension='vpnaas', service='network')
     def test_vpn_service_floating_ips(self):
         """test_vpn_service_floating_ips
@@ -111,7 +102,7 @@ class ExternalIdForVpnServiceTest(VPNMixin, base.BaseNetworkTest):
         subnet_a1 = self.create_subnet(network_a1)
         router_a1 = self.create_router(
             data_utils.rand_name('routerA1'),
-            external_network_id=CONF.network.public_network_id)
+            external_network_id=self.public_network_id)
         self.create_router_interface(router_a1['id'], subnet_a1['id'])
 
         # Creating the vpn service

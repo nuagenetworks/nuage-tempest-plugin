@@ -6,7 +6,7 @@ from netaddr import IPNetwork
 
 from tempest.lib import decorators
 
-from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_lib.tests.nuage_test import NuageBaseTest
 
 
 class Ipv6VsdManagedConnectivityTest(NuageBaseTest):

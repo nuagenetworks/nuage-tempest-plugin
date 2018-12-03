@@ -18,18 +18,20 @@ import collections
 import re
 import time
 
+from oslo_log import log as logging
+
 from tempest.api.network import base
 from tempest.common import utils
+from tempest import config
 from tempest import exceptions
 from tempest.lib.common.utils import data_utils
 from tempest import test
 
-from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.tests.scenario \
     import base_nuage_network_scenario_test
 
-CONF = Topology.get_conf()
-LOG = Topology.get_logger(__name__)
+CONF = config.CONF
+LOG = logging.getLogger(__name__)
 
 Floating_IP_tuple = collections.namedtuple('Floating_IP_tuple',
                                            ['floating_ip', 'server'])
@@ -42,7 +44,7 @@ FIP_UPDATE_DELAY = 4
 
 
 class TestNetworkBasicOps(
-    base_nuage_network_scenario_test.NuageNetworkScenarioTest,
+    base_nuage_network_scenario_test.CustomNuageNetworkScenarioTest,
         base.BaseNetworkTest):
 
     """TestNetworkBasicOps
@@ -444,7 +446,7 @@ class TestNetworkBasicOps(
 
         Spin a VM with a security group on an internal network, with
         a floating IP in the public network.
-        Relies on the fact that there is connectivity form the test runner
+        Relies on the fact that there is connectivity from the test runner
         to this network.
         We use the FIP 2 underlay feature (underlay=true) on the public network
         """

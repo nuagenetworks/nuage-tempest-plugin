@@ -6,11 +6,11 @@ from netaddr import IPNetwork
 from tempest.lib import decorators
 from tempest.lib import exceptions
 
-from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.utils import data_utils
+from nuage_commons import data_utils
+from nuage_tempest_lib.tests.nuage_test import NuageBaseTest
 
 
-class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
+class NuageMultipleSubnetsInExternalNetworkTest(NuageBaseTest):
 
     @decorators.attr(type='smoke')
     def test_nuage_uplink_subsequent_subnets(self):

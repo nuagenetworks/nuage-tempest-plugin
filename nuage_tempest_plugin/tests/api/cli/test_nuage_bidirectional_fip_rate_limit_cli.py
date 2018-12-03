@@ -2,14 +2,17 @@
 # All Rights Reserved.
 
 import json
+from oslo_log import log as logging
 
+from tempest import config
 from tempest.test import decorators
 
-from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants
+from nuage_commons import constants
 
-from .base_nuage_fip_rate_limit_cli import BaseNuageFipRateLimit
+from nuage_tempest_lib.topology import Topology
+
+from nuage_tempest_plugin.tests.api.cli.base_nuage_fip_rate_limit_cli \
+    import BaseNuageFipRateLimit
 
 MSG_NO_INPUT = "neutron floatingip-create: error: argument " \
                "--nuage-ingress-fip-rate-kbps: expected one argument"
@@ -22,7 +25,8 @@ MSG_INVALID_INPUT_FOR_OPERATION = "Invalid input for operation: " \
                                   "-1 for unlimited or 'default' for " \
                                   "the configured default value.."
 
-LOG = Topology.get_logger(__name__)
+CONF = config.CONF
+LOG = logging.getLogger(__name__)
 
 
 class TestNuageBidiFRLCliWODefault(BaseNuageFipRateLimit):
@@ -50,7 +54,7 @@ class TestNuageBidiFRLCliWODefault(BaseNuageFipRateLimit):
     @classmethod
     def assure_nuage_fip_rate_limit_configs(cls):
         if cls.nuage_fip_rate_limit_configs_needs_update():
-            if not Topology.neutron_restart_supported():
+            if not CONF.neutron_restart_supported():
                 msg = 'Skipping tests that require neutron restart...'
                 raise cls.skipException(msg)
             else:
@@ -65,7 +69,7 @@ class TestNuageBidiFRLCliWODefault(BaseNuageFipRateLimit):
         self.assertIsNotNone(created_floating_ip['floating_ip_address'])
         self.assertEqual(created_floating_ip['port_id'], port['id'])
         self.assertEqual(created_floating_ip['floating_network_id'],
-                         self.ext_net_id)
+                         self.public_network_id)
         fixed_ips = port['fixed_ips']
         fixed_ips_dict = json.loads(fixed_ips)
 
@@ -168,7 +172,6 @@ class TestNuageBidiFRLCliWODefault(BaseNuageFipRateLimit):
         self._verify_fip_vsd(subnet, port, updated_floating_ip,
                              ingress_rate_limit, egress_rate_limit)
 
-    @nuage_test.header()
     def test_create_fip_without_rate_limit(self):
         self._as_admin()
 
@@ -176,13 +179,13 @@ class TestNuageBidiFRLCliWODefault(BaseNuageFipRateLimit):
         subnet = self.create_subnet_with_args(network['name'], '10.0.0.0/24')
         router = self.create_router()
 
-        self.set_router_gateway_with_args(router['id'], self.ext_net_id)
+        self.set_router_gateway_with_args(router['id'], self.public_network_id)
         self.add_router_interface_with_args(router['id'], subnet['id'])
 
         port = self.create_port_with_args(network['name'])
 
         created_floating_ip = self.create_floating_ip_with_args(
-            self.ext_net_id, '--port-id', port['id'])
+            self.public_network_id, '--port-id', port['id'])
         self.addCleanup(self._delete_floating_ip,
                         created_floating_ip['id'])
         show_floating_ip = self.show_floating_ip(created_floating_ip['id'])
@@ -197,7 +200,6 @@ class TestNuageBidiFRLCliWODefault(BaseNuageFipRateLimit):
             subnet, port, created_floating_ip,
             self.expected_default_fip_rate, self.expected_default_fip_rate)
 
-    @nuage_test.header()
     def test_create_update_fip_with_rate_limit_normal_value_ingress(self):
         #     """
         #     neutron net-create net1
@@ -217,7 +219,7 @@ class TestNuageBidiFRLCliWODefault(BaseNuageFipRateLimit):
         subnet = self.create_subnet_with_args(network['name'], '10.1.0.0/24')
         router = self.create_router()
 
-        self.set_router_gateway_with_args(router['id'], self.ext_net_id)
+        self.set_router_gateway_with_args(router['id'], self.public_network_id)
         self.add_router_interface_with_args(router['id'], subnet['id'])
 
         port = self.create_port_with_args(network['name'])
@@ -225,7 +227,7 @@ class TestNuageBidiFRLCliWODefault(BaseNuageFipRateLimit):
         # Do it on ingress first
         rate_limit = 2000
         created_floating_ip = self.create_floating_ip_with_args(
-            self.ext_net_id, '--port-id', port['id'],
+            self.public_network_id, '--port-id', port['id'],
             '--nuage-ingress-fip-rate-kbps', str(rate_limit))
         self.addCleanup(self._delete_floating_ip,
                         created_floating_ip['id'])
@@ -245,7 +247,6 @@ class TestNuageBidiFRLCliWODefault(BaseNuageFipRateLimit):
                                     ingress_rate_limit=updated_rate_limit,
                                     egress_rate_limit=updated_rate_limit)
 
-    @nuage_test.header()
     def test_create_update_fip_with_rate_limit_normal_value_egress(self):
         #     """
         #     neutron net-create net1
@@ -265,7 +266,7 @@ class TestNuageBidiFRLCliWODefault(BaseNuageFipRateLimit):
         subnet = self.create_subnet_with_args(network['name'], '10.1.0.0/24')
         router = self.create_router()
 
-        self.set_router_gateway_with_args(router['id'], self.ext_net_id)
+        self.set_router_gateway_with_args(router['id'], self.public_network_id)
         self.add_router_interface_with_args(router['id'], subnet['id'])
 
         port = self.create_port_with_args(network['name'])
@@ -273,7 +274,7 @@ class TestNuageBidiFRLCliWODefault(BaseNuageFipRateLimit):
         # Do it on egress first
         rate_limit = 2000
         created_floating_ip = self.create_floating_ip_with_args(
-            self.ext_net_id, '--port-id', port['id'],
+            self.public_network_id, '--port-id', port['id'],
             '--nuage-egress-fip-rate-kbps', str(rate_limit))
         self.addCleanup(self._delete_floating_ip,
                         created_floating_ip['id'])
@@ -303,20 +304,19 @@ class TestNuageBidiFRLCliWDef(TestNuageBidiFRLCliWODefault):
     configured_default_fip_rate = 321
     expected_default_fip_rate = configured_default_fip_rate
 
-    @nuage_test.header()
     def test_create_fip_with_default_rate_limit_max_value(self):
         network = self.create_network()
         subnet = self.create_subnet_with_args(network['name'], '10.3.0.0/24')
         router = self.create_router()
 
-        self.set_router_gateway_with_args(router['id'], self.ext_net_id)
+        self.set_router_gateway_with_args(router['id'], self.public_network_id)
         self.add_router_interface_with_args(router['id'], subnet['id'])
 
         port = self.create_port_with_args(network['name'])
 
         rate_limit = constants.MAX_INT
         created_floating_ip = self.create_floating_ip_with_args(
-            self.ext_net_id, '--port-id', port['id'],
+            self.public_network_id, '--port-id', port['id'],
             '--nuage-ingress-fip-rate-kbps', str(rate_limit),
             '--nuage-egress-fip-rate-kbps', str(rate_limit))
         self.addCleanup(self._delete_floating_ip,
@@ -330,13 +330,12 @@ class TestNuageBidiFRLCliWDef(TestNuageBidiFRLCliWODefault):
         self._verify_fip_vsd(subnet, port, created_floating_ip,
                              rate_limit, rate_limit)
 
-    @nuage_test.header()
     def test_create_fip_with_default_rate_limit_unlimited(self):
         network = self.create_network()
         subnet = self.create_subnet_with_args(network['name'], '10.4.0.0/24')
         router = self.create_router()
 
-        self.set_router_gateway_with_args(router['id'], self.ext_net_id)
+        self.set_router_gateway_with_args(router['id'], self.public_network_id)
         self.add_router_interface_with_args(router['id'], subnet['id'])
 
         port = self.create_port_with_args(network['name'])
@@ -344,7 +343,7 @@ class TestNuageBidiFRLCliWDef(TestNuageBidiFRLCliWODefault):
         rate_limit = constants.UNLIMITED
 
         created_floating_ip = self.create_floating_ip_with_args(
-            self.ext_net_id, '--port-id', port['id'],
+            self.public_network_id, '--port-id', port['id'],
             '--nuage-ingress-fip-rate-kbps', str(rate_limit),
             '--nuage-egress-fip-rate-kbps', str(rate_limit))
         self.addCleanup(self._delete_floating_ip,
@@ -358,13 +357,12 @@ class TestNuageBidiFRLCliWDef(TestNuageBidiFRLCliWODefault):
         self._verify_fip_vsd(
             subnet, port, created_floating_ip, rate_limit, rate_limit)
 
-    @nuage_test.header()
     def test_create_update_fip_rate_limit_with_keyword_default(self):
         network = self.create_network()
         subnet = self.create_subnet_with_args(network['name'], '10.5.0.0/24')
         router = self.create_router()
 
-        self.set_router_gateway_with_args(router['id'], self.ext_net_id)
+        self.set_router_gateway_with_args(router['id'], self.public_network_id)
         self.add_router_interface_with_args(router['id'], subnet['id'])
 
         port = self.create_port_with_args(network['name'])
@@ -372,7 +370,7 @@ class TestNuageBidiFRLCliWDef(TestNuageBidiFRLCliWODefault):
         # create using 'default' keyword
         ################################
         created_floating_ip = self.create_floating_ip_with_args(
-            self.ext_net_id, '--port-id', port['id'],
+            self.public_network_id, '--port-id', port['id'],
             '--nuage-ingress-fip-rate-kbps',
             'default', '--nuage-egress-fip-rate-kbps', 'default')
         show_floating_ip = self.show_floating_ip(created_floating_ip['id'])
@@ -418,19 +416,19 @@ class TestNuageBidiFRLCliWDef(TestNuageBidiFRLCliWODefault):
             subnet, port, updated_floating_ip,
             self.expected_default_fip_rate, self.expected_default_fip_rate)
 
-    @nuage_test.header()
     @decorators.attr(type=['negative'])
     def test_create_fip_without_a_value(self):
         network = self.create_network()
         subnet = self.create_subnet_with_args(network['name'], '10.6.0.0/24')
         router = self.create_router()
 
-        self.set_router_gateway_with_args(router['id'], self.ext_net_id)
+        self.set_router_gateway_with_args(router['id'], self.public_network_id)
         self.add_router_interface_with_args(router['id'], subnet['id'])
 
         port = self.create_port_with_args(network['name'])
 
         self.assertCommandFailed(MSG_NO_INPUT,
                                  self.create_floating_ip_with_args,
-                                 self.ext_net_id, '--port-id', port['id'],
+                                 self.public_network_id,
+                                 '--port-id', port['id'],
                                  '--nuage-ingress-fip-rate-kbps')

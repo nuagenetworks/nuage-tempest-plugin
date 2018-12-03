@@ -12,26 +12,30 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 from six import iteritems
 
 import uuid
 
 from tempest.api.network import base_security_groups as base
+from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants as n_constants
-from nuage_tempest_plugin.services.nuage_client import NuageRestClient
+from nuage_commons import constants as n_constants
+
+from nuage_tempest_lib.common.base_mixin import NuageBaseMixin
+from nuage_tempest_lib.vsdclient.nuage_client import NuageRestClient
+
 from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
     import ExternalId
 
-CONF = Topology.get_conf()
+CONF = config.CONF
 
 
-class SecGroupTestNuageBase(base.BaseSecGroupTest):
-    _tenant_network_cidr = CONF.network.project_network_cidr
+class SecGroupTestNuageBase(base.BaseSecGroupTest, NuageBaseMixin):
+
     nuage_any_domain = None
     nuage_domain_type = None
 
@@ -99,9 +103,8 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
         ent_net_macro = self.nuage_client.get_enterprise_net_macro(
             filters='address', filter_value=net_addr[0])
         self.assertNotEqual(ent_net_macro, '', msg='Macro not found')
-        if Topology.within_ext_id_release():
-            self.assertEqual(ent_net_macro[0]['externalID'],
-                             ent_net_macro[0]['parentID'] + '@openstack')
+        self.assertEqual(ent_net_macro[0]['externalID'],
+                         ent_net_macro[0]['parentID'] + '@openstack')
 
     def _get_nuage_acl_entry_template(self, sec_group_rule, nuage_domain=None):
         if not nuage_domain:
@@ -170,7 +173,7 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
                             sec_group_rule['port_range_max']))
             else:
                 self.assertEqual(value,
-                                 n_constants.PROTO_NAME_TO_NUM[
+                                 n_constants.PROTOCOL_NAME_TO_NUM[
                                      sec_group_rule[key]],
                                  "Field %s of the created security group "
                                  "rule does not match with %s." %
@@ -319,7 +322,7 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
         protocol = 'tcp'
         port_range_min = 76
         port_range_max = 77
-        ip_prefix = self._tenant_network_cidr
+        ip_prefix = CONF.network.project_network_cidr
         self._create_verify_security_group_rule(
             security_group_id=sg_id, direction=direction,
             ethertype=self.ethertype, protocol=protocol,
@@ -338,13 +341,13 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
             r1 = self.create_router(
                 router_name=name + '1',
                 admin_state_up=False,
-                external_network_id=CONF.network.public_network_id,
+                external_network_id=self.public_network_id,
                 enable_snat=None)
             self.create_router_interface(r1['id'], s1['id'])
             r2 = self.create_router(
                 router_name=name + '2',
                 admin_state_up=False,
-                external_network_id=CONF.network.public_network_id,
+                external_network_id=self.public_network_id,
                 enable_snat=None)
             self.create_router_interface(r2['id'], s2['id'])
 
@@ -373,7 +376,7 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
         protocol = 'tcp'
         port_range_min = 80
         port_range_max = 80
-        ip_prefix = self._tenant_network_cidr
+        ip_prefix = CONF.network.project_network_cidr
         nuage_domains = [nuage_d1, nuage_d2]
         self._create_verify_security_group_rule(
             security_group_id=sg_id, direction=direction,
@@ -602,7 +605,7 @@ class TestSecGroupTestNuageL3Domain(SecGroupTestNuageBase):
         name = data_utils.rand_name('router-')
         create_body = cls.routers_client.create_router(
             name=name, external_gateway_info={
-                "network_id": CONF.network.public_network_id},
+                "network_id": cls.public_network_id},
             admin_state_up=False)
         cls.router = create_body['router']
         cls.routers_client.add_router_interface(

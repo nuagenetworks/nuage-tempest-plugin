@@ -14,8 +14,11 @@
 
 import uuid
 
+from oslo_log import log as logging
+
 from tempest.api.network import base
 from tempest.common import utils
+from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions as lib_exc
 from tempest.test import decorators
@@ -24,17 +27,17 @@ from testtools.matchers import Contains
 from testtools.matchers import Equals
 from testtools.matchers import Not
 
-from nuage_tempest_plugin.lib.mixins.bgpvpn import BGPVPNMixin
-from nuage_tempest_plugin.lib.mixins.l3 import L3Mixin
-from nuage_tempest_plugin.lib.mixins.network import NetworkMixin
-from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_lib.common.base_mixin import NuageBaseMixin
 
-CONF = Topology.get_conf()
-LOG = Topology.get_logger(__name__)
+from nuage_tempest_plugin.mixins.bgpvpn import BGPVPNMixin
+from nuage_tempest_plugin.mixins.l3 import L3Mixin
+from nuage_tempest_plugin.mixins.network import NetworkMixin
+
+CONF = config.CONF
+LOG = logging.getLogger(__name__)
 
 
-class BgpvpnBase(BGPVPNMixin):
+class BgpvpnBase(BGPVPNMixin, NuageBaseMixin):
 
     credentials = ['primary', 'admin']
 
@@ -53,7 +56,7 @@ class BgpvpnBase(BGPVPNMixin):
         super(BgpvpnBase, cls).resource_setup()
         cls.tenant_id = cls.bgpvpn_client.tenant_id
         cls.admin_tenant_id = cls.bgpvpn_client_admin.tenant_id
-        cls.def_net_partition = Topology.def_netpartition
+        cls.def_net_partition = cls.def_netpartition
 
     @classmethod
     def resource_cleanup(cls):
@@ -132,7 +135,7 @@ class BgpvpnTest(BgpvpnBase):
             self.bgpvpn_client_admin.create, **invalid_rt_rd)
 
 
-class RouterAssociationTest(BgpvpnBase, L3Mixin):
+class RouterAssociationTest(BgpvpnBase, L3Mixin, NuageBaseMixin):
 
     @classmethod
     def skip_checks(cls):
@@ -361,7 +364,7 @@ class RouterAssociationTest(BgpvpnBase, L3Mixin):
                 bgpvpn1['id'], router_id=router2['id'])
 
 
-class NetworkAssociationTest(BgpvpnBase, NetworkMixin):
+class NetworkAssociationTest(BgpvpnBase, NetworkMixin, NuageBaseMixin):
 
     @classmethod
     def skip_checks(cls):
@@ -391,9 +394,7 @@ class NetworkAssociationTest(BgpvpnBase, NetworkMixin):
             'dummy', 'dummy')
 
 
-class BgpvpnCliTests(BGPVPNMixin, base.BaseNetworkTest):
-
-    def_net_partition = Topology.def_netpartition
+class BgpvpnCliTests(BGPVPNMixin, base.BaseNetworkTest, NuageBaseMixin):
 
     @classmethod
     def skip_checks(cls):
@@ -417,12 +418,10 @@ class BgpvpnCliTests(BGPVPNMixin, base.BaseNetworkTest):
         return bgpvpn
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_create_delete_bgpvpn(self):
         name = data_utils.rand_name('bgpvpn')
         self._create_verifybgpvpn(name, '343:343', '343:343')
 
-    @nuage_test.header()
     def test_create_list_show_delete_multiple_bgpvpn(self):
         name1 = data_utils.rand_name('bgpvpn')
         bgpvpn1 = self._create_verifybgpvpn(name1, '345:345', '345:345')
@@ -430,10 +429,10 @@ class BgpvpnCliTests(BGPVPNMixin, base.BaseNetworkTest):
         bgpvpn2 = self._create_verifybgpvpn(name2, '344:344', '344:344')
         self.os_data.insert_resource(name1,
                                      os_data=bgpvpn1,
-                                     parent=self.def_net_partition)
+                                     parent=self.def_netpartition)
         self.os_data.insert_resource(name2,
                                      os_data=bgpvpn2,
-                                     parent=self.def_net_partition)
+                                     parent=self.def_netpartition)
         bgpvpns = self.bgpvpn_client.list_bgpvpn()
         for bgpvpn in bgpvpns:
             get_bgpvpn = self.os_data.get_resource(bgpvpn['name']).os_data
@@ -460,7 +459,7 @@ class BgpvpnCliTests(BGPVPNMixin, base.BaseNetworkTest):
         router = self.routers_client.create_router(router_name=routname)
         self.os_data.insert_resource(name1,
                                      os_data=bgpvpn1,
-                                     parent=self.def_net_partition)
+                                     parent=self.def_netpartition)
         kwargs = {}
         kwargs['router'] = router['id']
         self.bgpvpn_client.bgpvpn_router_assoc_create(

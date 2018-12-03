@@ -1,4 +1,4 @@
-# Copyright 2016 Hewlett Packard Enterprise Development Company LP
+# Copyright 2018 NOKIA
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -14,15 +14,15 @@
 
 import random
 
-from nuage_tempest_plugin.lib.test.nuage_test import skip_because
-from nuage_tempest_plugin.services.nuage_network_client \
-    import NuageNetworkClientJSON
-
 from tempest.api.network import base
 from tempest.common import utils
 from tempest.lib.common.utils import test_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions as lib_exc
+
+from nuage_tempest_lib.decorators import skip_because
+from nuage_tempest_lib.vsdclient.nuage_network_client \
+    import NuageNetworkClientJSON
 
 
 def trunks_cleanup(client, trunks):

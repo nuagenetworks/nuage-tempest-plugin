@@ -8,10 +8,10 @@ from netaddr import IPAddress
 
 from tempest.common import utils
 
-from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants
-from nuage_tempest_plugin.services.nuage_client import NuageRestClient
+from nuage_commons import constants
+
+from nuage_tempest_lib.tests.nuage_test import NuageBaseTest
+from nuage_tempest_lib.vsdclient.nuage_client import NuageRestClient
 
 VALID_MAC_ADDRESS = 'fa:fa:3e:e8:e8:01'
 VALID_MAC_ADDRESS_2A = 'fa:fa:3e:e8:e8:2a'
@@ -24,8 +24,6 @@ MSG_INVALID_INPUT_FOR_AAP_IPS = "'%s' is not a valid IP address."
 # MultiVIP . allowed address pairs
 ###############################################################################
 ###############################################################################
-
-LOG = Topology.get_logger(__name__)
 
 
 class BaseAllowedAddressPair(NuageBaseTest):

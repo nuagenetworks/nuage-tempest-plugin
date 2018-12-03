@@ -17,7 +17,6 @@ from netaddr import IPNetwork
 import random
 import re
 
-from tempest.api.network import base
 from tempest.common import utils
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
@@ -25,13 +24,12 @@ from tempest.lib import exceptions
 from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
 
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.services import nuage_client
+from nuage_tempest_lib.tests.nuage_test import NuageBaseAdminNetworkTest
+from nuage_tempest_lib.topology import Topology
+from nuage_tempest_lib.vsdclient import nuage_client
 
-CONF = Topology.get_conf()
 
-
-class NuageFipUnderlayBase(base.BaseAdminNetworkTest):
+class NuageFipUnderlayBase(NuageBaseAdminNetworkTest):
 
     @classmethod
     def setup_clients(cls):
@@ -48,9 +46,6 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest):
     @classmethod
     def resource_setup(cls):
         super(NuageFipUnderlayBase, cls).resource_setup()
-
-        cls.ext_net_id = CONF.network.public_network_id
-
         nuage_fip_underlay_ini = cls.read_nuage_fip_underlay_value_ini()
         if nuage_fip_underlay_ini == '':
             nuage_fip_underlay_ini = None

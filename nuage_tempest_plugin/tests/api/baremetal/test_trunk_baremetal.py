@@ -12,31 +12,34 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions
 
-from nuage_tempest_plugin.lib.mixins import l3
-from nuage_tempest_plugin.lib.mixins import network as network_mixin
-from nuage_tempest_plugin.lib.mixins import sg as sg_mixin
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants
-from nuage_tempest_plugin.services.nuage_client import NuageRestClient
+from nuage_commons import constants
 
-CONF = Topology.get_conf()
+from nuage_tempest_lib.common.base_mixin import NuageBaseMixin
+from nuage_tempest_lib.vsdclient.nuage_client import NuageRestClient
+
+from nuage_tempest_plugin.mixins import l3
+from nuage_tempest_plugin.mixins import network as network_mixin
+from nuage_tempest_plugin.mixins import sg as sg_mixin
+
+CONF = config.CONF
 
 
 class BaremetalTrunkTest(network_mixin.NetworkMixin,
-                         l3.L3Mixin, sg_mixin.SGMixin):
+                         l3.L3Mixin, sg_mixin.SGMixin, NuageBaseMixin):
     credentials = ['admin']
 
     @classmethod
     def setUpClass(cls):
         super(BaremetalTrunkTest, cls).setUpClass()
-        if (Topology.nuage_baremetal_driver ==
+        if (CONF.nuage_sut.nuage_baremetal_driver ==
                 constants.BAREMETAL_DRIVER_BRIDGE):
             cls.expected_vport_type = constants.VPORT_TYPE_BRIDGE
-        elif (Topology.nuage_baremetal_driver ==
+        elif (CONF.nuage_sut.nuage_baremetal_driver ==
               constants.BAREMETAL_DRIVER_HOST):
             cls.expected_vport_type = constants.VPORT_TYPE_HOST
         else:
@@ -60,7 +63,7 @@ class BaremetalTrunkTest(network_mixin.NetworkMixin,
     @classmethod
     def resource_setup(cls):
         super(BaremetalTrunkTest, cls).resource_setup()
-        # Only gateway here, to support parallel testing each tests makes its
+        # Only gateway here, to support parallel testing each test makes its
         # own gateway port so no VLAN overlap should occur.
         cls.gateway = cls.vsd_client.create_gateway(
             data_utils.rand_name(name='vsg'),

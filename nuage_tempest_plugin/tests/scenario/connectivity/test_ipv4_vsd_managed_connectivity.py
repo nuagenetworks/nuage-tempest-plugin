@@ -1,12 +1,9 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
 
-from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
-from nuage_tempest_plugin.lib.topology import Topology
-
 from tempest.lib import decorators
 
-LOG = Topology.get_logger(__name__)
+from nuage_tempest_lib.tests.nuage_test import NuageBaseTest
 
 
 class Ipv4VsdManagedConnectivityTest(NuageBaseTest):

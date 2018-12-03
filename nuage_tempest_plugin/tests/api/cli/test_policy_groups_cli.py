@@ -3,17 +3,19 @@
 
 from netaddr import IPNetwork
 
-from .base_nuage_networks_cli import BaseNuageNetworksCliTestCase
-from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants
-from nuage_tempest_plugin.services.nuage_network_client \
-    import NuageNetworkClientJSON
-from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
-    import BaseVSDManagedNetworksIPv6Test
 from tempest.lib import decorators
 
-LOG = Topology.get_logger(__name__)
+from nuage_commons import constants
+
+from nuage_tempest_lib.topology import Topology
+from nuage_tempest_lib.vsdclient.nuage_network_client \
+    import NuageNetworkClientJSON
+
+from nuage_tempest_plugin.tests.api.cli.base_nuage_networks_cli \
+    import BaseNuageNetworksCliTestCase
+from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
+    import BaseVSDManagedNetworksIPv6Test
+
 
 # Constants used in this file
 SEVERAL_REDIRECT_TARGETS = 3
@@ -69,7 +71,6 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
                 break
         return groups_present
 
-    @nuage_test.header()
     def test_cli_l2_associate_port_to_policygroup(self):
         # Given I have a VSD-L2-Managed-Subnet in openstack with a
         # VSD created policy group
@@ -134,7 +135,6 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
             (port['id'], policy_group[0]['ID']))
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_cli_l2_create_port_with_nuage_policygroup(self):
         # Given I have a VSD-L2-Managed-Subnet in openstack with a
         # VSD created policy group
@@ -199,7 +199,6 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
             "Port(%s) disassociated to policy group (%s) is still present" %
             (port['id'], policy_group[0]['ID']))
 
-    @nuage_test.header()
     def test_cli_l2_associate_multiple_ports_to_policygroups(self):
         policy_groups = []
         ports = []
@@ -275,7 +274,6 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
                     'policy group(%s)' %
                     (ports[i]['id'], policy_groups[j][0]['ID']))
 
-    @nuage_test.header()
     def test_cli_list_l2_policy_groups_subnet_only(self):
         # Given I have a VSD-L2-Managed-Subnet in openstack with a
         # VSD created policy group
@@ -358,7 +356,6 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
             (policy_group_x[0]['ID'],
              cli_subnet6_x['id'], cli_subnet6_y['id']))
 
-    @nuage_test.header()
     def test_cli_list_l3_policy_groups_subnet_only(self):
         # Given I have a VSD-L2-Managed-Subnet in openstack with a
         # VSD created policy group
@@ -468,7 +465,6 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
                          (policy_group_x[0]['ID'],
                           cli_subnet6_x['id'], cli_subnet6_y['id']))
 
-    @nuage_test.header()
     def test_cli_l3_associate_multiple_ports_to_policygroups(self):
         policy_groups = []
         ports = []
@@ -544,7 +540,6 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
                                  'in policy group(%s)' %
                                  (ports[i]['id'], policy_groups[j][0]['ID']))
 
-    @nuage_test.header()
     def test_cli_l2_associate_multiple_ports_to_policygroups_dhcp_managed(
             self):
         policy_groups = []

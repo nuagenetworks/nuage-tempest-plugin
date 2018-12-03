@@ -4,12 +4,12 @@ from netaddr import IPNetwork
 
 from tempest.lib.common.utils import data_utils
 
-from . import base_nuage_extra_dhcp_options
-from .base_nuage_extra_dhcp_options import NUAGE_NETWORK_TYPE
+from nuage_commons import constants
 
-from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants as constants
+from nuage_tempest_plugin.tests.api.extra_dhcp_option \
+    import base_nuage_extra_dhcp_options
+from nuage_tempest_plugin.tests.api.extra_dhcp_option.\
+    base_nuage_extra_dhcp_options import NUAGE_NETWORK_TYPE
 
 
 class NuageExtraDHCPOptionsBaseL3(
@@ -101,7 +101,6 @@ class NuageExtraDHCPOptionsOSManagedL3Test(
     # def test_nuage_os_mgd_l3_port_with_dhcp_opts_009_lpr_server(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_009_lpr_server()
 
-    @nuage_test.header()
     def test_nuage_os_mgd_l3_port_with_dhcp_opts_012_hostname(self):
         self._check_nuage_crud_port_with_dhcp_opts_012_hostname()
 
@@ -393,7 +392,7 @@ class NuageExtraDHCPOptionsVsdManagedL3Test(
         cls.vsdmgd_l3_subnet = cls.create_subnet(
             cls.vsdmgd_l3_network,
             cidr=cidr, mask_bits=24, nuagenet=cls.vsd_domain_subnet[0]['ID'],
-            net_partition=Topology.def_netpartition)
+            net_partition=cls.def_netpartition)
 
     @classmethod
     def resource_cleanup(cls):

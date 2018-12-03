@@ -13,17 +13,20 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslo_log import log as logging
+
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants as constants
-from nuage_tempest_plugin.services import nuage_client
-from nuage_tempest_plugin.services.nuage_network_client \
+from nuage_commons import constants
+
+from nuage_tempest_lib.vsdclient import nuage_client
+from nuage_tempest_lib.vsdclient.nuage_network_client \
     import NuageNetworkClientJSON
+
 from nuage_tempest_plugin.tests.api import test_security_groups_nuage
 
-LOG = Topology.get_logger(__name__)
+LOG = logging.getLogger(__name__)
 
 
 class NuageExtSecGroup(test_security_groups_nuage.SecGroupTestNuageBase):
@@ -146,9 +149,8 @@ class NuageExtSecGroup(test_security_groups_nuage.SecGroupTestNuageBase):
         self._verify_external_secgroup_properties(
             show_resp['nuage_external_security_group'],
             show_vsd_resp[0])
-        if Topology.within_ext_id_release():
-            self.assertEqual(self.nuage_client.get_vsd_external_id(
-                esg_router['id']), show_vsd_resp[0]['externalID'])
+        self.assertEqual(self.nuage_client.get_vsd_external_id(
+            esg_router['id']), show_vsd_resp[0]['externalID'])
         # list_external_security_group
         res_path = self.nuageclient.build_resource_path(
             constants.POLICYGROUP,
@@ -202,15 +204,13 @@ class NuageExtSecGroup(test_security_groups_nuage.SecGroupTestNuageBase):
         self._verify_external_secgroup_rule_properties(
             list_resp['nuage_external_security_group_rules'][0],
             list_vsd_resp[0], sec_group)
-        if Topology.within_ext_id_release():
-            self.assertEqual(self.nuage_client.get_vsd_external_id(
-                esg_router['id']), list_vsd_resp[0]['externalID'])
+        self.assertEqual(self.nuage_client.get_vsd_external_id(
+            esg_router['id']), list_vsd_resp[0]['externalID'])
         self._verify_external_secgroup_rule_properties(
             list_resp['nuage_external_security_group_rules'][1],
             list_vsd_resp[1], sec_group)
-        if Topology.within_ext_id_release():
-            self.assertEqual(self.nuage_client.get_vsd_external_id(
-                esg_router['id']), list_vsd_resp[1]['externalID'])
+        self.assertEqual(self.nuage_client.get_vsd_external_id(
+            esg_router['id']), list_vsd_resp[1]['externalID'])
 
     def test_create_show_list_delete_ext_secgroup_l2domain(self):
         net_name = data_utils.rand_name('network-')
@@ -235,9 +235,8 @@ class NuageExtSecGroup(test_security_groups_nuage.SecGroupTestNuageBase):
         self._verify_external_secgroup_properties(
             show_resp['nuage_external_security_group'],
             show_vsd_resp[0])
-        if Topology.within_ext_id_release():
-            self.assertEqual(self.nuage_client.get_vsd_external_id(
-                esg_subnet['id']), show_vsd_resp[0]['externalID'])
+        self.assertEqual(self.nuage_client.get_vsd_external_id(
+            esg_subnet['id']), show_vsd_resp[0]['externalID'])
         # list_external_security_group
         res_path = self.nuageclient.build_resource_path(
             constants.POLICYGROUP,

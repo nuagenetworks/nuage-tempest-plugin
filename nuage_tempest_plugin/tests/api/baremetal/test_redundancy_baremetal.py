@@ -14,38 +14,42 @@
 
 import time
 
+from oslo_log import log as logging
 from testtools import matchers
 
+from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions
 
-from nuage_tempest_plugin.lib.mixins import l3
-from nuage_tempest_plugin.lib.mixins import network as network_mixin
-from nuage_tempest_plugin.lib.mixins import sg as sg_mixin
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants
-from nuage_tempest_plugin.services.nuage_client import NuageRestClient
-from nuage_tempest_plugin.services.nuage_network_client \
+from nuage_commons import constants
+
+from nuage_tempest_lib.tests.nuage_test import NuageBaseMixin
+from nuage_tempest_lib.vsdclient.nuage_client import NuageRestClient
+from nuage_tempest_lib.vsdclient.nuage_network_client \
     import NuageNetworkClientJSON
+
+from nuage_tempest_plugin.mixins import l3
+from nuage_tempest_plugin.mixins import network as network_mixin
+from nuage_tempest_plugin.mixins import sg as sg_mixin
 from nuage_tempest_plugin.tests.api.baremetal.baremetal_topology \
     import BaremetalTopology
 
-CONF = Topology.get_conf()
-LOG = Topology.get_logger(__name__)
+CONF = config.CONF
+LOG = logging.getLogger(__name__)
 
 
 class BaremetalRedcyTest(network_mixin.NetworkMixin,
-                         l3.L3Mixin, sg_mixin.SGMixin):
+                         l3.L3Mixin, sg_mixin.SGMixin, NuageBaseMixin):
     credentials = ['admin']
 
     @classmethod
     def setUpClass(cls):
         super(BaremetalRedcyTest, cls).setUpClass()
-        if (Topology.nuage_baremetal_driver ==
+        if (CONF.nuage_sut.nuage_baremetal_driver ==
                 constants.BAREMETAL_DRIVER_BRIDGE):
             cls.expected_vport_type = constants.VPORT_TYPE_BRIDGE
-        elif (Topology.nuage_baremetal_driver ==
+        elif (CONF.nuage_sut.nuage_baremetal_driver ==
               constants.BAREMETAL_DRIVER_HOST):
             cls.expected_vport_type = constants.VPORT_TYPE_HOST
         else:
@@ -269,13 +273,14 @@ class BaremetalRedcyTest(network_mixin.NetworkMixin,
             expected_pgs += 1  # Extra PG for dhcp agent
 
             # Repeated check in case of agent
-            for attempt in range(Topology.nbr_retries_for_test_robustness):
+            for attempt in range(self.nbr_retries_for_test_robustness):
                 if len(topology.get_vsd_policygroups(True)) == expected_pgs:
                     break
                 else:
                     LOG.error("Unexpected amount of PGs found, "
                               "expected {} found {} (attempt {})".format(
-                                  expected_pgs, len(topology.vsd_policygroups),
+                                  expected_pgs,
+                                  len(topology.vsd_policygroups),
                                   attempt + 1))
                     time.sleep(1)
 

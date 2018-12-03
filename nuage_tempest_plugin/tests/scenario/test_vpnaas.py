@@ -3,13 +3,15 @@
 
 import time
 
-from tempest.api.compute import base as serv_base
+from oslo_log import log as logging
 
-from nuage_tempest_plugin.lib.topology import Topology
+from tempest.api.compute import base as serv_base
+from tempest import config
+
 from nuage_tempest_plugin.tests.api import test_vpnaas
 
-CONF = Topology.get_conf()
-LOG = Topology.get_logger(__name__)
+CONF = config.CONF
+LOG = logging.getLogger(__name__)
 
 
 class VPNaaSScenarioTest(test_vpnaas.VPNaaSBase,
@@ -208,8 +210,8 @@ class VPNaaSScenarioTest(test_vpnaas.VPNaaSBase,
             vm_port, username, password=password)
         return vm_handle
 
-    @staticmethod
-    def _check_vm_ping(cmd, fromvmhandle, tovm, tonetwork, negative='False'):
+    def _check_vm_ping(self, cmd, fromvmhandle, tovm, tonetwork,
+                       negative='False'):
         to_vm_ip = tovm['server']['addresses'][tonetwork][0]['addr']
         ping_out = fromvmhandle.send(cmd + to_vm_ip)
         expected_out1 = '0% packet loss'

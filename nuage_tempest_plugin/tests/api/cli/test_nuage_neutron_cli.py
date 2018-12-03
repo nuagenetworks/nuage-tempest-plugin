@@ -3,14 +3,14 @@
 
 import re
 
+from oslo_log import log as logging
+
 from tempest.common import utils
 from tempest.lib import decorators
 
-from nuage_tempest_plugin.lib.cli import client_testcase
-from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_lib.cli import client_testcase
 
-LOG = Topology.get_logger(__name__)
+LOG = logging.getLogger(__name__)
 
 
 class TestNuageNeutronCli(client_testcase.CLIClientTestCase):
@@ -22,7 +22,6 @@ class TestNuageNeutronCli(client_testcase.CLIClientTestCase):
     """
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_neutron_debug_net_list(self):
         response = self.cli.neutron('net-list', flags='-v')
         items = self.parser.listing(response)
@@ -30,14 +29,12 @@ class TestNuageNeutronCli(client_testcase.CLIClientTestCase):
         self.assertNotEmpty(items)
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_neutron_quiet_net_list(self):
         response = self.cli.neutron('net-list', flags='--quiet')
         items = self.parser.listing(response)
         LOG.debug("List with %d items", items.__len__())
         self.assertNotEmpty(items)
 
-    @nuage_test.header()
     def test_neutron_nuage_commands_help(self):
         help_text = self.cli.neutron('help')
         lines = help_text.split('\n')
@@ -79,15 +76,14 @@ class TestNuageNeutronCli(client_testcase.CLIClientTestCase):
             wanted_commands = wanted_commands.union(self._crud_command_list(
                 'nuage-redirect-target-rule', update=False))
 
-        if Topology.from_nuage('4.0'):
-            wanted_commands.add('nuage-policy-group-list')
-            wanted_commands.add('nuage-policy-group-show')
-            wanted_commands.add('nuage-floatingip-list')
-            wanted_commands.add('nuage-floatingip-show')
-            wanted_commands = wanted_commands.union(self._crud_command_list(
-                'nuage-external-security-group', update=False))
-            wanted_commands = wanted_commands.union(self._crud_command_list(
-                'nuage-external-security-group-rule', update=False))
+        wanted_commands.add('nuage-policy-group-list')
+        wanted_commands.add('nuage-policy-group-show')
+        wanted_commands.add('nuage-floatingip-list')
+        wanted_commands.add('nuage-floatingip-show')
+        wanted_commands = wanted_commands.union(self._crud_command_list(
+            'nuage-external-security-group', update=False))
+        wanted_commands = wanted_commands.union(self._crud_command_list(
+            'nuage-external-security-group-rule', update=False))
 
         if utils.is_extension_enabled('nuage-gateway', 'network'):
             wanted_commands.add('nuage-gateway-list')
@@ -115,7 +111,6 @@ class TestNuageNeutronCli(client_testcase.CLIClientTestCase):
             crud_commands_list.append(resource + "-" + crud_operation)
         return crud_commands_list
 
-    @nuage_test.header()
     def test_crud_list(self):
         the_list = self._crud_command_list("nuage_appdport")
         self.assertNotEmpty(the_list)

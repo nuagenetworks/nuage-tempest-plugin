@@ -14,11 +14,7 @@ from tempest.common import utils
 from tempest.lib.common.utils import data_utils
 from tempest.test import decorators
 
-from nuage_tempest_plugin.lib.topology import Topology
-
-from . import nuage_base
-
-LOG = Topology.get_logger(__name__)
+from nuage_tempest_plugin.tests.api.orchestration import nuage_base
 
 
 class NeutronRedirectionTargetsTest(nuage_base.NuageBaseOrchestrationTest):

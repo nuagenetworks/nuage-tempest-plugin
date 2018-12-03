@@ -3,17 +3,17 @@
 
 from netaddr import IPNetwork
 
+from oslo_log import log as logging
+
 from tempest.common import utils
 from tempest.lib.common.utils import data_utils
+
+from nuage_tempest_lib.cli import client_testcase
 
 from nuage_tempest_plugin.tests.api.router.base_nuage_pat_underlay \
     import NuagePatUnderlayBase
 
-from nuage_tempest_plugin.lib.cli import client_testcase
-from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.topology import Topology
-
-LOG = Topology.get_logger(__name__)
+LOG = logging.getLogger(__name__)
 
 
 class TestNuagePatUnderlayCli(client_testcase.CLIClientTestCase,
@@ -27,57 +27,46 @@ class TestNuagePatUnderlayCli(client_testcase.CLIClientTestCase,
             nuage_pat = None
         cls.nuage_pat_ini = nuage_pat
 
-    @nuage_test.header()
     def test_cli_create_router_without_ext_gw(self):
         self._as_admin()
         self._cli_create_router_without_ext_gw_neg()
 
-    @nuage_test.header()
     def test_cli_create_router_with_ext_gw_without_snat(self):
         self._as_admin()
         self._cli_create_router_with_ext_gw_without_snat()
 
-    @nuage_test.header()
     def test_cli_create_router_without_ext_gw_with_snat_neg(self):
         self._as_admin()
         self._cli_create_router_without_ext_gw_with_snat_neg()
 
-    @nuage_test.header()
     def test_cli_create_router_with_ext_gw_with_snat(self):
         self._as_admin()
         self._cli_verify_create_router_with_ext_gw_with_snat()
 
-    @nuage_test.header()
     def test_cli_update_router_with_ext_gw_with_snat(self):
         self._as_admin()
         self._cli_update_router_with_ext_gw_with_snat()
 
-    @nuage_test.header()
     def test_cli_show_router_without_ext_gw(self):
         self._as_admin()
         self._cli_show_router_without_ext_gw()
 
-    @nuage_test.header()
     def test_cli_show_router_with_ext_gw_with_snat(self):
         self._as_admin()
         self._cli_show_router_with_ext_gw_with_snat()
 
-    @nuage_test.header()
     def test_cli_list_router_with_ext_gw_with_snat(self):
         self._as_admin()
         self._cli_list_router_with_gw_with_snat()
 
-    @nuage_test.header()
     def test_cli_list_router_without_ext_gw(self):
         self._as_admin()
         self._cli_list_router_without_gw()
 
-    @nuage_test.header()
     def test_cli_add_os_subnet_to_existing_ext_gw_with_snat(self):
         self._as_admin()
         self._cli_add_subnet_to_existing_ext_gw_with_snat()
 
-    @nuage_test.header()
     def test_cli_create_router_with_snat_invalid_value_neg(self):
         """test_cli_create_router_with_snat_invalid_value_neg
 
@@ -105,7 +94,6 @@ class TestNuagePatUnderlayCli(client_testcase.CLIClientTestCase,
                                      name, external_gw_info_cli)
 
     @utils.requires_ext(extension='ext-gw-mode', service='network')
-    @nuage_test.header()
     def test_cli_create_router_with_gw_with_non_existing_ext_network_neg(self):
         """test_cli_create_router_with_gw_with_non_existing_ext_network_neg
 
@@ -131,7 +119,6 @@ class TestNuagePatUnderlayCli(client_testcase.CLIClientTestCase,
                                  name, external_gw_info_cli)
 
     @utils.requires_ext(extension='ext-gw-mode', service='network')
-    @nuage_test.header()
     def test_cli_create_router_with_ext_gw_with_vsd_managed_subnet_neg(self):
         """test_cli_create_router_with_ext_gw_with_vsd_managed_subnet_neg
 
@@ -171,7 +158,7 @@ class TestNuagePatUnderlayCli(client_testcase.CLIClientTestCase,
                                  str(cidr.cidr),
                                  '--name subnet-VSD-managed '
                                  '--net-partition',
-                                 Topology.def_netpartition,
+                                 self.def_netpartition,
                                  '--nuagenet',
                                  vsd_l2domain[0]['ID'])
         # Delete the VSD manged subnet
@@ -179,7 +166,6 @@ class TestNuagePatUnderlayCli(client_testcase.CLIClientTestCase,
         self.nuage_client.delete_l2domaintemplate(
             vsd_l2dom_template[0]['ID'])
 
-    @nuage_test.header()
     def test_cli_create_router_with_internal_network_neg(self):
         """test_cli_create_router_with_internal_network_neg
 
@@ -200,7 +186,6 @@ class TestNuagePatUnderlayCli(client_testcase.CLIClientTestCase,
         self.assertCommandFailed(exp_message, self.create_router_with_args,
                                  name, external_gw_info_cli)
 
-    @nuage_test.header()
     def test_cli_add_subnet_to_existing_pat_router(self):
         """test_cli_add_subnet_to_existing_pat_router
 
@@ -233,10 +218,8 @@ class TestNuagePatUnderlayCli(client_testcase.CLIClientTestCase,
                           show_router['external_gateway_info'])
             cidr = cidr.next(1)
 
-    @nuage_test.header()
     def test_cli_non_admin_add_os_subnet_to_existing_gw_other_tenant(self):
         self._cli_add_subnet_to_other_tenant_existing_ext_gw_with_snat()
 
-    @nuage_test.header()
     def test_cli_create_router_with_ext_gw(self):
         self._cli_tenant_create_router_with_ext_gw()

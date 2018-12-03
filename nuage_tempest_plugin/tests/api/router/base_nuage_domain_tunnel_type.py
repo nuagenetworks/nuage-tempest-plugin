@@ -3,10 +3,7 @@
 
 from tempest.lib.common.utils import data_utils
 
-from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
-from nuage_tempest_plugin.lib.topology import Topology
-
-CONF = Topology.get_conf()
+from nuage_tempest_lib.tests.nuage_test import NuageBaseTest
 
 
 # TODO(TEAM) - Further clean up this class
@@ -18,7 +15,7 @@ class NuageDomainTunnelTypeBase(NuageBaseTest):
         name = data_utils.rand_name('router-')
         create_body = self.admin_manager.routers_client.create_router(
             name=name, external_gateway_info={
-                "network_id": CONF.network.public_network_id},
+                "network_id": self.public_network_id},
             admin_state_up=False,
             **kwargs)
 

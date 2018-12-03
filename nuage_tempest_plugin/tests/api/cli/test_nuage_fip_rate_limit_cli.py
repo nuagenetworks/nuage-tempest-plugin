@@ -2,14 +2,15 @@
 # All Rights Reserved.
 
 import json
+from oslo_log import log as logging
 
 from tempest.test import decorators
 
-from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants
+from nuage_commons import constants
+from nuage_tempest_lib.topology import Topology
 
-from .base_nuage_fip_rate_limit_cli import BaseNuageFipRateLimit
+from nuage_tempest_plugin.tests.api.cli.base_nuage_fip_rate_limit_cli \
+    import BaseNuageFipRateLimit
 
 MSG_INVALID_INPUT = "Invalid input for nuage_fip_rate. " \
                     "Reason: \'nuage_fip_rate\' " + \
@@ -22,7 +23,7 @@ MSG_INVALID_INPUT_FOR_OPERATION = "Invalid input for operation: " \
                                   "-1 for unlimited or 'default' for the " \
                                   "configured default value.."
 
-LOG = Topology.get_logger(__name__)
+LOG = logging.getLogger(__name__)
 
 
 # TODO(waelj) don't want to have a dedicated parent class for CLI
@@ -59,7 +60,7 @@ class TestNuageFipRateLimitCliWithoutDefault(BaseNuageFipRateLimit):
         self.assertIsNotNone(created_floating_ip['floating_ip_address'])
         self.assertEqual(created_floating_ip['port_id'], port['id'])
         self.assertEqual(created_floating_ip['floating_network_id'],
-                         self.ext_net_id)
+                         self.public_network_id)
         fixed_ips = port['fixed_ips']
         fixed_ips_dict = json.loads(fixed_ips)
         self.assertEqual(created_floating_ip['fixed_ip_address'],
@@ -138,7 +139,6 @@ class TestNuageFipRateLimitCliWithoutDefault(BaseNuageFipRateLimit):
         # Then I got a valid VSD FIP with the default rate limit
         self._verify_fip_vsd(subnet, port, updated_floating_ip, new_fip_rate)
 
-    @nuage_test.header()
     def test_create_fip_without_rate_limit(self):
         self._as_admin()
 
@@ -146,13 +146,13 @@ class TestNuageFipRateLimitCliWithoutDefault(BaseNuageFipRateLimit):
         subnet = self.create_subnet_with_args(network['name'], ' 10.0.0.0/24')
         router = self.create_router()
 
-        self.set_router_gateway_with_args(router['id'], self.ext_net_id)
+        self.set_router_gateway_with_args(router['id'], self.public_network_id)
         self.add_router_interface_with_args(router['id'], subnet['id'])
 
         port = self.create_port_with_args(network['name'])
 
         created_floating_ip = self.create_floating_ip_with_args(
-            self.ext_net_id, '--port-id', port['id'])
+            self.public_network_id, '--port-id', port['id'])
         self.addCleanup(self._delete_floating_ip,
                         created_floating_ip['id'])
 
@@ -164,7 +164,6 @@ class TestNuageFipRateLimitCliWithoutDefault(BaseNuageFipRateLimit):
         self._verify_fip_vsd(subnet, port, created_floating_ip,
                              self.expected_default_fip_rate)
 
-    @nuage_test.header()
     def test_create_update_fip_with_rate_limit_normal_value(self):
         #     """
         #     neutron net-create net1
@@ -184,14 +183,14 @@ class TestNuageFipRateLimitCliWithoutDefault(BaseNuageFipRateLimit):
         subnet = self.create_subnet_with_args(network['name'], '10.1.0.0/24')
         router = self.create_router()
 
-        self.set_router_gateway_with_args(router['id'], self.ext_net_id)
+        self.set_router_gateway_with_args(router['id'], self.public_network_id)
         self.add_router_interface_with_args(router['id'], subnet['id'])
 
         port = self.create_port_with_args(network['name'])
 
         rate_limit = 67
         created_floating_ip = self.create_floating_ip_with_args(
-            self.ext_net_id, '--port-id', port['id'],
+            self.public_network_id, '--port-id', port['id'],
             '--nuage-fip-rate', str(rate_limit))
         self.addCleanup(self._delete_floating_ip,
                         created_floating_ip['id'])
@@ -221,20 +220,19 @@ class TestNuageFipRateLimitCliWithDefault(
     configured_default_fip_rate = 321
     expected_default_fip_rate = configured_default_fip_rate
 
-    @nuage_test.header()
     def test_create_fip_with_default_rate_limit_max_value(self):
         network = self.create_network()
         subnet = self.create_subnet_with_args(network['name'], '10.3.0.0/24')
         router = self.create_router()
 
-        self.set_router_gateway_with_args(router['id'], self.ext_net_id)
+        self.set_router_gateway_with_args(router['id'], self.public_network_id)
         self.add_router_interface_with_args(router['id'], subnet['id'])
 
         port = self.create_port_with_args(network['name'])
 
         rate_limit = constants.MAX_INT
         created_floating_ip = self.create_floating_ip_with_args(
-            self.ext_net_id, '--port-id', port['id'],
+            self.public_network_id, '--port-id', port['id'],
             '--nuage-fip-rate', str(rate_limit))
         self.addCleanup(self._delete_floating_ip,
                         created_floating_ip['id'])
@@ -245,20 +243,19 @@ class TestNuageFipRateLimitCliWithDefault(
         # Then I got a valid VSD FIP with the default rate limit
         self._verify_fip_vsd(subnet, port, created_floating_ip, rate_limit)
 
-    @nuage_test.header()
     def test_create_fip_with_default_rate_limit_unlimited(self):
         network = self.create_network()
         subnet = self.create_subnet_with_args(network['name'], '10.4.0.0/24')
         router = self.create_router()
 
-        self.set_router_gateway_with_args(router['id'], self.ext_net_id)
+        self.set_router_gateway_with_args(router['id'], self.public_network_id)
         self.add_router_interface_with_args(router['id'], subnet['id'])
 
         port = self.create_port_with_args(network['name'])
 
         rate_limit = constants.UNLIMITED
         created_floating_ip = self.create_floating_ip_with_args(
-            self.ext_net_id, '--port-id', port['id'],
+            self.public_network_id, '--port-id', port['id'],
             '--nuage-fip-rate', str(rate_limit))
         self.addCleanup(self._delete_floating_ip,
                         created_floating_ip['id'])
@@ -269,13 +266,12 @@ class TestNuageFipRateLimitCliWithDefault(
         # Then I got a valid VSD FIP with the default rate limit
         self._verify_fip_vsd(subnet, port, created_floating_ip, "INFINITY")
 
-    @nuage_test.header()
     def test_create_update_fip_rate_limit_with_keyword_default(self):
         network = self.create_network()
         subnet = self.create_subnet_with_args(network['name'], '10.5.0.0/24')
         router = self.create_router()
 
-        self.set_router_gateway_with_args(router['id'], self.ext_net_id)
+        self.set_router_gateway_with_args(router['id'], self.public_network_id)
         self.add_router_interface_with_args(router['id'], subnet['id'])
 
         port = self.create_port_with_args(network['name'])
@@ -283,7 +279,7 @@ class TestNuageFipRateLimitCliWithDefault(
         # create using 'default' keyword
         ################################
         created_floating_ip = self.create_floating_ip_with_args(
-            self.ext_net_id, '--port-id', port['id'],
+            self.public_network_id, '--port-id', port['id'],
             '--nuage-fip-rate', 'default')
 
         # Then I got a valid OpenStack FIP with the default rate limit
@@ -321,19 +317,19 @@ class TestNuageFipRateLimitCliWithDefault(
         self._verify_fip_vsd(subnet, port, updated_floating_ip,
                              self.expected_default_fip_rate)
 
-    @nuage_test.header()
     @decorators.attr(type=['negative'])
     def test_create_fip_without_a_value(self):
         network = self.create_network()
         subnet = self.create_subnet_with_args(network['name'], '10.6.0.0/24')
         router = self.create_router()
 
-        self.set_router_gateway_with_args(router['id'], self.ext_net_id)
+        self.set_router_gateway_with_args(router['id'], self.public_network_id)
         self.add_router_interface_with_args(router['id'], subnet['id'])
 
         port = self.create_port_with_args(network['name'])
 
         self.assertCommandFailed(MSG_INVALID_INPUT,
                                  self.create_floating_ip_with_args,
-                                 self.ext_net_id, '--port-id', port['id'],
+                                 self.public_network_id,
+                                 '--port-id', port['id'],
                                  '--nuage-fip-rate')

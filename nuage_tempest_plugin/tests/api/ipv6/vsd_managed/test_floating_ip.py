@@ -4,8 +4,8 @@
 from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
 
-from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_lib.topology import Topology
+
 from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
     import BaseVSDManagedNetworksIPv6Test
 
@@ -22,7 +22,6 @@ VALID_MAC_ADDRESS_2B = 'fa:fa:3e:e8:e8:2b'
 
 class VSDManagedFloatingIpTest(BaseVSDManagedNetworksIPv6Test):
 
-    @nuage_test.header()
     def test_create_port_with_vsd_floatingip(self):
         # Given I have a VSD-FloatingIP-pool
         vsd_fip_pool = self._create_vsd_floatingip_pool()

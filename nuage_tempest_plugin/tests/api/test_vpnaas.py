@@ -1,21 +1,17 @@
 import netaddr
+from oslo_log import log as logging
 
 from tempest.lib.common.utils import data_utils
 from testtools.matchers import Contains
 from testtools.matchers import Not
 
-from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils.data_utils import nextitem
-from nuage_tempest_plugin.services.vpnaas.vpnaas_mixins import VPNMixin
+from nuage_commons.data_utils import nextitem
+from nuage_tempest_lib.services.vpnaas.vpnaas_mixins import VPNMixin
 
-CONF = Topology.get_conf()
-LOG = Topology.get_logger(__name__)
+LOG = logging.getLogger(__name__)
 
 
 class VPNaaSBase(VPNMixin):
-
-    def_net_partition = Topology.def_netpartition
 
     @classmethod
     def skip_checks(cls):
@@ -178,8 +174,7 @@ class VPNaaSTest(VPNaaSBase):
 
 class VPNaaSCliTests(VPNaaSBase):
 
-    @staticmethod
-    def _verify_resource_list(resource, resource_dict, present):
+    def _verify_resource_list(self, resource, resource_dict, present):
         """Verify the resources created from list of resources """
         resource_list = [resources['id'] for resources in resource_dict]
         if present:
@@ -363,7 +358,6 @@ class VPNaaSCliTests(VPNaaSBase):
         result = self._verify_resource_list(id, ipsecsiteconnections, False)
         self.assertEqual(result, True)
 
-    @nuage_test.header()
     def test_create_delete_ikepolicy(self):
         """TestCase to create/show/list/delete ikepolicy """
         # Create Verify
@@ -389,7 +383,7 @@ class VPNaaSCliTests(VPNaaSBase):
     def test_create_delete_vpnservice(self):
         """TestCase to create/show/list/delete vpnservice """
         name = 'vpn'
-        pubnetid = CONF.network.public_network_id
+        pubnetid = self.public_network_id
         pubnet = self.networks_client.show_network(pubnetid)
 
         # Creating Site for VPN Service
@@ -423,7 +417,7 @@ class VPNaaSCliTests(VPNaaSBase):
     def test_create_duplicate_vpnservice(self):
         """Tests creation of duplicate vpnservice """
         name = 'vpn'
-        pubnetid = CONF.network.public_network_id
+        pubnetid = self.public_network_id
         pubnet = self.networks_client.show_network(pubnetid)
 
         # Creating Site for VPN Service
@@ -462,7 +456,7 @@ class VPNaaSCliTests(VPNaaSBase):
 
         In two different vpnservices
         """
-        pubnetid = CONF.network.public_network_id
+        pubnetid = self.public_network_id
         pubnet = self.networks_client.show_network(pubnetid)
 
         # Creating Site1

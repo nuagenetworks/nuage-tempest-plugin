@@ -1,11 +1,12 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
 
-from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.utils import constants
+from tempest.lib.common.utils import data_utils
+
+from nuage_commons import constants
+
 from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
     import BaseVSDManagedNetworksIPv6Test
-from tempest.lib.common.utils import data_utils
 
 
 ###############################################################################
@@ -199,7 +200,6 @@ class VSDManagedRedirectTargetTest(BaseVSDManagedNetworksIPv6Test):
             **post_body)
         return redirect_target
 
-    @nuage_test.header()
     def test_create_delete_os_redirection_target_l3_mgd_subnet(self):
         # Given I have a VSD-L3-Managed subnet
         vsd_l3_domain, vsd_l3_subnet = self._given_vsd_l3subnet(

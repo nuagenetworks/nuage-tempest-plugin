@@ -13,8 +13,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
-from nuage_tempest_plugin.services.nuage_network_client \
+from nuage_tempest_lib.tests.nuage_test import NuageBaseTest
+from nuage_tempest_lib.vsdclient.nuage_network_client \
     import NuageNetworkClientJSON
 
 

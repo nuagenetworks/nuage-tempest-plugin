@@ -14,28 +14,27 @@
 #    under the License.
 
 from netaddr import IPNetwork
+from oslo_log import log as logging
 import random
 import re
 from six import iteritems
 
-from tempest.api.network import base
 from tempest.common import utils
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
-from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants
-from nuage_tempest_plugin.services import nuage_client
+from nuage_commons import constants
 
-CONF = Topology.get_conf()
-LOG = Topology.get_logger(__name__)
+from nuage_tempest_lib.features import NUAGE_FEATURES
+from nuage_tempest_lib.tests.nuage_test import NuageBaseAdminNetworkTest
+from nuage_tempest_lib.topology import Topology
+from nuage_tempest_lib.vsdclient import nuage_client
+
+LOG = logging.getLogger(__name__)
 
 
-class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
+class NuagePatUnderlayBase(NuageBaseAdminNetworkTest):
     _interface = 'json'
-
-    ext_net_id = CONF.network.public_network_id
 
     PAT_NEEDS_EXT_NETWORK = "Invalid input for external_gateway_info. " \
                             "Reason: Validation of dictionary's keys failed."
@@ -795,11 +794,11 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
             if enable_snat is None:
                 external_gateway_info_cli = \
                     '--external_gateway_info type=dict network_id=' + \
-                    CONF.network.public_network_id
+                    self.public_network_id
             else:
                 external_gateway_info_cli = \
                     '--external_gateway_info type=dict network_id=' + \
-                    CONF.network.public_network_id + \
+                    self.public_network_id + \
                     ',enable_snat=' + str(enable_snat)
             self.router = self.create_router_with_args(
                 router_name, external_gateway_info_cli)
@@ -843,7 +842,7 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
         enable_snat_states = [False, True]
         cidr = IPNetwork('21.11.10.0/24')
         # Avoid overlap of subnets when running the whole class
-        # (cleanup at class level, iso test level
+        # (cleanup at class level, iso tests level
         if self.nuage_pat_ini == constants.NUAGE_PAT_DEFAULTDISABLED:
             cidr = cidr.next(10)
         elif self.nuage_pat_ini == constants.NUAGE_PAT_DEFAULTENABLED:
@@ -931,7 +930,7 @@ class NuagePatUnderlayBase(base.BaseAdminNetworkTest):
                                         str(self.nuage_pat_ini))
             external_gateway_info_cli = \
                 '--external_gateway_info type=dict network_id=' + \
-                self.ext_net_id + ',enable_snat=' + str(enable_snat)
+                self.public_network_id + ',enable_snat=' + str(enable_snat)
             LOG.info("exp_message contains : " + exp_message)
             self.assertCommandFailed(
                 exp_message,

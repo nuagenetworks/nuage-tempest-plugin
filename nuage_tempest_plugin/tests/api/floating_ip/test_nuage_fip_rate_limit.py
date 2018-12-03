@@ -3,13 +3,10 @@
 
 from tempest.test import decorators
 
-from . import base_nuage_fip_rate_limit
+from nuage_commons import constants
 
-from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants
-
-LOG = Topology.get_logger(__name__)
+from nuage_tempest_plugin.tests.api.floating_ip \
+    import base_nuage_fip_rate_limit
 
 
 class TestNuageFipRateLimit(base_nuage_fip_rate_limit.NuageFipRateLimitBase):
@@ -32,18 +29,15 @@ class TestNuageFipRateLimit(base_nuage_fip_rate_limit.NuageFipRateLimitBase):
         super(TestNuageFipRateLimit, cls).resource_setup()
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_create_floatingip_with_rate_limit_normal_value(self):
         fip = self._create_fip_with_fip_rate_limit(self.ports[0], 123)
         self._update_fip_with_fip_rate_limit(self.ports[0], fip, 321)
 
-    @nuage_test.header()
     # CLOSED: OPENSTACK-745
     def test_show_floatingip_with_rate_limit_normal_value(self):
         fip = self._create_fip_with_fip_rate_limit(self.ports[0], 123)
         self._show_fip_with_fip_rate_limit(self.ports[0], fip, 123)
 
-    @nuage_test.header()
     # CLOSED: OPENSTACK-739, OPENSTACK-796
     def test_create_floatingip_with_rate_limit_minimal_value(self):
         self._create_fip_with_fip_rate_limit(self.ports[0], 0)
@@ -54,27 +48,22 @@ class TestNuageFipRateLimit(base_nuage_fip_rate_limit.NuageFipRateLimitBase):
     #     self._create_fip_with_fip_rate_limit(self.ports[0],
     #         constants.MAX_INT)
 
-    @nuage_test.header()
     def test_create_floatingip_with_rate_limit_high_value(self):
         self._create_fip_with_fip_rate_limit(self.ports[0], 100000)
 
-    @nuage_test.header()
     # See: OPENSTACK-1105
     def test_create_floatingip_with_rate_limit_fractional_value(self):
         self._create_fip_with_fip_rate_limit(self.ports[0], 0.5)
 
-    @nuage_test.header()
     def test_create_floatingip_with_rate_limit_unlimited_value(self):
         self._create_fip_with_fip_rate_limit(self.ports[0],
                                              constants.UNLIMITED)
 
-    @nuage_test.header()
     # CLOSED: OPENSTACK-739, OPENSTACK-796"
     def test_update_floatingip_with_rate_limit_minimal_value(self):
         fip = self._create_fip_with_fip_rate_limit(self.ports[0], 123)
         self._update_fip_with_fip_rate_limit(self.ports[0], fip, 0)
 
-    @nuage_test.header()
     def test_update_floatingip_with_rate_limit_unlimited_value(self):
         fip = self._create_fip_with_fip_rate_limit(self.ports[0], 123)
         self._update_fip_with_fip_rate_limit(self.ports[0], fip,
@@ -91,7 +80,6 @@ class TestNuageFipRateLimit(base_nuage_fip_rate_limit.NuageFipRateLimitBase):
         fip = self._create_fip_with_fip_rate_limit(self.ports[0], 123)
         self._update_fip_with_fip_rate_limit(self.ports[0], fip, 100000)
 
-    @nuage_test.header()
     def test_list_floatingip_does_not_show_rate_limit_value(self):
         def get_attr(_dict, _key):
             return _dict[_key]

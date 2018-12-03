@@ -2,13 +2,14 @@
 # All Rights Reserved.
 
 from tempest.common import utils
+from tempest import config
 
-from nuage_tempest_plugin.lib.cli import client_testcase
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants
-import nuage_tempest_plugin.services.nuage_client as nuage_client
+from nuage_commons import constants
 
-CONF = Topology.get_conf()
+from nuage_tempest_lib.cli import client_testcase
+from nuage_tempest_lib.vsdclient import nuage_client
+
+CONF = config.CONF
 
 
 class BaseNuageFipRateLimit(
@@ -19,7 +20,6 @@ class BaseNuageFipRateLimit(
     """
     configured_default_fip_rate = None
     expected_default_fip_rate = constants.UNLIMITED
-    ext_net_id = CONF.network.public_network_id
 
     @classmethod
     def skip_checks(cls):

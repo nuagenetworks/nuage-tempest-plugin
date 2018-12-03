@@ -17,19 +17,18 @@ import collections
 import json
 from netaddr import IPAddress
 from netaddr import IPNetwork
+from oslo_log import log as logging
 import random
 
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants
+from nuage_commons import constants
+
 from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_networks
 
-CONF = Topology.get_conf()
-LOG = Topology.get_logger(__name__)
-
+LOG = logging.getLogger(__name__)
 
 # Stuff for the inter-connectivity VM
 OS_CONNECTING_NW_CIDR = IPNetwork('33.33.33.0/24')
@@ -598,7 +597,7 @@ class BaseVSDManagedPortAttributes(
             'network': network,
             'cidr': cidr,
             'mask_bits': cidr.prefixlen,
-            'net_partition': Topology.def_netpartition,
+            'net_partition': self.def_netpartition,
             'nuagenet': vsd_l2_subnet[0]['ID']
         }
         subnet = self.create_subnet(**kwargs)
@@ -613,7 +612,7 @@ class BaseVSDManagedPortAttributes(
             'network': network,
             'cidr': cidr,
             'mask_bits': cidr.prefixlen,
-            'net_partition': Topology.def_netpartition,
+            'net_partition': self.def_netpartition,
             'nuagenet': vsd_l3_subnet[0]['ID']
         }
         subnet = self.create_subnet(**kwargs)
@@ -703,7 +702,7 @@ class BaseVSDManagedPortAttributes(
         self.admin_routers_client.update_router(
             router_id=router['id'],
             external_gateway_info={
-                'network_id': CONF.network.public_network_id,
+                'network_id': self.public_network_id,
                 'enable_snat': True})
         kwargs = {'name': data_utils.rand_name('osport')}
         # port = self.create_port(network=network,
@@ -712,7 +711,7 @@ class BaseVSDManagedPortAttributes(
 
         # Create floating IP with FIP rate limiting
         result = self.floating_ips_client.create_floatingip(
-            floating_network_id=CONF.network.public_network_id,
+            floating_network_id=self.public_network_id,
             port_id=port['id'],
             nuage_fip_rate='5')
         # Add it to the list so it gets deleted afterwards
@@ -788,7 +787,7 @@ class BaseVSDManagedPortAttributes(
         # Fetch the floating ip pool corresponding to the "public"
         # network/subnet
         public_network = self.networks_client.show_network(
-            CONF.network.public_network_id)
+            self.public_network_id)
         public_subnet = self.subnets_client.show_subnet(
             public_network['network']['subnets'][0])
         public_subnet_ext_id = self.nuage_client.get_vsd_external_id(
@@ -1086,7 +1085,7 @@ class BaseVSDManagedPortAttributes(
         network = self.create_network_with_args(network_name)
         subnet_name = data_utils.rand_name('cli-subnet')
         cidr = str(base_vsd_managed_networks.VSD_L2_SHARED_MGD_CIDR.cidr)
-        net_partition = Topology.def_netpartition
+        net_partition = self.def_netpartition
         nuagenet = vsd_l2_subnet[0]['ID']
         subnet = self.create_subnet_with_args(network['name'],
                                               cidr,
@@ -1111,7 +1110,7 @@ class BaseVSDManagedPortAttributes(
             network['name'],
             str(cidr.cidr),
             "--name", data_utils.rand_name('cli-osl3subnet'),
-            "--net-partition ", Topology.def_netpartition,
+            "--net-partition ", self.def_netpartition,
             "--nuagenet ", vsd_l3_subnet[0]['ID'])
         return network, subnet
 

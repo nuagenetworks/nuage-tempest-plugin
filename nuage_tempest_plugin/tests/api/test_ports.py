@@ -1,22 +1,23 @@
 # Copyright 2017 NOKIA
 # All Rights Reserved.
-from netaddr import IPNetwork
 
-from nuage_tempest_plugin.lib.test.nuage_test import NuageAdminNetworksTest
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants
-from nuage_tempest_plugin.services.nuage_client import NuageRestClient
+from netaddr import IPNetwork
+from oslo_log import log as logging
 
 from tempest.common import waiters
 from tempest.lib import exceptions
 from tempest.scenario import manager
 from tempest.test import decorators
 
-CONF = Topology.get_conf()
-LOG = Topology.get_logger(__name__)
+from nuage_commons import constants
+
+from nuage_tempest_lib.tests.nuage_test import NuageAdminNetworkTest
+from nuage_tempest_lib.vsdclient.nuage_client import NuageRestClient
+
+LOG = logging.getLogger(__name__)
 
 
-class PortsTest(NuageAdminNetworksTest,
+class PortsTest(NuageAdminNetworkTest,
                 manager.NetworkScenarioTest):
     @classmethod
     def setup_clients(cls):
@@ -64,7 +65,7 @@ class PortsTest(NuageAdminNetworksTest,
                                     mask_bits=24)
         router = self.create_router(
             admin_state_up=True,
-            external_network_id=CONF.network.public_network_id)
+            external_network_id=self.public_network_id)
         self.create_router_interface(router_id=router["id"],
                                      subnet_id=subnet["id"])
 
@@ -154,7 +155,7 @@ class PortsTest(NuageAdminNetworksTest,
         self.assertIsNotNone(subnet2, "Unable to create second subnet")
         router = self.create_router(
             admin_state_up=True,
-            external_network_id=CONF.network.public_network_id)
+            external_network_id=self.public_network_id)
         self.assertIsNotNone(router, "Unable to create router")
         # Attach subnet
         self.create_router_interface(router_id=router["id"],
@@ -305,7 +306,7 @@ class PortsTest(NuageAdminNetworksTest,
         self.assertIsNotNone(subnet, "Unable to create subnet")
         router = self.create_router(
             admin_state_up=True,
-            external_network_id=CONF.network.public_network_id)
+            external_network_id=self.public_network_id)
         self.assertIsNotNone(router, "Unable to create router")
         # Attach subnet
         self.create_router_interface(router_id=router["id"],
@@ -362,7 +363,7 @@ class PortsTest(NuageAdminNetworksTest,
         self.assertIsNotNone(subnet, "Unable to create subnet")
         router = self.create_router(
             admin_state_up=True,
-            external_network_id=CONF.network.public_network_id)
+            external_network_id=self.public_network_id)
         self.assertIsNotNone(router, "Unable to create router")
         # Attach subnet
         self.create_router_interface(router_id=router["id"],
@@ -420,7 +421,7 @@ class PortsTest(NuageAdminNetworksTest,
         self.assertIsNotNone(subnet, "Unable to create subnet")
         router = self.create_router(
             admin_state_up=True,
-            external_network_id=CONF.network.public_network_id)
+            external_network_id=self.public_network_id)
         self.assertIsNotNone(router, "Unable to create router")
         # Attach subnet
         self.create_router_interface(router_id=router["id"],
@@ -500,7 +501,7 @@ class PortsTest(NuageAdminNetworksTest,
         self.assertIsNotNone(subnet, "Unable to create subnet")
         router = self.create_router(
             admin_state_up=True,
-            external_network_id=CONF.network.public_network_id)
+            external_network_id=self.public_network_id)
         self.assertIsNotNone(router, "Unable to create router")
         # Attach subnet
         self.create_router_interface(router_id=router["id"],
@@ -669,7 +670,7 @@ class PortsTest(NuageAdminNetworksTest,
         self.assertIsNotNone(subnet, "Unable to create subnet")
         router = self.create_router(
             admin_state_up=True,
-            external_network_id=CONF.network.public_network_id)
+            external_network_id=self.public_network_id)
         self.assertIsNotNone(router, "Unable to create router")
         # Attach subnet
         self.create_router_interface(router_id=router["id"],
@@ -726,7 +727,7 @@ class PortsTest(NuageAdminNetworksTest,
         self.assertIsNotNone(subnet, "Unable to create subnet")
         router = self.create_router(
             admin_state_up=True,
-            external_network_id=CONF.network.public_network_id)
+            external_network_id=self.public_network_id)
         self.assertIsNotNone(router, "Unable to create router")
         # Attach subnet
         self.create_router_interface(router_id=router["id"],
@@ -781,7 +782,7 @@ class PortsTest(NuageAdminNetworksTest,
         self.assertIsNotNone(subnet, "Unable to create subnet")
         router = self.create_router(
             admin_state_up=True,
-            external_network_id=CONF.network.public_network_id)
+            external_network_id=self.public_network_id)
         self.assertIsNotNone(router, "Unable to create router")
         # Attach subnet
         self.create_router_interface(router_id=router["id"],
@@ -854,7 +855,7 @@ class PortsTest(NuageAdminNetworksTest,
         self.assertIsNotNone(subnet, "Unable to create subnet")
         router = self.create_router(
             admin_state_up=True,
-            external_network_id=CONF.network.public_network_id)
+            external_network_id=self.public_network_id)
         self.assertIsNotNone(router, "Unable to create router")
         # Attach subnet
         self.create_router_interface(router_id=router["id"],
@@ -952,7 +953,7 @@ class PortsTest(NuageAdminNetworksTest,
         self.assertIsNotNone(subnet, "Unable to create subnet")
         router = self.create_router(
             admin_state_up=True,
-            external_network_id=CONF.network.public_network_id)
+            external_network_id=self.public_network_id)
         self.assertIsNotNone(router, "Unable to create router")
         # Attach subnet
         self.create_router_interface(router_id=router["id"],
@@ -1051,7 +1052,7 @@ class PortsTest(NuageAdminNetworksTest,
         self.assertIsNotNone(subnet, "Unable to create subnet")
         router = self.create_router(
             admin_state_up=True,
-            external_network_id=CONF.network.public_network_id)
+            external_network_id=self.public_network_id)
         self.assertIsNotNone(router, "Unable to create router")
         # Attach subnet
         self.create_router_interface(router_id=router["id"],
@@ -1167,7 +1168,7 @@ class PortsTest(NuageAdminNetworksTest,
         self.assertIsNotNone(subnet, "Unable to create subnet")
         router = self.create_router(
             admin_state_up=True,
-            external_network_id=CONF.network.public_network_id)
+            external_network_id=self.public_network_id)
         self.assertIsNotNone(router, "Unable to create router")
         # Attach subnet
         self.create_router_interface(router_id=router["id"],
@@ -1227,7 +1228,7 @@ class PortsTest(NuageAdminNetworksTest,
         self.assertIsNotNone(subnet, "Unable to create subnet")
         router = self.create_router(
             admin_state_up=True,
-            external_network_id=CONF.network.public_network_id)
+            external_network_id=self.public_network_id)
         self.assertIsNotNone(router, "Unable to create router")
         # Attach subnet
         self.create_router_interface(router_id=router["id"],
@@ -1321,7 +1322,7 @@ class PortsTest(NuageAdminNetworksTest,
         self.assertIsNotNone(subnet, "Unable to create subnet")
         router = self.create_router(
             admin_state_up=True,
-            external_network_id=CONF.network.public_network_id)
+            external_network_id=self.public_network_id)
         self.assertIsNotNone(router, "Unable to create router")
 
         fixed_ips = [
@@ -1392,7 +1393,7 @@ class PortsTest(NuageAdminNetworksTest,
         self.assertIsNotNone(subnet, "Unable to create subnet")
         router = self.create_router(
             admin_state_up=True,
-            external_network_id=CONF.network.public_network_id)
+            external_network_id=self.public_network_id)
         self.assertIsNotNone(router, "Unable to create router")
         # Attach subnet
         self.create_router_interface(router_id=router["id"],

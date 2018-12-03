@@ -17,18 +17,16 @@
 import collections
 
 from tempest.lib import exceptions as lib_exc
-from tempest.scenario import manager
 
-from nuage_tempest_plugin.lib.topology import Topology
-
-LOG = Topology.get_logger(__name__)
+from nuage_tempest_lib.tests.nuage_test import NuageNetworkScenarioTest
 
 Floating_IP_tuple = collections.namedtuple('Floating_IP_tuple',
                                            ['floating_ip', 'server'])
 
 
 # NOTE(KRIS) : This class is used for upgrade testing - leave it in for now
-class NuageNetworkScenarioTest(manager.NetworkScenarioTest):
+class CustomNuageNetworkScenarioTest(NuageNetworkScenarioTest):
+
     def _create_loginable_secgroup_rule(self, security_group_rules_client=None,
                                         secgroup=None,
                                         security_groups_client=None):

@@ -10,16 +10,14 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from nuage_tempest_plugin.tests.api.orchestration import nuage_base
-
+from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
-from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.tests.api.orchestration import nuage_base
 
-CONF = Topology.get_conf()
-LOG = Topology.get_logger(__name__)
+CONF = config.CONF
 
 
 class OrchestrationVMwithFIP(nuage_base.NuageBaseOrchestrationTest):
@@ -42,7 +40,7 @@ class OrchestrationVMwithFIP(nuage_base.NuageBaseOrchestrationTest):
         template = self.read_template(
             'concurrent_deployment_of_vms_with_fip')
         parameters = {
-            'public_net': CONF.network.public_network_id,
+            'public_net': self.public_network_id,
             'private_net_name': data_utils.rand_name('priv_net'),
             'private_net_cidr': '97.0.0.0/24',
             'private_net_gateway': '97.0.0.1',

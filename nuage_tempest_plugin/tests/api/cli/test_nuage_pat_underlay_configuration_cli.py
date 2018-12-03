@@ -3,11 +3,10 @@
 
 from tempest.lib.common.utils import data_utils
 
-from nuage_tempest_plugin.lib.cli.client_testcase \
-    import CLIClientTestCase
-from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants
+from nuage_commons import constants
+
+from nuage_tempest_lib.cli.client_testcase import CLIClientTestCase
+from nuage_tempest_lib.topology import Topology
 
 from nuage_tempest_plugin.tests.api.router.base_nuage_pat_underlay \
     import NuagePatUnderlayBase
@@ -27,14 +26,12 @@ class TestNuagePatUnderlayCliConfPatNotAvailable(
     # For some strange reason, the cleanup is not called, leaving
     # Nuage_pat = not_available, causing all subsequent
     # tests that need ext_gw_info to fail.
-    @nuage_test.header()
     def test_cli_create_router_without_ext_gw_pat_not_available(self):
         self._as_admin()
         self.needs_ini_nuage_pat(constants.NUAGE_PAT_NOTAVAILABLE)
         self._cli_create_router_without_ext_gw_neg()
         self.needs_ini_nuage_pat(None)
 
-    @nuage_test.header()
     def test_cli_create_router_with_ext_gw_without_snat_pat_not_available_neg(
             self):
         self._as_admin()
@@ -50,7 +47,6 @@ class TestNuagePatUnderlayCliConfPatNotAvailable(
                                  external_gateway_info)
         self.needs_ini_nuage_pat(None)
 
-    @nuage_test.header()
     def test_cli_create_router_without_ext_gw_with_snat_pat_not_available_neg(
             self):
         self._as_admin()
@@ -66,7 +62,6 @@ class TestNuagePatUnderlayCliConfPatNotAvailable(
                                  external_gateway_info)
         self.needs_ini_nuage_pat(None)
 
-    @nuage_test.header()
     def test_cli_create_router_with_ext_gw_with_snat_pat_not_available_neg(
             self):
         self._as_admin()
@@ -92,52 +87,42 @@ class TestNuagePatUnderlayCliConfPatNone(
         super(TestNuagePatUnderlayCliConfPatNone, cls).resource_setup()
         cls.needs_ini_nuage_pat(None)
 
-    @nuage_test.header()
     def test_cli_create_router_without_ext_gw_pat_none(self):
         self._as_admin()
         self._cli_create_router_without_ext_gw_neg()
 
-    @nuage_test.header()
     def test_cli_create_router_with_ext_gw_without_snat_pat_none(self):
         self._as_admin()
         self._cli_create_router_with_ext_gw_without_snat()
 
-    @nuage_test.header()
     def test_cli_create_router_without_ext_gw_with_snat_pat_none(self):
         self._as_admin()
         self._cli_create_router_without_ext_gw_with_snat_neg()
 
-    @nuage_test.header()
     def test_cli_create_router_with_ext_gw_with_snat_pat_none(self):
         self._as_admin()
         self._verify_create_router_with_ext_gw_with_snat()
 
-    @nuage_test.header()
     def test_cli_update_router_with_ext_gw_with_snat_pat_none(self):
         self._as_admin()
         self._cli_update_router_with_ext_gw_with_snat()
 
-    @nuage_test.header()
     def test_cli_show_router_without_eternal_gateway_pat_none(self):
         self._as_admin()
         self._cli_show_router_without_ext_gw()
 
-    @nuage_test.header()
     def test_cli_show_router_with_ext_gw_with_snat_pat_none(self):
         self._as_admin()
         self._cli_show_router_with_ext_gw_with_snat()
 
-    @nuage_test.header()
     def test_cli_list_router_with_ext_gw_with_snat_pat_none(self):
         self._as_admin()
         self._cli_list_router_with_gw_with_snat()
 
-    @nuage_test.header()
     def test_cli_list_router_without_ext_gw_pat_none(self):
         self._as_admin()
         self._cli_list_router_without_gw()
 
-    @nuage_test.header()
     def test_cli_add_os_subnet_to_existing_ext_gw_with_snat_pat_none(self):
         self._as_admin()
         self._cli_add_subnet_to_existing_ext_gw_with_snat()
@@ -146,7 +131,6 @@ class TestNuagePatUnderlayCliConfPatNone(
             self):
         self._cli_add_subnet_to_other_tenant_existing_ext_gw_with_snat()
 
-    @nuage_test.header()
     def test_cli_tenant_create_router_with_ext_gw_pat_none(self):
         self._cli_tenant_create_router_with_ext_gw()
 
@@ -160,36 +144,30 @@ class TestNuagePatUnderlayCliConfPatDefaultDisabled(
             resource_setup()
         cls.needs_ini_nuage_pat(constants.NUAGE_PAT_DEFAULTDISABLED)
 
-    @nuage_test.header()
     def test_cli_create_router_without_ext_gw_pat_def_dis(
             self):
         self._as_admin()
         self._cli_create_router_without_ext_gw_neg()
 
-    @nuage_test.header()
     def test_cli_create_router_with_ext_gw_without_snat_pat_def_dis(
             self):
         self._as_admin()
         self._cli_create_router_with_ext_gw_without_snat()
 
-    @nuage_test.header()
     def test_cli_create_router_without_ext_gw_with_snat_pat_def_dis(
             self):
         self._as_admin()
         self._cli_create_router_without_ext_gw_with_snat_neg()
 
-    @nuage_test.header()
     def test_cli_create_router_with_ext_gw_with_snat_pat_def_dis(
             self):
         self._as_admin()
         self._cli_verify_create_router_with_ext_gw_with_snat()
 
-    @nuage_test.header()
     def test_cli_update_router_with_ext_gw_with_snat_pat_def_dis(self):
         self._as_admin()
         self._cli_update_router_with_ext_gw_with_snat()
 
-    @nuage_test.header()
     def test_cli_show_router_without_eternal_gateway_pat_def_dis(self):
         self._as_admin()
         self._cli_show_router_without_external_gw()
@@ -198,27 +176,22 @@ class TestNuagePatUnderlayCliConfPatDefaultDisabled(
         self._as_admin()
         self._cli_show_router_with_ext_gw_with_snat()
 
-    @nuage_test.header()
     def test_cli_list_router_with_ext_gw_with_snat_pat_def_dis(self):
         self._as_admin()
         self._cli_list_router_with_gw_with_snat()
 
-    @nuage_test.header()
     def test_cli_list_router_without_ext_gw_pat_def_dis(self):
         self._as_admin()
         self._cli_list_router_without_gw()
 
-    @nuage_test.header()
     def test_cli_add_os_subnet_to_existing_ext_gw_with_snat_pat_def_dis(self):
         self._as_admin()
         self._cli_add_subnet_to_existing_ext_gw_with_snat()
 
-    @nuage_test.header()
     def test_cli_non_admin_add_os_subnet_to_exist_gw_other_tenant_pat_def_dis(
             self):
         self._cli_add_subnet_to_other_tenant_existing_ext_gw_with_snat()
 
-    @nuage_test.header()
     def test_cli_tenant_create_router_with_ext_gw_pat_def_dis(self):
         self._cli_tenant_create_router_with_ext_gw()
 
@@ -239,62 +212,50 @@ class TestNuagePatUnderlayCliConfPatDefaultEnabled(
             resource_setup()
         cls.needs_ini_nuage_pat(constants.NUAGE_PAT_DEFAULTENABLED)
 
-    @nuage_test.header()
     def test_cli_create_router_without_ext_gw_pat_def_en(self):
         self._as_admin()
         self._cli_create_router_without_ext_gw_neg()
 
-    @nuage_test.header()
     def test_cli_create_router_with_ext_gw_without_snat_pat_def_en(self):
         self._as_admin()
         self._cli_create_router_with_ext_gw_without_snat()
 
-    @nuage_test.header()
     def test_cli_create_router_without_ext_gw_with_snat_pat_def_en(self):
         self._as_admin()
         self._cli_create_router_without_ext_gw_with_snat_neg()
 
-    @nuage_test.header()
     def test_cli_create_router_with_ext_gw_with_snat_pat_def_en(self):
         self._as_admin()
         self._cli_verify_create_router_with_ext_gw_with_snat()
 
-    @nuage_test.header()
     def test_cli_update_router_with_ext_gw_with_snat_pat_def_en(self):
         self._as_admin()
         self._cli_update_router_with_ext_gw_with_snat()
 
-    @nuage_test.header()
     def test_cli_show_router_without_eternal_gateway_pat_def_en(self):
         self._as_admin()
         self._cli_show_router_without_ext_gw()
 
-    @nuage_test.header()
     def test_cli_show_router_with_ext_gw_with_snat_pat_def_en(self):
         self._as_admin()
         self._cli_show_router_with_external_gw_with_snat()
 
-    @nuage_test.header()
     def test_cli_list_router_with_ext_gw_with_snat_pat_def_en(self):
         self._as_admin()
         self._cli_list_router_with_gw_with_snat()
         pass
 
-    @nuage_test.header()
     def test_cli_list_router_without_ext_gw_pat_def_en(self):
         self._as_admin()
         self._cli_list_router_without_gw()
 
-    @nuage_test.header()
     def test_cli_add_os_subnet_to_existing_ext_gw_with_snat_pat_def_en(self):
         self._as_admin()
         self._cli_add_subnet_to_existing_ext_gw_with_snat()
 
-    @nuage_test.header()
     def test_cli_non_admin_add_os_subnet_to_exist_gw_other_tenant_pat_def_en(
             self):
         self._cli_add_subnet_to_other_tenant_existing_ext_gw_with_snat()
 
-    @nuage_test.header()
     def test_cli_tenant_create_router_with_ext_gw_pat_def_en(self):
         self._cli_tenant_create_router_with_ext_gw()

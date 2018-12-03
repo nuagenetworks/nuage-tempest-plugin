@@ -10,17 +10,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from nuage_tempest_plugin.tests.api.orchestration import nuage_base
-
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
-from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.tests.api.l2bridge.base_nuage_l2bridge \
     import BaseNuageL2Bridge
-
-LOG = Topology.get_logger(__name__)
+from nuage_tempest_plugin.tests.api.orchestration import nuage_base
 
 
 class NuageOSManagedDuplexHeatTest(nuage_base.NuageBaseOrchestrationTest,

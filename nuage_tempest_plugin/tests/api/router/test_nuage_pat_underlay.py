@@ -18,11 +18,9 @@ from netaddr import IPNetwork
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
-from . import base_nuage_pat_underlay
+from nuage_commons import constants
 
-from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants
+from nuage_tempest_plugin.tests.api.router import base_nuage_pat_underlay
 
 
 class TestNuagePatUnderlay(base_nuage_pat_underlay.NuagePatUnderlayBase):
@@ -32,39 +30,30 @@ class TestNuagePatUnderlay(base_nuage_pat_underlay.NuagePatUnderlayBase):
     def resource_setup(cls):
         super(TestNuagePatUnderlay, cls).resource_setup()
 
-    @nuage_test.header()
     def test_create_router_without_external_gateway_pat(self):
         self._verify_create_router_without_ext_gw()
 
-    @nuage_test.header()
     def test_create_router_with_external_gateway_without_snat(self):
         self._verify_create_router_with_ext_gw_without_snat()
 
-    @nuage_test.header()
     def test_create_router_without_external_gateway_with_snat_neg(self):
         self._verify_create_router_without_ext_gw_with_snat_neg()
 
-    @nuage_test.header()
     def test_create_router_with_external_gateway_with_snat(self):
         self._verify_create_router_with_ext_gw_with_snat()
 
-    @nuage_test.header()
     def test_update_router_with_external_gateway_with_snat(self):
         self._verify_update_router_with_ext_gw_with_snat()
 
-    @nuage_test.header()
     def test_show_router_without_external_gateway(self):
         self._verify_show_router_without_ext_gw()
 
-    @nuage_test.header()
     def test_show_router_with_external_gateway_with_snat(self):
         self._verify_show_router_with_ext_gw_with_snat()
 
-    @nuage_test.header()
     def test_list_router_with_external_gateway_with_snat(self):
         self._verify_list_router_with_gw_with_snat()
 
-    @nuage_test.header()
     def test_create_router_with_snat_invalid_neg(self):
         """test_create_router_with_snat_invalid_neg
 
@@ -91,7 +80,6 @@ class TestNuagePatUnderlay(base_nuage_pat_underlay.NuagePatUnderlayBase):
                               self.admin_routers_client.create_router,
                               **kwargs)
 
-    @nuage_test.header()
     def test_create_router_with_snat_invalid_syntax_neg(self):
         """test_create_router_with_snat_invalid_syntax_neg
 
@@ -116,7 +104,6 @@ class TestNuagePatUnderlay(base_nuage_pat_underlay.NuagePatUnderlayBase):
                               self.admin_routers_client.create_router,
                               **kwargs)
 
-    @nuage_test.header()
     def test_create_router_with_gw_with_non_existing_ext_network_neg(
             self):
         """test_create_router_with_gw_with_non_existing_ext_network_neg
@@ -141,7 +128,6 @@ class TestNuagePatUnderlay(base_nuage_pat_underlay.NuagePatUnderlayBase):
                           self.admin_routers_client.create_router,
                           **kwargs)
 
-    @nuage_test.header()
     def test_create_router_with_external_gw_with_vsd_managed_subnet_neg(self):
         """test_create_router_with_external_gw_with_vsd_managed_subnet_neg
 
@@ -183,7 +169,7 @@ class TestNuagePatUnderlay(base_nuage_pat_underlay.NuagePatUnderlayBase):
             'cidr': str(cidr),
             'ip_version': self._ip_version,
             'name': subnet_name,
-            'net_partition': Topology.def_netpartition,
+            'net_partition': self.def_netpartition,
             'nuagenet': vsd_l2domain[0]['ID']
         }
         self.assertRaises(exceptions.BadRequest,
@@ -194,7 +180,6 @@ class TestNuagePatUnderlay(base_nuage_pat_underlay.NuagePatUnderlayBase):
         self.nuage_client.delete_l2domaintemplate(
             vsd_l2dom_template[0]['ID'])
 
-    @nuage_test.header()
     def test_create_router_with_internal_network_neg(self):
         """test_create_router_with_internal_network_neg
 
@@ -217,7 +202,6 @@ class TestNuagePatUnderlay(base_nuage_pat_underlay.NuagePatUnderlayBase):
                           self.admin_routers_client.create_router,
                           **kwargs)
 
-    @nuage_test.header()
     def test_add_subnet_to_existing_pat_router_neg(self):
         """test_add_subnet_to_existing_pat_router_neg
 

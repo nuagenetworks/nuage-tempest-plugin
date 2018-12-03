@@ -5,12 +5,7 @@ from netaddr import IPNetwork
 
 from tempest.lib.common.utils import data_utils
 
-from . import nuage_base
-
-from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.topology import Topology
-
-LOG = Topology.get_logger(__name__)
+from nuage_tempest_plugin.tests.api.orchestration import nuage_base
 
 
 class OrchestrationVsdManagedNetworkTest(
@@ -18,18 +13,16 @@ class OrchestrationVsdManagedNetworkTest(
 
     @classmethod
     def resource_setup(cls):
-        if Topology.is_ml2:
-            # create default netpartition if it is not there
-            netpartition_name = cls.vsd_client.def_netpart_name
-            net_partition = cls.vsd_client.get_net_partition(netpartition_name)
-            if not net_partition:
-                net_partition = cls.vsd_client.create_net_partition(
-                    netpartition_name,
-                    fip_quota=100,
-                    extra_params=None)
+        # create default netpartition if it is not there
+        netpartition_name = cls.vsd_client.def_netpart_name
+        net_partition = cls.vsd_client.get_net_partition(netpartition_name)
+        if not net_partition:
+            net_partition = cls.vsd_client.create_net_partition(
+                netpartition_name,
+                fip_quota=100,
+                extra_params=None)
         super(OrchestrationVsdManagedNetworkTest, cls).resource_setup()
 
-    @nuage_test.header()
     def test_link_subnet_to_vsd_l2domain_dhcp_managed_minimal(self):
         """test_link_subnet_to_vsd_l2domain_dhcp_managed_minimal
 
@@ -57,7 +50,7 @@ class OrchestrationVsdManagedNetworkTest(
         stack_file_name = 'nuage_vsd_managed_network_minimal'
         stack_parameters = {
             'vsd_subnet_id': vsd_l2domain[0]['ID'],
-            'netpartition_name': self.net_partition_name,
+            'netpartition_name': self.def_netpartition,
             'private_net_name': self.private_net_name,
             'private_net_cidr': str(cidr)}
         self.launch_stack(stack_file_name, stack_parameters)
@@ -84,7 +77,6 @@ class OrchestrationVsdManagedNetworkTest(
             str(cidr[-2]), subnet['allocation_pools'][0]['end'],
             "Shall end allocation pool at last address in l2 domain")
 
-    @nuage_test.header()
     def test_link_subnet_to_vsd_l2domain_dhcp_managed(self):
         """test_link_subnet_to_vsd_l2domain_dhcp_managed
 
@@ -112,12 +104,12 @@ class OrchestrationVsdManagedNetworkTest(
         stack_file_name = 'nuage_vsd_managed_network'
         stack_parameters = {
             'vsd_subnet_id': vsd_l2domain[0]['ID'],
-            'netpartition_name': self.net_partition_name,
+            'netpartition_name': self.def_netpartition,
             'private_net_name': self.private_net_name,
             'private_net_cidr': str(cidr),
             'private_net_dhcp': True,
             'private_net_pool_start': str(cidr[2]),  # neutron won't allow .1
-            # unless we give --no-gateway - TODO(KRIS) Add such tests
+            # unless we give --no-gateway - TODO(KRIS) Add such test
             'private_net_pool_end': str(cidr[254])}
 
         self.launch_stack(stack_file_name, stack_parameters)
@@ -144,7 +136,6 @@ class OrchestrationVsdManagedNetworkTest(
                          "Shall end allocation pool at last address in "
                          "l2 domain")
 
-    @nuage_test.header()
     def test_link_subnet_to_vsd_l2domain_dhcp_unmanaged(self):
         """test_link_subnet_to_vsd_l2domain_dhcp_unmanaged
 
@@ -170,13 +161,13 @@ class OrchestrationVsdManagedNetworkTest(
         stack_file_name = 'nuage_vsd_managed_network'
         stack_parameters = {
             'vsd_subnet_id': vsd_l2domain[0]['ID'],
-            'netpartition_name': self.net_partition_name,
+            'netpartition_name': self.def_netpartition,
             'private_net_name': self.private_net_name,
             'private_net_cidr': str(cidr),
             'private_net_dhcp': False,
             # note that dhcp as false, the below to my view is useless ......
             'private_net_pool_start': str(cidr[2]),  # neutron won't allow .1
-            # unless we give --no-gateway - TODO(KRIS) Add such tests
+            # unless we give --no-gateway - TODO(KRIS) Add such test
             'private_net_pool_end': str(cidr[254])}
         self.launch_stack(stack_file_name, stack_parameters)
 
@@ -202,7 +193,6 @@ class OrchestrationVsdManagedNetworkTest(
                          "Shall end allocation pool at last address in "
                          "l2 domain")
 
-    @nuage_test.header()
     def test_link_subnet_to_vsd_l3domain(self):
         """test_link_subnet_to_vsd_l3domain
 
@@ -239,7 +229,7 @@ class OrchestrationVsdManagedNetworkTest(
         stack_file_name = 'nuage_vsd_managed_network'
         stack_parameters = {
             'vsd_subnet_id': vsd_domain_subnet[0]['ID'],
-            'netpartition_name': self.net_partition_name,
+            'netpartition_name': self.def_netpartition,
             'private_net_name': self.private_net_name,
             'private_net_cidr': str(cidr),
             'private_net_dhcp': True,

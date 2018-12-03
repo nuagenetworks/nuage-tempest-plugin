@@ -13,14 +13,15 @@ from tempest.lib import exceptions as tempest_exceptions
 from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
 
-from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
-from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
-from nuage_tempest_plugin.lib.test import tags
-from nuage_tempest_plugin.lib.utils import constants as nuage_constants
-from nuage_tempest_plugin.services.nuage_client import NuageRestClient
+from nuage_commons import constants as nuage_constants
+
+from nuage_tempest_lib.tests.nuage_test import NuageAdminNetworkTest
+from nuage_tempest_lib.tests.nuage_test import NuageBaseTest
+from nuage_tempest_lib.vsdclient.nuage_client import NuageRestClient
+
 from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
     import ExternalId
+
 
 MSG_IP_ADDRESS_INVALID_OR_RESERVED = "IP Address %s is not valid " \
                                      "or cannot be in reserved address space"
@@ -43,24 +44,16 @@ MSG_INVALID_GATEWAY_FOR_IP_TYPE = "Invalid input for operation: gateway_ip " \
 
 
 def _is_v4_ip(ip):
-    return (IPAddress(ip['ip_address']).version == 4)
+    return IPAddress(ip['ip_address']).version == 4
 
 
 def _is_v6_ip(ip):
-    return (IPAddress(ip['ip_address']).version == 6)
+    return IPAddress(ip['ip_address']).version == 6
 
 
-@nuage_test.class_header(tags=[tags.ML2])
 class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
-                                      nuage_test.NuageAdminNetworksTest):
+                                      NuageAdminNetworkTest):
     credentials = ['primary', 'admin']
-
-    @classmethod
-    def skip_checks(cls):
-        super(OsManagedDualStackL2SubnetsTest, cls).skip_checks()
-        if not NUAGE_FEATURES.os_managed_dualstack_subnets:
-            raise cls.skipException(
-                'OS Managed Dual Stack is not supported in this release')
 
     # TODO(waelj) port to VSD helper
     @classmethod
@@ -168,7 +161,6 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
     # Typical
     ###########################################################################
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_os_managed_dual_stack_subnet(self):
         # Provision OpenStack network
         network = self.create_network()
@@ -198,7 +190,6 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
         self._verify_vport_in_l2_domain(port, vsd_l2_domain)
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_os_managed_dual_stack_subnet_with_dhcp_managed_ipv6(self):
         # Provision OpenStack network
         network = self.create_network()
@@ -216,7 +207,6 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
     # Special cases
     ###########################################################################
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     # OPENSTACK-1947
     def test_os_managed_dual_stack_subnet_with_invalid_ipv6_prefixlen(self):
         # Provision OpenStack network
@@ -245,7 +235,6 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
         self.assertIsNotNone(ipv6_subnet)
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_os_managed_dual_stack_subnet_ipv6_first(self):
         # Provision OpenStack network
         network = self.create_network()
@@ -268,7 +257,6 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
             ipv6_subnet, ExternalId(ipv4_subnet['id']).at_cms_id())
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     # OPENSTACK-1926
     def test_os_managed_dual_stack_subnet_ipv4_create_delete_create(self):
         network = self.create_network()
@@ -287,7 +275,6 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
         self.create_subnet(network)
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     # OPENSTACK-1926
     def test_os_managed_dual_stack_subnet_ipv6_create_delete_create(self):
         network = self.create_network()
@@ -313,7 +300,6 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
         self.assertIsNotNone(ipv6_subnet)
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_os_managed_dual_stack_subnet_with_ipv4_only_ports(self):
         # Provision OpenStack network
         network = self.create_network()
@@ -343,7 +329,6 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
             ipv6_subnet, ExternalId(ipv4_subnet['id']).at_cms_id())
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_os_managed_dual_stack_subnet_no_gateway(self):
         # Provision OpenStack network
         network = self.create_network()
@@ -376,7 +361,6 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
         self._verify_vport_in_l2_domain(port, vsd_l2_domain)
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_os_managed_dual_stack_subnet_unmanaged(self):
         # Provision OpenStack network
         network = self.create_network()
@@ -408,7 +392,6 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
         self.assertIsNotNone(port)
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_no_vsd_auto_assignment_for_ipv6_addresses(self):
         """See VSD-21971"""
         network = self.create_network()
@@ -536,7 +519,6 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
     # Update IPv6 subnet attributes
     ###########################################################################
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_os_managed_dual_stack_subnet_update_no_vsd(self):
         # Update of openstack subnet attributes which are by design not
         # replicated to VSD
@@ -582,7 +564,6 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
         pass
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     # OPENSTACK-1943
     def test_os_managed_dual_stack_subnet_update_gw_no_gw(self):
         # Provision OpenStack network
@@ -620,7 +601,6 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
     ###########################################################################
     @decorators.attr(type='negative')
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_os_managed_dual_stack_create_ipv6_only_port_neg(self):
         network = self.create_network()
 
@@ -645,7 +625,6 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
 
     @decorators.attr(type='negative')
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_os_managed_dual_stack_update_port_to_ipv6_only_neg(self):
         network = self.create_network()
 
@@ -687,7 +666,6 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
             **f_ips)
 
     @decorators.attr(type='negative')
-    @nuage_test.header()
     def test_subnet_with_dhcp_unmanaged_ipv6_attr_slaac_neg(self):
         # Provision OpenStack network
         network = self.create_network()
@@ -710,7 +688,6 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
             ipv6_address_mode='slaac')
 
     @decorators.attr(type='negative')
-    @nuage_test.header()
     def test_subnet_with_dhcp_managed_ipv6_only_attr_slaac_neg(self):
         # Provision OpenStack network
         network = self.create_network()
@@ -727,7 +704,6 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
             ipv6_address_mode='slaac')
 
     @decorators.attr(type='negative')
-    @nuage_test.header()
     def test_subnet_with_dhcp_managed_ipv6_attr_slaac_neg(self):
         # Provision OpenStack network
         network = self.create_network()
@@ -749,7 +725,6 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
             ipv6_address_mode='slaac')
 
     @decorators.attr(type='negative')
-    @nuage_test.header()
     def test_multiple_ipv6_subnets_neg(self):
         # Provision OpenStack network
         network = self.create_network()
@@ -776,7 +751,6 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
             enable_dhcp=False)
 
     @decorators.attr(type='negative')
-    @nuage_test.header()
     def test_dual_stack_subnet_multiple_ipv4_subnets_neg(self):
         # Provision OpenStack network
         network = self.create_network()
@@ -799,7 +773,6 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
             network)
 
     @decorators.attr(type='negative')
-    @nuage_test.header()
     def test_multiple_ipv4_subnets_with_ipv6_subnet_neg(self):
         if self.is_dhcp_agent_present():
             raise self.skipException(
@@ -828,7 +801,6 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
             enable_dhcp=False)
 
     @decorators.attr(type='negative')
-    @nuage_test.header()
     def test_delete_ipv4_subnet_with_port_from_dual_stack_subnets_neg(self):
         # Provision OpenStack network
         network = self.create_network()
@@ -853,7 +825,6 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
             ipv4_subnet['id'])
 
     @decorators.attr(type='negative')
-    @nuage_test.header()
     def test_delete_ipv4_subnet_with_dualstack_port_neg(self):
         # Provision OpenStack network
         network = self.create_network()
@@ -1029,7 +1000,6 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
     ###########################################################################
     # Update IPv6 subnet attributes - negative
     ###########################################################################
-    @nuage_test.header()
     def test_os_managed_dual_stack_subnet_update_neg(self):
         # Provision OpenStack network
         network = self.create_network()

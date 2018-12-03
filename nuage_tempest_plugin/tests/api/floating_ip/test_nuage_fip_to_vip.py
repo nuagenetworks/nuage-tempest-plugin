@@ -5,10 +5,7 @@ from netaddr import IPNetwork
 
 from tempest.test import decorators
 
-from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
-from nuage_tempest_plugin.lib.topology import Topology
-
-CONF = Topology.get_conf()
+from nuage_tempest_lib.tests.nuage_test import NuageBaseTest
 
 
 class NuageFipToVip(NuageBaseTest):
@@ -23,7 +20,7 @@ class NuageFipToVip(NuageBaseTest):
         self.assertIsNotNone(subnet, "Unable to create subnet")
         router = self.create_router(
             admin_state_up=True,
-            external_network_id=CONF.network.public_network_id)
+            external_network_id=self.public_network_id)
         self.assertIsNotNone(router, "Unable to create router")
         self.create_router_interface(router_id=router["id"],
                                      subnet_id=subnet["id"])
@@ -67,7 +64,7 @@ class NuageFipToVip(NuageBaseTest):
         self.assertIsNotNone(subnet, "Unable to create subnet")
         router = self.create_router(
             admin_state_up=True,
-            external_network_id=CONF.network.public_network_id)
+            external_network_id=self.public_network_id)
         self.assertIsNotNone(router, "Unable to create router")
         self.create_router_interface(router_id=router["id"],
                                      subnet_id=subnet["id"])
@@ -147,7 +144,7 @@ class NuageFipToVip(NuageBaseTest):
                                      mask_bits=64, ip_version=6)
         router = self.create_router(
             admin_state_up=True,
-            external_network_id=CONF.network.public_network_id)
+            external_network_id=self.public_network_id)
         self.assertIsNotNone(router, "Unable to create router")
         self.create_router_interface(router_id=router["id"],
                                      subnet_id=subnet["id"])
@@ -210,7 +207,7 @@ class NuageFipToVip(NuageBaseTest):
                                      mask_bits=64, ip_version=6)
         router = self.create_router(
             admin_state_up=True,
-            external_network_id=CONF.network.public_network_id)
+            external_network_id=self.public_network_id)
         self.assertIsNotNone(router, "Unable to create router")
         self.create_router_interface(router_id=router["id"],
                                      subnet_id=subnet["id"])
@@ -271,7 +268,7 @@ class NuageFipToVip(NuageBaseTest):
         self.assertIsNotNone(subnet, "Unable to create subnet")
         router = self.create_router(
             admin_state_up=True,
-            external_network_id=CONF.network.public_network_id)
+            external_network_id=self.public_network_id)
         self.assertIsNotNone(router, "Unable to create router")
         self.create_router_interface(router_id=router["id"],
                                      subnet_id=subnet["id"])

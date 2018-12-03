@@ -4,12 +4,12 @@ from netaddr import IPNetwork
 
 from tempest.lib.common.utils import data_utils
 
-from . import base_nuage_extra_dhcp_options
-from .base_nuage_extra_dhcp_options import NUAGE_NETWORK_TYPE
+from nuage_commons import constants
 
-from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants as constants
+from nuage_tempest_plugin.tests.api.extra_dhcp_option \
+    import base_nuage_extra_dhcp_options
+from nuage_tempest_plugin.tests.api.extra_dhcp_option.\
+    base_nuage_extra_dhcp_options import NUAGE_NETWORK_TYPE
 
 
 class NuageExtraDHCPOptionsBaseL2(
@@ -44,7 +44,7 @@ class NuageExtraDHCPOptionsBaseL2(
         # create subnet on OS with nuagenet param set to l2domain UUID
         net_name = data_utils.rand_name('network')
         cls.vsdmgd_l2_network = cls.create_network(network_name=net_name)
-        netpartition = Topology.def_netpartition
+        netpartition = cls.def_netpartition
         cls.vsdmgd_l2_subnet = cls.create_subnet(
             cls.vsdmgd_l2_network,
             gateway=None,
@@ -147,7 +147,6 @@ class NuageExtraDHCPOptionsOSManagedL2Test(NuageExtraDHCPOptionsBaseL2):
     # def test_nuage_os_mgd_l2_port_with_dhcp_opts_009_lpr_server(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_009_lpr_server()
 
-    @nuage_test.header()
     def test_nuage_os_mgd_l2_port_with_dhcp_opts_012_hostname(self):
         self._check_nuage_crud_port_with_dhcp_opts_012_hostname()
 

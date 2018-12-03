@@ -14,15 +14,14 @@ import netaddr
 
 from nuage_tempest_plugin.tests.api.orchestration import nuage_base
 
+from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils.data_utils import nextitem
+from nuage_commons.data_utils import nextitem
 
-CONF = Topology.get_conf()
-LOG = Topology.get_logger(__name__)
+CONF = config.CONF
 
 
 class OrchestrationNeutronResourcesTest(nuage_base.NuageBaseOrchestrationTest):
@@ -79,10 +78,10 @@ class OrchestrationNeutronResourcesTest(nuage_base.NuageBaseOrchestrationTest):
                 body = cls.client.show_resource(cls.stack_identifier,
                                                 'Server')
                 server_id = body['physical_resource_id']
-                LOG.debug('Console output for %s', server_id)
+                cls.debug('Console output for %s', server_id)
                 output = cls.servers_client.get_console_output(
                     server_id)['output']
-                LOG.debug(output)
+                cls.debug(output)
             raise
 
         cls.test_resources = {}

@@ -16,24 +16,18 @@
 import netaddr
 
 from tempest.api.network import test_networks as tempest_test_networks
+from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions as lib_exc
 
-from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
-from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_lib.common.base_mixin import NuageBaseMixin
 
-CONF = Topology.get_conf()
+CONF = config.CONF
 
 
-class NuageNetworksIpV6Test(tempest_test_networks.NetworksIpV6Test):
-
-    @classmethod
-    def skip_checks(cls):
-        super(NuageNetworksIpV6Test, cls).skip_checks()
-        if not NUAGE_FEATURES.os_managed_dualstack_subnets:
-            raise cls.skipException(
-                'OS Managed Dual Stack is not supported in this release')
+class NuageNetworksIpV6Test(tempest_test_networks.NetworksIpV6Test,
+                            NuageBaseMixin):
 
     @classmethod
     def delete_router_interface(cls, router_id, subnet_id):
@@ -86,7 +80,7 @@ class NuageNetworksIpV6Test(tempest_test_networks.NetworksIpV6Test):
     @decorators.attr(type='smoke')
     def test_update_routed_subnet_dns_host_routes(self):
         router = self.create_router(
-            external_network_id=CONF.network.public_network_id)
+            external_network_id=self.public_network_id)
         network = self.create_network()
         subnet_args = self.subnet_dict(['gateway', 'host_routes',
                                         'dns_nameservers',
@@ -121,14 +115,8 @@ class NuageNetworksIpV6Test(tempest_test_networks.NetworksIpV6Test):
         self.delete_router_interface(router['id'], subnet['id'])
 
 
-class NuageNetworksIpV6TestAttrs(tempest_test_networks.NetworksIpV6TestAttrs):
-
-    @classmethod
-    def skip_checks(cls):
-        super(NuageNetworksIpV6TestAttrs, cls).skip_checks()
-        if not NUAGE_FEATURES.os_managed_dualstack_subnets:
-            raise cls.skipException(
-                'OS Managed Dual Stack is not supported in this release')
+class NuageNetworksIpV6TestAttrs(tempest_test_networks.NetworksIpV6TestAttrs,
+                                 NuageBaseMixin):
 
     def test_create_delete_subnet_with_v6_attributes_stateful(self):
         self.assertRaisesRegex(
@@ -204,14 +192,7 @@ class NuageNetworksIpV6TestAttrs(tempest_test_networks.NetworksIpV6TestAttrs):
 
 
 class NuageBulkNetworkOpsIpV6Test(
-        tempest_test_networks.BulkNetworkOpsIpV6Test):
-
-    @classmethod
-    def skip_checks(cls):
-        super(NuageBulkNetworkOpsIpV6Test, cls).skip_checks()
-        if not NUAGE_FEATURES.os_managed_dualstack_subnets:
-            raise cls.skipException(
-                'OS Managed Dual Stack is not supported in this release')
+        tempest_test_networks.BulkNetworkOpsIpV6Test, NuageBaseMixin):
 
     @decorators.attr(type='smoke')
     def test_bulk_create_delete_subnet(self):

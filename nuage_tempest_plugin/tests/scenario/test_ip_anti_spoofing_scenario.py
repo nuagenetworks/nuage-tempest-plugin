@@ -87,7 +87,7 @@ class IpAntiSpoofingTestScenario(antispoof.IpAntiSpoofingTestBase,
             router_name='scn-router12-1',
             subnet_name='scn-subnet12-1',
             port_name='scn-port12-1',
-            netpart=self.def_net_partition,
+            netpart=self.def_netpartition,
             allowed_address_pairs=allowed_address_pairs)
         self.assertEqual(port['allowed_address_pairs'][0]['ip_address'],
                          allowed_address_pairs[0]['ip_address'])

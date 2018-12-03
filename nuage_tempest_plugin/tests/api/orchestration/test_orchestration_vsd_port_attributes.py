@@ -4,19 +4,19 @@
 from netaddr import IPAddress
 
 from tempest.common import utils
+from tempest import config
 from tempest.lib.common.utils import data_utils
 
-from . import nuage_base
+from nuage_commons import constants
+from nuage_tempest_lib.topology import Topology
 
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants
+from nuage_tempest_plugin.tests.api.orchestration import nuage_base
 from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_networks
 from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_port_attributes
 
-CONF = Topology.get_conf()
-LOG = Topology.get_logger(__name__)
+CONF = config.CONF
 
 VALID_MAC_ADDRESS = 'fa:fa:3e:e8:e8:c0'
 
@@ -224,7 +224,7 @@ class HeatVsdManagedPortAttributesTest(
 
         stack_parameters = {
             'vsd_l2_subnet_id': vsd_l2_subnet[0]['ID'],
-            'netpartition_name': Topology.def_netpartition,
+            'netpartition_name': self.def_netpartition,
             'l2_net_name': data_utils.rand_name('l2-net'),
             'l2_subnet_name': data_utils.rand_name('l2-subnet'),
             'l2_net_cidr': str(l2_cidr.cidr),

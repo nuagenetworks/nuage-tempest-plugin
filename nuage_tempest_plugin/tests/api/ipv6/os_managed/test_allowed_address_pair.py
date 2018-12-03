@@ -14,25 +14,24 @@
 #    under the License.
 
 from netaddr import IPAddress
+from oslo_log import log as logging
 from six import iteritems
-
-from nuage_tempest_plugin.lib.utils import constants
-from nuage_tempest_plugin.tests.api.ipv6.test_allowed_address_pair \
-    import BaseAllowedAddressPair
 
 from tempest.api.network import test_allowed_address_pair as base_tempest
 from tempest.lib import decorators
 from tempest.lib import exceptions as tempest_exceptions
 
-from nuage_tempest_plugin.lib.topology import Topology
+from nuage_commons import constants
 
-CONF = Topology.get_conf()
-LOG = Topology.get_logger(__name__)
+from nuage_tempest_plugin.tests.api.ipv6.test_allowed_address_pair \
+    import BaseAllowedAddressPair
 
 VALID_MAC_ADDRESS = 'fa:fa:3e:e8:e8:01'
 MSG_INVALID_IP_ADDRESS_FOR_SUBNET = "IP address %s is not a valid IP for " \
                                     "the specified subnet."
 MSG_INVALID_INPUT_FOR_AAP_IPS = "'%s' is not a valid IP address."
+
+LOG = logging.getLogger(__name__)
 
 
 class AllowedAddressPairIpV6NuageTest(
@@ -225,7 +224,7 @@ class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
 
         router = self.create_router(
             admin_state_up=True,
-            external_network_id=CONF.network.public_network_id)
+            external_network_id=self.public_network_id)
         self.assertIsNotNone(router, "Unable to create router")
         self.create_router_interface(router_id=router["id"],
                                      subnet_id=subnet4["id"])

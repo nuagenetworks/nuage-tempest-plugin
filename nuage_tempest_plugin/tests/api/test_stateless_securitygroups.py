@@ -14,18 +14,21 @@
 
 from testtools import matchers
 
+from tempest import config
 from tempest.lib import decorators
 from tempest.lib import exceptions as lib_exc
 
-from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
-from nuage_tempest_plugin.lib.mixins import l3
-from nuage_tempest_plugin.lib.mixins import network as network_mixin
-from nuage_tempest_plugin.lib.mixins import sg as sg_mixin
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants
-from nuage_tempest_plugin.services.nuage_client import NuageRestClient
+from nuage_commons import constants
 
-CONF = Topology.get_conf()
+from nuage_tempest_lib.features import NUAGE_FEATURES
+from nuage_tempest_lib.tests.nuage_test import NuageBaseMixin
+from nuage_tempest_lib.vsdclient.nuage_client import NuageRestClient
+
+from nuage_tempest_plugin.mixins import l3
+from nuage_tempest_plugin.mixins import network as network_mixin
+from nuage_tempest_plugin.mixins import sg as sg_mixin
+
+CONF = config.CONF
 
 
 class SecurityGroupsTopology(object):
@@ -130,7 +133,7 @@ class SecurityGroupsTopology(object):
 
 
 class StatelessSecuritygroupTest(network_mixin.NetworkMixin,
-                                 l3.L3Mixin, sg_mixin.SGMixin):
+                                 l3.L3Mixin, sg_mixin.SGMixin, NuageBaseMixin):
 
     credentials = ['admin']
 

@@ -18,9 +18,8 @@ from netaddr import IPNetwork
 from tempest.lib import exceptions
 from tempest.test import decorators
 
-from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.test import tags
-from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_lib.topology import Topology
+
 from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_networks
 from nuage_tempest_plugin.tests.api.vsd_managed \
@@ -44,7 +43,6 @@ EXPECT_GATEWAY_IN_CIDR = "Invalid input for operation: " \
                          "Gateway is not valid on subnet."
 
 
-@nuage_test.class_header(tags=[tags.ML2, tags.VSD_MANAGED])
 class VSDPublicResourcesML2Test(
         base_vsd_public_resources.BaseVSDPublicResources):
 
@@ -64,7 +62,6 @@ class VSDPublicResourcesML2Test(
             raise cls.skipException('Skipping ml2 tests with '
                                     'nuage-core plugin')
 
-    @nuage_test.header()
     def test_vsd_l2_shared_unmgd_l2_unmgd_without_gw_ip(self):
         # Given I have a VSD-L2-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
@@ -97,7 +94,6 @@ class VSDPublicResourcesML2Test(
             expect_vm_ip_addresses_equal=''
         )
 
-    @nuage_test.header()
     def test_vsd_l2_shared_unmgd_l2_unmgd_with_gw_ip_neg(self):
         # Pass on liberty, fail on kilo
         # Given I have a VSD-L2-domain without IPAM (i.e. UnManaged)
@@ -129,7 +125,6 @@ class VSDPublicResourcesML2Test(
             expect_vm_ip_addresses_equal=''
         )
 
-    @nuage_test.header()
     def test_vsd_l2_shared_unmgd_l2_unmgd_no_gateway(self):
         # Given I have a VSD-L2-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
@@ -159,7 +154,6 @@ class VSDPublicResourcesML2Test(
             expect_vm_ip_addresses_equal=''
         )
 
-    @nuage_test.header()
     def test_vsd_l2_shared_mgd_l2_unmgd_without_gateway(self):
         # Given I have a VSD-L2-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
@@ -189,7 +183,6 @@ class VSDPublicResourcesML2Test(
         )
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_vsd_l2_shared_mgd_l2_unmgd_with_gw_neg(self):
         # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
@@ -210,7 +203,7 @@ class VSDPublicResourcesML2Test(
                 expect_vm_ip_addresses_equal=True
             )
         else:
-            # In ML2 Liberty this is not a negative test so it should pass
+            # In ML2 Liberty this is not a negative tests so it should pass
             self._check_vsd_l2_shared_l2_unmgd(
                 vsd_l2dom_unmgd=vsd_l2dom_unmgd,
                 #  When I create an OS subnet with
@@ -234,7 +227,6 @@ class VSDPublicResourcesML2Test(
                 expect_vm_ip_addresses_equal=True
             )
 
-    @nuage_test.header()
     def test_vsd_l2_shared_mgd_l2_unmgd_no_gateway(self):
         # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
@@ -265,7 +257,6 @@ class VSDPublicResourcesML2Test(
             expect_vm_ip_addresses_equal=True
         )
 
-    @nuage_test.header()
     def test_vsd_l2_shared_mgd_opt3_l2_unmgd_without_gw_neg(self):
         # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
@@ -283,7 +274,6 @@ class VSDPublicResourcesML2Test(
             gateway_ip='',  # bad, must be VSD_L2_SHARED_MGD_OPT3
             must_fail=True)
 
-    @nuage_test.header()
     def test_vsd_l2_shared_mgd_opt3_l2_unmgd_with_gateway(self):
         # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
@@ -317,7 +307,6 @@ class VSDPublicResourcesML2Test(
             expect_vm_ip_addresses_equal=True
         )
 
-    @nuage_test.header()
     @decorators.attr(type=['negative'])
     def test_vsd_l2_shared_mgd_opt3_l2_unmgd_no_gateway(self):
         # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
@@ -338,7 +327,6 @@ class VSDPublicResourcesML2Test(
             gateway_ip=None,  # bad, must be VSD_L2_SHARED_MGD_OPT3
             must_fail=True)
 
-    @nuage_test.header()
     def test_vsd_l3_shared_mgd_l3_unmgd_without_gateway(self):
         # Given I have a VSD-L3-domain in a public zone
         # (i.e. without IPAM (/ UnManaged)
@@ -373,7 +361,6 @@ class VSDPublicResourcesML2Test(
             expect_vm_ip_addresses_equal=True
         )
 
-    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_vsd_l3_shared_mgd_l3_unmgd_with_gateway(self):
         # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
@@ -408,7 +395,6 @@ class VSDPublicResourcesML2Test(
             expect_vm_ip_addresses_equal=True
         )
 
-    @nuage_test.header()
     def test_vsd_l3_shared_mgd_l3_unmgd_no_gateway_neg(self):
         # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
@@ -424,7 +410,6 @@ class VSDPublicResourcesML2Test(
             gateway_ip=None,  # bad, must be <base>.VSD_L3_SHARED_MGD_GW
             must_fail=True)
 
-    @nuage_test.header()
     def test_vsd_l3_shared_mgd_opt3_l2_unmgd_with_gateway(self):
         # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
@@ -505,7 +490,6 @@ class VSDPublicResourcesML2Test(
     # #########################################################################
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_vsd_l2_shared_unmgd_l2_unmgd_wo_gw_enable_dhcp_neg(
             self):
         # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
@@ -521,7 +505,6 @@ class VSDPublicResourcesML2Test(
             must_fail=True)
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_vsd_l2_shared_mgd_l2_unmgd_wo_gw_no_dhcp_neg(self):
         # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
@@ -536,7 +519,6 @@ class VSDPublicResourcesML2Test(
             must_fail=True)
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_vsd_l2_shared_mgd_l2_unmgd_with_gw_no_dhcp_neg(self):
         # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
@@ -551,7 +533,6 @@ class VSDPublicResourcesML2Test(
             must_fail=True)
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_vsd_l2_shared_mgd_l2_unmgd_no_gw_no_dhcp_neg(self):
         # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
@@ -566,7 +547,6 @@ class VSDPublicResourcesML2Test(
             must_fail=True)
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_vsd_l2_shared_mgd_l2_unmgd_wo_gw_cidr_mismatch_neg(self):
         # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
@@ -581,7 +561,6 @@ class VSDPublicResourcesML2Test(
             must_fail=True)
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_vsd_l2_shared_mgd_l2_unmgd_with_gw_cidr_mismatch_neg(self):
         # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
@@ -596,7 +575,6 @@ class VSDPublicResourcesML2Test(
             must_fail=True)
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_vsd_l2_shared_mgd_l2_no_gw_unmgd_cidr_mismatch_neg(self):
         # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
@@ -611,7 +589,6 @@ class VSDPublicResourcesML2Test(
             must_fail=True)
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_vsd_l2_shared_mgd_opt3_l2_unmgd_without_gw_no_dhcp_neg(self):
         # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
@@ -628,7 +605,6 @@ class VSDPublicResourcesML2Test(
             must_fail=True)
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_vsd_l2_shared_mgd_opt_3_l2_unmgd_with_gw_no_dhcp_neg(self):
         # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
@@ -645,7 +621,6 @@ class VSDPublicResourcesML2Test(
             must_fail=True)
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_vsd_l2_shared_mgd_opt_3_l2_unmgd_no_gw_no_dhcp_neg(self):
         # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
@@ -662,7 +637,6 @@ class VSDPublicResourcesML2Test(
             must_fail=True)
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_vsd_l2_shared_mgd_opt_3_l2_unmgd_wo_gw_cidr_mismatch_neg(self):
         # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
@@ -679,7 +653,6 @@ class VSDPublicResourcesML2Test(
             must_fail=True)
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_vsd_l2_shared_mgd_opt_3_l2_unmgd_with_gw_cidr_mismatch_neg(self):
         # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
@@ -696,7 +669,6 @@ class VSDPublicResourcesML2Test(
             must_fail=True)
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_vsd_l2_shared_mgd_opt_3_l2_unmgd_no_gw_cidr_mismatch_neg(self):
         # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
@@ -713,7 +685,6 @@ class VSDPublicResourcesML2Test(
             must_fail=True)
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_vsd_l3_shared_mgd_l3_unmgd_wo_gw_no_dhcp_neg(self):
         # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
@@ -730,7 +701,6 @@ class VSDPublicResourcesML2Test(
             must_fail=True)
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_vsd_l3_shared_mgd_l3_unmgd_with_gw_no_dhcp_neg(self):
         # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
@@ -747,7 +717,6 @@ class VSDPublicResourcesML2Test(
             must_fail=True)
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_vsd_l3_shared_mgd_l3_unmgd_no_gw_no_dhcp_neg(self):
         # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
@@ -764,7 +733,6 @@ class VSDPublicResourcesML2Test(
             must_fail=True)
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_vsd_l3_shared_mgd_l3_unmgd_wo_gw_cidr_mismatch_neg(self):
         # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
@@ -781,7 +749,6 @@ class VSDPublicResourcesML2Test(
             must_fail=True)
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_vsd_l3_shared_mgd_l3_unmgd_with_gw_cidr_mismatch_neg(self):
         # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
@@ -798,7 +765,6 @@ class VSDPublicResourcesML2Test(
             must_fail=True)
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_vsd_l3_shared_mgd_l3_unmgd_no_gw_cidr_mismatch_neg(self):
         # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
@@ -815,7 +781,6 @@ class VSDPublicResourcesML2Test(
             must_fail=True)
 
 
-@nuage_test.class_header(tags=[tags.ML2, tags.VSD_MANAGED])
 class VSDPublicSharedResourcesML2Test(VSDPublicResourcesML2Test):
 
     os_shared_network = True

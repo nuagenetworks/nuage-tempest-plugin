@@ -15,7 +15,7 @@
 
 import re
 
-from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_lib.topology import Topology
 
 
 class ExternalId(object):

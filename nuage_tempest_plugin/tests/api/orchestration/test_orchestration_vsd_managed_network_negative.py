@@ -7,17 +7,11 @@ from tempest import exceptions
 from tempest.lib.common.utils import data_utils
 from tempest.test import decorators
 
-from . import nuage_base
-
-from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.topology import Topology
-
-LOG = Topology.get_logger(__name__)
+from nuage_tempest_plugin.tests.api.orchestration import nuage_base
 
 
 class VsdManagedNetworkTest(nuage_base.NuageBaseOrchestrationTest):
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_link_subnet_to_vsd_l2domain_with_empty_net_partition(self):
         """test_link_subnet_to_vsd_l2domain_without_net_partition
 
@@ -91,7 +85,6 @@ class VsdManagedNetworkTest(nuage_base.NuageBaseOrchestrationTest):
                                stack_parameters)
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_link_subnet_to_vsd_l2domain_without_valid_vsd_l2domain(self):
         """test_link_subnet_to_vsd_l2domain_without_valid_vsd_l2domain
 
@@ -104,7 +97,7 @@ class VsdManagedNetworkTest(nuage_base.NuageBaseOrchestrationTest):
         stack_file_name = 'nuage_vsd_managed_network_minimal'
         stack_parameters = {
             'vsd_subnet_id': 'not a valid UUID',
-            'netpartition_name': self.net_partition_name,
+            'netpartition_name': self.def_netpartition,
             'private_net_name': self.private_net_name,
             'private_net_cidr': str(cidr)}
 
@@ -120,7 +113,6 @@ class VsdManagedNetworkTest(nuage_base.NuageBaseOrchestrationTest):
                                stack_parameters)
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_link_subnet_to_vsd_l2domain_without_existing_vsd_l2domain(self):
         """test_link_subnet_to_vsd_l2domain_without_existing_vsd_l2domain
 
@@ -133,7 +125,7 @@ class VsdManagedNetworkTest(nuage_base.NuageBaseOrchestrationTest):
         stack_file_name = 'nuage_vsd_managed_network_minimal'
         stack_parameters = {
             'vsd_subnet_id': data_utils.rand_uuid(),
-            'netpartition_name': self.net_partition_name,
+            'netpartition_name': self.def_netpartition,
             'private_net_name': self.private_net_name,
             'private_net_cidr': str(cidr)}
 
