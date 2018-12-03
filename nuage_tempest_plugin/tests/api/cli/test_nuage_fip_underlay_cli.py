@@ -97,10 +97,10 @@ class TestNuageFipUnderlayCli(client_testcase.CLIClientTestCase,
         invalid_underlay_values = ['Ttrue', 'Treu', 'Tru', 'Truet', 'Trrue',
                                    'Truue', 'Truee',
                                    'Flase', 'Falsche', 'Fales', 'Flaes',
-                                   'FFalse', 'fFalse']
+                                   'FFalse', 'fFalse', '']
         # exp_message = "Invalid input for operation: '(.*)' cannot be
         # converted to boolean"
-        exp_message = "error: argument --underlay: invalid choice: u'(.*)"
+        exp_message = "error: argument --underlay: invalid choice:"
         for underlay in invalid_underlay_values:
             underlay_str = "--underlay=" + str(underlay)
             self.assertCommandFailed(exp_message,
