@@ -1,12 +1,10 @@
 # Copyright 2017 NOKIA
 
-from netaddr import IPAddress
 from netaddr import IPNetwork
-
 import random
 
 
-def gimme_a_cidr_str(mask_bits=24):
+def gimme_a_cidr_address(mask_bits=24):
     return '1%s.%s.%s.0/%s' % (random.randint(0, 9),
                                random.randint(0, 255),
                                random.randint(0, 255),
@@ -14,9 +12,18 @@ def gimme_a_cidr_str(mask_bits=24):
 
 
 def gimme_a_cidr(mask_bits=24):
-    cidr = IPNetwork(gimme_a_cidr_str(mask_bits))
-    gateway = str(IPAddress(cidr) + 1)
-    return cidr, gateway, mask_bits
+    return IPNetwork(gimme_a_cidr_address(mask_bits))
+
+
+def gimme_a_cidr_as_attributes(mask_bits=24):
+    return get_cidr_attributes(gimme_a_cidr(mask_bits))
+
+
+def get_cidr_attributes(ip_network):
+    address = str(ip_network.ip)
+    netmask = str(ip_network.netmask)
+    gateway = str(ip_network.ip + 1)
+    return address, netmask, gateway
 
 
 # for py2 and py3 compatibility using next()

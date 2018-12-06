@@ -13,7 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from netaddr import IPAddress
 import random
 import uuid
 
@@ -83,14 +82,15 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
                 shared_enterprises[0]['ID'])
 
     def create_uplink_subnet(self, parent_id=None):
-        cidr, gateway, mask_bits = nuage_data_utils.gimme_a_cidr()
+        cidr = nuage_data_utils.gimme_a_cidr()
+        address, netmask, gateway = nuage_data_utils.get_cidr_attributes(cidr)
         uplink_subnet_dict = {
             'name': data_utils.rand_name('uplink-'),
-            'address': str(cidr.ip),
-            'netmask': str(cidr.netmask),
+            'address': address,
+            'netmask': netmask,
             'gateway': gateway,
             'uplinkVportName': 'vlan1',
-            'uplinkInterfaceIP': str(IPAddress(cidr) + 2),
+            'uplinkInterfaceIP': str(cidr.ip + 2),
             'uplinkInterfaceMAC': "00:11:22:33:44:55",
             'uplinkGWVlanAttachmentID': self.gateway_vlan[0]['ID'],
             'sharedResourceParentID': parent_id

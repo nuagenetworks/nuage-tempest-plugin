@@ -137,10 +137,10 @@ class Ipv4OsManagedConnectivityTest(NuageBaseTest):
         }
         ext_network = self.create_network(client=self.admin_manager, **kwargs)
         ext_s1 = self.create_subnet(ext_network, client=self.admin_manager,
-                                    cidr=data_utils.gimme_a_cidr()[0],
+                                    cidr=data_utils.gimme_a_cidr(),
                                     underlay=True)
         ext_s2 = self.create_subnet(ext_network, client=self.admin_manager,
-                                    cidr=data_utils.gimme_a_cidr()[0],
+                                    cidr=data_utils.gimme_a_cidr(),
                                     underlay=True)
 
         r1 = self.create_router(external_network_id=ext_network['id'])

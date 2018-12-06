@@ -66,12 +66,14 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
         :rtype: dict
         """
         if managed:
-            cidr, gateway, mask_bits = nuage_data_utils.gimme_a_cidr()
+            cidr = nuage_data_utils.gimme_a_cidr()
+            address, netmask, gateway = (nuage_data_utils.
+                                         get_cidr_attributes(cidr))
             return (self.create_vsd_managed_shared_resource(
                 name=data_utils.rand_name('shared-managed'),
-                netmask=str(cidr.netmask), address=str(cidr.ip),
+                netmask=netmask, address=address,
                 gateway=gateway, DHCPManaged=True, type=type),
-                cidr, gateway, mask_bits)
+                cidr, gateway, 24)
         else:
             return self.create_vsd_managed_shared_resource(
                 name=data_utils.rand_name('shared-unmanaged'), type='L2DOMAIN')

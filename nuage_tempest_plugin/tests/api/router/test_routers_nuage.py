@@ -821,7 +821,7 @@ class NuageRoutersAdminTest(NuageAdminNetworksTest):
         net_body = self.admin_networks_client.create_network(**network)
         self.addCleanup(self.admin_networks_client.delete_network,
                         net_body['network']['id'])
-        cidr = nuage_data_utils.gimme_a_cidr_str()
+        cidr = nuage_data_utils.gimme_a_cidr_address()
         subnet = {
             'network_id': net_body['network']['id'],
             'cidr': cidr,
@@ -893,7 +893,7 @@ class NuageRoutersAdminTest(NuageAdminNetworksTest):
         net_body = self.admin_networks_client.create_network(**network)
         self.addCleanup(self.admin_networks_client.delete_network,
                         net_body['network']['id'])
-        cidr = nuage_data_utils.gimme_a_cidr_str()
+        cidr = nuage_data_utils.gimme_a_cidr_address()
         subnet = {
             'network_id': net_body['network']['id'],
             'cidr': cidr,

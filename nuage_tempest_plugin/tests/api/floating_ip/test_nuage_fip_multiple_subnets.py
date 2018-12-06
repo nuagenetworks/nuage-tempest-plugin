@@ -72,7 +72,7 @@ class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
         """
         kwargs = {'router:external': True}
         n1 = self.create_network(client=self.admin_manager, **kwargs)
-        s1 = self.create_subnet(n1, cidr=data_utils.gimme_a_cidr()[0],
+        s1 = self.create_subnet(n1, cidr=data_utils.gimme_a_cidr(),
                                 mask_bits=24, underlay=True,
                                 client=self.admin_manager)
         self.assertRaises(
@@ -93,13 +93,13 @@ class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
         kwargs = {'router:external': True}
         n1 = self.create_network(client=self.admin_manager, **kwargs)
         n2 = self.create_network(client=self.admin_manager, **kwargs)
-        s1 = self.create_subnet(n1, cidr=data_utils.gimme_a_cidr()[0],
+        s1 = self.create_subnet(n1, cidr=data_utils.gimme_a_cidr(),
                                 mask_bits=24, underlay=True,
                                 client=self.admin_manager)
-        s2 = self.create_subnet(n1, cidr=data_utils.gimme_a_cidr()[0],
+        s2 = self.create_subnet(n1, cidr=data_utils.gimme_a_cidr(),
                                 mask_bits=24, underlay=True,
                                 client=self.admin_manager)
-        s3 = self.create_subnet(n2, cidr=data_utils.gimme_a_cidr()[0],
+        s3 = self.create_subnet(n2, cidr=data_utils.gimme_a_cidr(),
                                 mask_bits=24, underlay=True,
                                 client=self.admin_manager)
         self.assertEqual(s1['nuage_uplink'], s2['nuage_uplink'],
@@ -163,10 +163,10 @@ class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
                 'Multiple subnets in a network not supported when DHCP agent '
                 'is enabled.')
         n1 = self.create_network(client=self.admin_manager)
-        s1 = self.create_subnet(n1, cidr=data_utils.gimme_a_cidr()[0],
+        s1 = self.create_subnet(n1, cidr=data_utils.gimme_a_cidr(),
                                 mask_bits=24,
                                 client=self.admin_manager)
-        s2 = self.create_subnet(n1, cidr=data_utils.gimme_a_cidr()[0],
+        s2 = self.create_subnet(n1, cidr=data_utils.gimme_a_cidr(),
                                 mask_bits=24,
                                 client=self.admin_manager)
         kwargs = {'router:external': True}
@@ -200,10 +200,10 @@ class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
         """
         kwargs = {'router:external': True}
         n1 = self.create_network(client=self.admin_manager, **kwargs)
-        s1 = self.create_subnet(n1, cidr=data_utils.gimme_a_cidr()[0],
+        s1 = self.create_subnet(n1, cidr=data_utils.gimme_a_cidr(),
                                 mask_bits=24,
                                 client=self.admin_manager)
-        s2 = self.create_subnet(n1, cidr=data_utils.gimme_a_cidr()[0],
+        s2 = self.create_subnet(n1, cidr=data_utils.gimme_a_cidr(),
                                 mask_bits=24,
                                 client=self.admin_manager)
         self.assertEqual(s1['nuage_uplink'], s2['nuage_uplink'],
