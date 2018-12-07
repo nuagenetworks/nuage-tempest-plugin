@@ -96,17 +96,6 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
     # eventually delete this - this is obviously elsewhere tested
     @decorators.attr(type='smoke')
     @nuage_test.header()
-    def test_pure_ipv4_attach_and_cleanup(self):
-        network = self.create_network()
-        router = self.create_router()
-
-        ipv4_subnet = self.create_subnet(network)
-
-        self.router_attach(router, ipv4_subnet)
-
-    # eventually delete this - this is obviously elsewhere tested
-    @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_dualstack_attach_ipv4_and_cleanup(self):
         network = self.create_network()
         router = self.create_router()

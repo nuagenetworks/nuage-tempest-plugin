@@ -5,6 +5,7 @@ import importlib
 import re
 from six import iteritems
 
+from bambou.exceptions import BambouHTTPError
 from netaddr import IPAddress
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
@@ -279,6 +280,32 @@ class VsdHelper(object):
 
     def delete_l3domain(self, l3dom_id):
         return self.nuage_rest_client.delete_domain(l3dom_id)
+
+    def get_l3_domain_by_subnet_id(self, by_subnet_id):
+        # get the subnet
+        subnet = self.get_subnet_from_domain(by_subnet_id=by_subnet_id)
+        if not subnet:
+            return None
+
+        # get the parent, which is the zone
+        try:
+            zone, _ = self.vspk.NUZone(id=subnet.parent_id).fetch()
+        except BambouHTTPError as exc:
+            if exc.connection.response.status_code == 404:
+                return None
+            else:
+                raise
+
+        # get the parent, which is the domain
+        try:
+            domain, _ = self.vspk.NUDomain(id=zone.parent_id).fetch()
+        except BambouHTTPError as exc:
+            if exc.connection.response.status_code == 404:
+                return None
+            else:
+                raise
+
+        return domain
 
     def get_domain(self, enterprise=None, vspk_filter=None, by_router_id=None):
         return self.get_l3domain(enterprise, vspk_filter, by_router_id)

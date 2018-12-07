@@ -856,6 +856,15 @@ class NuageBaseTest(manager.NetworkScenarioTest):
     def router_detach_with_port_id(self, router, port):
         self.remove_router_interface_with_port_id(router['id'], port['id'])
 
+    def get_router_interface(self, by_router_id, by_subnet_id):
+        ports = self.osc_list_ports(
+            device_owner="network:router_interface",
+            device_id=by_router_id)
+        ri_port = next((port for port in ports if
+                        port['fixed_ips'][0]['subnet_id'] == by_subnet_id),
+                       None)
+        return ri_port
+
     def _create_keypair(self, client=None):
         if not client:
             client = self.manager.keypairs_client
