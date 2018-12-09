@@ -12,23 +12,21 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-
 from netaddr import IPNetwork
 
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
-from nuage_commons import constants
-
-from nuage_tempest_plugin.mixins import net_topology as topology_mixin
+from nuage_tempest_plugin.lib.mixins import net_topology as topology_mixin
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.tests.api.l2bridge.base_nuage_l2bridge \
     import BaseNuageL2Bridge
 from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_networks as base_vsd_managed
 
-CONF = config.CONF
+CONF = Topology.get_conf()
 
 
 class TestNuageL2BridgeSRIOV(BaseNuageL2Bridge,
@@ -56,7 +54,7 @@ class TestNuageL2BridgeSRIOV(BaseNuageL2Bridge,
     @classmethod
     def resource_setup(cls):
         super(TestNuageL2BridgeSRIOV, cls).resource_setup()
-        # Only gateway here, to support parallel testing each test makes its
+        # Only gateway here, to support parallel testing each tests makes its
         # own gateway port so no VLAN overlap should occur.
         cls.gateway = cls.nuage_client.create_gateway(
             data_utils.rand_name(name='vsg'),
@@ -151,7 +149,7 @@ class TestNuageL2BridgeSRIOV(BaseNuageL2Bridge,
             bridge = self.get_l2bridge(bridge['id'])
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            expected_ext_id = bridge['id'] + '@' + self.cms_id
+            expected_ext_id = bridge['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(bridge, expected_ext_id, l2domain)
             self.assertEqual(s1['nuage_l2bridge'], bridge['id'])
 
@@ -238,7 +236,7 @@ class TestNuageL2BridgeSRIOV(BaseNuageL2Bridge,
                 self.assertEqual(s2['nuage_l2bridge'], bridge['id'])
                 l2domain = self.vsd.get_l2domain(
                     vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-                expected_ext_id = bridge['id'] + '@' + self.cms_id
+                expected_ext_id = bridge['id'] + '@' + CONF.nuage.nuage_cms_id
                 self._validate_l2domain_on_vsd(bridge, expected_ext_id,
                                                l2domain)
 

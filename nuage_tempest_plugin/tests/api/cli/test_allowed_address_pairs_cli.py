@@ -4,17 +4,18 @@
 from netaddr import IPAddress
 from netaddr import IPNetwork
 
-from tempest.lib.common.utils import data_utils
-
-from nuage_commons import constants
-
-from nuage_tempest_lib.vsdclient.nuage_network_client \
+from .base_nuage_networks_cli import BaseNuageNetworksCliTestCase
+from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
+from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import constants
+from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
-
-from nuage_tempest_plugin.tests.api.cli.base_nuage_networks_cli \
-    import BaseNuageNetworksCliTestCase
 from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
     import BaseVSDManagedNetworksIPv6Test
+from tempest.lib.common.utils import data_utils
+
+LOG = Topology.get_logger(__name__)
 
 VALID_MAC_ADDRESS = 'fa:fa:3e:e8:e8:01'
 VALID_MAC_ADDRESS_2A = 'fa:fa:3e:e8:e8:2a'
@@ -24,8 +25,15 @@ VALID_MAC_ADDRESS_2B = 'fa:fa:3e:e8:e8:2b'
 ###############################################################################
 # MultiVIP . allowed address pairs
 ###############################################################################
-class OSManagedAllowedAddressPairsCliTest(
+class OSManagedAllowedAddresPairsCliTest(
         BaseNuageNetworksCliTestCase, BaseVSDManagedNetworksIPv6Test):
+
+    @classmethod
+    def skip_checks(cls):
+        super(OSManagedAllowedAddresPairsCliTest, cls).skip_checks()
+        if not NUAGE_FEATURES.os_managed_dualstack_subnets:
+            raise cls.skipException(
+                'OS Managed Dual Stack is not supported in this release')
 
     def _cli_create_os_managed_dualstack_subnet(self):
         network_name = data_utils.rand_name('cli_network')
@@ -57,11 +65,12 @@ class OSManagedAllowedAddressPairsCliTest(
 
     @classmethod
     def setup_clients(cls):
-        super(OSManagedAllowedAddressPairsCliTest, cls).setup_clients()
+        super(OSManagedAllowedAddresPairsCliTest, cls).setup_clients()
         cls.nuage_network_client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
             **cls.os_primary.default_params)
 
+    @nuage_test.header()
     def test_cli_create_address_pair_l2domain_no_mac(self):
         # Given I have a dual stack network
         cli_network, cli_subnet4, cli_subnet6 = \

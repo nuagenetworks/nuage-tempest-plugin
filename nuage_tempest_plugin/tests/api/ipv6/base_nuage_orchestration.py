@@ -13,23 +13,22 @@
 import os.path
 import yaml
 
-from oslo_log import log as logging
-
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions as lib_exc
 from tempest.services import orchestration
+import tempest.test
 
-from nuage_tempest_lib.tests.nuage_test import NuageBaseTestCase
-from nuage_tempest_lib.vsdclient import nuage_client
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.services import nuage_client
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
+
 
 # TODO(TEAM) - this class should inherit from NuageBaseOrchestrationTest
 
 
-class NuageBaseOrchestrationTest(NuageBaseTestCase):
+class NuageBaseOrchestrationTest(tempest.test.BaseTestCase):
     """Base test case class for all Nuage Orchestration API tests."""
     credentials = ['primary']
 
@@ -64,7 +63,7 @@ class NuageBaseOrchestrationTest(NuageBaseTestCase):
         cls.build_timeout = CONF.heat_plugin.build_timeout
         cls.build_interval = CONF.heat_plugin.build_interval
 
-        cls.net_partition_name = cls.def_netpartition
+        cls.net_partition_name = Topology.def_netpartition
         cls.private_net_name = data_utils.rand_name('heat-network-')
 
         cls.test_resources = {}

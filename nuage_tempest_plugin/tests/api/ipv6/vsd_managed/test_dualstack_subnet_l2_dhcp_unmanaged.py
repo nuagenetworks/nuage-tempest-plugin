@@ -4,7 +4,7 @@
 from netaddr import IPAddress
 from netaddr import IPNetwork
 
-from nuage_tempest_lib.topology import Topology
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
     import BaseVSDManagedNetworksIPv6Test
 
@@ -225,7 +225,7 @@ class VSDManagedDualStackL2DHCPUnmanagedTest(VSDManagedDualStackCommonBase):
             cidr=self.cidr4,
             mask_bits=self.mask_bits4,
             nuagenet=vsd_l2_domain.id,
-            net_partition=self.def_netpartition)
+            net_partition=Topology.def_netpartition)
         self.assertEqual(
             ipv4_subnet['cidr'],
             str(next(IPNetwork(self.cidr4).subnet(self.mask_bits4))))
@@ -248,7 +248,7 @@ class VSDManagedDualStackL2DHCPUnmanagedTest(VSDManagedDualStackCommonBase):
             mask_bits=self.mask_bits6,
             enable_dhcp=False,
             nuagenet=vsd_l2_domain.id,
-            net_partition=self.def_netpartition)
+            net_partition=Topology.def_netpartition)
 
         # create a port in the network
         port = self.create_port(network)
@@ -287,7 +287,7 @@ class VSDManagedDualStackL2DHCPUnmanagedTest(VSDManagedDualStackCommonBase):
             cidr=self.cidr4,
             mask_bits=self.mask_bits4,
             nuagenet=vsd_l2_domain.id,
-            net_partition=self.def_netpartition)
+            net_partition=Topology.def_netpartition)
         self.assertEqual(
             ipv4_subnet['cidr'],
             str(next(IPNetwork(self.cidr4).subnet(self.mask_bits4))))
@@ -328,7 +328,7 @@ class VSDManagedDualStackL2DHCPUnmanagedTest(VSDManagedDualStackCommonBase):
             ip_version=6,
             enable_dhcp=False,
             nuagenet=vsd_l2domain.id,
-            net_partition=self.def_netpartition)
+            net_partition=Topology.def_netpartition)
 
         if Topology.from_openstack('Newton'):
             expected_exception = tempest_exceptions.BadRequest
@@ -371,7 +371,7 @@ class VSDManagedDualStackL2DHCPUnmanagedTest(VSDManagedDualStackCommonBase):
             cidr=self.cidr4,
             mask_bits=self.mask_bits4,
             nuagenet=vsd_l2domain.id,
-            net_partition=self.def_netpartition)
+            net_partition=Topology.def_netpartition)
         self.assertEqual(
             ipv4_subnet['cidr'],
             str(next(IPNetwork(self.cidr4).subnet(self.mask_bits4))))
@@ -397,7 +397,7 @@ class VSDManagedDualStackL2DHCPUnmanagedTest(VSDManagedDualStackCommonBase):
             mask_bits=self.cidr6.prefixlen,
             enable_dhcp=False,
             nuagenet=vsd_l2domain.id,
-            net_partition=self.def_netpartition)
+            net_partition=Topology.def_netpartition)
 
         # shall not create port with IP already in use
         port_args = {'fixed_ips': [{'subnet_id': ipv4_subnet['id'],
@@ -516,7 +516,7 @@ class VSDManagedDualStackL2DHCPUnmanagedTest(VSDManagedDualStackCommonBase):
             enable_dhcp=False,
             mask_bits=self.mask_bits4,
             nuagenet=vsd_l2domain.id,
-            net_partition=self.def_netpartition)
+            net_partition=Topology.def_netpartition)
 
         ipv6_subnet = self.create_subnet(
             network,
@@ -526,7 +526,7 @@ class VSDManagedDualStackL2DHCPUnmanagedTest(VSDManagedDualStackCommonBase):
             mask_bits=self.mask_bits6,
             enable_dhcp=False,
             nuagenet=vsd_l2domain.id,
-            net_partition=self.def_netpartition)
+            net_partition=Topology.def_netpartition)
 
         # noinspection PyPep8
         invalid_ipv6 = [

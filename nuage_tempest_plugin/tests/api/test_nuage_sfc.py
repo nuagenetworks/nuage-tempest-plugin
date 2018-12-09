@@ -2,20 +2,19 @@ from netaddr import IPNetwork
 import time
 
 from tempest.common import utils
-from tempest import config
 from tempest.lib import exceptions as lib_exec
 import testtools
 
-from nuage_commons import constants as n_constants
-
-from nuage_tempest_lib.services.networkingsfc.networkingsfc_client \
+from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import constants as n_constants
+from nuage_tempest_plugin.services.networkingsfc.networkingsfc_client \
     import NetworkingSfcClient as nsfc
-from nuage_tempest_lib.tests.nuage_test import NuageBaseTest
-from nuage_tempest_lib.vsdclient.nuage_client import NuageRestClient
-from nuage_tempest_lib.vsdclient.nuage_network_client \
+from nuage_tempest_plugin.services.nuage_client import NuageRestClient
+from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
-CONF = config.CONF
+CONF = Topology.get_conf()
 
 
 class NuageSfc(NuageBaseTest):
@@ -732,7 +731,7 @@ class NuageSfc(NuageBaseTest):
         self.assertIsNotNone(rule_sfcvm1_dest)
 
     @testtools.skipUnless(
-        config.CONF.nuage_sut.image_is_advanced,
+        CONF.nuage_sut.image_is_advanced,
         "Advanced image is required to run this test.")
     def test_create_delete_port_chain_one_ppg(self):
         network = self.create_network()
@@ -1172,7 +1171,7 @@ class NuageSfc(NuageBaseTest):
                                       ppg_list_3, fc2, pc3, '14')
 
     @testtools.skipUnless(
-        config.CONF.nuage_sut.image_is_advanced,
+        CONF.nuage_sut.image_is_advanced,
         "Advanced image is required to run this test.")
     def test_vsd_managed_port_chain(self):
         vsd_l3domain_template = self.vsd.create_l3domain_template()

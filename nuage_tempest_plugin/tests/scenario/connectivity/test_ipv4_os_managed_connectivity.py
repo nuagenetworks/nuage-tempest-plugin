@@ -2,11 +2,13 @@
 # All Rights Reserved.
 
 from netaddr import IPNetwork
+
+from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import data_utils
 from tempest.lib import decorators
 
-from nuage_commons import data_utils
-
-from nuage_tempest_lib.tests.nuage_test import NuageBaseTest
+LOG = Topology.get_logger(__name__)
 
 
 class Ipv4OsManagedConnectivityTest(NuageBaseTest):

@@ -17,11 +17,11 @@ from netaddr import IPNetwork
 
 from tempest.lib.common.utils import data_utils
 
-from nuage_commons import constants
-
-from nuage_tempest_lib.tests.nuage_test import NuageBaseTest
-from nuage_tempest_lib.vsdclient import nuage_client
-from nuage_tempest_lib.vsdclient.nuage_network_client \
+from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import constants
+from nuage_tempest_plugin.services import nuage_client
+from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
 # default values for shared L2/L3 networks
@@ -30,6 +30,8 @@ VSD_L2_SHARED_MGD_GW = '20.20.20.1'
 
 VSD_L3_SHARED_MGD_CIDR = IPNetwork('30.30.30.0/24')
 VSD_L3_SHARED_MGD_GW = '30.30.30.1'
+
+LOG = Topology.get_logger(__name__)
 
 
 class BaseVSDManagedNetwork(NuageBaseTest):

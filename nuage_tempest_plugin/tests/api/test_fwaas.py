@@ -15,8 +15,6 @@
 import random
 from six import iteritems
 
-from tempest import config
-
 from tempest.api.network import base
 from tempest.common import utils
 from tempest.lib.common.utils import data_utils
@@ -24,15 +22,17 @@ from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions as lib_exc
 from tempest.test import decorators
 
-from nuage_tempest_lib.services.fwaas import fwaas_client_mixin
-from nuage_tempest_lib.vsdclient.nuage_network_client \
+from nuage_tempest_plugin.lib.test import vsd_helper
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.services.fwaas import fwaas_mixins
+from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
-from nuage_tempest_lib.vsdclient import vsd_helper
 
-CONF = config.CONF
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
-class BaseFWaaSTest(fwaas_client_mixin.FWaaSClientMixin, base.BaseNetworkTest):
+class BaseFWaaSTest(fwaas_mixins.FWaaSClientMixin, base.BaseNetworkTest):
 
     credentials = ['primary', 'admin']
 
@@ -42,6 +42,7 @@ class BaseFWaaSTest(fwaas_client_mixin.FWaaSClientMixin, base.BaseNetworkTest):
             cls.os_primary.auth_provider,
             **cls.os_primary.default_params)
         super(BaseFWaaSTest, cls).resource_setup()
+        cls.def_net_partition = Topology.def_netpartition
 
 
 class FWaaSExtensionTestJSON(BaseFWaaSTest):
@@ -167,8 +168,8 @@ class FWaaSExtensionTestJSON(BaseFWaaSTest):
 
             if acl.name == "DROP_ALL_ACL_{}".format(firewall['id']):
                 nr_drop_acls += 1
-                if (router and router_external_id in domain_external_ids and
-                        not should_have_router):
+                if (router and router_external_id in domain_external_ids
+                        and not should_have_router):
                     self.fail("DROP_ALL_ACL has router {}, while it "
                               "should not".format(router['id']))
             if router:

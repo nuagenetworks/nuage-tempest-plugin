@@ -12,16 +12,15 @@
 
 import uuid
 
-from oslo_log import log as logging
-
 from tempest.common import utils
 from tempest.lib.common.utils import data_utils
 
-from nuage_tempest_lib.vsdclient import nuage_client
+from . import nuage_base
 
-from nuage_tempest_plugin.tests.api.orchestration import nuage_base
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.services import nuage_client
 
-LOG = logging.getLogger(__name__)
+LOG = Topology.get_logger(__name__)
 
 
 class NeutronGatewayResourcesTest(nuage_base.NuageBaseOrchestrationTest):

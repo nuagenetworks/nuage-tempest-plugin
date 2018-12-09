@@ -13,25 +13,24 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from oslo_log import log as logging
 import random
 import uuid
 
+from tempest.api.network import base
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
-from nuage_commons import data_utils as nuage_data_utils
-
-from nuage_tempest_lib.tests.nuage_test import NuageBaseAdminNetworkTest
-from nuage_tempest_lib.vsdclient.nuage_client import NuageRestClient
-from nuage_tempest_lib.vsdclient.nuage_network_client \
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import data_utils as nuage_data_utils
+from nuage_tempest_plugin.services.nuage_client import NuageRestClient
+from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
-LOG = logging.getLogger(__name__)
+LOG = Topology.get_logger(__name__)
 
 
-class FloatingIPTestAdminNuage(NuageBaseAdminNetworkTest):
+class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
 
     @classmethod
     def setup_clients(cls):
@@ -220,11 +219,18 @@ class FloatingIPTestAdminNuage(NuageBaseAdminNetworkTest):
                   'ip_version': 4,
                   'cidr': '172.40.0.0/24',
                   'nuage_uplink': nuage_fipsubnet1[0]['parentID']}
-        self.assertRaisesRegex(
-            exceptions.BadRequest,
-            "Network 172.40.0.0/255.255.255.0 overlaps with "
-            "existing network ",
-            self.admin_subnets_client.create_subnet, **kwargs)
+        if Topology.from_openstack('Newton') and Topology.is_ml2:
+            self.assertRaisesRegex(
+                exceptions.BadRequest,
+                "Network 172.40.0.0/255.255.255.0 overlaps with "
+                "existing network ",
+                self.admin_subnets_client.create_subnet, **kwargs)
+        else:
+            self.assertRaisesRegex(
+                exceptions.ServerFault,
+                "Network 172.40.0.0/255.255.255.0 overlaps with "
+                "existing network ",
+                self.admin_subnets_client.create_subnet, **kwargs)
 
     def test_fipsub_with_nuage_uplink_and_uplinksub_no_parent_id(self):
         self.skipTest("TODO(KRIS) FIXME getting:Cannot find zone with ID None")

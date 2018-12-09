@@ -3,14 +3,17 @@
 
 from netaddr import IPNetwork
 
+from .base_nuage_networks_cli import BaseNuageNetworksCliTestCase
+from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
+from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.services.nuage_network_client \
+    import NuageNetworkClientJSON
+
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 
-from nuage_tempest_lib.vsdclient.nuage_network_client \
-    import NuageNetworkClientJSON
-
-from nuage_tempest_plugin.tests.api.cli.base_nuage_networks_cli \
-    import BaseNuageNetworksCliTestCase
+LOG = Topology.get_logger(__name__)
 
 VALID_MAC_ADDRESS = 'fa:fa:3e:e8:e8:01'
 VALID_MAC_ADDRESS_2A = 'fa:fa:3e:e8:e8:2a'
@@ -21,12 +24,20 @@ class OSManagedDualStackCliTest(
         BaseNuageNetworksCliTestCase):
 
     @classmethod
+    def skip_checks(cls):
+        super(OSManagedDualStackCliTest, cls).skip_checks()
+        if not NUAGE_FEATURES.os_managed_dualstack_subnets:
+            raise cls.skipException(
+                'OS Managed Dual Stack is not supported in this release')
+
+    @classmethod
     def setup_clients(cls):
         super(OSManagedDualStackCliTest, cls).setup_clients()
         cls.nuage_network_client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
             **cls.os_primary.default_params)
 
+    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_create_update_delete_dualstack(self):
         network_name = data_utils.rand_name('cli_network')
@@ -80,6 +91,7 @@ class OSManagedDualStackCliTest(
                                  self.show_network,
                                  network['id'])
 
+    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_delete_network_deletes_all_subnets(self):
         network_name = data_utils.rand_name('cli_network')
@@ -127,6 +139,7 @@ class OSManagedDualStackCliTest(
                                  self.show_subnet,
                                  subnet6['id'])
 
+    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_dualstack_with_reserved_ipv6_address_neg(self):
         network_name = data_utils.rand_name('cli_network')
@@ -157,6 +170,7 @@ class OSManagedDualStackCliTest(
                                  "--ip-version 6",
                                  "--disable-dhcp ")
 
+    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_dualstack_with_reserved_ipv6_address_and_ip4v_last_neg(self):
         network_name = data_utils.rand_name('cli_network')

@@ -5,7 +5,10 @@ from tempest.lib.common.utils import data_utils
 
 from tempest.test import decorators
 
-from nuage_tempest_lib.cli import client_testcase
+from nuage_tempest_plugin.lib.cli import client_testcase
+from nuage_tempest_plugin.lib.topology import Topology
+
+LOG = Topology.get_logger(__name__)
 
 
 class TestNuageL2BridgeCli(client_testcase.CLIClientTestCase):

@@ -15,7 +15,8 @@
 
 from oslo_config import cfg
 
-from nuage_commons import constants
+from nuage_tempest_plugin.lib.utils import constants
+
 
 nuage_vsd_group = cfg.OptGroup(name='nuage',
                                title='Nuage VSD config options')

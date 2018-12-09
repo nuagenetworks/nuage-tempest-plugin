@@ -1,15 +1,25 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
 
-from tempest.lib import decorators
-
-from nuage_tempest_lib.tests.nuage_test import NuageBaseTest
-
+from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
+from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.test import tags
 from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
     import ExternalId
 
+from tempest.lib import decorators
 
+
+@nuage_test.class_header(tags=[tags.ML2])
 class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
+
+    @classmethod
+    def skip_checks(cls):
+        super(OsManagedDualStackL3SubnetsTest, cls).skip_checks()
+        if not NUAGE_FEATURES.os_managed_dualstack_subnets:
+            raise cls.skipException(
+                'OS Managed Dual Stack is not supported in this release')
 
     def create_v6_subnet(self, network, cleanup=True):
         return self.create_subnet(network, ip_version=6, enable_dhcp=False,
@@ -32,6 +42,7 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
     # Typical
     ###########################################################################
     @decorators.attr(type='smoke')
+    @nuage_test.header()
     def test_os_managed_dual_stack_l3_subnet(self):
         # Provision OpenStack network
         network = self.create_network()
@@ -84,6 +95,7 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
 
     # eventually delete this - this is obviously elsewhere tested
     @decorators.attr(type='smoke')
+    @nuage_test.header()
     def test_pure_ipv4_attach_and_cleanup(self):
         network = self.create_network()
         router = self.create_router()
@@ -94,6 +106,7 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
 
     # eventually delete this - this is obviously elsewhere tested
     @decorators.attr(type='smoke')
+    @nuage_test.header()
     def test_dualstack_attach_ipv4_and_cleanup(self):
         network = self.create_network()
         router = self.create_router()
@@ -104,6 +117,7 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
         self.router_attach(router, ipv4_subnet)
 
     @decorators.attr(type='smoke')
+    @nuage_test.header()
     def test_dualstack_attach_ipv4_delete_ipv6_and_cleanup(self):
         network = self.create_network()
         router = self.create_router()
@@ -116,6 +130,7 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
         self.delete_subnet(ipv6_subnet)
 
     @decorators.attr(type='smoke')
+    @nuage_test.header()
     def test_dualstack_attach_ipv4_delete_ipv6_and_recreate(self):
         network = self.create_network()
         router = self.create_router()
@@ -136,6 +151,7 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
     # -------------------------------------------------------------------------
 
     @decorators.attr(type='smoke')
+    @nuage_test.header()
     def test_pure_ipv6_attach_and_cleanup(self):
         network = self.create_network()
         router = self.create_router()
@@ -145,6 +161,7 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
         self.router_attach(router, ipv6_subnet)
 
     @decorators.attr(type='smoke')
+    @nuage_test.header()
     def test_dualstack_attach_ipv6_and_cleanup(self):
         network = self.create_network()
         router = self.create_router()
@@ -155,6 +172,7 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
         self.router_attach(router, ipv6_subnet)
 
     @decorators.attr(type='smoke')
+    @nuage_test.header()
     def test_dualstack_attach_ipv6_delete_ipv4_and_cleanup(self):
         network = self.create_network()
         router = self.create_router()
@@ -167,6 +185,7 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
         self.delete_subnet(ipv4_subnet)
 
     @decorators.attr(type='smoke')
+    @nuage_test.header()
     # This is the scenario described in OPENSTACK-1990
     def test_dualstack_attach_ipv6_delete_ipv4_and_recreate(self):
         network = self.create_network()
@@ -188,6 +207,7 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
     # -------------------------------------------------------------------------
 
     @decorators.attr(type='smoke')
+    @nuage_test.header()
     def test_dualstack_attach_in_v4_then_v6_order_and_cleanup(self):
         network = self.create_network()
         router = self.create_router()
@@ -199,6 +219,7 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
         self.router_attach(router, ipv6_subnet)
 
     @decorators.attr(type='smoke')
+    @nuage_test.header()
     def test_dualstack_attach_in_v4_then_v6_order_and_cleanup_reversely(self):
         network = self.create_network()
         router = self.create_router()
@@ -212,6 +233,7 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
         self.router_detach(router, ipv4_subnet)
 
     @decorators.attr(type='smoke')
+    @nuage_test.header()
     def test_dualstack_attach_in_v6_then_v4_order_and_cleanup(self):
         network = self.create_network()
         router = self.create_router()
@@ -223,6 +245,7 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
         self.router_attach(router, ipv4_subnet)
 
     @decorators.attr(type='smoke')
+    @nuage_test.header()
     def test_dualstack_attach_in_v6_then_v4_order_and_cleanup_reversely(self):
         network = self.create_network()
         router = self.create_router()
@@ -240,6 +263,7 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
     # -------------------------------------------------------------------------
 
     @decorators.attr(type='smoke')
+    @nuage_test.header()
     def test_router_attach_ipv4_and_add_ipv6(self):
         network = self.create_network()
         router = self.create_router()
@@ -255,6 +279,7 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
         self.router_detach(router, ipv4_subnet)
 
     @decorators.attr(type='smoke')
+    @nuage_test.header()
     # This is the scenario described in OPENSTACK-2004
     def test_router_attach_ipv6_and_add_ipv4(self):
         network = self.create_network()

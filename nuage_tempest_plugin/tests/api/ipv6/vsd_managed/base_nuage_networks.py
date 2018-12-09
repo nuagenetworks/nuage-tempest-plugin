@@ -6,14 +6,21 @@ from netaddr import IPNetwork
 
 import random
 from six import iteritems
-from testtools.matchers._basic import _FlippedEquals
 
 from tempest.lib.common.utils import data_utils
 
-from nuage_tempest_lib.tests.nuage_test import NuageBaseTest
-from nuage_tempest_lib.vsdclient.nuage_client import NuageRestClient
-from nuage_tempest_lib.vsdclient.nuage_network_client \
+from testtools.matchers._basic import _FlippedEquals
+
+from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.services.nuage_client import NuageRestClient
+from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
+
+# TODO(TEAM) Make inherit from NuageBaseTest
+
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 class BaseNuageNetworksIpv6TestCase(NuageBaseTest):
@@ -116,15 +123,17 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
     @classmethod
     def resource_setup(cls):
         super(BaseVSDManagedNetworksIPv6Test, cls).resource_setup()
-        # create default net_partition if it is not there
-        def_netpartition = cls.nuage_client.def_netpartition
-        cls.net_partition = cls.nuage_client.get_net_partition(
-            def_netpartition)
-        if not cls.net_partition:
-            cls.net_partition = cls.nuage_client.create_net_partition(
-                def_netpartition,
-                fip_quota=100,
-                extra_params=None)
+
+        if Topology.is_ml2:
+            # create default net_partition if it is not there
+            net_partition_name = cls.nuage_client.def_netpart_name
+            cls.net_partition = cls.nuage_client.get_net_partition(
+                net_partition_name)
+            if not cls.net_partition:
+                cls.net_partition = cls.nuage_client.create_net_partition(
+                    net_partition_name,
+                    fip_quota=100,
+                    extra_params=None)
 
     @classmethod
     def resource_cleanup(cls):

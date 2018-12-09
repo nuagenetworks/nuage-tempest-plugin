@@ -4,7 +4,7 @@
 from tempest.lib import decorators
 from tempest.lib import exceptions as tempest_exceptions
 
-from nuage_tempest_lib.tests.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 
 
 class RouterAttachmentTest(NuageBaseTest):

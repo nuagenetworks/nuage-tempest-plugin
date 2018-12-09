@@ -16,10 +16,9 @@
 import tempest.test
 import testtools
 
-from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
-    import ExternalId
+from .external_id import ExternalId
 
-from nuage_tempest_lib.release import Release
+from nuage_tempest_plugin.lib.release import Release
 
 
 class ExternalIdTest(tempest.test.BaseTestCase):

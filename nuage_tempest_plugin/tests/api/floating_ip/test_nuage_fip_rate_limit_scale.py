@@ -3,8 +3,12 @@
 
 from tempest.test import decorators
 
-from nuage_tempest_plugin.tests.api.floating_ip \
-    import base_nuage_fip_rate_limit
+from . import base_nuage_fip_rate_limit
+
+from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
+
+LOG = Topology.get_logger(__name__)
 
 
 class TestNuageFipRateLimitBaseScale(
@@ -21,6 +25,7 @@ class TestNuageFipRateLimitBaseScale(
     def resource_setup(cls):
         super(TestNuageFipRateLimitBaseScale, cls).resource_setup()
 
+    @nuage_test.header()
     @decorators.attr(type='slow')
     # TODO(team) test for 100 or more FIP's.
     def test_floatingip_scale(self):

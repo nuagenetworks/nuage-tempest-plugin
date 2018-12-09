@@ -16,11 +16,14 @@
 from netaddr import IPAddress
 from netaddr import IPNetwork
 
-from tempest import config
 from tempest.lib.common.utils import data_utils
 
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_port_attributes
+
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 class BaseVSDManagedSRIOV(
@@ -68,7 +71,7 @@ class BaseVSDManagedSRIOV(
             'network': network,
             'cidr': cidr,
             'mask_bits': cidr.prefixlen,
-            'net_partition': self.def_netpartition,
+            'net_partition': Topology.def_netpartition,
             'nuagenet': vsd_subnet[0]['ID']
             # 'tenant_id': None
         }
@@ -194,7 +197,7 @@ class BaseVSDManagedSRIOV(
             network_34, vsd_l3_subnet_34
 
     def _create_server_sriov_port(self, port, name="vm1", flavor="2",
-                                  image=config.CONF.compute.image_ref,
+                                  image=CONF.compute.image_ref,
                                   config_drive="true"):
         kwargs = {'networks': [{'port': port['id']}],
                   'config_drive': config_drive}

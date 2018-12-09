@@ -12,18 +12,21 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-
 from netaddr import IPNetwork
 
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
+from nuage_tempest_plugin.lib.topology import Topology
+
 from nuage_tempest_plugin.tests.api.l2bridge.base_nuage_l2bridge \
     import BaseNuageL2Bridge
 
 from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_networks as base_vsd_managed
+
+CONF = Topology.get_conf()
 
 
 class TestNuageL2Bridge(BaseNuageL2Bridge,
@@ -423,7 +426,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             bridge = self.get_l2bridge(bridge['id'])
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            expected_ext_id = bridge['id'] + '@' + self.cms_id
+            expected_ext_id = bridge['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(bridge, expected_ext_id, l2domain)
             self.assertEqual(s1['nuage_l2bridge'], bridge['id'])
 
@@ -494,7 +497,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             self.assertEqual(s2['nuage_l2bridge'], bridge['id'])
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            expected_ext_id = bridge['id'] + '@' + self.cms_id
+            expected_ext_id = bridge['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(bridge, expected_ext_id, l2domain)
 
             kwargs = {
@@ -653,7 +656,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             bridge = self.get_l2bridge(bridge['id'])
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            expected_ext_id = bridge['id'] + '@' + self.cms_id
+            expected_ext_id = bridge['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(bridge, expected_ext_id, l2domain)
             self.assertEqual(s1['nuage_l2bridge'], bridge['id'])
             self.assertEqual(s2['nuage_l2bridge'], bridge['id'])
@@ -791,7 +794,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             bridge = self.get_l2bridge(bridge['id'])
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            expected_ext_id = bridge['id'] + '@' + self.cms_id
+            expected_ext_id = bridge['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(bridge, expected_ext_id, l2domain)
             self.assertEqual(s16['nuage_l2bridge'], bridge['id'])
             self.assertEqual(s26['nuage_l2bridge'], bridge['id'])
@@ -905,7 +908,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             bridge = self.get_l2bridge(bridge['id'])
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            expected_ext_id = bridge['id'] + '@' + self.cms_id
+            expected_ext_id = bridge['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(bridge, expected_ext_id, l2domain)
 
             kwargs = {
@@ -1147,7 +1150,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             bridge = self.get_l2bridge(bridge['id'])
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            expected_ext_id = bridge['id'] + '@' + self.cms_id
+            expected_ext_id = bridge['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(bridge, expected_ext_id, l2domain)
 
             kwargs = {
@@ -1236,7 +1239,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
             self.assertEqual('cafe::/64', l2domain.ipv6_address)
-            expected_ext_id = bridge['id'] + '@' + self.cms_id
+            expected_ext_id = bridge['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(bridge, expected_ext_id, l2domain)
             # Delete + validate
             self.delete_subnet(subnet2_ipv6, client=self.admin_manager)
@@ -1315,7 +1318,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
             self.assertEqual('cafe::/64', l2domain.ipv6_address)
-            expected_ext_id = bridge['id'] + '@' + self.cms_id
+            expected_ext_id = bridge['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(bridge, expected_ext_id, l2domain)
             # Validate subnet mapping of second ipv6?
 
@@ -1410,12 +1413,12 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
 
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            expected_ext_id = bridge['id'] + '@' + self.cms_id
+            expected_ext_id = bridge['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(bridge, expected_ext_id, l2domain)
 
             l2domain2 = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge2['nuage_subnet_id']))
-            expected_ext_id = bridge2['id'] + '@' + self.cms_id
+            expected_ext_id = bridge2['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(bridge2, expected_ext_id, l2domain2)
 
             p1 = self.create_port(n1, self.admin_manager)
@@ -1441,12 +1444,12 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
 
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            expected_ext_id = bridge['id'] + '@' + self.cms_id
+            expected_ext_id = bridge['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(bridge, expected_ext_id, l2domain)
 
             l2domain2 = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge2['nuage_subnet_id']))
-            expected_ext_id = bridge2['id'] + '@' + self.cms_id
+            expected_ext_id = bridge2['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(bridge2, expected_ext_id, l2domain2)
 
             # update bridge name and validate l2-domain.
@@ -1456,7 +1459,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             bridge = self.get_l2bridge(bridge['id'])
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            expected_ext_id = bridge['id'] + '@' + self.cms_id
+            expected_ext_id = bridge['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(bridge, expected_ext_id, l2domain)
 
     @decorators.attr(type='smoke')
@@ -1537,12 +1540,12 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                 bridge2['nuage_subnet_id'])
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            expected_ext_id = bridge['id'] + '@' + self.cms_id
+            expected_ext_id = bridge['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(bridge, expected_ext_id, l2domain)
 
             l2domain2 = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge2['nuage_subnet_id']))
-            expected_ext_id = bridge2['id'] + '@' + self.cms_id
+            expected_ext_id = bridge2['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(bridge2, expected_ext_id, l2domain2)
             kwargs = {
                 'fixed_ips': [{
@@ -1580,12 +1583,12 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
 
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            expected_ext_id = bridge['id'] + '@' + self.cms_id
+            expected_ext_id = bridge['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(bridge, expected_ext_id, l2domain)
 
             l2domain2 = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge2['nuage_subnet_id']))
-            expected_ext_id = bridge2['id'] + '@' + self.cms_id
+            expected_ext_id = bridge2['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(bridge2, expected_ext_id, l2domain2)
 
             # update bridge name and validate l2-domain.
@@ -1595,7 +1598,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             bridge = self.get_l2bridge(bridge['id'])
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            expected_ext_id = bridge['id'] + '@' + self.cms_id
+            expected_ext_id = bridge['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(bridge, expected_ext_id, l2domain)
 
     @decorators.attr(type='smoke')
@@ -1652,12 +1655,12 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
 
             self.assertNotEqual(bridge['nuage_subnet_id'],
                                 l2domain2.id)
-            expected_ext_id = s2['id'] + '@' + self.cms_id
+            expected_ext_id = s2['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(s2, expected_ext_id, l2domain2)
 
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            expected_ext_id = bridge['id'] + '@' + self.cms_id
+            expected_ext_id = bridge['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(bridge, expected_ext_id, l2domain)
 
             kwargs = {
@@ -1694,12 +1697,12 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                host_routes=host_routes,
                                dns_nameservers=['7.8.8.8', '7.8.4.4'])
 
-            expected_ext_id = s2['id'] + '@' + self.cms_id
+            expected_ext_id = s2['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(s2, expected_ext_id, l2domain2)
 
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            expected_ext_id = bridge['id'] + '@' + self.cms_id
+            expected_ext_id = bridge['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(bridge, expected_ext_id, l2domain)
 
     @decorators.attr(type='smoke')
@@ -1890,7 +1893,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
 
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            expected_ext_id = bridge['id'] + '@' + self.cms_id
+            expected_ext_id = bridge['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(bridge, expected_ext_id, l2domain)
 
             kwargs = {
@@ -2010,7 +2013,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
 
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            expected_ext_id = bridge['id'] + '@' + self.cms_id
+            expected_ext_id = bridge['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(bridge, expected_ext_id, l2domain)
 
             host_routes = [{'destination': '10.20.0.0/32',
@@ -2026,7 +2029,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
 
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            expected_ext_id = bridge['id'] + '@' + self.cms_id
+            expected_ext_id = bridge['id'] + '@' + CONF.nuage.nuage_cms_id
             self._validate_l2domain_on_vsd(bridge, expected_ext_id, l2domain)
 
     @decorators.attr(type='smoke')
@@ -2073,7 +2076,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                client=self.admin_manager,
                                gateway=None, cidr=cidr,
                                mask_bits=24, nuagenet=vsd_l2dom['ID'],
-                               net_partition=self.def_netpartition,
+                               net_partition=Topology.def_netpartition,
                                enable_dhcp=True)
 
     @decorators.attr(type='smoke')

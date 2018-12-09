@@ -13,19 +13,22 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from tempest.api.network import base
 from tempest.lib.common.utils import data_utils
 
-from nuage_commons import constants as n_constants
+from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import constants as n_constants
+from nuage_tempest_plugin.lib.utils import exceptions as n_exceptions
+from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
-from nuage_tempest_lib.common import exceptions as n_exceptions
-from nuage_tempest_lib.tests.nuage_test import NuageBaseAdminNetworkTest
-from nuage_tempest_lib.vsdclient.nuage_client import NuageRestClient
+from .external_id import ExternalId
 
-from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
-    import ExternalId
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
-class ExternalIdForL3domainTest(NuageBaseAdminNetworkTest):
+class ExternalIdForL3domainTest(base.BaseAdminNetworkTest):
 
     def _remove_router_interface_with_subnet_id(self, router_id, subnet_id):
         body = self.routers_client.remove_router_interface(router_id,
@@ -304,16 +307,22 @@ class ExternalIdForL3domainTest(NuageBaseAdminNetworkTest):
                     subnet['ID'])
 
     @classmethod
+    def skip_checks(cls):
+        super(ExternalIdForL3domainTest, cls).skip_checks()
+        cls.test_upgrade = not Topology.within_ext_id_release()
+
+    @classmethod
     def setup_clients(cls):
         super(ExternalIdForL3domainTest, cls).setup_clients()
         cls.nuage_client = NuageRestClient()
 
+    @nuage_test.header()
     def test_router_matches_to_l3domain(self):
         # Create a router
         name = data_utils.rand_name('router-')
         create_body = self.routers_client.create_router(
             name=name, external_gateway_info={
-                "network_id": self.public_network_id},
+                "network_id": CONF.network.public_network_id},
             admin_state_up=False)
         router = create_body['router']
 
@@ -336,6 +345,7 @@ class ExternalIdForL3domainTest(NuageBaseAdminNetworkTest):
         # Delete
         vsd_l3domain.verify_cannot_delete()
 
+    @nuage_test.header()
     def test_subnet_attached_to_router_matches_to_l3domain(self):
         # Create a network
         name = data_utils.rand_name('network-')
@@ -348,7 +358,7 @@ class ExternalIdForL3domainTest(NuageBaseAdminNetworkTest):
         name = data_utils.rand_name('router-')
         create_body = self.routers_client.create_router(
             name=name, external_gateway_info={
-                "network_id": self.public_network_id},
+                "network_id": CONF.network.public_network_id},
             admin_state_up=False)
         router = create_body['router']
         self.addCleanup(self.routers_client.delete_router, router['id'])

@@ -11,14 +11,16 @@
 #    under the License.
 
 from tempest.common import utils
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions as lib_exc
 from tempest.services import orchestration
 
-from nuage_tempest_plugin.tests.api.orchestration import nuage_base
+from nuage_tempest_plugin.lib.topology import Topology
 
-CONF = config.CONF
+from . import nuage_base
+
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 class NeutronRedirectionTargetsTest(nuage_base.NuageBaseOrchestrationTest):

@@ -3,19 +3,17 @@
 
 import testtools
 
-from oslo_log import log as logging
-
 from tempest.lib import decorators
 from tempest.lib import exceptions
 
-from nuage_tempest_lib import features
-from nuage_tempest_lib.tests.nuage_test import NuageBaseTest
-from nuage_tempest_lib.topology import Topology
-
+from nuage_tempest_plugin.lib import features
+from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
     import ExternalId
 
-LOG = logging.getLogger(__name__)
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
@@ -29,8 +27,7 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
 
     @decorators.attr(type='smoke')
     @testtools.skipIf(Topology.new_route_to_underlay_model_enabled(),
-                      'Skipping test as legacy nuage_pat model is '
-                      'not enabled')
+                      'Skipping test as legacy nuage_pat model is not enabled')
     def test_nuage_pat_and_route_to_underlay_legacy(self):
         # this test assumes nuage_pat is not None/legacy_disabled
         # Base resources
@@ -38,7 +35,7 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
         self.assertIsNotNone(network, "Unable to create network")
         router = self.create_router(
             admin_state_up=True,
-            external_network_id=self.public_network_id)
+            external_network_id=CONF.network.public_network_id)
         self.assertIsNotNone(router, "Unable to create router")
         # Possible invalid configurations for l3 subnet
         configs = ['snat', 'route', 'off', 'inherited', ]
@@ -67,7 +64,7 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
         self.assertIsNotNone(network, "Unable to create network")
         router = self.create_router(
             admin_state_up=True,
-            external_network_id=self.public_network_id)
+            external_network_id=CONF.network.public_network_id)
         self.assertIsNotNone(router, "Unable to create router")
 
         # Possible configurations
@@ -103,7 +100,7 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
         self.assertIsNotNone(network, "Unable to create network")
         router = self.create_router(
             admin_state_up=True,
-            external_network_id=self.public_network_id)
+            external_network_id=CONF.network.public_network_id)
         self.assertIsNotNone(router, "Unable to create router")
 
         configs = [('snat', 'ENABLED', 'ENABLED'),
@@ -129,7 +126,7 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
         self.assertIsNotNone(network, "Unable to create network")
         router = self.create_router(
             admin_state_up=True,
-            external_network_id=self.public_network_id)
+            external_network_id=CONF.network.public_network_id)
         self.assertIsNotNone(router, "Unable to create router")
         # (nuage_underlay, PATEnabled, UnderlayEnabled,
         #  no_op_nuage_underlay)

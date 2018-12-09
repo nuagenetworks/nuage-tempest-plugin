@@ -1,16 +1,19 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
 
+from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.test.nuage_test import skip_because
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.services.nuage_client import NuageRestClient
+from nuage_tempest_plugin.services.nuage_network_client \
+    import NuageNetworkClientJSON
+
 from netaddr import IPNetwork
-from tempest import config
 from tempest.test import decorators
 import testtools
 
-from nuage_tempest_lib.decorators import skip_because
-from nuage_tempest_lib.tests.nuage_test import NuageBaseTest
-from nuage_tempest_lib.vsdclient.nuage_client import NuageRestClient
-from nuage_tempest_lib.vsdclient.nuage_network_client \
-    import NuageNetworkClientJSON
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 class VlanTransparentConnectivityTest(NuageBaseTest):
@@ -33,7 +36,7 @@ class VlanTransparentConnectivityTest(NuageBaseTest):
         super(VlanTransparentConnectivityTest, cls).resource_setup()
 
     @testtools.skipUnless(
-        config.CONF.nuage_sut.image_is_advanced,
+        CONF.nuage_sut.image_is_advanced,
         "Advanced image is required to run this test.")
     @decorators.attr(type='smoke')
     def test_l2_transparent_network(self):
@@ -67,7 +70,7 @@ class VlanTransparentConnectivityTest(NuageBaseTest):
                          address=str(ping_tgt.ip), interface='eth1.10')
 
     @testtools.skipUnless(
-        config.CONF.nuage_sut.image_is_advanced,
+        CONF.nuage_sut.image_is_advanced,
         "Advanced image is required to run this test.")
     @skip_because(bug='OPENSTACK-2325')
     def test_l3_transparent_network(self):

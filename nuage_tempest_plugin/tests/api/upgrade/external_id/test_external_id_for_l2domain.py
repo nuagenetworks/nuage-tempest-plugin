@@ -13,22 +13,25 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from tempest.api.network import base
 from tempest.lib.common.utils import data_utils
 from tempest.lib.common.utils import test_utils
 
-from nuage_commons import constants as n_constants
-
-from nuage_tempest_lib.common import exceptions as n_exceptions
-from nuage_tempest_lib.tests.nuage_test import NuageBaseAdminNetworkTest
-from nuage_tempest_lib.vsdclient.nuage_client import NuageRestClient
-from nuage_tempest_lib.vsdclient.nuage_network_client \
+from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import constants as n_constants
+from nuage_tempest_plugin.lib.utils import exceptions as n_exceptions
+from nuage_tempest_plugin.services.nuage_client import NuageRestClient
+from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
-from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
-    import ExternalId
+from .external_id import ExternalId
+
+LOG = Topology.get_logger(__name__)
 
 
-class ExternalIdForL2domainTest(NuageBaseAdminNetworkTest):
+class ExternalIdForL2domainTest(base.BaseNetworkTest):
+    net_partition_name = Topology.def_netpartition
 
     class MatchingVsdL2domain(object):
         def __init__(self, outer, subnet):
@@ -306,6 +309,7 @@ class ExternalIdForL2domainTest(NuageBaseAdminNetworkTest):
             cls.os_primary.auth_provider,
             **cls.os_primary.default_params)
 
+    @nuage_test.header()
     def test_neutron_isolated_subnet_matches_to_l2domain(self):
         # Create a network
         name = data_utils.rand_name('network-')
@@ -356,6 +360,7 @@ class ExternalIdForL2domainTest(NuageBaseAdminNetworkTest):
             netpartition['id'])
         return netpartition
 
+    @nuage_test.header()
     def test_neutron_isolated_subnet_in_netpartition(self):
         # Create a dedicated netpartition
         netpartition_a = self._create_netpartition()

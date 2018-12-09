@@ -13,17 +13,20 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import testtools
+
 from tempest.lib.common.utils import data_utils
 
-from nuage_commons import constants as n_constants
+from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
+from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import constants as n_constants
+from nuage_tempest_plugin.lib.utils import exceptions as n_exceptions
+from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
-from nuage_tempest_lib.common import exceptions as n_exceptions
-from nuage_tempest_lib.tests.nuage_test import NuageBaseAdminNetworkTest
-from nuage_tempest_lib.vsdclient.nuage_client import NuageRestClient
+from .external_id import ExternalId
 
-from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
-    import ExternalId
-
+LOG = Topology.get_logger(__name__)
 
 extra_dhcp_opts = [
     {'opt_value': '255.255.255.0', 'opt_name': 'netmask'},
@@ -35,7 +38,7 @@ extra_dhcp_opts = [
 ]
 
 
-class ExternalIdForVPortTest(NuageBaseAdminNetworkTest):
+class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
     class MatchingVsdVPort(object):
         def __init__(self, outer, port, subnet):
             """Construct a Vsd_port. """
@@ -153,9 +156,14 @@ class ExternalIdForVPortTest(NuageBaseAdminNetworkTest):
                     filters='locationID',
                     filter_value=self.vsd_security_policy_group['ID'])
 
-            self.test.assertEqual(
-                2, len(vsd_ingress_security_policy_entries),
-                "Should find exact 2 matches for ingress policy entries")
+            if NUAGE_FEATURES.os_managed_dualstack_subnets:
+                self.test.assertEqual(
+                    2, len(vsd_ingress_security_policy_entries),
+                    "Should find exact 2 matches for ingress policy entries")
+            else:
+                self.test.assertEqual(
+                    1, len(vsd_ingress_security_policy_entries),
+                    "Should find exact 1 match for ingress policy entries")
 
             if with_external_id is None:
                 self.test.assertIsNone(
@@ -169,9 +177,15 @@ class ExternalIdForVPortTest(NuageBaseAdminNetworkTest):
                         filters='externalID',
                         filter_value=with_external_id)
 
-                self.test.assertEqual(
-                    2, len(vsd_ingress_security_policy_entries),
-                    "Policy groups not found by external id")
+                if NUAGE_FEATURES.os_managed_dualstack_subnets:
+                    self.test.assertEqual(
+                        2, len(vsd_ingress_security_policy_entries),
+                        "Policy groups not found by external id")
+                else:
+                    self.test.assertEqual(
+                        1, len(vsd_ingress_security_policy_entries),
+                        "Policy group not found by external id")
+
                 self.test.assertEqual(
                     with_external_id,
                     ExternalId(
@@ -196,9 +210,14 @@ class ExternalIdForVPortTest(NuageBaseAdminNetworkTest):
                     child_resource=n_constants.EGRESS_ACL_ENTRY_TEMPLATE,
                     filters='locationID',
                     filter_value=self.vsd_security_policy_group['ID'])
-            self.test.assertEqual(
-                2, len(vsd_egress_security_policy_entries),
-                "Should find exact 2 matches for egress policy entries")
+            if NUAGE_FEATURES.os_managed_dualstack_subnets:
+                self.test.assertEqual(
+                    2, len(vsd_egress_security_policy_entries),
+                    "Should find exact 2 matches for egress policy entries")
+            else:
+                self.test.assertEqual(
+                    1, len(vsd_egress_security_policy_entries),
+                    "Should find exact 1 match for egress policy entries")
 
             if with_external_id is None:
                 self.test.assertIsNone(
@@ -212,9 +231,15 @@ class ExternalIdForVPortTest(NuageBaseAdminNetworkTest):
                         filters='externalID',
                         filter_value=with_external_id)
 
-                self.test.assertEqual(
-                    2, len(vsd_egress_security_policy_entries),
-                    "Policy groups not found by external id")
+                if NUAGE_FEATURES.os_managed_dualstack_subnets:
+                    self.test.assertEqual(
+                        2, len(vsd_egress_security_policy_entries),
+                        "Policy groups not found by external id")
+                else:
+                    self.test.assertEqual(
+                        1, len(vsd_egress_security_policy_entries),
+                        "Policy group not found by external id")
+
                 self.test.assertEqual(
                     with_external_id,
                     ExternalId(
@@ -231,10 +256,18 @@ class ExternalIdForVPortTest(NuageBaseAdminNetworkTest):
                 self.vsd_vport['ID'])
 
     @classmethod
+    def setUpClass(cls):
+        super(ExternalIdForVPortTest, cls).setUpClass()
+        cls.test_upgrade = not Topology.within_ext_id_release()
+
+    @classmethod
     def setup_clients(cls):
         super(ExternalIdForVPortTest, cls).setup_clients()
         cls.nuage_client = NuageRestClient()
 
+    @testtools.skipUnless(Topology.within_ext_id_release(),
+                          'No upgrade testing on vport')
+    @nuage_test.header()
     def test_port_dhcp_options_matches_to_port(self):
         # Create a network
         name = data_utils.rand_name('network-')
@@ -258,8 +291,7 @@ class ExternalIdForVPortTest(NuageBaseAdminNetworkTest):
         # Delete
         vsd_vport.verify_cannot_delete()
 
-    @staticmethod
-    def _build_default_security_policy_group_id(l2domain_id):
+    def _build_default_security_policy_group_id(self, l2domain_id):
         return "PG_FOR_LESS_SECURITY_%s_VM" % l2domain_id
 
     def test_port_without_port_security_matches_to_port(self):
@@ -293,7 +325,8 @@ class ExternalIdForVPortTest(NuageBaseAdminNetworkTest):
 
     # see OPENSTACK-1451
     # after updating the port security enabled,
-    # multiple default rules are created
+    # ultiple default rules are created
+    @nuage_test.header()
     def test_port_security_fix_openstack_1451_false(self):
         # Create a network
         name = data_utils.rand_name('network-')
@@ -330,6 +363,7 @@ class ExternalIdForVPortTest(NuageBaseAdminNetworkTest):
     # see OPENSTACK-1451
     # after updating the port security enabled, multiple default rules are
     # created
+    @nuage_test.header()
     def test_port_security_fix_openstack_1451_true(self):
         # Create a network
         name = data_utils.rand_name('network-')

@@ -1,7 +1,12 @@
 # Copyright 2015 Alcatel-Lucent
 # All Rights Reserved.
 
-from nuage_tempest_plugin.tests.api.orchestration import nuage_base
+from . import nuage_base
+
+from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
+
+LOG = Topology.get_logger(__name__)
 
 
 class OrchestrationSecurityGroupTest(nuage_base.NuageBaseOrchestrationTest):
@@ -10,6 +15,7 @@ class OrchestrationSecurityGroupTest(nuage_base.NuageBaseOrchestrationTest):
     def resource_setup(cls):
         super(OrchestrationSecurityGroupTest, cls).resource_setup()
 
+    @nuage_test.header()
     def test_security_groups(self):
         # launch a heat stack
         stack_file_name = 'security_groups'

@@ -17,10 +17,13 @@ from netaddr import IPNetwork
 from tempest.lib import exceptions
 from tempest.test import decorators
 
-from nuage_tempest_lib.tests.nuage_test import NuageAdminNetworkTest
+from nuage_tempest_plugin.lib.test.nuage_test import NuageAdminNetworksTest
+from nuage_tempest_plugin.lib.topology import Topology
+
+LOG = Topology.get_logger(__name__)
 
 
-class SubnetsTest(NuageAdminNetworkTest):
+class SubnetsTest(NuageAdminNetworksTest):
 
     @decorators.attr(type='smoke')
     def test_create_2nd_v4_subnet_in_network(self):

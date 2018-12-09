@@ -14,14 +14,16 @@
 #    under the License.
 
 from netaddr import IPAddress
-from oslo_log import log as logging
 
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
-from nuage_commons import constants
-from nuage_tempest_lib.topology import Topology
+from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
+from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.test import tags
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import constants
 
 from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
     import ExternalId
@@ -29,6 +31,8 @@ from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_networks
 from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_port_attributes
+
+LOG = Topology.get_logger(__name__)
 
 # # Stuff for the inter-connectivity VM
 # OS_CONNECTING_NW_CIDR = IPNetwork('33.33.33.0/24')
@@ -45,9 +49,8 @@ SEVERAL_VSD_CLAIMED_FIPS = 3
 
 VALID_MAC_ADDRESS = 'fa:fa:3e:e8:e8:c0'
 
-LOG = logging.getLogger(__name__)
 
-
+@nuage_test.class_header(tags=tags.VSD_MANAGED)
 class VSDManagedRedirectTargetTest(
         base_vsd_managed_port_attributes.BaseVSDManagedPortAttributes):
 
@@ -63,6 +66,7 @@ class VSDManagedRedirectTargetTest(
     ###########################################################################
     ###########################################################################
 
+    @nuage_test.header()
     def test_create_delete_os_redirection_target_l2_mgd_subnet(self):
         # Given I have a VSD-L2-Managed-Subnet in openstack
         vsd_l2_subnet, l2dom_template = self._create_vsd_l2_managed_subnet()
@@ -82,9 +86,11 @@ class VSDManagedRedirectTargetTest(
             filter_value=os_redirect_target['nuage_redirect_target']['id'])
         self.assertNotEmpty(vsd_redirect_target,
                             "Redirect target not found on VSD")
+
         # with externalID
-        self.assertEqual(vsd_redirect_target[0]['externalID'],
-                         ExternalId(subnet['id']).at_cms_id())
+        if Topology.within_ext_id_release():
+            self.assertEqual(vsd_redirect_target[0]['externalID'],
+                             ExternalId(subnet['id']).at_cms_id())
 
         # When I associate a port to the redirect-target
         rtport = self.create_port(network)
@@ -118,6 +124,7 @@ class VSDManagedRedirectTargetTest(
             filter_value=os_redirect_target['nuage_redirect_target']['id'])
         self.assertEqual(vsd_redirect_target, '')
 
+    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_create_delete_vsd_redirection_target_l2_mgd_subnet(self):
         # Given I have a VSD-L2-Managed-Subnet in openstack
@@ -172,6 +179,7 @@ class VSDManagedRedirectTargetTest(
             filter_value=vsd_redirect_target[0]['ID'])
         self.assertEqual(vsd_redirect_target, '')
 
+    @nuage_test.header()
     def test_create_delete_several_redirection_targets_l2_mgd_subnet(self):
         os_redirect_targets = []
         vsd_redirect_targets = []
@@ -252,6 +260,7 @@ class VSDManagedRedirectTargetTest(
                     'nuage_redirect_target']['id'])
             self.assertEqual(vsd_redirect_target, '')
 
+    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_create_delete_os_redirection_target_l3_mgd_subnet(self):
         # Given I have a VSD-L3-Managed-Subnet in openstack        #
@@ -304,6 +313,7 @@ class VSDManagedRedirectTargetTest(
             filter_value=os_redirect_target['nuage_redirect_target']['id'])
         self.assertEqual(vsd_redirect_target, '')
 
+    @nuage_test.header()
     def test_create_delete_vsd_redirection_target_l3_mgd_subnet(self):
         # Given I have a VSD-L2-Managed-Subnet in openstack
         vsd_l3_subnet, vsd_l3_domain = self._create_vsd_l3_managed_subnet()
@@ -354,6 +364,7 @@ class VSDManagedRedirectTargetTest(
             filter_value=vsd_redirect_target[0]['ID'])
         self.assertEqual(vsd_redirect_target, '')
 
+    @nuage_test.header()
     def test_create_delete_several_redirection_targets_l3_mgd_subnet(self):
         os_redirect_targets = []
         vsd_redirect_targets = []
@@ -435,6 +446,7 @@ class VSDManagedRedirectTargetTest(
                     'nuage_redirect_target']['id'])
             self.assertEqual(vsd_redirect_target, '')
 
+    @nuage_test.header()
     def test_create_os_redirection_target_same_name_diff_l2_mgd_subnet(self):
         # Given I have a VSD-L2-Managed-Subnet-x in openstack
         vsd_l2_subnet_x, l2dom_template_x = \
@@ -474,6 +486,7 @@ class VSDManagedRedirectTargetTest(
         pass
 
     @decorators.attr(type=['negative'])
+    @nuage_test.header()
     def test_create_os_redirection_target_same_name_same_l2_mgd_subnet_neg(
             self):
         # Given I have a VSD-L2-Managed-Subnet in openstack
@@ -498,6 +511,7 @@ class VSDManagedRedirectTargetTest(
             name)
 
     @decorators.attr(type=['negative'])
+    @nuage_test.header()
     def test_associate_two_port_same_l2_os_redirection_target_neg(self):
         # Given I have a VSD-L2-Managed-Subnet in openstack
         vsd_l2_subnet, l2dom_template = self._create_vsd_l2_managed_subnet()
@@ -523,11 +537,20 @@ class VSDManagedRedirectTargetTest(
 
         msg = "Cannot have more than 1 vPort under a redirectiontarget with " \
               "redundancy disabled"
-        # expected_exception = exceptions.BadRequest
-        # VSD-14419 - VSD throws wrong error
-        expected_exception = exceptions.ServerFault
-        LOG.warn("VSD-14419: throws wrong http error code: "
-                 "ServerFault iso BadRequest")
+        expected_exception = exceptions.BadRequest
+
+        if NUAGE_FEATURES.ml2_limited_exceptions:
+            expected_exception = exceptions.ServerFault
+            if Topology.at_openstack('kilo') and Topology.is_ml2:
+                msg = "update_port_postcommit failed"
+            elif Topology.is_ml2:
+                msg = "update_port_precommit failed"
+        else:
+            # VSD-14419 - VSD throws wrong error
+            if not Topology.within_ext_id_release():
+                expected_exception = exceptions.ServerFault
+                LOG.warning("VSD-14419: throws wrong http error code: "
+                            "ServerFault iso BadRequest")
 
         self.assertRaisesRegex(
             expected_exception,
@@ -552,8 +575,8 @@ class VSDManagedRedirectTargetTest(
               "redundancy disabled"
         expected_exception = exceptions.BadRequest
         # TODO(team) VSD-14420 adapt expected return code into badrequest
-        LOG.warn("VSD-14420: throws wrong http error code: "
-                 "ServerFault iso BadRequest")
+        LOG.warning("VSD-14420: throws wrong http error code: "
+                    "ServerFault iso BadRequest")
         msg = "Nuage API: vPort Tag with endpoint type as NONE/VIRTUAL_WIRE " \
               "cannot have redundancy enabled and trigger type as GARP"
         expected_exception = exceptions.ServerFault
@@ -566,6 +589,7 @@ class VSDManagedRedirectTargetTest(
         )
 
     @decorators.attr(type=['negative'])
+    @nuage_test.header()
     def test_create_os_l2_redirection_target_insertion_mode_l3_neg(self):
         # Given I have a VSD-L2-Managed-Subnet in openstack
         vsd_l2_subnet, l2dom_template = self._create_vsd_l2_managed_subnet()
@@ -576,14 +600,19 @@ class VSDManagedRedirectTargetTest(
                      'subnet_id': subnet['id'],
                      'name': "rt-l2-insertion-mode-l3-fail"}
 
-        # expected_exception = exceptions.BadRequest
-        # TODO(team) Need a valid error message, this message should fail !
-        # See VSD-14421
-        LOG.warn("VSD-14421: throws wrong http error code: "
-                 "ServerFault iso BadRequest")
-        msg = "Nuage API: An L2 domain redirectiontarget cannot have an " \
-              "L3 endpoint"
-        expected_exception = exceptions.ServerFault
+        expected_exception = exceptions.BadRequest
+        if (Topology.is_ml2 and
+                Topology.before_openstack('Newton')):
+            expected_exception = exceptions.ServerFault
+            msg = "Got server fault"
+        else:
+            # TODO(team) Need a valid error message, this message should fail !
+            # See VSD-14421
+            LOG.warning("VSD-14421: throws wrong http error code: "
+                        "ServerFault iso BadRequest")
+            msg = "Nuage API: An L2 domain redirectiontarget cannot have an " \
+                  "L3 endpoint"
+            expected_exception = exceptions.ServerFault
 
         self.assertRaisesRegex(
             expected_exception,
@@ -593,6 +622,7 @@ class VSDManagedRedirectTargetTest(
         )
 
     @decorators.attr(type=['negative'])
+    @nuage_test.header()
     def test_os_redirection_targets_bad_insertion_mode_neg(self):
         # Given I have a VSD-L2-Managed-Subnet in openstack
         vsd_l2_subnet, l2dom_template = self._create_vsd_l2_managed_subnet()
@@ -605,13 +635,16 @@ class VSDManagedRedirectTargetTest(
                      'name': "rt-l2-insertion-mode-l2-fail"}
 
         # I expect a badRequest
-        # expected_exception = exceptions.BadRequest
-        # TODO(team) VSD-14421
-        # Need to change expected exception and error message
-        LOG.warn("VSD-14421: bad insertion mode: "
-                 "ServerFault iso BadRequest")
-        expected_exception = exceptions.ServerFault
-        msg = "Nuage API"
+        if Topology.is_ml2 and Topology.before_openstack('Newton'):
+            msg = "Got server fault"
+            expected_exception = exceptions.ServerFault
+        else:
+            # TODO(team) VSD-14421
+            # Need to change expected exception and error message
+            LOG.warning("VSD-14421: bad insertion mode: "
+                        "ServerFault iso BadRequest")
+            expected_exception = exceptions.ServerFault
+            msg = "Nuage API"
 
         self.assertRaisesRegex(
             expected_exception,
@@ -621,6 +654,7 @@ class VSDManagedRedirectTargetTest(
         )
 
     @decorators.attr(type=['negative'])
+    @nuage_test.header()
     def test_multiple_l2_vsd_redirection_targets_per_port_neg(self):
         vsd_redirect_targets = []
         # Given I have a VSD-L2-Managed-Subnet in openstack
@@ -641,8 +675,13 @@ class VSDManagedRedirectTargetTest(
         # per port with redundancy disabled
         # Then I expect a failure
         rtport = self.create_port(network)
-        msg = EXPECT_NO_MULTIPLE_RT_MSG
-        expected_exception = exceptions.BadRequest
+
+        if NUAGE_FEATURES.ml2_limited_exceptions:
+            msg = "Got server fault"
+            expected_exception = exceptions.ServerFault
+        else:
+            msg = EXPECT_NO_MULTIPLE_RT_MSG
+            expected_exception = exceptions.BadRequest
 
         self.assertRaisesRegex(
             expected_exception,
@@ -658,6 +697,7 @@ class VSDManagedRedirectTargetTest(
 ###############################################################################
 
 
+@nuage_test.class_header(tags=tags.VSD_MANAGED)
 class VSDManagedPolicyGroupsTest(
         base_vsd_managed_port_attributes.BaseVSDManagedPortAttributes):
 
@@ -667,6 +707,7 @@ class VSDManagedPolicyGroupsTest(
         cls.iacl_template = ''
         cls.eacl_templace = ''
 
+    @nuage_test.header()
     def test_l2_create_update_associate_port_to_policygroup(self):
         # Given I have a VSD-L2-Managed-Subnet in openstack with a
         # VSD created policy group
@@ -720,6 +761,7 @@ class VSDManagedPolicyGroupsTest(
                                        "policy group (%s) is still present" %
                          (port['id'], policy_group[0]['ID']))
 
+    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_l2_associate_port_to_policygroup(self):
         # Given I have a VSD-L2-Managed-Subnet in openstack with a
@@ -773,6 +815,7 @@ class VSDManagedPolicyGroupsTest(
                                        "policy group (%s) is still present" %
                          (port['id'], policy_group[0]['ID']))
 
+    @nuage_test.header()
     def test_l2_associate_port_to_policygroups(self):
         policy_groups = []
         # Given I have a VSD-L2-Managed-Subnet
@@ -837,6 +880,7 @@ class VSDManagedPolicyGroupsTest(
             self.assertEmpty(show_port['port']['nuage_policy_groups'],
                              "Port-show list disassociated ports")
 
+    @nuage_test.header()
     def test_l2_associate_multiple_ports_to_policygroups(self):
         policy_groups = []
         ports = []
@@ -905,6 +949,7 @@ class VSDManagedPolicyGroupsTest(
                                  'policy group(%s)' %
                                  (ports[i]['id'], policy_groups[j][0]['ID']))
 
+    @nuage_test.header()
     def test_vsd_multiple_l2_policygroup(self):
         policy_groups = []
         # Given I have a VSD-L2-Managed-Subnet
@@ -946,6 +991,7 @@ class VSDManagedPolicyGroupsTest(
                          "user policy group list" %
                          policy_groups[0][0]['ID'])
 
+    @nuage_test.header()
     def test_list_l2_policy_groups_subnet_only(self):
         # Given I have a VSD-L2-Managed-Subnet in openstack with a
         # VSD created policy group
@@ -1004,6 +1050,7 @@ class VSDManagedPolicyGroupsTest(
                          (policy_group_x[0]['ID'],
                           subnet_x['id'], subnet_y['id']))
 
+    @nuage_test.header()
     def test_l3_associate_port_to_policygroup(self):
         # Given I have a VSD-L3-Managed-Subnet in openstack with a
         # VSD created policy group
@@ -1060,6 +1107,7 @@ class VSDManagedPolicyGroupsTest(
                          "is still present" %
                          (port['id'], policy_group[0]['ID']))
 
+    @nuage_test.header()
     def test_list_l3_policy_groups_subnet_only(self):
         # Given I have a VSD-L2-Managed-Subnet in openstack with a
         # VSD created policy group
@@ -1122,6 +1170,7 @@ class VSDManagedPolicyGroupsTest(
                          (policy_group_x[0]['ID'],
                           subnet_x['id'], subnet_y['id']))
 
+    @nuage_test.header()
     def test_l3_associate_multiple_ports_to_policygroups(self):
         policy_groups = []
         ports = []
@@ -1201,6 +1250,7 @@ class VSDManagedPolicyGroupsTest(
             responseChoice=True)
         # self.nuage_client.apply_l2_policy_changes(l2domain_id)
 
+    @nuage_test.header()
     def test_l2_list_policy_group_no_security_group_neg(self):
         # Given I have a VSD-L2-Managed-Subnet in openstack with a
         # VSD created policy group
@@ -1224,31 +1274,40 @@ class VSDManagedPolicyGroupsTest(
         self.addCleanup(self.nuage_network_client.delete_redirection_target,
                         os_redirect_target['nuage_redirect_target']['id'])
 
-        advfw_template = self.nuage_client.create_advfwd_entrytemplate(
-            constants.L2_DOMAIN,
-            vsd_l2_subnet[0]['ID']
-        )
-        self.addCleanup(self._delete_advfwd_entrytemplate,
-                        vsd_l2_subnet[0]['ID'], advfw_template[0]['ID'])
+        if NUAGE_FEATURES.full_os_networking:
+            advfw_template = self.nuage_client.create_advfwd_entrytemplate(
+                constants.L2_DOMAIN,
+                vsd_l2_subnet[0]['ID']
+            )
+            self.addCleanup(self._delete_advfwd_entrytemplate,
+                            vsd_l2_subnet[0]['ID'], advfw_template[0]['ID'])
 
-        # When I try to use this security group in a
-        # redirect-target-rule-creation
-        rt_rule = self._create_redirect_target_rule(
-            os_redirect_target['nuage_redirect_target']['id'],
-            security_group['id'])
-        self.addCleanup(
-            self.nuage_network_client.delete_redirection_target_rule,
-            rt_rule['nuage_redirect_target_rule']['id'])
+            # When I try to use this security group in a
+            # redirect-target-rule-creation
+            rt_rule = self._create_redirect_target_rule(
+                os_redirect_target['nuage_redirect_target']['id'],
+                security_group['id'])
+            self.addCleanup(
+                self.nuage_network_client.delete_redirection_target_rule,
+                rt_rule['nuage_redirect_target_rule']['id'])
 
-        # When I retrieve the VSD-L2-Managed-Subnet
-        policy_group_list = \
-            self.nuage_network_client.list_nuage_policy_group_for_subnet(
-                subnet['id'])
-        # I expect the only the policyGroup in my list: length may not
-        # be greater than one
-        self.assertEqual(1, len(policy_group_list['nuage_policy_groups']),
-                         message="Security groups are also in the "
-                                 "policy group list")
+            # When I retrieve the VSD-L2-Managed-Subnet
+            policy_group_list = \
+                self.nuage_network_client.list_nuage_policy_group_for_subnet(
+                    subnet['id'])
+            # I expect the only the policyGroup in my list: length may not
+            # be greater than one
+            self.assertEqual(1, len(policy_group_list['nuage_policy_groups']),
+                             message="Security groups are also in the "
+                                     "policy group list")
+        else:
+            # See OPENSTACK-1503: [ML2] Fails cleanup redirect_target_rule
+            self.assertRaisesRegex(
+                exceptions.NotFound,
+                "The resource could not be found.",
+                self._create_redirect_target_rule,
+                os_redirect_target['nuage_redirect_target']['id'],
+                security_group['id'])
 
 
 ###############################################################################
@@ -1258,6 +1317,7 @@ class VSDManagedPolicyGroupsTest(
 ###############################################################################
 
 
+@nuage_test.class_header(tags=tags.VSD_MANAGED)
 class VSDManagedAllowedAddresPairssTest(
         base_vsd_managed_port_attributes.BaseVSDManagedPortAttributes):
 
@@ -1267,6 +1327,7 @@ class VSDManagedAllowedAddresPairssTest(
         # cls.iacl_template = ''
         # cls.eacl_templace = ''
 
+    @nuage_test.header()
     def test_create_address_pair_l2domain_no_mac(self):
         # Given I have a VSD-L2-Managed subnet
         vsd_l2_subnet, l2_domtmpl = self._create_vsd_l2_managed_subnet()
@@ -1316,6 +1377,7 @@ class VSDManagedAllowedAddresPairssTest(
                          "port (%s)" % addrpair_port['id'])
         pass
 
+    @nuage_test.header()
     def test_create_address_pair_l2domain_with_mac(self):
         # Given I have a VSD-L2-Managed subnet
         vsd_l2_subnet, l2_domtmpl = self._create_vsd_l2_managed_subnet()
@@ -1366,6 +1428,7 @@ class VSDManagedAllowedAddresPairssTest(
                          "port (%s)" % addrpair_port['id'])
         pass
 
+    @nuage_test.header()
     def test_create_address_pair_l3_subnet_no_mac(self):
         # Given I have a VSD-L3-Managed subnet
         vsd_l3_subnet, l3_domain = self._create_vsd_l3_managed_subnet()
@@ -1416,6 +1479,7 @@ class VSDManagedAllowedAddresPairssTest(
         pass
 
     @decorators.attr(type='smoke')
+    @nuage_test.header()
     def test_create_address_pair_l3domain_with_mac(self):
         # Given I have a VSD-L2-Managed subnet
         vsd_l3_subnet, l3_domain = self._create_vsd_l3_managed_subnet()
@@ -1474,6 +1538,7 @@ class VSDManagedAllowedAddresPairssTest(
     ###########################################################################
 
 
+@nuage_test.class_header(tags=tags.VSD_MANAGED)
 class VSDManagedAssociateFIPTest(
         base_vsd_managed_port_attributes.BaseVSDManagedPortAttributes):
 
@@ -1482,6 +1547,7 @@ class VSDManagedAssociateFIPTest(
         super(VSDManagedAssociateFIPTest, cls).resource_setup()
         cls.vsd_fip_pool = cls._create_vsd_floatingip_pool()
 
+    @nuage_test.header()
     def test_create_port_with_vsd_floatingip(self):
         # Given I have a VSD-FloatingIP-pool
         vsd_fip_pool = self.vsd_fip_pool
@@ -1527,6 +1593,7 @@ class VSDManagedAssociateFIPTest(
                                  "still found in port (%s)" %
                                  (claimed_fip[0]['ID'], port['id']))
 
+    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_create_list_associate_vsd_floatingip(self):
         # Given I have a VSD-FloatingIP-pool
@@ -1571,6 +1638,7 @@ class VSDManagedAssociateFIPTest(
                                  "found in port (%s)" %
                                  (claimed_fip[0]['ID'], port['id']))
 
+    @nuage_test.header()
     def test_create_list_associate_several_vsd_floatingip(self):
         ports = []
         claimed_fips = []
@@ -1626,6 +1694,7 @@ class VSDManagedAssociateFIPTest(
                                      (claimed_fips[i][0]['ID'],
                                       ports[i]['id']))
 
+    @nuage_test.header()
     def test_subnets_same_domain_associate_vsd_floatingip(self):
         # Given I have a VSD-FloatingIP-pool
         vsd_fip_pool = self.vsd_fip_pool
@@ -1756,6 +1825,7 @@ class VSDManagedAssociateFIPTest(
                         msg="nuage floatingip not present in list, "
                             "while expected to be")
 
+    @nuage_test.header()
     def test_subnets_other_domain_associate_vsd_floatingip(self):
         # Given I have a VSD-FloatingIP-pool
         vsd_fip_pool = self.vsd_fip_pool
@@ -1823,6 +1893,7 @@ class VSDManagedAssociateFIPTest(
             msg="nuage floatingip not present in list, while expected to be")
 
     @decorators.attr(type=['negative'])
+    @nuage_test.header()
     def test_create_associate_vsd_floatingip_twice_neg(self):
         # Given I have a VSD-FloatingIP-pool
         vsd_fip_pool = self.vsd_fip_pool
@@ -1864,6 +1935,14 @@ class VSDManagedAssociateFIPTest(
         expected_exception = exceptions.BadRequest
         msg = 'Bad request: Floating IP %s is already in use' % \
               claimed_fip[0]['address']
+
+        if NUAGE_FEATURES.ml2_limited_exceptions:
+            expected_exception = exceptions.ServerFault
+            if Topology.at_openstack('kilo'):
+                msg = "update_port_postcommit failed"
+            else:
+                msg = "Got server fault"
+
         self.assertRaisesRegex(
             expected_exception,
             msg,

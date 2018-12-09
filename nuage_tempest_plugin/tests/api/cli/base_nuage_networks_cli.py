@@ -10,7 +10,8 @@ from tempest.lib.common.utils import data_utils
 from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
 
-from nuage_tempest_lib.cli import client_testcase
+from nuage_tempest_plugin.lib.cli import client_testcase
+from nuage_tempest_plugin.lib.topology import Topology
 
 
 def mask_to_prefix(mask):
@@ -36,7 +37,7 @@ class BaseNuageNetworksCliTestCase(
         prefixlen = mask_to_prefix(vsd_l2_subnet.netmask)
         cidr4 = "%s/%d" % (vsd_l2_subnet.address, prefixlen)
 
-        net_partition = self.def_netpartition
+        net_partition = Topology.def_netpartition
         nuagenet = vsd_l2_subnet.id
         subnet4 = self.create_subnet_with_args(
             network['name'], cidr4,
@@ -69,12 +70,13 @@ class BaseNuageNetworksCliTestCase(
         self.networks.remove(network)
 
         subnet_name = data_utils.rand_name('cli-subnet')
+        net_partition = Topology.def_netpartition
         nuagenet = vsd_l2_subnet.id
         subnet4 = self.create_subnet_with_args(
             network['name'], str(cidr4),
             "--name ", subnet_name + "-4",
             "--disable-dhcp ",
-            "--net-partition ", self.def_netpartition,
+            "--net-partition ", net_partition,
             "--nuagenet ", nuagenet)
         self.addCleanup(self._delete_subnet, subnet4['id'])
         self.subnets.remove(subnet4)
@@ -86,7 +88,7 @@ class BaseNuageNetworksCliTestCase(
                 "--name ", subnet_name + "-6",
                 "--ip-version 6",
                 "--disable-dhcp ",
-                "--net-partition ", self.def_netpartition,
+                "--net-partition ", net_partition,
                 "--nuagenet ", nuagenet)
             self.addCleanup(self._delete_subnet, subnet6['id'])
             self.subnets.remove(subnet6)

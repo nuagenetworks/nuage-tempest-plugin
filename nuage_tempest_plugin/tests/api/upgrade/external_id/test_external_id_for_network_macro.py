@@ -13,23 +13,27 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from tempest.api.network import base as base
 from tempest.lib.common.utils import data_utils
 from tempest.lib.common.utils import test_utils
 
-from nuage_commons import constants as n_constants
+import testtools
 
-from nuage_tempest_lib.common import exceptions as n_exceptions
+from .external_id import ExternalId
 
-from nuage_tempest_lib.tests.nuage_test import NuageBaseAdminNetworkTest
-from nuage_tempest_lib.vsdclient.nuage_client import NuageRestClient
-from nuage_tempest_lib.vsdclient.nuage_network_client \
+from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
+from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import constants as n_constants
+from nuage_tempest_plugin.lib.utils import exceptions as n_exceptions
+from nuage_tempest_plugin.services.nuage_client import NuageRestClient
+from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
-from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
-    import ExternalId
+LOG = Topology.get_logger(__name__)
 
 
-class ExternalIdForNetworkMacroTest(NuageBaseAdminNetworkTest):
+class ExternalIdForNetworkMacroTest(base.BaseAdminNetworkTest):
     class MatchingVsdNetworkMacro(object):
         def __init__(self, outer, net_partition):
             """Construct a Vsd_port. """
@@ -41,8 +45,12 @@ class ExternalIdForNetworkMacroTest(NuageBaseAdminNetworkTest):
             vsd_network_macro = \
                 self.test.nuage_client.get_enterprise_net_macro(
                     netpart_name=self.net_partition['name'])
-            self.test.assertEqual(
-                2, len(vsd_network_macro), "should have network macros")
+            if NUAGE_FEATURES.os_managed_dualstack_subnets:
+                self.test.assertEqual(
+                    2, len(vsd_network_macro), "should have network macros")
+            else:
+                self.test.assertEqual(
+                    1, len(vsd_network_macro), "should have network macros")
             vsd_network_macros = \
                 self.test.nuage_client.get_enterprise_net_macro(
                     netpart_name=self.net_partition['name'],
@@ -50,7 +58,10 @@ class ExternalIdForNetworkMacroTest(NuageBaseAdminNetworkTest):
                     filter_value=ExternalId(
                         self.net_partition['id']).at_openstack())
 
-            self.test.assertEqual(2, len(vsd_network_macros))
+            if NUAGE_FEATURES.os_managed_dualstack_subnets:
+                self.test.assertEqual(2, len(vsd_network_macros))
+            else:
+                self.test.assertEqual(1, len(vsd_network_macros))
             self.vsd_network_macro = vsd_network_macros[0]
 
             # TODO(team) what should be the name
@@ -94,6 +105,9 @@ class ExternalIdForNetworkMacroTest(NuageBaseAdminNetworkTest):
             netpartition['id'])
         return netpartition
 
+    @testtools.skipUnless(Topology.from_nuage('4.0R5'),
+                          'No upgrade testing on network macro')
+    @nuage_test.header()
     def test_network_macro_matches_to_enterprise(self):
         # Create a dedicated netpartition
         netpartition_b = self._create_netpartition()

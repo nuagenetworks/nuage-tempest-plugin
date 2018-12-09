@@ -4,18 +4,18 @@
 from netaddr import IPAddress
 from netaddr import IPNetwork
 
-from tempest.lib.common.utils import data_utils
-
-from nuage_commons import constants
-
-from nuage_tempest_lib.features import NUAGE_FEATURES
-from nuage_tempest_lib.vsdclient.nuage_network_client \
+from .base_nuage_networks_cli import BaseNuageNetworksCliTestCase
+from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
+from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import constants
+from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
-
-from nuage_tempest_plugin.tests.api.cli.base_nuage_networks_cli \
-    import BaseNuageNetworksCliTestCase
 from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
     import BaseVSDManagedNetworksIPv6Test
+from tempest.lib.common.utils import data_utils
+
+LOG = Topology.get_logger(__name__)
 
 VALID_MAC_ADDRESS = 'fa:fa:3e:e8:e8:01'
 VALID_MAC_ADDRESS_2A = 'fa:fa:3e:e8:e8:2a'
@@ -70,6 +70,7 @@ class OSManagedAllowedAddresPairsCliTest(
             cls.os_primary.auth_provider,
             **cls.os_primary.default_params)
 
+    @nuage_test.header()
     def test_cli_create_address_pair_l2domain_no_mac(self):
         # Given I have a dual stack network
         cli_network, cli_subnet4, cli_subnet6 = \

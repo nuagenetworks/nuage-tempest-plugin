@@ -1,19 +1,20 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
 
-from nuage_commons import constants as nuage_constants
-
-from nuage_tempest_lib import decorators
-from nuage_tempest_lib.features import NUAGE_FEATURES
-from nuage_tempest_lib.tests.nuage_test import NuageBaseTest
-
+from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
+from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.test import tags
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import constants as nuage_constants
+from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
     import ExternalId
 
-from nuage_tempest_lib.vsdclient.nuage_client import NuageRestClient
+net_partition_name = Topology.def_netpartition
 
 
-class VSDUserGroup(NuageBaseTest):
+@nuage_test.class_header(tags=[tags.ML2])
+class VSDUserGroup(nuage_test.NuageBaseTest):
 
     @classmethod
     def skip_checks(cls):
@@ -69,7 +70,7 @@ class VSDUserGroup(NuageBaseTest):
                 ExternalId(ipv4_subnet['id']).at_cms_id()))
         self.assertIsNotNone(vsd_l2_domain)
         vsd_group = self.nuage_client.get_usergroup(
-            netpart_name=self.def_netpartition,
+            netpart_name=net_partition_name,
             parent=nuage_constants.L2_DOMAIN,
             parent_id=vsd_l2_domain.id)
         self._validate_user_group_description(validate_equals, value,
@@ -95,13 +96,14 @@ class VSDUserGroup(NuageBaseTest):
         for vsd_l3_domain_zone in vsd_l3_domain_zones:
             if '-pub-' not in vsd_l3_domain_zone['name']:
                 vsd_group = self.nuage_client.get_usergroup(
-                    netpart_name=self.def_netpartition,
+                    netpart_name=net_partition_name,
                     parent=nuage_constants.ZONE,
                     parent_id=vsd_l3_domain_zone['ID'])
                 self._validate_user_group_description(validate_equals, value,
                                                       vsd_group)
 
-    @decorators.skip_because(bug='OPENSTACK-2321')
+    @nuage_test.skip_because(bug='OPENSTACK-2321')
+    @nuage_test.header()
     def test_os_managed_subnet_create_with_new_session_then_old_session(self):
         self._create_and_validate_os_managed_subnet(reload_session=False,
                                                     validate_equals=True)
@@ -114,7 +116,8 @@ class VSDUserGroup(NuageBaseTest):
         self._create_and_validate_os_managed_subnet(reload_session=False,
                                                     validate_equals=False)
 
-    @decorators.skip_because(bug='OPENSTACK-2321')
+    @nuage_test.skip_because(bug='OPENSTACK-2321')
+    @nuage_test.header()
     def test_os_managed_router_create_with_new_session_then_old_session(self):
         self._create_and_validate_on_router_create(reload_session=False,
                                                    validate_equals=True)

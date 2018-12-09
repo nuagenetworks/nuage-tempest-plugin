@@ -12,7 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from nuage_commons import constants
+from nuage_tempest_plugin.lib.utils import constants
 
 
 class BaremetalTopology(object):

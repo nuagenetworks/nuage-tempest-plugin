@@ -18,18 +18,16 @@ import testtools
 from testtools import matchers
 
 from tempest.common import utils
-from tempest import config
 from tempest.lib.common.utils import data_utils
 
-from nuage_commons import constants
+from nuage_tempest_plugin.lib.mixins import l3
+from nuage_tempest_plugin.lib.mixins import net_topology as topology_mixin
+from nuage_tempest_plugin.lib.mixins import network as network_mixin
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import constants
+from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
-from nuage_tempest_lib.vsdclient.nuage_client import NuageRestClient
-
-from nuage_tempest_plugin.mixins import l3
-from nuage_tempest_plugin.mixins import net_topology as topology_mixin
-from nuage_tempest_plugin.mixins import network as network_mixin
-
-CONF = config.CONF
+CONF = Topology.get_conf()
 
 
 class SriovTopology(object):
@@ -192,8 +190,7 @@ class PortsDirectTest(network_mixin.NetworkMixin,
     @classmethod
     def skip_checks(cls):
         super(PortsDirectTest, cls).skip_checks()
-        if (CONF.network.port_vnic_type not in
-                ['direct', 'macvtap']):
+        if CONF.network.port_vnic_type not in ['direct', 'macvtap']:
             msg = ("Test requires nuage_test_sriov mech driver "
                    "and port_vnic_type=='direct'")
             raise cls.skipException(msg)
@@ -201,7 +198,7 @@ class PortsDirectTest(network_mixin.NetworkMixin,
     @classmethod
     def resource_setup(cls):
         super(PortsDirectTest, cls).resource_setup()
-        # Only gateway here, to support parallel testing each test makes its
+        # Only gateway here, to support parallel testing each tests makes its
         # own gateway port so no VLAN overlap should occur.
         cls.gateway = cls.vsd_client.create_gateway(
             data_utils.rand_name(name='vsg'),
@@ -611,7 +608,7 @@ class PortsDirectTest(network_mixin.NetworkMixin,
         kwargs = {
             'gateway_ip': None,
             'nuagenet': vsd_l2dom['ID'],
-            'net_partition': self.def_netpartition
+            'net_partition': Topology.def_netpartition
         } if vsd_managed else {}
         subnet = self.create_subnet('10.20.30.0/24', network['id'], **kwargs)
         assert subnet

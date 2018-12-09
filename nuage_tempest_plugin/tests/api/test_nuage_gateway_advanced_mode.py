@@ -14,8 +14,16 @@
 #
 
 from netaddr import IPNetwork
-from oslo_log import log as logging
 import uuid
+
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import constants as n_constants
+from nuage_tempest_plugin.lib.utils import exceptions
+from nuage_tempest_plugin.services.nuage_client import NuageRestClient
+from nuage_tempest_plugin.services.nuage_network_client \
+    import NuageNetworkClientJSON
+from nuage_tempest_plugin.tests.api.vsd_managed \
+    import base_vsd_managed_networks as base_vsdman
 
 from tempest.api.network import base
 from tempest.lib.common.utils import data_utils
@@ -23,17 +31,8 @@ from tempest.lib.common.utils.data_utils import rand_name
 from tempest.lib import exceptions as lib_exec
 from tempest.test import decorators
 
-from nuage_commons import constants as n_constants
-
-from nuage_tempest_lib.common import exceptions
-from nuage_tempest_lib.vsdclient.nuage_client import NuageRestClient
-from nuage_tempest_lib.vsdclient.nuage_network_client \
-    import NuageNetworkClientJSON
-
-from nuage_tempest_plugin.tests.api.vsd_managed \
-    import base_vsd_managed_networks as base_vsdman
-
-LOG = logging.getLogger(__name__)
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
@@ -228,6 +227,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
         cls.rdn_gw_ports_vrsg = []
         cls.rdn_gw_ports_vsg_combn = []
 
+        cls.ext_net_id = CONF.network.public_network_id
         cls.network = cls.create_network()
 
         name = data_utils.rand_name('l3domain-')
@@ -251,7 +251,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
         cls.subnet = cls.create_subnet(
             cls.network,
             cidr=cidr, mask_bits=24, nuagenet=vsd_domain_subnet[0]['ID'],
-            net_partition=cls.def_netpartition)
+            net_partition=Topology.def_netpartition)
 
         # Create resources in non-default net-partition
         netpart_body = cls.client.create_netpartition(
@@ -367,7 +367,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
         self.assertEqual(actual_vlan['userMnemonic'],
                          expected_vlan['usermnemonic'])
         self.assertEqual(actual_vlan['value'], expected_vlan['value'])
-        if verify_ext:
+        if Topology.within_ext_id_release() and verify_ext:
             external_id = (expected_vlan['gatewayport'] + "." +
                            str(expected_vlan['value']))
             self.assertEqual(actual_vlan['externalID'],
@@ -378,10 +378,15 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
         self.assertEqual(actual_vport['ID'], expected_vport['id'])
         self.assertEqual(actual_vport['type'], expected_vport['type'])
         self.assertEqual(actual_vport['name'], expected_vport['name'])
-        if expected_vport['type'] == n_constants.BRIDGE_VPORT:
-            self.assertEqual(actual_vport['externalID'],
-                             self.nuage_client.get_vsd_external_id(
-                                 expected_vport['subnet']))
+        if Topology.within_ext_id_release():
+            if expected_vport['type'] == n_constants.BRIDGE_VPORT:
+                self.assertEqual(actual_vport['externalID'],
+                                 self.nuage_client.get_vsd_external_id(
+                                     expected_vport['subnet']))
+            else:
+                self.assertEqual(actual_vport['externalID'],
+                                 self.nuage_client.get_vsd_external_id(
+                                     expected_vport['port']))
 
     @decorators.attr(type='smoke')
     def test_list_gateway(self):
@@ -732,7 +737,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
         vlan_ent_permission = self.nuage_client.get_vlan_permission(
             n_constants.VLAN, vlan['id'], n_constants.ENTERPRISE_PERMS)
         self.assertEqual(vlan_ent_permission[0]['permittedEntityName'],
-                         self.def_netpartition)
+                         Topology.def_netpartition)
 
         vlan_permission = self.nuage_client.get_vlan_permission(
             n_constants.VLAN, vlan['id'], n_constants.PERMIT_ACTION)

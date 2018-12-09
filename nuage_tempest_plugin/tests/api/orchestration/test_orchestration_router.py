@@ -5,12 +5,20 @@ from tempest.common import utils
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 
-from nuage_tempest_lib.topology import Topology
+from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
 
-from nuage_tempest_plugin.tests.api.orchestration import nuage_base
+from . import nuage_base
+
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 class OrchestrationRouterTest(nuage_base.NuageBaseOrchestrationTest):
+
+    @classmethod
+    def setup_clients(cls):
+        super(OrchestrationRouterTest, cls).setup_clients()
 
     @classmethod
     def resource_setup(cls):
@@ -21,6 +29,10 @@ class OrchestrationRouterTest(nuage_base.NuageBaseOrchestrationTest):
 
         system_configurations = cls.vsd_client.get_system_configuration()
         cls.system_configuration = system_configurations[0]
+
+    @classmethod
+    def resource_cleanup(cls):
+        super(OrchestrationRouterTest, cls).resource_cleanup()
 
     def _get_vsd_l3domain(self, external_id):
         nuage_domain = self.vsd_client.get_l3domain(
@@ -53,8 +65,12 @@ class OrchestrationRouterTest(nuage_base.NuageBaseOrchestrationTest):
         #     nuage_constants.NUAGE_PAT_VSD_DISABLED)
 
     @decorators.attr(type=['smoke'])
+    @nuage_test.header()
     def test_router_extended_attributes(self):
         default_tunnel_type = self.system_configuration['domainTunnelType']
+
+        # ext_net_id = self.public_net['id']
+        ext_net_id = CONF.network.public_network_id
 
         unique_int = data_utils.rand_int_id(start=1, end=0x7fff)
         rd = "10:" + str(unique_int)
@@ -67,8 +83,8 @@ class OrchestrationRouterTest(nuage_base.NuageBaseOrchestrationTest):
         else:
             stack_file_name = 'router_extended_attributes'
         stack_parameters = {
-            'public_net': self.public_network_id,
-            'netpartition_name': self.def_netpartition,
+            'public_net': ext_net_id,
+            'netpartition_name': self.net_partition_name,
             'rd': rd,
             'rt': rt}
         self.launch_stack(stack_file_name, stack_parameters)
@@ -101,9 +117,8 @@ class OrchestrationRouterTest(nuage_base.NuageBaseOrchestrationTest):
         router = self.verify_created_router('router_rd_dt')
         self.assertEqual(rd, router['rd'], "Route distinguisher")
         self.assertEqual(rt, router['rt'], "Route target")
-        self.assertEqual(self.public_network_id,
-                         router['external_gateway_info']['network_id'],
-                         "External gateway info")
+        self.assertEqual(ext_net_id, router['external_gateway_info'][
+            'network_id'], "External gateway info")
         self._verify_router_with_vsd_l3domain(router)
 
         if not Topology.new_route_to_underlay_model_enabled():
@@ -112,7 +127,7 @@ class OrchestrationRouterTest(nuage_base.NuageBaseOrchestrationTest):
             self.assertEqual(True,
                              router['external_gateway_info']['enable_snat'],
                              "SNAT enabled")
-            self.assertEqual(self.public_network_id,
+            self.assertEqual(ext_net_id,
                              router['external_gateway_info']['network_id'],
                              "External gateway info")
             self._verify_router_with_vsd_l3domain(router)

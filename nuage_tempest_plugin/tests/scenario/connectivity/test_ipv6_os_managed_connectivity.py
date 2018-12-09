@@ -1,9 +1,8 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
 
+from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from tempest.test import decorators
-
-from nuage_tempest_lib.tests.nuage_test import NuageBaseTest
 
 
 class Ipv6OsManagedConnectivityTest(NuageBaseTest):

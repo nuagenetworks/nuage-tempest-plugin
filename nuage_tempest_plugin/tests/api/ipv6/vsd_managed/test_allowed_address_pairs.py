@@ -1,20 +1,16 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
 
-from oslo_log import log as logging
 from six import iteritems
 
-from tempest.test import decorators
-
-from nuage_commons import constants as nuage_constants
-
+from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import constants as nuage_constants
 from nuage_tempest_plugin.tests.api.ipv6.test_allowed_address_pair \
     import BaseAllowedAddressPair
 from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
     import BaseVSDManagedNetworksIPv6Test
-
-LOG = logging.getLogger(__name__)
-
+from tempest.test import decorators
 
 ###############################################################################
 ###############################################################################
@@ -22,10 +18,13 @@ LOG = logging.getLogger(__name__)
 ###############################################################################
 ###############################################################################
 
+LOG = Topology.get_logger(__name__)
+
 
 class VSDManagedAllowedAddresPairsTest(BaseAllowedAddressPair,
                                        BaseVSDManagedNetworksIPv6Test):
 
+    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_provision_ports_without_address_pairs_in_l2_subnet_unmanaged(
             self):
@@ -38,6 +37,7 @@ class VSDManagedAllowedAddresPairsTest(BaseAllowedAddressPair,
             self._check_crud_port(scenario, network, subnet4, subnet6,
                                   vsd_l2_subnet, nuage_constants.L2_DOMAIN)
 
+    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_provision_ports_with_address_pairs_in_l3_subnet(self):
         # Given I have a VSD-L3-Managed subnet - dhcp-managed

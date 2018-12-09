@@ -13,25 +13,22 @@
 import os.path
 import yaml
 
-from oslo_log import log as logging
-
-from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.lib.common.utils import test_utils
 from tempest.services import orchestration
 import tempest.test
 
-from nuage_tempest_lib.common.base_mixin import NuageBaseMixin
-from nuage_tempest_lib.vsdclient import nuage_client
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.services import nuage_client
+
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 # TODO(TEAM) - EVENTUALLY NEEDS MORE SUSTAINABLE SOLUTION
 # upstream tempest.api.orchestration no longer exists !
 
-CONF = config.CONF
-LOG = logging.getLogger(__name__)
 
-
-class BaseOrchestrationTest(tempest.test.BaseTestCase, NuageBaseMixin):
+class BaseOrchestrationTest(tempest.test.BaseTestCase):
     """Base test case class for all Orchestration API tests."""
 
     credentials = ['admin', 'primary']
@@ -199,6 +196,7 @@ class NuageBaseOrchestrationTest(BaseOrchestrationTest):
     def resource_setup(cls):
         super(NuageBaseOrchestrationTest, cls).resource_setup()
 
+        cls.net_partition_name = Topology.def_netpartition
         cls.private_net_name = data_utils.rand_name('heat-network-')
 
         cls.vsd_l2domain_template = []

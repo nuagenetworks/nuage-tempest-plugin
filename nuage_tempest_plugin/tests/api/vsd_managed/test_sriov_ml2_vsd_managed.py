@@ -21,18 +21,21 @@
 import time
 
 from tempest.api.compute import base as serv_base
-from tempest import config
 from tempest.lib import exceptions
 from tempest.scenario import manager as scenario_manager
 
-from nuage_tempest_lib.vsdclient import nuage_client
-
+from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.test import tags
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.services import nuage_client
 from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_sriov
 
-CONF = config.CONF
+CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
+@nuage_test.class_header(tags=tags.VSD_MANAGED)
 class ML2VSDManagedSRIOVTest(
         base_vsd_managed_sriov.BaseVSDManagedSRIOV,
         serv_base.BaseV2ComputeTest, scenario_manager.ScenarioTest):
@@ -46,7 +49,7 @@ class ML2VSDManagedSRIOVTest(
                 cls.vsd_network_12, cls.network_34, cls.vsd_subnet_34 = \
                 cls.setup_sriov_networks()
         except exceptions.BadRequest:
-            cls.info("SRIOV not enabled")
+            LOG.info("SRIOV not enabled")
 
     @classmethod
     def setup_clients(self):
@@ -58,6 +61,7 @@ class ML2VSDManagedSRIOVTest(
         if not self.network:
             self.skipTest('SRIOV not enabled.')
 
+    @nuage_test.header()
     def test_l2dom_sriovport_onevlan(self):
         port_name = 'sxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-iov-07-33'
         self.sriov_port_create(self.network, port_name)

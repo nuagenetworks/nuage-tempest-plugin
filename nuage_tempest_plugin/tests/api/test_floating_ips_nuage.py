@@ -17,7 +17,10 @@ from netaddr import IPAddress
 from netaddr import IPNetwork
 import uuid
 
-from tempest import config
+from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import constants
+from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
 from tempest.api.network import test_floating_ips
 from tempest.common.utils import net_utils
@@ -28,18 +31,11 @@ from tempest.test import decorators
 from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
 
-from nuage_commons import constants
-
-from nuage_tempest_lib.vsdclient.nuage_client import NuageRestClient
-
-CONF = config.CONF
+CONF = Topology.get_conf()
 
 
 class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
     _interface = 'json'
-
-    public_network_id = CONF.network.public_network_id
-    project_network_cidr = CONF.network.project_network_cidr
 
     @classmethod
     def setup_clients(cls):
@@ -215,16 +211,23 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
             floatingip_id_list.append(f['id'])
         self.assertIn(created_floating_ip['id'], floatingip_id_list)
 
-        self.floating_ips_client.update_floatingip(
-            created_floating_ip['id'],
-            port_id=self.ports[3]['id'])
-        updated_floating_ip = self.floating_ips_client.show_floatingip(
-            created_floating_ip['id'])['floatingip']
-        self.assertEqual(updated_floating_ip['port_id'],
-                         self.ports[3]['id'])
-        self._verify_fip_on_vsd(
-            updated_floating_ip, updated_floating_ip['router_id'],
-            self.ports[3]['id'], self.subnet['id'], True)
+        if Topology.from_openstack('Newton') and Topology.is_ml2:
+            self.floating_ips_client.update_floatingip(
+                created_floating_ip['id'],
+                port_id=self.ports[3]['id'])
+            updated_floating_ip = self.floating_ips_client.show_floatingip(
+                created_floating_ip['id'])['floatingip']
+            self.assertEqual(updated_floating_ip['port_id'],
+                             self.ports[3]['id'])
+            self._verify_fip_on_vsd(
+                updated_floating_ip, updated_floating_ip['router_id'],
+                self.ports[3]['id'], self.subnet['id'], True)
+        else:
+            # Associate floating IP to the other port
+            self.assertRaises(exceptions.ServerFault,
+                              self.floating_ips_client.update_floatingip,
+                              created_floating_ip['id'],
+                              port_id=self.ports[3]['id'])
 
     @decorators.attr(type='smoke')
     def test_floating_ip_delete_port(self):
@@ -286,16 +289,27 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
             "device_owner": "compute:None", "device_id": str(uuid.uuid1())}
         port_other_router = self.create_port(network2, **post_body)
 
-        self.floating_ips_client.update_floatingip(
-            created_floating_ip['id'],
-            port_id=port_other_router['id'])
-        updated_floating_ip = self.floating_ips_client.show_floatingip(
-            created_floating_ip['id'])['floatingip']
-        self.assertEqual(updated_floating_ip['port_id'],
-                         port_other_router['id'])
-        self._verify_fip_on_vsd(
-            updated_floating_ip, updated_floating_ip['router_id'],
-            port_other_router['id'], subnet2['id'], True)
+        if Topology.from_openstack('Newton') and Topology.is_ml2:
+            self.floating_ips_client.update_floatingip(
+                created_floating_ip['id'],
+                port_id=port_other_router['id'])
+            updated_floating_ip = self.floating_ips_client.show_floatingip(
+                created_floating_ip['id'])['floatingip']
+            self.assertEqual(updated_floating_ip['port_id'],
+                             port_other_router['id'])
+            self._verify_fip_on_vsd(
+                updated_floating_ip, updated_floating_ip['router_id'],
+                port_other_router['id'], subnet2['id'], True)
+        else:
+            # Associate floating IP to the other port on another router
+            self.assertRaises(exceptions.ServerFault,
+                              self.floating_ips_client.update_floatingip,
+                              created_floating_ip['id'],
+                              port_id=port_other_router['id'])
+            # VSD Validation
+            self._verify_fip_on_vsd(
+                created_floating_ip, created_floating_ip['router_id'],
+                self.ports[3]['id'], self.subnet['id'], True)
 
     @decorators.attr(type='smoke')
     def test_create_floating_ip_specifying_a_fixed_ip_address(self):
@@ -371,13 +385,18 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
         body = self.floating_ips_client.show_floatingip(fip_id)
         fip = body['floatingip']
 
-        self.assertThat(fip, ContainsDict(
-            {'nuage_ingress_fip_rate_kbps': Equals(-1)}))
-        self.assertThat(fip, ContainsDict(
-            {'nuage_egress_fip_rate_kbps': Equals(rate_limit * 1000)}))
+        if NUAGE_FEATURES.bidirectional_fip_rate_limit:
+            # rate_limit is in kbps now!
+            self.assertThat(fip, ContainsDict(
+                {'nuage_ingress_fip_rate_kbps': Equals(-1)}))
+            self.assertThat(fip, ContainsDict(
+                {'nuage_egress_fip_rate_kbps': Equals(rate_limit * 1000)}))
 
-        # attribute 'nuage_fip_rate' is no longer in response
-        self.assertIsNone(fip.get('nuage_fip_rate'))
+            # attribute 'nuage_fip_rate' is no longer in response
+            self.assertIsNone(fip.get('nuage_fip_rate'))
+        else:
+            self.assertThat(fip, ContainsDict(
+                {'nuage_fip_rate': Equals(str(rate_limit))}))
 
         # Check vsd
         vsd_subnets = self.nuage_client.get_domain_subnet(
@@ -400,10 +419,14 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
             {'FIPPeakInformationRate': Equals(str(rate_limit))}))
         self.assertThat(qos[0], ContainsDict(
             {'FIPPeakBurstSize': Equals(str(100))}))
-        self.assertThat(qos[0], ContainsDict(
-            {'EgressFIPPeakInformationRate': Equals('INFINITY')}))
-        self.assertThat(qos[0], ContainsDict(
-            {'EgressFIPPeakBurstSize': Equals(str(100))}))
+
+        if NUAGE_FEATURES.bidirectional_fip_rate_limit:
+            self.assertThat(qos[0], ContainsDict(
+                {'EgressFIPPeakInformationRate': Equals('INFINITY')}))
+            self.assertThat(qos[0], ContainsDict(
+                {'EgressFIPPeakBurstSize': Equals(str(100))}))
+        else:
+            self.assertEqual(str(rate_limit), qos[0]['FIPPeakInformationRate'])
 
     @decorators.attr(type='smoke')
     def test_create_floatingip_without_rate_limiting(self):
@@ -428,8 +451,12 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
         body = self.floating_ips_client.show_floatingip(fip_id)
         fip = body['floatingip']
 
-        self.assertIsNotNone(fip.get('nuage_ingress_fip_rate_kbps'))
-        self.assertIsNotNone(fip.get('nuage_egress_fip_rate_kbps'))
+        if NUAGE_FEATURES.bidirectional_fip_rate_limit:
+            self.assertIsNotNone(fip.get('nuage_ingress_fip_rate_kbps'))
+            self.assertIsNotNone(fip.get('nuage_egress_fip_rate_kbps'))
+        else:
+            os_fip_rate = fip.get('nuage_fip_rate')
+            self.assertIsNotNone(os_fip_rate)
 
         # Check vsd
         vsd_subnets = self.nuage_client.get_domain_subnet(
@@ -446,9 +473,12 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
                          qos[0]['externalID'])
         self.assertEqual(True, qos[0]['FIPRateLimitingActive'])
 
-        self.assertEqual('INFINITY', qos[0]['FIPPeakInformationRate'])
-        self.assertEqual('INFINITY',
-                         qos[0]['EgressFIPPeakInformationRate'])
+        if NUAGE_FEATURES.bidirectional_fip_rate_limit:
+            self.assertEqual('INFINITY', qos[0]['FIPPeakInformationRate'])
+            self.assertEqual('INFINITY',
+                             qos[0]['EgressFIPPeakInformationRate'])
+        else:
+            self.assertEqual('INFINITY', qos[0]['FIPPeakInformationRate'])
 
     @decorators.attr(type='smoke')
     def test_delete_associated_port_fip_cleanup(self):
@@ -477,12 +507,12 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
         self.assertIsNotNone(subnet, "Unable to create subnet")
         router = self.create_router(
             admin_state_up=True,
-            external_network_id=self.public_network_id)
+            external_network_id=CONF.network.public_network_id)
         self.assertIsNotNone(router, "Unable to create router")
         self.create_router_interface(router_id=router["id"],
                                      subnet_id=subnet["id"])
         # 1. Assigning fip to port with multiple ip address
-        cidr4 = IPNetwork(self.project_network_cidr)
+        cidr4 = IPNetwork(CONF.network.project_network_cidr)
         port_args = {
             'fixed_ips': [
                 {'subnet_id': subnet['id'],
@@ -496,7 +526,7 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
         }
         port = self.create_port(network=network, **port_args)
         floating_ip = self.create_floatingip(
-            external_network_id=self.public_network_id)
+            external_network_id=CONF.network.public_network_id)
         self.assertIsNotNone(floating_ip, "Unabe to create floating ip")
         msg = 'floating ip cannot be associated to port %s ' \
               'because it has multiple ipv4 or multiple ipv6ips' % port['id']
@@ -508,7 +538,7 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
         # 2. Assigning multiple ip address to a port with fip
         port = self.create_port(network=network)
         floating_ip = self.create_floatingip(
-            external_network_id=self.public_network_id)
+            external_network_id=CONF.network.public_network_id)
         self.assertIsNotNone(floating_ip, "Unable to create floating ip")
 
         self.floating_ips_client.update_floatingip(

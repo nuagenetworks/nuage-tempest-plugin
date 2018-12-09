@@ -1,20 +1,15 @@
 # Copyright 2015 Alcatel-Lucent
 
-from oslo_log import log as logging
-
+from tempest.api.network import base
 from tempest.common import utils
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
-from nuage_commons import constants
-
-from nuage_tempest_lib.tests.nuage_test import NuageBaseAdminNetworkTest
-from nuage_tempest_lib.vsdclient import nuage_client
-from nuage_tempest_lib.vsdclient.nuage_network_client \
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import constants as constants
+from nuage_tempest_plugin.services import nuage_client
+from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
-
-LOG = logging.getLogger(__name__)
-
 
 #
 # See http://tools.ietf.org/html/rfc2132
@@ -181,8 +176,10 @@ NUAGE_NETWORK_TYPE = {
     'VSD_Managed_L3': 4
 }
 
+LOG = Topology.get_logger(__name__)
 
-class NuageExtraDHCPOptionsBase(NuageBaseAdminNetworkTest):
+
+class NuageExtraDHCPOptionsBase(base.BaseAdminNetworkTest):
 
     def __init__(self, *args, **kwargs):
         super(NuageExtraDHCPOptionsBase, self).__init__(*args, **kwargs)
@@ -207,13 +204,14 @@ class NuageExtraDHCPOptionsBase(NuageBaseAdminNetworkTest):
 
     @classmethod
     def resource_setup(cls):
-        # create default netpartition if it is not there
-        netpartition_name = cls.nuage_client.def_netpart_name
-        net_partition = cls.nuage_client.get_net_partition(
-            netpartition_name)
-        if not net_partition:
-            net_partition = cls.nuage_client.create_net_partition(
-                netpartition_name, fip_quota=100, extra_params=None)
+        if Topology.is_ml2:
+            # create default netpartition if it is not there
+            netpartition_name = cls.nuage_client.def_netpart_name
+            net_partition = cls.nuage_client.get_net_partition(
+                netpartition_name)
+            if not net_partition:
+                net_partition = cls.nuage_client.create_net_partition(
+                    netpartition_name, fip_quota=100, extra_params=None)
         super(NuageExtraDHCPOptionsBase, cls).resource_setup()
 
     @classmethod
@@ -367,18 +365,43 @@ class NuageExtraDHCPOptionsBase(NuageBaseAdminNetworkTest):
         # into the format return by VSD
         # so we can use easy list comparison
         tmp_var = ""
-        if opt_name in TREAT_DHCP_OPTION_AS_RAW_HEX:
-            for opt_value in opt_values:
-                # opt_values[opt_value.index(opt_value)] = \
-                # self.my_convert_to_hex(opt_value)
-                tmp_var += self._convert_to_hex(opt_value)
-            opt_values = [tmp_var]
-        if opt_name in TREAT_DHCP_OPTION_NETBIOS_NODETYPE:
-            for opt_value in opt_values:
-                # opt_values[opt_value.index(opt_value)] = \
-                # self.my_convert_to_hex(opt_value)
-                tmp_var += self._convert_netbios_type(opt_value)
-            opt_values = [tmp_var]
+
+        if Topology.before_nuage("4.0R1"):
+            if opt_name in TREAT_32_DHCP_OPTION_AS_INT:
+                for opt_value in opt_values:
+                    # opt_values[opt_value.index(opt_value)] = \
+                    # self.my_convert_to_hex(hex(int(opt_value)))
+                    # more than integer in the list:
+                    # VSD wil have them concatenated, so let's do this here
+                    # as well
+                    tmp_var += self._convert_to_hex(hex(int(opt_value)))
+                opt_values = [tmp_var]
+            elif opt_name in TREAT_32_DHCP_OPTION_AS_RAW_HEX:
+                for opt_value in opt_values:
+                    # opt_values[opt_value.index(opt_value)] = \
+                    # self.my_convert_to_hex(opt_value)
+                    tmp_var += self._convert_to_hex(opt_value)
+                opt_values = [tmp_var]
+            elif opt_name in TREAT_32_DHCP_OPTION_AS_CONCAT_STRING:
+                for opt_value in opt_values:
+                    # opt_values[opt_value.index(opt_value)] = \
+                    # self.my_convert_to_hex(opt_value)
+                    tmp_var += opt_value
+                opt_values = [tmp_var]
+
+        else:
+            if opt_name in TREAT_DHCP_OPTION_AS_RAW_HEX:
+                for opt_value in opt_values:
+                    # opt_values[opt_value.index(opt_value)] = \
+                    # self.my_convert_to_hex(opt_value)
+                    tmp_var += self._convert_to_hex(opt_value)
+                opt_values = [tmp_var]
+            if opt_name in TREAT_DHCP_OPTION_NETBIOS_NODETYPE:
+                for opt_value in opt_values:
+                    # opt_values[opt_value.index(opt_value)] = \
+                    # self.my_convert_to_hex(opt_value)
+                    tmp_var += self._convert_netbios_type(opt_value)
+                opt_values = [tmp_var]
         return opt_values
 
     def _verify_vsd_extra_dhcp_options(self, vsd_dchp_options,
@@ -431,8 +454,8 @@ class NuageExtraDHCPOptionsBase(NuageBaseAdminNetworkTest):
                     else:
                         # don't fail yet, log to put all zero-length options in
                         # the log file
-                        LOG.warn("VSD has extra DHCP option - %s of "
-                                 "length zero !", str(vsd_opt_name))
+                        LOG.warning("VSD has extra DHCP option - %s of "
+                                    "length zero !", str(vsd_opt_name))
             else:
                 self.fail('Extra DHCP option mismatch VSD  and Openstack')
 
