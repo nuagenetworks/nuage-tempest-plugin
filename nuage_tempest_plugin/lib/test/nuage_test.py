@@ -31,6 +31,9 @@ from nuage_tempest_plugin.lib.test import tags as test_tags
 from nuage_tempest_plugin.lib.test.tenant_server import TenantServer
 from nuage_tempest_plugin.lib.test import vsd_helper
 from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import data_utils as utils
+from nuage_tempest_plugin.services.nuage_network_client \
+    import NuageNetworkClientJSON
 
 CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
@@ -163,9 +166,9 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         cls.manager = cls.get_client_manager()
         cls.admin_manager = cls.get_client_manager(credential_type='admin')
         cls.vsd = vsd_helper.VsdHelper()
-        cls.networks_client = cls.manager.networks_client
-        cls.subnets_client = cls.manager.subnets_client
-        cls.ports_client = cls.manager.ports_client
+        cls.plugin_network_client = NuageNetworkClientJSON(
+            cls.os_primary.auth_provider,
+            **cls.os_primary.default_params)
 
     @classmethod
     def resource_setup(cls):
@@ -256,6 +259,26 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
         return cls.dhcp_agent_present
 
+    @classmethod
+    def _try_delete(cls, delete_callable, *args, **kwargs):
+        """Cleanup resources in case of test-failure
+
+        Some resources are explicitly deleted by the test.
+        If the test failed to delete a resource, this method will execute
+        the appropriate delete methods. Otherwise, the method ignores NotFound
+        exceptions thrown for resources that were correctly deleted by the
+        test.
+
+        :param delete_callable: delete method
+        :param args: arguments for delete method
+        :param kwargs: keyword arguments for delete method
+        """
+        try:
+            delete_callable(*args, **kwargs)
+        # if resource is not found, this means it was deleted in the test
+        except lib_exc.NotFound:
+            pass
+
     @staticmethod
     def sleep(seconds=1, msg=None):
         if not msg:
@@ -265,19 +288,6 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         else:
             LOG.warning("Sleeping for {}s. {}.".format(seconds, msg))
         time.sleep(seconds)
-
-    def assert_success_rate(self, expected_success_rate, actual_success_rate,
-                            be_tolerant_for=0):
-        if (actual_success_rate != expected_success_rate and
-                be_tolerant_for > 0 and
-                actual_success_rate >= (expected_success_rate -
-                                        be_tolerant_for)):
-            # hit a case of accepted failure tolerance
-            self.skipTest('ATTENTION: success_rate is %d; skipping test' %
-                          actual_success_rate)
-        else:
-            self.assertEqual(expected_success_rate, actual_success_rate,
-                             'Success rate not met!')
 
     @classmethod
     def create_network_at_class_level(cls, network_name, client, **kwargs):
@@ -654,6 +664,17 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 namestart='tempest-open-ssh')
         return self.ssh_security_group
 
+    def create_security_group_rule(self, security_group=None, **kwargs):
+        if 'security_group_id' not in kwargs:
+            security_group = security_group or self.ssh_security_group
+        if security_group:
+            security_group_id = kwargs.setdefault('security_group_id',
+                                                  security_group['id'])
+            if security_group_id != security_group['id']:
+                raise ValueError('Security group ID specified multiple times.')
+
+        return self._create_security_group_rule(security_group, **kwargs)
+
     def create_test_router(self, client=None):
         if Topology.access_to_l2_supported():
             return self.create_router(client=client)  # can be isolated router
@@ -873,6 +894,53 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                         port['fixed_ips'][0]['subnet_id'] == by_subnet_id),
                        None)
         return ri_port
+
+    def create_trunk(self, port, subports=None, client=None,
+                     cleanup=True, **kwargs):
+        client = client or self.plugin_network_client
+        body = client.create_trunk(port['id'], subports=subports,
+                                   **kwargs)
+        trunk = body['trunk']
+        if cleanup:
+            self.addCleanup(self.delete_trunk, trunk, client)
+        return trunk
+
+    def delete_trunk(self, trunk, client=None):
+        """Delete network trunk
+
+        :param trunk: dictionary containing trunk ID (trunk['id'])
+
+        :param client: client to be used for connecting to networking service
+        """
+        client = client or self.plugin_network_client
+        trunk.update(client.show_trunk(trunk['id'])['trunk'])
+
+        if not trunk['admin_state_up']:
+            # Cannot touch trunk before admin_state_up is True
+            client.update_trunk(trunk['id'], admin_state_up=True)
+        if trunk['sub_ports']:
+            # Removes trunk ports before deleting it
+            self._try_delete(client.remove_subports,
+                             trunk['id'],
+                             trunk['sub_ports'])
+
+        # we have to detach the interface from the server before
+        # the trunk can be deleted.
+        parent_port = {'id': trunk['port_id']}
+
+        def is_parent_port_detached():
+            parent_port.update(client.show_port(parent_port['id'])['port'])
+            return not parent_port['device_id']
+
+        if not is_parent_port_detached():
+            # this could probably happen when trunk is deleted and parent port
+            # has been assigned to a VM that is still running. Here we are
+            # assuming that device_id points to such VM.
+            self.manager.interfaces_client.delete_interface(
+                parent_port['device_id'], parent_port['id'])
+            utils.wait_until_true(is_parent_port_detached)
+
+        client.delete_trunk(trunk['id'])
 
     def _create_keypair(self, client=None):
         if not client:
