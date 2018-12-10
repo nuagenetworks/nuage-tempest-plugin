@@ -173,6 +173,12 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         cls.setup_network_resources(cls)
 
     @classmethod
+    def setup_credentials(cls):
+        # Create no network resources for these tests.
+        cls.set_network_resources()
+        super(NuageBaseTest, cls).setup_credentials()
+
+    @classmethod
     def clear_credentials(cls):
         if cls.is_dhcp_agent_present():
             # need to add robustness for delete thanks to our great external
