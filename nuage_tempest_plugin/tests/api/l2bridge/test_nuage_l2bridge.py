@@ -250,8 +250,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             'segmentation_type': 'vlan'
         }]
         # Update with different info
-        msg = ("Physical network physnet1 with segmentation_id 100 and "
-               "segmentation_type vlan is currently in use. It is not "
+        msg = ("Physical network .* currently in use. It is not "
                "allowed to remove a physical network that is in use "
                "from a nuage_l2bridge.")
         self.assertRaisesRegex(exceptions.BadRequest,
