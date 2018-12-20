@@ -19,7 +19,6 @@ from tempest.lib import exceptions
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils.data_utils import nextitem
 
 CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
@@ -167,7 +166,7 @@ class OrchestrationNeutronResourcesTest(nuage_base.NuageBaseOrchestrationTest):
                             subnet_id]
         self.assertEqual(1, len(subnet_fixed_ips))
         router_interface_ip = subnet_fixed_ips[0]['ip_address']
-        self.assertEqual(str(nextitem(self.subnet_cidr.iter_hosts())),
+        self.assertEqual(str(next(self.subnet_cidr.iter_hosts())),
                          router_interface_ip)
 
     @decorators.idempotent_id('75d85316-4ac2-4c0e-a1a9-edd2148fc10e')
