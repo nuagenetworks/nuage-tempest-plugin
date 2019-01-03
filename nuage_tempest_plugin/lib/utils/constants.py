@@ -84,13 +84,39 @@ CIDR_TO_NETMASK = {
 }
 
 PROTO_NAME_TO_NUM = {
+    'ah': '51',
+    'dccp': '33',
+    'egp': '8',
+    'esp': '50',
+    'gre': '47',
+    'icmp': '1',
+    'igmp': '2',
+    'ipip': '4',
+    'ipv6-encap': '41',
+    'ipv6-frag': '44',
+    'ipv6-icmp': '58',
+    'icmpv6': '58',
+    'ipv6-nonxt': '59',
+    'ipv6-opts': '60',
+    'ipv6-route': '43',
+    'ospf': '89',
+    'pgm': '113',
+    'rsvp': '46',
+    'sctp': '132',
     'tcp': '6',
     'udp': '17',
-    'icmp': '1',
-    'icmp6': '58',
+    'udplite': '136',
+    'vrrp': '112',
     'IPv4': '0x0800',
     'IPv6': '0x86DD'
 }
+
+IPV4_PROTO_NAME = ['ah', 'dccp', 'egp', 'esp', 'gre', 'icmp', 'igmp', 'ipip',
+                   'ospf', 'pgm', 'rsvp', 'sctp', 'tcp', 'udp', 'udplite',
+                   'vrrp']
+
+IPV6_PROTO_NAME = ['ipv6-encap', 'ipv6-frag', 'ipv6-icmp', 'icmpv6',
+                   'ipv6-nonxt', 'ipv6-opts', 'ipv6-route']
 
 # Application Designer
 APPLICATION_DOMAIN = 'application-domains'

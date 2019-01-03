@@ -14,6 +14,7 @@
 #    under the License.
 from six import iteritems
 
+import netaddr
 import uuid
 
 from tempest.api.network import base_security_groups as base
@@ -213,18 +214,23 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
             group_create_body['security_group']['id'],
             name=new_name)
 
-    def _test_create_show_delete_security_group_rule(self):
+    def _test_create_show_delete_security_group_rule(self, ipv6=False):
         group_create_body, _ = self._create_security_group()
+        security_group_id = group_create_body['security_group']['id']
         # create a nuage port to create sg on VSD.
-        self._create_nuage_port_with_security_group(
-            group_create_body['security_group']['id'], self.network['id'])
+        self._create_nuage_port_with_security_group(security_group_id,
+                                                    self.network['id'])
+        if ipv6:
+            protocols = n_constants.IPV6_PROTO_NAME
+        else:
+            protocols = n_constants.IPV4_PROTO_NAME
         # Create rules for each protocol
-        protocols = ['tcp', 'udp', 'icmp']
         for protocol in protocols:
+            if protocol == 'ipip' and Topology.before_openstack('Queens'):
+                continue
             rule_create_body = (
                 self.security_group_rules_client.create_security_group_rule(
-                    security_group_id=group_create_body['security_group']
-                    ['id'],
+                    security_group_id=security_group_id,
                     protocol=protocol,
                     direction='ingress',
                     ethertype=self.ethertype
@@ -495,7 +501,7 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
     def test_create_list_update_show_delete_security_group(self):
         self._test_create_list_update_show_delete_security_group()
 
-    @decorators.attr(type='smoke')
+    # @decorators.attr(type='smoke')
     def test_create_show_delete_security_group_rule(self):
         self._test_create_show_delete_security_group_rule()
 
@@ -622,76 +628,13 @@ class TestSecGroupTestNuageL3Domain(SecGroupTestNuageBase):
                 cls.router['id'], subnet_id=cls.subnet['id'])
         finally:
             pass
-
         super(TestSecGroupTestNuageL3Domain, cls).resource_cleanup()
-
-    @decorators.attr(type='smoke')
-    def test_security_group_rule_on_port_in_l3domain(self):
-        group_create_body, name = self._create_security_group()
-        security_group = group_create_body['security_group']
-
-        # create a nuage port to create the security group on VSD.
-        post_body = {"network_id": self.network['id'],
-                     "device_owner": "compute:None",
-                     "device_id": str(uuid.uuid1()),
-                     "security_groups": [security_group['id']]}
-        body = self.ports_client.create_port(**post_body)
-        self.addCleanup(self.ports_client.delete_port, body['port']['id'])
-
-        self._verify_vsd_policy_grp(security_group['id'])
-
-        new_name = data_utils.rand_name('security-')
-        new_description = data_utils.rand_name('security-description')
-        update_body = self.security_groups_client.update_security_group(
-            security_group['id'],
-            name=new_name,
-            description=new_description)
-
-        # Verify if security group is updated
-        self.assertEqual(update_body['security_group']['name'], new_name)
-        self.assertEqual(update_body['security_group']['description'],
-                         new_description)
-
-        # Show details of the updated security group
-        show_body = self.security_groups_client.show_security_group(
-            group_create_body['security_group']['id'])
-        self.assertEqual(show_body['security_group']['name'], new_name)
-        self.assertEqual(show_body['security_group']['description'],
-                         new_description)
-
-        # Create rules for each protocol
-        protocols = ['tcp', 'udp', 'icmp']
-        for protocol in protocols:
-            rule_create_body = (
-                self.security_group_rules_client.create_security_group_rule(
-                    security_group_id=security_group['id'],
-                    protocol=protocol,
-                    direction='ingress',
-                    ethertype=self.ethertype
-                ))
-            # Show details of the created security rule
-            show_rule_body = (
-                self.security_group_rules_client.show_security_group_rule(
-                    rule_create_body['security_group_rule']['id']))
-            create_dict = rule_create_body['security_group_rule']
-            for key, value in iteritems(create_dict):
-                self.assertEqual(value,
-                                 show_rule_body['security_group_rule'][key],
-                                 "%s does not match." % key)
-            self._verify_nuage_acl(rule_create_body['security_group_rule'])
-            # List rules and verify created rule is in response
-            rule_list_body = (self.security_group_rules_client.
-                              list_security_group_rules())
-            rule_list = [rule['id']
-                         for rule in rule_list_body['security_group_rules']]
-            self.assertIn(rule_create_body['security_group_rule']['id'],
-                          rule_list)
 
     @decorators.attr(type='smoke')
     def test_create_list_update_show_delete_security_group(self):
         self._test_create_list_update_show_delete_security_group()
 
-    @decorators.attr(type='smoke')
+    # @decorators.attr(type='smoke')
     def test_create_show_delete_security_group_rule(self):
         self._test_create_show_delete_security_group_rule()
 
@@ -736,11 +679,80 @@ class TestSecGroupTestNuageL3Domain(SecGroupTestNuageBase):
             n_constants.MAX_SG_PER_PORT + 1)
 
 
-# NEEDS MORE WORK
-# class SecGroupTestNuageL2DomainIPv6Test(SecGroupTestNuageL2Domain):
-#     _ip_version = 6
-#     _project_network_cidr = CONF.network.project_network_v6_cidr
-#
-#     # TODO(KRIS) THIS NEEDS TO GO OUT BUT NEED TO FIGURE OUT HOW
-#     if IPNetwork(CONF.network.project_network_v6_cidr).prefixlen < 64:
-#         _project_network_cidr = IPNetwork('cafe:babe::/64')
+class SecGroupTestNuageL2DomainIPv6Test(SecGroupTestNuageBase):
+    _ip_version = 6
+    _project_network_cidr = CONF.network.project_network_v6_cidr
+
+    # TODO(KRIS) THIS NEEDS TO GO OUT BUT NEED TO FIGURE OUT HOW
+    if netaddr.IPNetwork(CONF.network.project_network_v6_cidr).prefixlen < 64:
+        _project_network_cidr = netaddr.IPNetwork('cafe:babe::/64')
+
+    @classmethod
+    def resource_setup(cls):
+        super(SecGroupTestNuageL2DomainIPv6Test, cls).resource_setup()
+
+        # Nuage specific resource addition
+        name = data_utils.rand_name('network-')
+        cls.network = cls.create_network(network_name=name)
+        cls.ipv4_subnet = cls.create_subnet(cls.network, ip_version=4)
+        cls.ipv6_subnet = cls.create_subnet(cls.network, enable_dhcp=False)
+        nuage_l2domain = cls.nuage_client.get_l2domain(
+            filters='externalID',
+            filter_value=cls.ipv4_subnet['id'])
+        cls.nuage_any_domain = nuage_l2domain
+        cls.nuage_domain_type = n_constants.L2_DOMAIN
+
+    # @decorators.attr(type='smoke')
+    def test_create_show_delete_security_group_rule(self):
+        self._test_create_show_delete_security_group_rule(ipv6=True)
+
+
+class SecGroupTestNuageL3DomainIPv6Test(SecGroupTestNuageBase):
+    _ip_version = 6
+    _project_network_cidr = CONF.network.project_network_v6_cidr
+
+    # TODO(KRIS) THIS NEEDS TO GO OUT BUT NEED TO FIGURE OUT HOW
+    if netaddr.IPNetwork(CONF.network.project_network_v6_cidr).prefixlen < 64:
+        _project_network_cidr = netaddr.IPNetwork('cafe:babe::/64')
+
+    @classmethod
+    def resource_setup(cls):
+        super(SecGroupTestNuageL3DomainIPv6Test, cls).resource_setup()
+
+        # Create a network
+        name = data_utils.rand_name('network-')
+        cls.network = cls.create_network(network_name=name)
+
+        # Create dualstack subnet
+        cls.ipv4_subnet = cls.create_subnet(cls.network, ip_version=4)
+        cls.ipv6_subnet = cls.create_subnet(cls.network, enable_dhcp=False)
+
+        # Create a router
+        name = data_utils.rand_name('router-')
+        create_body = cls.routers_client.create_router(
+            name=name, external_gateway_info={
+                "network_id": CONF.network.public_network_id},
+            admin_state_up=False)
+        cls.router = create_body['router']
+        cls.routers_client.add_router_interface(
+            cls.router['id'], subnet_id=cls.ipv4_subnet['id'])
+
+        nuage_l3domain = cls.nuage_client.get_l3domain(
+            filters='externalID',
+            filter_value=cls.router['id'])
+
+        cls.nuage_any_domain = nuage_l3domain
+        cls.nuage_domain_type = n_constants.DOMAIN
+
+    @classmethod
+    def resource_cleanup(cls):
+        try:
+            cls.routers_client.remove_router_interface(
+                cls.router['id'], subnet_id=cls.ipv4_subnet['id'])
+        finally:
+            pass
+        super(SecGroupTestNuageL3DomainIPv6Test, cls).resource_cleanup()
+
+    # @decorators.attr(type='smoke')
+    def test_create_show_delete_security_group_rule(self):
+        self._test_create_show_delete_security_group_rule(ipv6=True)
