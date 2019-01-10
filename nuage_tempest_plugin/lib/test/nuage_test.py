@@ -370,6 +370,22 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         network = body['network']
         return network
 
+    @staticmethod
+    def set_network_as_l3_connected(network):
+        network['is_l3'] = True
+
+    @staticmethod
+    def set_network_as_l2_isolated(network):
+        network['is_l3'] = False
+
+    @staticmethod
+    def is_l3_network(network):
+        return network.get('is_l3') or network.get('vsd_l3_subnet')
+
+    @staticmethod
+    def is_l2_network(network):
+        return not NuageBaseTest.is_l3_network(network)
+
     def get_network(self, network_id, client=None, **kwargs):
         """Wrapper utility that gets a test network."""
         if not client:
@@ -829,14 +845,12 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         self.create_router_interface(router['id'], subnet['id'],
                                      client=client, cleanup=cleanup)
 
-        # mark network as L3
-        subnet['parent_network']['is_l3'] = True
+        self.set_network_as_l3_connected(subnet['parent_network'])
 
     def router_detach(self, router, subnet):
         self.remove_router_interface(router['id'], subnet['id'])
 
-        # unmark network as l3
-        subnet['parent_network']['is_l3'] = False
+        self.set_network_as_l2_isolated(subnet['parent_network'])
 
     def create_router_interface_with_port_id(self, router_id, port_id,
                                              client=None, cleanup=True):
@@ -1158,10 +1172,6 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                         client.delete_floatingip,
                         floating_ip['id'])
         return floating_ip
-
-    @staticmethod
-    def is_l2_network(network):
-        return not network.get('is_l3') and not network.get('vsd_l3_subnet')
 
     def create_tenant_server(self, client=None, networks=None,
                              ports=None, security_groups=None,
