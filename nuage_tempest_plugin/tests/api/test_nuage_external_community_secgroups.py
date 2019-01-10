@@ -17,7 +17,7 @@ from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
 from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants as constants
+from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services import nuage_client
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
@@ -193,24 +193,27 @@ class NuageExtSecGroup(test_security_groups_nuage.SecGroupTestNuageBase):
                   'direction': 'egress',
                   'origin_group_id': sec_group['id'],
                   'remote_external_group_id': ext_sg['id']}
-        ext_sg_rule = self._create_external_security_group_rule(**kwargs)
+        self._create_external_security_group_rule(**kwargs)
+
+        # Create third rule
+        kwargs = {'protocol': 'vrrp',
+                  'direction': 'egress',
+                  'origin_group_id': sec_group['id'],
+                  'remote_external_group_id': ext_sg['id']}
+        self._create_external_security_group_rule(**kwargs)
+
         # List Operation on secgroup rules
         list_resp = self.client.list_nuage_external_security_group_rule(
-            ext_sg['id'])
+            ext_sg['id'])['nuage_external_security_group_rules']
         list_vsd_resp = self._get_nuage_external_acl(
             esg_router, ext_sg_rule, True)
-        self._verify_external_secgroup_rule_properties(
-            list_resp['nuage_external_security_group_rules'][0],
-            list_vsd_resp[0], sec_group)
+        for resp, vsd_resp in zip(list_resp, list_vsd_resp):
+            self._verify_external_secgroup_rule_properties(
+                resp, vsd_resp, sec_group)
         if Topology.within_ext_id_release():
-            self.assertEqual(self.nuage_client.get_vsd_external_id(
-                esg_router['id']), list_vsd_resp[0]['externalID'])
-        self._verify_external_secgroup_rule_properties(
-            list_resp['nuage_external_security_group_rules'][1],
-            list_vsd_resp[1], sec_group)
-        if Topology.within_ext_id_release():
-            self.assertEqual(self.nuage_client.get_vsd_external_id(
-                esg_router['id']), list_vsd_resp[1]['externalID'])
+            for vsd_resp in list_vsd_resp:
+                self.assertEqual(self.nuage_client.get_vsd_external_id(
+                    esg_router['id']), vsd_resp['externalID'])
 
     def test_create_show_list_delete_ext_secgroup_l2domain(self):
         net_name = data_utils.rand_name('network-')
