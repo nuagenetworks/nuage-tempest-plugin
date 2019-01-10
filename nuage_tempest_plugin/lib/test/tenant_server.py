@@ -29,13 +29,13 @@ class FipAccessConsole(RemoteClient):
         self.tenant_server = tenant_server
 
     def send(self, cmd, timeout=CONF.validation.ssh_timeout):
-        cmd_out = None
+        output = {'output': None}
 
         def send_cmd():
-            global cmd_out
             try:
                 LOG.info('FipAccessConsole: send: %s.', cmd)
                 cmd_out = self.exec_command(cmd)
+                output['output'] = cmd_out
                 LOG.info('FipAccessConsole: rcvd: %s.', cmd_out)
 
             except lib_exc.SSHExecCommandFailed:
@@ -45,7 +45,7 @@ class FipAccessConsole(RemoteClient):
             return True
 
         assert test_utils.call_until_true(send_cmd, timeout, 1)
-        return cmd_out
+        return output['output']
 
     def ping(self, destination, cnt, interface=None, ip_type=4):
         try:
