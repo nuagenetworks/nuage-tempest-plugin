@@ -2,6 +2,7 @@
 
 from netaddr import IPNetwork
 import random
+import time
 
 
 def gimme_a_cidr_address(mask_bits=24):
@@ -56,3 +57,29 @@ class _Singleton(type):
 
 class Singleton(_Singleton('SingletonMeta', (object,), {})):
     pass
+
+
+class WaitTimeout(Exception):
+    """Default exception coming from wait_until_true() function."""
+
+
+def wait_until_true(predicate, timeout=60, sleep=1, exception=None):
+    """Wait until callable predicate is evaluated as True
+
+    :param predicate: Callable deciding whether waiting should continue.
+    Best practice is to instantiate predicate with functools.partial()
+    :param timeout: Timeout in seconds how long should function wait.
+    :param sleep: Polling interval for results in seconds.
+    :param exception: Exception instance to raise on timeout. If None is passed
+                      (default) then WaitTimeout exception is raised.
+    """
+    start = int(time.time())
+    while int(time.time()) - start < timeout:
+        if not predicate():
+            time.sleep(sleep)
+        else:
+            return
+    if exception is not None:
+        # pylint: disable=raising-bad-type
+        raise exception
+    raise WaitTimeout("Timed out after %d seconds" % timeout)
