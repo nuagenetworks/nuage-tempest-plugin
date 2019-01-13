@@ -12,6 +12,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 from six import iteritems
 
 import netaddr
@@ -340,6 +341,7 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
         s1 = self.create_subnet(n1)
         n2 = self.create_network(network_name=name + '2')
         s2 = self.create_subnet(n2)
+        r1 = r2 = None  # keep pycharm happy
         if l3:
             r1 = self.create_router(
                 router_name=name + '1',
@@ -400,7 +402,8 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
         return port
 
     def _test_create_port_with_security_groups(self, sg_num,
-                                               nuage_domain=None):
+                                               nuage_domain=None,
+                                               should_succeed=True):
         # Test the maximal number of security groups when creating a port
         if not nuage_domain:
             nuage_domain = self.nuage_any_domain
@@ -415,7 +418,7 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
             "name": data_utils.rand_name('port-'),
             "security_groups": security_groups_list
         }
-        if sg_num <= sg_max:
+        if should_succeed:
             port = self._create_port(**post_body)
             vport = self.nuage_client.get_vport(
                 self.nuage_domain_type,
@@ -437,7 +440,8 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
                 **post_body)
 
     def _test_update_port_with_security_groups(self, sg_num,
-                                               nuage_domain=None):
+                                               nuage_domain=None,
+                                               should_succeed=True):
         # Test the maximal number of security groups when updating a port
         if not nuage_domain:
             nuage_domain = self.nuage_any_domain
@@ -456,7 +460,7 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
             security_groups_list.append(group_create_body['security_group']
                                         ['id'])
         sg_body = {"security_groups": security_groups_list}
-        if sg_num <= sg_max:
+        if should_succeed:
             self.update_port(port, **sg_body)
             vport = self.nuage_client.get_vport(self.nuage_domain_type,
                                                 nuage_domain[0]['ID'],
@@ -501,7 +505,7 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
     def test_create_list_update_show_delete_security_group(self):
         self._test_create_list_update_show_delete_security_group()
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_create_show_delete_security_group_rule(self):
         self._test_create_show_delete_security_group_rule()
 
@@ -525,27 +529,22 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
     def test_create_security_group_rule_in_multiple_domains(self):
         self._test_create_security_group_rule_in_multiple_domains()
 
-    # @decorators.attr(type='smoke')
     def test_create_port_with_max_security_groups(self):
         self._test_create_port_with_security_groups(
             n_constants.MAX_SG_PER_PORT)
 
-    # @decorators.attr(type='smoke')
     def test_create_port_with_overflow_security_groups_neg(self):
         self._test_create_port_with_security_groups(
-            n_constants.MAX_SG_PER_PORT + 1)
+            n_constants.MAX_SG_PER_PORT + 1, should_succeed=False)
 
-    # @decorators.attr(type='smoke')
     def test_update_port_with_max_security_groups(self):
         self._test_update_port_with_security_groups(
             n_constants.MAX_SG_PER_PORT)
 
-    # @decorators.attr(type='smoke')
     def test_update_port_with_overflow_security_groups_neg(self):
         self._test_update_port_with_security_groups(
-            n_constants.MAX_SG_PER_PORT + 1)
+            n_constants.MAX_SG_PER_PORT + 1, should_succeed=False)
 
-    # @decorators.attr(type='smoke')
     def test_create_security_group_rule_invalid_ip_prefix_negative(self):
         sg1_body, _ = self._create_security_group()
         sg_id = sg1_body['security_group']['id']
@@ -634,7 +633,7 @@ class TestSecGroupTestNuageL3Domain(SecGroupTestNuageBase):
     def test_create_list_update_show_delete_security_group(self):
         self._test_create_list_update_show_delete_security_group()
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_create_show_delete_security_group_rule(self):
         self._test_create_show_delete_security_group_rule()
 
@@ -658,25 +657,21 @@ class TestSecGroupTestNuageL3Domain(SecGroupTestNuageBase):
     def test_create_security_group_rule_in_multiple_domains(self):
         self._test_create_security_group_rule_in_multiple_domains(l3=True)
 
-    # @decorators.attr(type='smoke')
     def test_create_port_with_max_security_groups(self):
         self._test_create_port_with_security_groups(
             n_constants.MAX_SG_PER_PORT)
 
-    # @decorators.attr(type='smoke')
     def test_create_port_with_overflow_security_groups_neg(self):
         self._test_create_port_with_security_groups(
-            n_constants.MAX_SG_PER_PORT + 1)
+            n_constants.MAX_SG_PER_PORT + 1, should_succeed=False)
 
-    # @decorators.attr(type='smoke')
     def test_update_port_with_max_security_groups(self):
         self._test_update_port_with_security_groups(
             n_constants.MAX_SG_PER_PORT)
 
-    # @decorators.attr(type='smoke')
     def test_update_port_with_overflow_security_groups_net(self):
         self._test_update_port_with_security_groups(
-            n_constants.MAX_SG_PER_PORT + 1)
+            n_constants.MAX_SG_PER_PORT + 1, should_succeed=False)
 
 
 class SecGroupTestNuageL2DomainIPv6Test(SecGroupTestNuageBase):
@@ -702,7 +697,7 @@ class SecGroupTestNuageL2DomainIPv6Test(SecGroupTestNuageBase):
         cls.nuage_any_domain = nuage_l2domain
         cls.nuage_domain_type = n_constants.L2_DOMAIN
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_create_show_delete_security_group_rule(self):
         self._test_create_show_delete_security_group_rule(ipv6=True)
 
@@ -753,6 +748,6 @@ class SecGroupTestNuageL3DomainIPv6Test(SecGroupTestNuageBase):
             pass
         super(SecGroupTestNuageL3DomainIPv6Test, cls).resource_cleanup()
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_create_show_delete_security_group_rule(self):
         self._test_create_show_delete_security_group_rule(ipv6=True)
