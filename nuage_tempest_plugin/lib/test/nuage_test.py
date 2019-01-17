@@ -5,7 +5,6 @@ import copy
 import functools
 import inspect
 import os.path
-import pymysql
 from six import iteritems
 import testtools
 import time
@@ -14,6 +13,7 @@ import yaml
 from netaddr import IPAddress
 from netaddr import IPNetwork
 from netaddr import IPRange
+from netaddr import valid_ipv6
 
 from tempest.api.network import base
 from tempest.common import waiters
@@ -970,27 +970,6 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             self.ssh_keypair = self._create_keypair()
         return self.ssh_keypair
 
-    @staticmethod
-    def osc_get_database_table_row(db_name, db_username, db_password,
-                                   table_name, row=0,
-                                   assert_table_size=None):
-        db_cmd = 'SELECT * FROM ' + table_name
-
-        db_connection = pymysql.connect(host='localhost',
-                                        user=db_username,
-                                        passwd=db_password,
-                                        db=db_name)
-        cursor = db_connection.cursor()
-        cursor.execute(db_cmd)
-        db_row_cnt = cursor.rowcount
-        db_row = cursor.fetchone() if row == 0 else cursor.fetchall()[row]
-        db_connection.close()
-
-        if assert_table_size is not None:
-            assert db_row_cnt == assert_table_size
-
-        return db_row
-
     def osc_list_networks(self, client=None, *args, **kwargs):
         """List networks using admin creds else provide client """
         if not client:
@@ -1432,59 +1411,95 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             except Exception:
                 LOG.exception('Stopping server %s failed', server_id)
 
+    def _log_console_output(self, servers=None):
+        if not CONF.compute_feature_enabled.console_output:
+            LOG.debug('Console output not supported, cannot log')
+            return
+        if not servers:
+            servers = self.os_primary.servers_client.list_servers()
+            servers = servers['servers']
+        for server in servers:
+            try:
+                console_output = (
+                    self.os_primary.servers_client.get_console_output(
+                        server['id'])['output'])
+                LOG.debug('Console output for %s\nbody=\n%s',
+                          server['id'], console_output)
+            except lib_exc.NotFound:
+                LOG.debug("Server %s disappeared(deleted) while looking "
+                          "for the console log", server['id'])
+
+    def _assert_ping(self, server, dest, should_pass=True,
+                     interface=None, ping_count=None,
+                     ping_size=None, ping_timeout=None):
+        timeout = ping_timeout or CONF.validation.ping_timeout
+
+        """Execute ping to specified destination
+        :returns: data read from standard output of the command.
+        :raises: SSHExecCommandFailed if command returns nonzero
+                 status. The exception contains command status stderr content.
+        """
+        def ping(source, dest, ping_count, ping_size, nic=None):
+            count = ping_count or CONF.validation.ping_count
+            size = ping_size or CONF.validation.ping_size
+
+            # Use 'ping6' for IPv6 addresses, 'ping' for IPv4 and hostnames
+            ip_version = (
+                6 if valid_ipv6(dest) else 4)
+            cmd = (
+                'ping6' if ip_version == 6 else 'ping')
+            if nic:
+                cmd = 'sudo {cmd} -I {nic}'.format(cmd=cmd, nic=interface)
+
+            cmd += ' -c{0} -w{0} -s{1} {2}'.format(count, size, dest)
+            return source.console().exec_command(cmd)
+
+        def ping_address():
+            try:
+                result = ping(server, dest, ping_count,
+                              ping_size, nic=interface)
+
+            except lib_exc.SSHExecCommandFailed:
+                LOG.warning('Failed to ping IP: %s via a ssh connection '
+                            'from: %s.', dest,
+                            server.associated_fip)
+                if should_pass:
+                    LOG.debug('will clear arp cache for : %s', dest)
+                    cmd = 'sudo arp -d {dest}'.format(dest=dest)
+                    # following may fail
+                    try:
+                        server.console().exec_command(cmd)
+                    except lib_exc.SSHExecCommandFailed:
+                        LOG.debug('Failed to execute command on %s.',
+                                  server.id())
+                return not should_pass
+            LOG.debug('ping result: %s', result)
+
+            return should_pass
+
+        return test_utils.call_until_true(
+            ping_address, timeout, 1)
+
     def assert_ping(self, server1, server2, network, ip_type=4,
                     should_pass=True, interface=None, address=None,
-                    ping_count=3,
-                    return_boolean_to_indicate_success=False):
+                    ping_count=3, servers=None, timeout=None):
         if not server1.console():
             self.skipTest('This test cannot complete assert_ping request '
                           'as it has no console access.')
 
-        address2 = address or server2.get_server_ip_in_network(
+        dest = address or server2.get_server_ip_in_network(
             network['name'], ip_type)
-
-        ping_pass = None  # keeps pycharm happy
-
-        for attempt in range(1, Topology.nbr_retries_for_test_robustness + 1):
-            LOG.info('assert_ping: ping attempt %d start', attempt)
-
-            ping_result = server1.ping(address2, ping_count, interface,
-                                       ip_type, should_pass)
-            ping_pass = 'PASSED' if ping_result else 'FAILED'
-            if ping_result == should_pass:
-                LOG.info('assert_ping: ping attempt %d %s', attempt, ping_pass)
-                return True
-
-            LOG.error('assert_ping: ping attempt %d %s', attempt, ping_pass)
-            if should_pass:
-                LOG.debug('will clear arp cache for : %s', address2)
-                cmd = 'sudo arp -d {dest}'.format(dest=address2)
-                # following may fail
-                try:
-                    server1.console().exec_command(cmd)
-                except lib_exc.SSHExecCommandFailed:
-                    LOG.debug('Failed to execute command on %s.',
-                              server1.id())
-            self.sleep(msg='reattempting ping in 1 sec')
-
-        LOG.error(
-            'Ping from server {} to server {} on IP address {} {}.'
-            .format(server1.id(), server2.id(), address2, ping_pass))
-
-        server1.echo_debug_info()
-
-        if return_boolean_to_indicate_success:
-            LOG.error('Ping unexpectedly ' + ping_pass)
-            return False
-        else:
-            self.fail('Ping unexpectedly ' + ping_pass)
-
-    def assert_ping6(self, server1, server2, network,
-                     should_pass=True, interface=None, address=None,
-                     ping_count=3, return_boolean_to_indicate_success=False):
-        return self.assert_ping(server1, server2, network, 6,
-                                should_pass, interface, address, ping_count,
-                                return_boolean_to_indicate_success)
+        try:
+            self.assertTrue(self._assert_ping(
+                server1, dest, should_pass, interface=interface,
+                ping_count=ping_count, ping_timeout=timeout))
+        except lib_exc.SSHTimeout as ssh_e:
+            LOG.debug(ssh_e)
+            self._log_console_output(servers)
+            raise
+        except AssertionError:
+            self._log_console_output(servers)
+            raise
 
     def assertDictEqual(self, d1, d2, ignore, msg):
         for k in d1:

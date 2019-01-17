@@ -44,7 +44,7 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
         self.assert_ping(server1, server2, network)
 
         # Test IPv6 connectivity between peer servers
-        self.assert_ping6(server1, server2, network)
+        self.assert_ping(server1, server2, network, ip_type=6)
 
     def icmp_connectivity_l3_vsd_managed(
             self, cidr4, cidr6,
@@ -121,7 +121,7 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
         self.assert_ping(server1, server2, network2)
 
         # Test IPv6 connectivity between peer servers
-        self.assert_ping6(server1, server2, network2)
+        self.assert_ping(server1, server2, network2, ip_type=6)
 
         if incl_negative_ping_test:
             # Allow IPv6 only
@@ -130,7 +130,7 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
                                            allow_ipv6=True)
 
             self.assert_ping(server1, server2, network2, should_pass=False)
-            self.assert_ping6(server1, server2, network2)
+            self.assert_ping(server1, server2, network2, ip_type=6)
 
         if incl_negative_ping_test:
             # Allow IPv4 only
@@ -139,7 +139,8 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
                                            allow_ipv6=False)
 
             self.assert_ping(server1, server2, network2)
-            self.assert_ping6(server1, server2, network2, should_pass=False)
+            self.assert_ping(server1, server2, network2,
+                             ip_type=6, should_pass=False)
 
         return vsd_domain, vsd_subnet, server1
 

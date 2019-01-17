@@ -98,7 +98,7 @@ class OsManagedDualStackOrchestrationTest(NuageBaseOrchestrationTest):
             server2_ipv6, subnet=ipv6_subnet, device="eth0", )
 
         # Test IPv6 connectivity between peer servers
-        self.assert_ping6(server1, server2, network)
+        self.assert_ping(server1, server2, network, server2_ipv6)
 
         pass
 
