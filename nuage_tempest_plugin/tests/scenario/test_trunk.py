@@ -94,7 +94,10 @@ class TrunkTest(NuageBaseTest):
         router = self.create_public_router()
         self.router_attach(router, self.subnet)
         self.keypair = self.create_keypair()
-        self.secgroup = self.create_open_ssh_security_group()
+        self.secgroup = self._create_empty_security_group()
+        self.create_security_group_rule(
+            security_group=self.secgroup,
+            direction='ingress', ethertype='IPv4', protocol='tcp')
 
     @decorators.attr(type='smoke')
     def test_trunk_subport_lifecycle(self):
