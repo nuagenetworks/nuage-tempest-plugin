@@ -595,6 +595,11 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         """Wrapper utility that returns a test port."""
         if not client:
             client = self.manager
+        if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
+            kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
+        if CONF.network.port_profile and 'binding:profile' not in kwargs:
+            kwargs['binding:profile'] = CONF.network.port_profile
+
         body = client.ports_client.create_port(network_id=network['id'],
                                                **kwargs)
         port = body['port']
@@ -1085,19 +1090,57 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         if image_id is None:
             image_id = CONF.compute.image_ref
 
-        params = copy.copy(kwargs) or {}
-        if tenant_networks:
-            params.update({"networks": []})
-            for network in tenant_networks:
-                if 'id' in network:
-                    params['networks'].append({'uuid': network['id']})
-        if ports:
-            params.update({"networks": []})
-            for port in ports:
-                if 'id' in port:
-                    params['networks'].append({'port': port['id']})
+        vnic_type = CONF.network.port_vnic_type
+        profile = CONF.network.port_profile
 
-        kwargs = copy.copy(params) or {}
+        if kwargs:
+            networks = kwargs.pop('networks', [])
+        else:
+            networks = []
+        if tenant_networks:
+            networks.extend(tenant_networks)
+        if ports:
+            for p in ports:
+                networks.append({'port': p})
+        # If vnic_type or profile are configured create port for
+        # every network
+        if vnic_type or profile:
+            ports = []
+            create_port_body = {}
+
+            if vnic_type:
+                create_port_body['binding:vnic_type'] = vnic_type
+
+            if profile:
+                create_port_body['binding:profile'] = profile
+            if security_groups:
+                security_groups_ids = []
+                for sg in security_groups:
+                    security_groups_ids.append(sg['id'])
+                create_port_body['security_groups'] = security_groups_ids
+            for net in networks:
+                if 'port' not in net:
+                    port = self.create_port(net,
+                                            client=client,
+                                            **create_port_body)
+                    ports.append({'port': port['id']})
+                else:
+                    ports.append({'port': net['port']['id']})
+            if ports:
+                kwargs['networks'] = ports
+        else:
+            nets = []
+            for net in tenant_networks or []:
+                nets.append({'uuid': net['id']})
+            for port in ports or []:
+                nets.append({'port': port['id']})
+            kwargs['networks'] = nets
+            if security_groups:
+                sg_name_dicts = []  # nova requires sg names in dicts
+                for sg in security_groups:
+                    sg_name_dicts.append({'name': sg['name']})
+                kwargs['security_groups'] = sg_name_dicts
+
         if volume_backed:
             volume_name = data_utils.rand_name('volume')
             volumes_client = client.volumes_v2_client
@@ -1123,12 +1166,6 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             kwargs['key_name'] = keypair['name']
 
         vm = None
-
-        if security_groups:
-            sg_name_dicts = []  # nova requires sg names in dicts
-            for sg in security_groups:
-                sg_name_dicts.append({'name': sg['name']})
-            kwargs['security_groups'] = sg_name_dicts
 
         def cleanup_server():
             client.servers_client.delete_server(vm['id'])

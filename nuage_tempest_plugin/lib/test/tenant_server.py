@@ -159,7 +159,14 @@ class TenantServer(object):
                  '  subnet: {}\n'
                  '  device: {}\n'
                  .format(ip, subnet, device))
-
+        # grdinv - assume full blown cloud-init on images
+        # where dhclient available. This might not be true,
+        # but currently seems a best way to handle ipv6 itf config
+        # when we are not sure on interface naming
+        if CONF.scenario.dhcp_client == 'dhclient':
+            LOG.info('VM configure_dualstack_interface: '
+                     'skipping in favor of cloud-init')
+            return
         mask_bits = IPNetwork(subnet['cidr']).prefixlen
         gateway_ip = subnet['gateway_ip']
 
