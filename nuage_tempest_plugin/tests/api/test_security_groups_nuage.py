@@ -599,6 +599,95 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
                                self._create_nuage_port_with_security_group,
                                sg_id, self.network['id'])
 
+    def test_security_group_rule_invalid_ip_prefix_update_port_negative(self):
+        sg1_body, _ = self._create_security_group()
+        sg_id = sg1_body['security_group']['id']
+        direction = 'ingress'
+        protocol = 'tcp'
+        port_range_min = 76
+        port_range_max = 77
+        ip_prefix = '192.168.1.0/0'
+        self.security_group_rules_client.create_security_group_rule(
+            security_group_id=sg_id, direction=direction,
+            ethertype=self.ethertype, protocol=protocol,
+            port_range_min=port_range_min,
+            port_range_max=port_range_max,
+            remote_ip_prefix=ip_prefix)
+        msg = ('Non supported remote CIDR in security rule: Does not match'
+               ' n.n.n.n where n=1-3 decimal digits and the mask is not all'
+               ' zeros , address is 192.168.1.0 , mask is 0.0.0.0')
+        post_body = {
+            "network_id": self.network['id'],
+            "name": data_utils.rand_name('port-')
+        }
+        port = self._create_port(**post_body)
+        sg_body = {"security_groups": [sg_id]}
+        self.assertRaisesRegex(exceptions.BadRequest,
+                               msg,
+                               self.update_port,
+                               port, **sg_body)
+        nuage_pg = self.nuage_client.get_policygroup(
+            self.nuage_domain_type,
+            self.nuage_any_domain[0]['ID'],
+            filters='externalID',
+            filter_value=sg_id)
+        self.assertEqual(len(nuage_pg), 0)
+        vport = self.nuage_client.get_vport(
+            self.nuage_domain_type,
+            self.nuage_any_domain[0]['ID'],
+            filters='externalID',
+            filter_value=port['id'])
+        nuage_policy_grps = self.nuage_client.get_policygroup(
+            n_constants.VPORT,
+            vport[0]['ID'])
+        self.assertEqual(nuage_policy_grps[0]['name'],
+                         port['security_groups'][0])
+
+    def test_security_group_rule_invalid_nw_macro_update_port_negative(
+            self):
+        sg1_body, _ = self._create_security_group()
+        sg_id = sg1_body['security_group']['id']
+        direction = 'ingress'
+        protocol = 'tcp'
+        port_range_min = 76
+        port_range_max = 77
+        ip_prefix = '172.16.50.210/24'
+        self.security_group_rules_client.create_security_group_rule(
+            security_group_id=sg_id, direction=direction,
+            ethertype=self.ethertype, protocol=protocol,
+            port_range_min=port_range_min,
+            port_range_max=port_range_max,
+            remote_ip_prefix=ip_prefix)
+        msg = ('Non supported remote CIDR in security rule:'
+               ' Network IP Address 172.16.50.210 must have host'
+               ' bits set to 0.')
+        post_body = {
+            "network_id": self.network['id'],
+            "name": data_utils.rand_name('port-')
+        }
+        port = self._create_port(**post_body)
+        sg_body = {"security_groups": [sg_id]}
+        self.assertRaisesRegex(exceptions.BadRequest,
+                               msg,
+                               self.update_port,
+                               port, **sg_body)
+        nuage_pg = self.nuage_client.get_policygroup(
+            self.nuage_domain_type,
+            self.nuage_any_domain[0]['ID'],
+            filters='externalID',
+            filter_value=sg_id)
+        self.assertEqual(len(nuage_pg), 0)
+        vport = self.nuage_client.get_vport(
+            self.nuage_domain_type,
+            self.nuage_any_domain[0]['ID'],
+            filters='externalID',
+            filter_value=port['id'])
+        nuage_policy_grps = self.nuage_client.get_policygroup(
+            n_constants.VPORT,
+            vport[0]['ID'])
+        self.assertEqual(nuage_policy_grps[0]['name'],
+                         port['security_groups'][0])
+
 
 class TestSecGroupTestNuageL3Domain(SecGroupTestNuageBase):
     @classmethod
