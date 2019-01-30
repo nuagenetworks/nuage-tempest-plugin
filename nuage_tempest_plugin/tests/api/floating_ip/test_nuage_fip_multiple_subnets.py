@@ -7,6 +7,7 @@ from tempest.lib import decorators
 from tempest.lib import exceptions
 
 from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import data_utils
 
 
@@ -180,9 +181,9 @@ class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
         n1 = self.create_network(client=self.admin_manager)
         self.create_port(n1, client=self.admin_manager)
         kwargs = {'router:external': True}
-        msg = ("Network %s cannot be updated. "
-               "There are one or more ports still in "
-               "use on the network.") % n1['id']
+        msg = ('Network {} cannot be updated. '
+               'There are one or more ports still in '
+               'use on the network.').format(n1['id'])
         self.assertRaisesRegex(
             exceptions.BadRequest,
             msg,
@@ -190,6 +191,31 @@ class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
             n1['id'],
             client=self.admin_manager,
             **kwargs)
+
+    @decorators.attr(type='smoke')
+    def test_nuage_external_network_update_to_internal(self):
+        """test_nuage_external_network_update_to_internal
+
+        Releases below Rocky: OPENSTACK-2340
+        Releases from Rocky: Check that external network with subnets can not
+        be updated to internal
+        """
+        if Topology.from_openstack('ROCKY'):
+            kwargs = {'router:external': True}
+            n1 = self.create_network(client=self.admin_manager, **kwargs)
+            self.create_subnet(n1, cidr=data_utils.gimme_a_cidr(),
+                               mask_bits=24,
+                               client=self.admin_manager)
+            kwargs = {'router:external': False}
+            msg = ('External network with subnets can not be '
+                   'changed to non-external network')
+            self.assertRaisesRegex(
+                exceptions.BadRequest,
+                msg,
+                self.update_network,
+                n1['id'],
+                self.admin_manager,
+                **kwargs)
 
     @decorators.attr(type='smoke')
     def test_nuage_network_multiple_gw(self):
