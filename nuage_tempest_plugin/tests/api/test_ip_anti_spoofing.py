@@ -441,7 +441,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         self.assertEqual(vsd_port.address_spoofing, 'INHERITED')
         self.assertEqual(vsd_port.name, port['id'])
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_create_delete_sec_disabled_ntw_l2domain(self):
         # L2domain testcase to test network and port creation with
         # port-security-enabled set to False at network level only
@@ -521,7 +521,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         self.assertEqual(vsd_port.name, port['id'])
         self._check_pg_for_no_security_set(vsd_l3dom, vsd_port)
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_update_ntw_from_sec_disabled_to_enabled_l2domain(self):
         # L2domain testcase for updating the port-security-enabled flag
         # from False to True. Ports are created at both the states to check
@@ -580,7 +580,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         port_2_pg = vsd_port_2.policy_groups.get_first()
         self.assertEqual(port_2_pg.name, n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_update_port_from_sec_disabled_to_enabled_l2domain(self):
         # L2domain testcase for updating the port-security-enabled flag
         # from False to True at port level. Network level flag set to
@@ -608,7 +608,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         port_pg = vsd_port.policy_groups.get_first()
         self.assertIsNone(port_pg)
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_update_port_from_sec_enabled_to_disabled_l2domain(self):
         # L2domain testcase for updating the port-security-enabled flag
         # from True to False at port level. Network level flag set to
@@ -713,7 +713,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         self.assertEqual(port_2_pg.name,
                          n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_update_port_from_sec_disabled_to_enabled_l3domain(self):
         # L3domain testcase for updating the port-security-enabled flag
         # from False to True at port level. Network level flag set to
@@ -744,7 +744,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         port_pg = vsd_port.policy_groups.get_first()
         self.assertIsNone(port_pg)
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_update_port_from_sec_enabled_to_disabled_l3domain(self):
         # L3domain testcase for updating the port-security-enabled flag
         # from True to False at port level. Network level flag set to
@@ -773,7 +773,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         self.assertEqual(vsd_port.name, port['id'])
         self._check_pg_for_no_security_set(vsd_l3dom, vsd_port)
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_port_only_one_pg_allow_all_in_one_domain(self):
         network1, l2domain1, port1 = self._create_network_port_l2resources(
             ntw_security=False, port_security=False,
