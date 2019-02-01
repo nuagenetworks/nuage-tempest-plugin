@@ -12,7 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import time
 
 import testtools
 from testtools import matchers
@@ -29,6 +28,8 @@ from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.tests.api.baremetal.baremetal_topology \
     import BaremetalTopology
+from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
+    import ExternalId
 
 CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
@@ -91,6 +92,17 @@ class BaremetalPortsTest(network_mixin.NetworkMixin,
             'binding:host_id': 'dummy', 'binding:profile': {
                 "local_link_information": [
                     {"port_id": self.gw_port['name'],
+                     "switch_info": self.gateway['systemID']}]
+            }}
+        gw_port_name1 = data_utils.rand_name(name='gw-port')
+        self.gw_port1 = self.vsd_client.create_gateway_port(
+            gw_port_name1, gw_port_name1, 'ACCESS', self.gateway['ID'],
+            extra_params={'VLANRange': '0-4095'})[0]
+        self.binding_data1 = {
+            'binding:vnic_type': 'baremetal',
+            'binding:host_id': 'dummy', 'binding:profile': {
+                "local_link_information": [
+                    {"port_id": self.gw_port1['name'],
                      "switch_info": self.gateway['systemID']}]
             }}
 
@@ -226,7 +238,8 @@ class BaremetalPortsTest(network_mixin.NetworkMixin,
                           topology.network['id'],
                           **data)
 
-    def test_create_without_psec(self):
+    # @decorators.attr(type='smoke')
+    def test_l2_create_without_psec(self):
         topology = self._create_topology()
         create_data = {
             'port_security_enabled': False,
@@ -242,12 +255,33 @@ class BaremetalPortsTest(network_mixin.NetworkMixin,
         self._validate_baremetal_vport(topology)
         self._validate_vlan(topology, vlan_transparent=False)
         self._validate_interface(topology)
-        self._validate_policygroup(topology, pg_name='PG_FOR_LESS_SECURITY')
+        # Add normal port and check there are two PG_ALLOW_ALL
+        # (software and hardware)
+        create_data = {
+            'port_security_enabled': False
+        }
+        topology.normal_port = self.create_port(topology.network['id'],
+                                                **create_data)
+        self._validate_policygroup(
+            topology, pg_name=constants.NUAGE_PLCY_GRP_ALLOW_ALL_HW)
+        create_data = {
+            'port_security_enabled': False,
+            'binding:vnic_type': 'baremetal',
+            'binding:host_id': 'dummy', 'binding:profile': {
+                "local_link_information": [
+                    {"port_id": self.gw_port1['name'],
+                     "switch_info": self.gateway['systemID']}]
+            }}
+        topology.baremetal_port = self.create_port(topology.network['id'],
+                                                   **create_data)
+        self._validate_policygroup(
+            topology, pg_name=constants.NUAGE_PLCY_GRP_ALLOW_ALL_HW,
+            vport_num=2)
 
-    def test_update_without_psec(self):
+    # @decorators.attr(type='smoke')
+    def test_l2_update_without_psec(self):
         topology = self._create_topology()
         create_data = {
-            'security_groups': [],
             'port_security_enabled': False,
             'binding:vnic_type': 'baremetal',
         }
@@ -264,7 +298,71 @@ class BaremetalPortsTest(network_mixin.NetworkMixin,
         self._validate_baremetal_vport(topology)
         self._validate_vlan(topology, vlan_transparent=False)
         self._validate_interface(topology)
-        self._validate_policygroup(topology, pg_name='PG_FOR_LESS_SECURITY')
+        self._validate_policygroup(
+            topology, pg_name=constants.NUAGE_PLCY_GRP_ALLOW_ALL_HW)
+
+    # @decorators.attr(type='smoke')
+    def test_l3_create_without_psec(self):
+        topology = self._create_topology(with_router=True)
+        create_data = {
+            'port_security_enabled': False,
+            'binding:vnic_type': 'baremetal',
+            'binding:host_id': 'dummy', 'binding:profile': {
+                "local_link_information": [
+                    {"port_id": self.gw_port['name'],
+                     "switch_info": self.gateway['systemID']}]
+            }}
+        baremetal_port = self.create_port(topology.network['id'],
+                                          **create_data)
+        topology.baremetal_port = baremetal_port
+        self._validate_baremetal_vport(topology)
+        self._validate_vlan(topology, vlan_transparent=False)
+        self._validate_interface(topology)
+        # Add normal port and check there are two PG_ALLOW_ALL
+        # (software and hardware)
+        create_data = {
+            'port_security_enabled': False
+        }
+        topology.normal_port = self.create_port(topology.network['id'],
+                                                **create_data)
+        self._validate_policygroup(
+            topology, pg_name=constants.NUAGE_PLCY_GRP_ALLOW_ALL_HW)
+        create_data = {
+            'port_security_enabled': False,
+            'binding:vnic_type': 'baremetal',
+            'binding:host_id': 'dummy', 'binding:profile': {
+                "local_link_information": [
+                    {"port_id": self.gw_port1['name'],
+                     "switch_info": self.gateway['systemID']}]
+            }}
+        topology.baremetal_port = self.create_port(topology.network['id'],
+                                                   **create_data)
+        self._validate_policygroup(
+            topology, pg_name=constants.NUAGE_PLCY_GRP_ALLOW_ALL_HW,
+            vport_num=2)
+
+    # @decorators.attr(type='smoke')
+    def test_l3_update_without_psec(self):
+        topology = self._create_topology(with_router=True)
+        create_data = {
+            'port_security_enabled': False,
+            'binding:vnic_type': 'baremetal',
+        }
+        baremetal_port = self.create_port(topology.network['id'],
+                                          **create_data)
+        update_data = {
+            'binding:host_id': 'dummy', 'binding:profile': {
+                "local_link_information": [
+                    {"port_id": self.gw_port['name'],
+                     "switch_info": self.gateway['systemID']}]
+            }}
+        baremetal_port = self.update_port(baremetal_port['id'], **update_data)
+        topology.baremetal_port = baremetal_port
+        self._validate_baremetal_vport(topology)
+        self._validate_vlan(topology, vlan_transparent=False)
+        self._validate_interface(topology)
+        self._validate_policygroup(
+            topology, pg_name=constants.NUAGE_PLCY_GRP_ALLOW_ALL_HW)
 
     def test_l2_create_baremetal_port_with_max_security_groups(self):
         topology = self._create_topology(with_router=False,
@@ -450,24 +548,11 @@ class BaremetalPortsTest(network_mixin.NetworkMixin,
                 topology.vsd_baremetal_interface['IPAddress'],
                 matchers.Equals(neutron_port['fixed_ips'][0]['ip_address']))
 
-    def _validate_policygroup(self, topology, pg_name=None):
-        if topology.normal_port is not None:
+    def _validate_policygroup(self, topology, pg_name=None, vport_num=1):
+        if topology.normal_port is not None or self.is_dhcp_agent_present():
             expected_pgs = 2  # Expecting software + hardware
         else:
             expected_pgs = 1  # Expecting only hardware
-        if self.is_dhcp_agent_present():
-            expected_pgs += 1  # Extra PG for dhcp agent
-
-            # Repeated check in case of agent
-            for attempt in range(Topology.nbr_retries_for_test_robustness):
-                if len(topology.get_vsd_policygroups(True)) == expected_pgs:
-                    break
-                else:
-                    LOG.error("Unexpected amount of PGs found, "
-                              "expected {} found {} (attempt {})".format(
-                                  expected_pgs, len(topology.vsd_policygroups),
-                                  attempt + 1))
-                    time.sleep(1)
 
         self.assertThat(topology.get_vsd_policygroups(True),
                         matchers.HasLength(expected_pgs),
@@ -480,16 +565,22 @@ class BaremetalPortsTest(network_mixin.NetworkMixin,
             self.fail("Could not find HARDWARE policy group.")
         self.assertThat(vsd_policygroup['type'], matchers.Equals('HARDWARE'))
         if pg_name:
-            self.assertThat(vsd_policygroup['name'],
-                            matchers.Contains(pg_name))
+            self.assertEqual(pg_name, vsd_policygroup['name'])
+            self.assertEqual(pg_name, vsd_policygroup['description'])
+            self.assertEqual("hw:" +
+                             (ExternalId(constants.NUAGE_PLCY_GRP_ALLOW_ALL)
+                              .at_cms_id()), vsd_policygroup['externalID'])
 
         vsd_pg_vports = self.vsd_client.get_vport(constants.POLICYGROUP,
                                                   vsd_policygroup['ID'])
-        self.assertThat(vsd_pg_vports, matchers.HasLength(1),
-                        message="Expected to find exactly 1 vport in PG")
-        self.assertThat(vsd_pg_vports[0]['ID'],
-                        matchers.Equals(topology.vsd_baremetal_vport['ID']),
-                        message="Vport should be part of HARDWARE PG")
+        self.assertThat(vsd_pg_vports, matchers.HasLength(vport_num),
+                        message="Expected to find exactly {} "
+                                "vport in PG".format(vport_num))
+        for vsd_pg_vport in vsd_pg_vports:
+            if vsd_pg_vport['ID'] == topology.vsd_baremetal_vport['ID']:
+                break
+        else:
+            self.fail("Vport should be part of HARDWARE PG")
 
     def _validate_interconnect(self, topology):
         self.assertThat(topology.vsd_policygroups, matchers.HasLength(2),

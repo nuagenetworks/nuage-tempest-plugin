@@ -23,10 +23,13 @@ from tempest.lib.common.utils import data_utils
 from nuage_tempest_plugin.lib.mixins import l3
 from nuage_tempest_plugin.lib.mixins import net_topology as topology_mixin
 from nuage_tempest_plugin.lib.mixins import network as network_mixin
+from nuage_tempest_plugin.lib.test.nuage_test import skip_because
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.lib.utils import data_utils as lib_utils
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
+from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
+    import ExternalId
 
 CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
@@ -262,6 +265,11 @@ class PortsDirectTest(network_mixin.NetworkMixin,
             gw_port_name, gw_port_name, 'ACCESS', self.gateway['ID'],
             extra_params={'VLANRange': '0-4095'})[0]
 
+        gw_port_name1 = data_utils.rand_name(name='gw-port')
+        self.gw_port1 = self.vsd_client.create_gateway_port(
+            gw_port_name1, gw_port_name1, 'ACCESS', self.gateway['ID'],
+            extra_params={'VLANRange': '0-4095'})[0]
+
         self.clear_binding = {'binding:host_id': '',
                               'binding:profile': {}
                               }
@@ -271,6 +279,14 @@ class PortsDirectTest(network_mixin.NetworkMixin,
             'binding:host_id': 'host-hierarchical', 'binding:profile': {
                 "pci_slot": "0000:03:10.6",
                 "physical_network": "physnet1",
+                "pci_vendor_info": "8086:10ed"
+            }}
+
+        self.binding_data1 = {
+            'binding:vnic_type': 'direct',
+            'binding:host_id': 'host-hierarchical', 'binding:profile': {
+                "pci_slot": "0000:03:10.7",
+                "physical_network": "physnet2",
                 "pci_vendor_info": "8086:10ed"
             }}
 
@@ -318,7 +334,12 @@ class PortsDirectTest(network_mixin.NetworkMixin,
                            'port_id': self.gw_port['physicalName'],
                            'host_id': 'host-hierarchical',
                            'pci_slot': '0000:03:10.5'}
-        self._test_direct_subport(verify_topology, subport_mapping)
+        if is_flat_vlan_in_use:
+            nr_vports = 2
+        else:
+            nr_vports = 3
+        self._test_direct_subport(verify_topology, subport_mapping,
+                                  nr_vports=nr_vports)
 
         verify_topology = SriovTopology(
             topology.vsd_client,
@@ -336,7 +357,7 @@ class PortsDirectTest(network_mixin.NetworkMixin,
                             'host_id': 'host-hierarchical',
                             'pci_slot': '0000:03:50.5'}
         self._test_direct_subport(verify_topology, subport2_mapping,
-                                  use_subport_check=True)
+                                  use_subport_check=True, nr_vports=nr_vports)
 
     @utils.requires_ext(extension='trunk', service='network')
     def test_direct_port_l3_create_with_trunk_vlan0_in_use(self):
@@ -525,6 +546,47 @@ class PortsDirectTest(network_mixin.NetworkMixin,
         self._test_direct_port(topology, update=True,
                                with_port_security=True,
                                aap=True, multi_ips=True)
+
+    @skip_because(reason="PG_ALLOW_ALL_HW for baremetal ports can not move to "
+                         "l3 when it is not resolved")
+    def test_direct_port_only_one_pg_allow_all_in_one_domain(self):
+        topology = self._create_topology()
+        self._test_direct_port(topology, update=False)
+        router = self.create_router()
+        self.add_router_interface(router['id'],
+                                  subnet_id=topology.subnet['id'],
+                                  cleanup=False)
+        create_data = {'binding:vnic_type': 'direct'}
+        mapping = {'switch_id': self.gateway['systemID'],
+                   'port_id': self.gw_port1['physicalName'],
+                   'host_id': 'host-hierarchical',
+                   'pci_slot': '0000:03:10.7'}
+        create_data.update(self.binding_data1)
+        with self.switchport_mapping(do_delete=False, **mapping) as swtch_map:
+            self.addCleanup(
+                self.switchport_mapping_client_admin.delete_switchport_mapping,
+                swtch_map['id'])
+            self.create_port(topology.network['id'],
+                             cleanup=True, **create_data)
+            self._validate_os(topology)
+            if topology.is_flat_vlan_in_use:
+                self.assertIsNone(topology.vsd_direct_vport,
+                                  message="Direct vport found but it"
+                                          " should not exists as"
+                                          " VLAN-0 is already in use"
+                                          " by an another system")
+            else:
+                self._validate_vsd(topology, nr_vports=2)
+        self.remove_router_interface(router['id'],
+                                     subnet_id=topology.subnet['id'])
+        if topology.is_flat_vlan_in_use:
+            self.assertIsNone(topology.vsd_direct_vport,
+                              message="Direct vport found but it"
+                                      " should not exists as"
+                                      " VLAN-0 is already in use"
+                                      " by an another system")
+        else:
+            self._validate_vsd(topology, nr_vports=2)
 
     # vsd managed
 
@@ -860,7 +922,7 @@ class PortsDirectTest(network_mixin.NetworkMixin,
         return topology
 
     def _test_direct_subport(self, subport_topology, subport_mapping,
-                             use_subport_check=False):
+                             use_subport_check=False, nr_vports=1):
         with self.switchport_mapping(do_delete=False, **subport_mapping) as sm:
             self.addCleanup(
                 self.switchport_mapping_client_admin.delete_switchport_mapping,
@@ -873,6 +935,7 @@ class PortsDirectTest(network_mixin.NetworkMixin,
                             as_admin=True,
                             **self.clear_binding)
         self._validate_vsd(subport_topology, is_trunk=False,
+                           nr_vports=nr_vports,
                            use_subport_check=use_subport_check)
         self._validate_os(subport_topology, is_subport=True,
                           use_subport_vlan=use_subport_check)
@@ -885,8 +948,7 @@ class PortsDirectTest(network_mixin.NetworkMixin,
         self._validate_vlan(topology, is_trunk, use_subport_check)
         self._validate_interface(topology)
         if not topology.vsd_managed:
-            self._validate_policygroup(
-                topology, pg_name='defaultPG-VSG-BRIDGE', nr_vports=nr_vports)
+            self._validate_policygroup(topology, nr_vports=nr_vports)
 
     def _validate_direct_vport(self, topology):
         direct_vport = topology.vsd_direct_vport
@@ -920,29 +982,29 @@ class PortsDirectTest(network_mixin.NetworkMixin,
                 topology.vsd_direct_interface['IPAddress'],
                 matchers.Equals(neutron_port['fixed_ips'][0]['ip_address']))
 
-    def _validate_policygroup(self, topology, pg_name=None, nr_vports=1):
-        if topology.router and topology._direct_port_is_subport:
-            # If the flat network is in use, we won't have a vport in it.
-            expected_pgs = 2 if topology.is_flat_vlan_in_use else 3
-        else:
-            expected_pgs = 1  # Expecting only hardware
+    def _validate_policygroup(self, topology, nr_vports=1):
+        expected_pgs = 1  # Expecting only one hardware
+        if self.is_dhcp_agent_present():
+            expected_pgs += 1  # Expecting one hardware and one software
         self.assertThat(topology.vsd_policygroups,
                         matchers.HasLength(expected_pgs),
                         message="Unexpected amount of PGs found")
-        vsd_pg_vports = []
-        for vsd_policygroup in topology.vsd_policygroups:
-            self.assertThat(vsd_policygroup['type'],
-                            matchers.Equals('HARDWARE'))
-            if pg_name:
-                self.assertThat(vsd_policygroup['name'],
-                                matchers.Contains(pg_name))
+        vsd_policygroup = topology.vsd_policygroups[expected_pgs - 1]
+        self.assertEqual(vsd_policygroup['type'], 'HARDWARE')
+        self.assertEqual(vsd_policygroup['name'],
+                         constants.NUAGE_PLCY_GRP_ALLOW_ALL_HW)
+        self.assertEqual(vsd_policygroup['description'],
+                         constants.NUAGE_PLCY_GRP_ALLOW_ALL_HW)
+        self.assertEqual(vsd_policygroup['externalID'],
+                         "hw:" +
+                         (ExternalId(constants.NUAGE_PLCY_GRP_ALLOW_ALL)
+                          .at_cms_id()))
 
-            pg_vports = self.vsd_client.get_vport(constants.POLICYGROUP,
+        vsd_pg_vports = self.vsd_client.get_vport(constants.POLICYGROUP,
                                                   vsd_policygroup['ID'])
-            self.assertThat(pg_vports, matchers.HasLength(nr_vports),
-                            message="Expected to find exactly {} "
-                                    "vport(s) in PG".format(nr_vports))
-            vsd_pg_vports.extend(pg_vports)
+        self.assertThat(vsd_pg_vports, matchers.HasLength(nr_vports),
+                        message="Expected to find exactly {} "
+                                "vport(s) in PG".format(nr_vports))
 
         vsd_pg_vport_ids = [v['ID'] for v in vsd_pg_vports]
         self.assertIn(topology.vsd_direct_vport['ID'],

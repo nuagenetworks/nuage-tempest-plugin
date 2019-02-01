@@ -574,7 +574,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
             assert False, "Host Vport not found"
         self.verify_vport_properties(gw_vport[0], vport, self.network['id'])
 
-    @decorators.attr(type='smoke')
+    # @decorators.attr(type='smoke')
     def test_default_security_group_host_port(self):
         post_body = {"network_id": self.network['id'],
                      "device_owner": 'nuage:vip'}
@@ -603,16 +603,25 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
             filter_value=self.router['id'])
         default_pg = self.nuage_client.get_policygroup(
             n_constants.DOMAIN, l3domain[0]['ID'])
-        if default_pg[0]['name'] == 'defaultPG-VRSG-HOST-' + vport['subnet']:
+        if default_pg[0]['name'] == n_constants.NUAGE_PLCY_GRP_ALLOW_ALL:
             pg_num = 0
         else:
             pg_num = 1
-        self.assertEqual(default_pg[pg_num]['name'],
-                         'defaultPG-VRSG-HOST-' + vport['subnet'])
+        self.assertEqual(n_constants.NUAGE_PLCY_GRP_ALLOW_ALL,
+                         default_pg[pg_num]['name'])
         vport_from_pg = self.nuage_client.get_vport(
             n_constants.POLICYGROUP,
             default_pg[pg_num]['ID'])
-        self.assertEqual(vport_from_pg[0]['name'], vport['name'])
+        if len(vport_from_pg) == 1:
+            self.assertEqual(vport_from_pg[0]['name'], vport['name'])
+        elif len(vport_from_pg) == 2:
+            # One bridge vport is created by another test or neutron dhcp
+            # agent is enabled.
+            self.assertEqual(vport_from_pg[1]['name'], vport['name'])
+        else:
+            # One bridge vport is created by another test and neutron dhcp
+            # agent is enabled.
+            self.assertEqual(vport_from_pg[2]['name'], vport['name'])
         nuage_eacl_template = self.nuage_client.get_egressacl_template(
             n_constants.DOMAIN,
             l3domain[0]['ID'])
@@ -634,7 +643,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         if vport_tp_pg_mapping is False:
             assert False, "Host Vport not found in default PG"
 
-    @decorators.attr(type='smoke')
+    # @decorators.attr(type='smoke')
     def test_default_security_group_bridge_port(self):
         kwargs = {
             'gatewayvlan': self.gatewayvlans[4][0]['ID'],
@@ -666,26 +675,29 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
             filter_value=self.router['id'])
         default_pg = self.nuage_client.get_policygroup(
             n_constants.DOMAIN, l3domain[0]['ID'])
-        self.assertEqual(default_pg[0]['name'],
-                         'defaultPG-VRSG-BRIDGE-' + vport['subnet'])
+        self.assertEqual(n_constants.NUAGE_PLCY_GRP_ALLOW_ALL,
+                         default_pg[0]['name'])
 
         if Topology.within_ext_id_release():
-            # must have external ID as network_id @ cms_id
-            # TODO(lina) OPENSTACK-2370
-            # change to use the same externalID of PG_FOR_LESS
             self.assertThat(default_pg[0],
                             ContainsDict(
                                 {'externalID':
-                                 Equals(ExternalId(self.subnet['network_id']
-                                                   ).at_cms_id())}))
+                                 Equals(ExternalId(
+                                     n_constants.NUAGE_PLCY_GRP_ALLOW_ALL
+                                 ).at_cms_id())}))
         else:
             self.assertThat(default_pg[0],
                             ContainsDict({'externalID': Equals(None)}))
 
-        vport_from_pg = self.nuage_client.get_vport(
+        vports_from_pg = self.nuage_client.get_vport(
             n_constants.POLICYGROUP,
             default_pg[0]['ID'])
-        self.assertEqual(vport_from_pg[0]['name'], vport['name'])
+        for vport_from_pg in vports_from_pg:
+            if vport_from_pg['name'] == vport['name']:
+                break
+        else:
+            self.fail("Can't find Vport {} under the policy group {}".format(
+                vport['name'], default_pg[0]['name']))
 
         # Egress ACL
         nuage_eacl_template = self.nuage_client.get_egressacl_template(
@@ -709,14 +721,11 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
                 nuage_eacl_template[0]['ID'])
 
         if Topology.within_ext_id_release():
-            # must have external ID as network_id @ cms_id
-            # TODO(lina) OPENSTACK-2370
-            # change to use the same externalID of PG_FOR_LESS
             self.assertThat(nuage_eacl_entrytemplate[0],
-                            ContainsDict({'externalID':
-                                         Equals(ExternalId(
-                                             self.subnet['network_id']
-                                         ).at_cms_id())}))
+                            ContainsDict({'externalID': Equals(
+                                ExternalId(
+                                    n_constants.NUAGE_PLCY_GRP_ALLOW_ALL
+                                ).at_cms_id())}))
         else:
             self.assertThat(nuage_eacl_entrytemplate[0],
                             ContainsDict({'externalID': Equals(None)}))
@@ -725,14 +734,11 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         for nuage_eacl_entry in nuage_eacl_entrytemplate:
             if nuage_eacl_entry['locationID'] == default_pg[0]['ID']:
                 if Topology.within_ext_id_release():
-                    # must have external ID as network_id @ cms_id
-                    # TODO(lina) OPENSTACK-2370
-                    # change to use the same externalID of PG_FOR_LESS
-                    self.assertThat(nuage_eacl_entry,
-                                    ContainsDict({'externalID':
-                                                 Equals(ExternalId(
-                                                     self.subnet['network_id']
-                                                 ).at_cms_id())}))
+                    self.assertThat(
+                        nuage_eacl_entry,
+                        ContainsDict({'externalID': Equals(ExternalId(
+                            n_constants.NUAGE_PLCY_GRP_ALLOW_ALL
+                        ).at_cms_id())}))
                 else:
                     self.assertThat(nuage_eacl_entry,
                                     ContainsDict({'externalID': Equals(None)}))
@@ -770,13 +776,11 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
                 nuage_iacl_template[0]['ID'])
 
         if Topology.within_ext_id_release():
-            # must have external ID as network_id @ cms_id
-            # TODO(lina) OPENSTACK-2370
-            # change to use the same externalID of PG_FOR_LESS
             self.assertThat(nuage_iacl_entrytemplate[0],
                             ContainsDict({'externalID': Equals(
-                                ExternalId(self.subnet['network_id']
-                                           ).at_cms_id())}))
+                                ExternalId(
+                                    n_constants.NUAGE_PLCY_GRP_ALLOW_ALL,
+                                ).at_cms_id())}))
         else:
             self.assertThat(nuage_iacl_entrytemplate[0],
                             ContainsDict({'externalID': Equals(None)}))
@@ -785,14 +789,11 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         for nuage_iacl_entry in nuage_iacl_entrytemplate:
             if nuage_iacl_entry['locationID'] == default_pg[0]['ID']:
                 if Topology.within_ext_id_release():
-                    # must have external ID as network_id @ cms_id
-                    # TODO(lina) OPENSTACK-2370
-                    # change to be the same externalID of PG_FOR_LESS
-                    self.assertThat(nuage_iacl_entry,
-                                    ContainsDict({'externalID':
-                                                 Equals(ExternalId(
-                                                     self.subnet['network_id']
-                                                 ).at_cms_id())}))
+                    self.assertThat(
+                        nuage_iacl_entry,
+                        ContainsDict({'externalID': Equals(ExternalId(
+                            n_constants.NUAGE_PLCY_GRP_ALLOW_ALL
+                        ).at_cms_id())}))
                 else:
                     self.assertThat(nuage_iacl_entry,
                                     ContainsDict({'externalID': Equals(None)}))
@@ -808,7 +809,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         if vport_tp_pg_mapping is False:
             assert False, "Bridge Vport not found in default PG"
 
-    @decorators.attr(type='smoke')
+    # @decorators.attr(type='smoke')
     def test_default_security_group_host_port_nondef_netpart(self):
         post_body = {"network_id": self.nondef_network['id'],
                      "device_owner": 'nuage:vip'}
@@ -838,17 +839,26 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
             netpart_name=self.nondef_netpart['name'])
         default_pg = self.nuage_client.get_policygroup(
             n_constants.DOMAIN, l3domain[0]['ID'])
-        if default_pg[0]['name'] == 'defaultPG-VRSG-HOST-' + vport['subnet']:
+        if default_pg[0]['name'] == n_constants.NUAGE_PLCY_GRP_ALLOW_ALL:
             pg_num = 0
         else:
             pg_num = 1
 
-        self.assertEqual(default_pg[pg_num]['name'],
-                         'defaultPG-VRSG-HOST-' + vport['subnet'])
+        self.assertEqual(n_constants.NUAGE_PLCY_GRP_ALLOW_ALL,
+                         default_pg[pg_num]['name'])
         vport_from_pg = self.nuage_client.get_vport(
             n_constants.POLICYGROUP,
             default_pg[pg_num]['ID'])
-        self.assertEqual(vport_from_pg[0]['name'], vport['name'])
+        if len(vport_from_pg) == 1:
+            self.assertEqual(vport_from_pg[0]['name'], vport['name'])
+        elif len(vport_from_pg) == 2:
+            # One bridge vport is created by another test or neutron dhcp
+            # agent is enabled.
+            self.assertEqual(vport_from_pg[1]['name'], vport['name'])
+        else:
+            # One bridge vport is created by another test and neutron dhcp
+            # agent is enabled.
+            self.assertEqual(vport_from_pg[2]['name'], vport['name'])
         nuage_eacl_template = self.nuage_client.get_egressacl_template(
             n_constants.DOMAIN,
             l3domain[0]['ID'])
@@ -870,7 +880,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         if vport_tp_pg_mapping is False:
             assert False, "Host Vport not found in default PG"
 
-    @decorators.attr(type='smoke')
+    # @decorators.attr(type='smoke')
     def test_default_security_group_bridge_port_nondef_netpart(self):
         kwargs = {
             'gatewayvlan': self.gatewayvlans[6][0]['ID'],
@@ -902,12 +912,17 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
             netpart_name=self.nondef_netpart['name'])
         default_pg = self.nuage_client.get_policygroup(
             n_constants.DOMAIN, l3domain[0]['ID'])
-        self.assertEqual(default_pg[0]['name'],
-                         'defaultPG-VRSG-BRIDGE-' + vport['subnet'])
-        vport_from_pg = self.nuage_client.get_vport(
+        self.assertEqual(n_constants.NUAGE_PLCY_GRP_ALLOW_ALL,
+                         default_pg[0]['name'])
+        vports_from_pg = self.nuage_client.get_vport(
             n_constants.POLICYGROUP,
             default_pg[0]['ID'])
-        self.assertEqual(vport_from_pg[0]['name'], vport['name'])
+        for vport_from_pg in vports_from_pg:
+            if vport_from_pg['name'] == vport['name']:
+                break
+        else:
+            self.fail("Can't find Vport {} under the policy group {}".format(
+                vport['name'], default_pg[0]['name']))
         nuage_eacl_template = self.nuage_client.get_egressacl_template(
             n_constants.DOMAIN,
             l3domain[0]['ID'])
