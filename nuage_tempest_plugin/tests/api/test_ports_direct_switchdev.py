@@ -349,8 +349,10 @@ class PortsDirectTest(network_mixin.NetworkMixin, l3.L3Mixin):
             matchers.Equals(neutron_port['fixed_ips'][0]['ip_address']))
 
     def _validate_policygroup(self, topology, pg_name=None):
-
-        expected_pgs = 1
+        if self.is_dhcp_agent_present():
+            expected_pgs = 2
+        else:
+            expected_pgs = 1
         self.assertThat(topology.vsd_policygroups,
                         matchers.HasLength(expected_pgs),
                         message="Unexpected amount of PGs found")

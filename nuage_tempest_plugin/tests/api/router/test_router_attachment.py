@@ -79,11 +79,12 @@ class RouterAttachmentTest(NuageBaseTest):
 
     @decorators.attr(type='smoke')
     def test_router_detachment_with_subnet(self):
-        network = self.create_network()
+        network1 = self.create_network()
+        network2 = self.create_network()
         router1 = self.create_router()
         router2 = self.create_router()
-        subnet1 = self.create_subnet(network)
-        subnet2 = self.create_subnet(network)
+        subnet1 = self.create_subnet(network1)
+        subnet2 = self.create_subnet(network2)
         self.router_attach(router1, subnet1, cleanup=False)
 
         # try to delete non-existing router-interfaces
@@ -102,18 +103,19 @@ class RouterAttachmentTest(NuageBaseTest):
 
     @decorators.attr(type='smoke')
     def test_router_detachment_with_port(self):
-        network = self.create_network()
+        network1 = self.create_network()
+        network2 = self.create_network()
         router1 = self.create_router()
         router2 = self.create_router()
-        subnet1 = self.create_subnet(network)
-        subnet2 = self.create_subnet(network)
+        subnet1 = self.create_subnet(network1)
+        subnet2 = self.create_subnet(network2)
 
         port1_subnet1 = self.create_port(
-            network, fixed_ips=[{'subnet_id': subnet1['id']}], cleanup=False)
+            network1, fixed_ips=[{'subnet_id': subnet1['id']}], cleanup=False)
         port2_subnet1 = self.create_port(
-            network, fixed_ips=[{'subnet_id': subnet1['id']}])
+            network1, fixed_ips=[{'subnet_id': subnet1['id']}])
         port1_subnet2 = self.create_port(
-            network, fixed_ips=[{'subnet_id': subnet2['id']}])
+            network2, fixed_ips=[{'subnet_id': subnet2['id']}])
 
         self.router_attach_with_port_id(router1, port1_subnet1, cleanup=False)
 
