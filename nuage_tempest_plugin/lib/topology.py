@@ -95,7 +95,7 @@ class Topology(Singleton):
 
     # - - - - - -
 
-    nbr_retries_for_test_robustness = 10
+    nbr_retries_for_test_robustness = 5  # same as plugin
 
     @staticmethod
     def is_devstack():

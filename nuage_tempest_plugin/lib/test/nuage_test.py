@@ -182,32 +182,6 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         super(NuageBaseTest, cls).setup_credentials()
 
     @classmethod
-    def clear_credentials(cls):
-        if cls.is_dhcp_agent_present():
-            # need to add robustness for delete thanks to our great external
-            # dhcp solution within Nuage
-            for attempt in range(Topology.nbr_retries_for_test_robustness):
-                try:
-                    super(NuageBaseTest, cls).clear_credentials()
-                    return
-
-                except Exception as e:
-                    if ('Nuage API: vPort has VMInterface network interfaces '
-                            'associated with it.' not in str(e)):
-                        raise
-
-                    # else
-
-                    LOG.error('VSD-21337: entity deletion failed (%d)',
-                              attempt + 1)
-                    cls.sleep(msg='Give time for VSD-21337')
-
-            LOG.error('=== ROBUSTNESS AIDS DID NOT WORK!!! GIVING UP ===')
-            # TODO(KRIS) - a way to overcome could be to overrule Credsprovider
-
-        super(NuageBaseTest, cls).clear_credentials()
-
-    @classmethod
     def skip_checks(cls):
         super(NuageBaseTest, cls).skip_checks()
         if not CONF.service_available.neutron:
@@ -703,16 +677,14 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         else:
             return self.create_public_router(client=client)  # needs FIP access
 
-    def create_public_router(self, client=None, retry_on_router_delete=False):
+    def create_public_router(self, client=None):
         return self.create_router(
-            external_network_id=CONF.network.public_network_id,
-            client=client, retry_on_router_delete=retry_on_router_delete)
+            external_network_id=CONF.network.public_network_id, client=client)
 
     def create_router(self, router_name=None, admin_state_up=True,
                       external_network_id=None, enable_snat=None,
                       external_gateway_info_on=True,
                       client=None, cleanup=True,
-                      retry_on_router_delete=None,
                       no_net_partition=False,
                       **kwargs):
         """Wrapper utility that creates a router."""
@@ -736,32 +708,12 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
         router = body['router']
         if cleanup:
-            self.addCleanup(self.delete_router, router, client,
-                            retry_on_router_delete)
+            self.addCleanup(self.delete_router, router, client)
         return router
 
-    # TODO(TEAM) - VSD-21337 : DELETE ROUTER OFTEN FAILS WHEN
-    # TODO(TEAM) - DONE TOO SOON AFTER SUBNET DETACH. MEANWHILE THIS IS A
-    # TODO(TEAM) - WORK-AROUND, BY GIVING DELAY TO THIS METHOD
-    def delete_router(self, router, client=None,
-                      retry_on_router_delete=None):
-        if retry_on_router_delete is None:
-            retry_on_router_delete = self.is_dhcp_agent_present()
+    def delete_router(self, router, client=None):
         if not client:
             client = self.manager
-        if retry_on_router_delete:
-            for attempt in range(Topology.nbr_retries_for_test_robustness):
-                try:
-                    client.routers_client.delete_router(router['id'])
-                    return
-                except Exception as e:
-                    if ('Nuage API: vPort has VMInterface network interfaces '
-                            'associated with it.' not in str(e)):
-                        raise
-                    LOG.error('VSD-21337: Domain deletion failed (%d)',
-                              attempt + 1)
-                    self.sleep(msg='Give time for VSD-21337')
-
         client.routers_client.delete_router(router['id'])
 
     def update_router(self, router,
@@ -1288,25 +1240,16 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                               name, networks, ports, security_groups,
                               flavor, keypair, volume_backed)
 
-        for attempt in range(3):  # retrying seems to pay off (CI evidence)
+        if l2_deployment and make_reachable:
+            server.networks = None
+            server.ports = self.prepare_l3_topology_for_l2_network(
+                networks, ports, security_groups)
+            server.security_groups = None
+            data_interface = 'eth1'
 
-            if l2_deployment and make_reachable:
-                LOG.info("create_tenant_server %s: PREPARE FOR L2 -> L3 "
-                         "(attempt %d)", name, attempt + 1)
-
-                server.networks = None
-                server.ports = self.prepare_l3_topology_for_l2_network(
-                    networks, ports, security_groups)
-                server.security_groups = None
-                data_interface = 'eth1'
-
-            LOG.info("create_tenant_server %s: START (attempt %d)", name,
-                     attempt + 1)
-
-            if server.boot(wait_until, cleanup, True, **kwargs):
-                networks = server.networks
-                ports = server.ports
-                break
+        if server.boot(wait_until, cleanup, True, **kwargs):
+            networks = server.networks
+            ports = server.ports
 
         assert server.did_deploy()
 
@@ -1813,31 +1756,6 @@ class NuageAdminNetworksTest(base.BaseAdminNetworkTest):
                 cls.dhcp_agent_present = False
 
         return cls.dhcp_agent_present
-
-    @classmethod
-    def clear_credentials(cls):
-        if cls.is_dhcp_agent_present():
-            # need to add robustness for delete thanks to our great external
-            # dhcp solution within Nuage
-            for attempt in range(Topology.nbr_retries_for_test_robustness):
-                try:
-                    super(NuageAdminNetworksTest, cls).clear_credentials()
-                    return
-
-                except Exception as e:
-                    if ('Nuage API: vPort has VMInterface network interfaces '
-                            'associated with it.' not in str(e)):
-                        raise
-
-                    # else
-                    LOG.error('VSD-21337: entity deletion failed (%d)',
-                              attempt + 1)
-                    cls.sleep(msg='Give time for VSD-21337')
-
-            LOG.error('=== ROBUSTNESS AIDS DID NOT WORK!!! GIVING UP ===')
-            # TODO(KRIS) - a way to overcome could be to overrule Credsprovider
-
-        super(NuageAdminNetworksTest, cls).clear_credentials()
 
     @staticmethod
     def sleep(seconds=1, msg=None):
