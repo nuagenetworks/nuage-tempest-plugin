@@ -49,6 +49,8 @@ class NuageFeatures(object):
             self.project_name_in_vsd = Topology.from_nuage('5.1')
             self.stateless_security_groups = Topology.from_nuage('5.2')
             self.route_to_underlay = Topology.from_nuage('5.2')
+            self.switchdev_offload = (Topology.from_nuage('5.4') and
+                                      Topology.from_openstack('queens'))
 
     def _log_features(self):
         LOG.info('RELEASES:')
@@ -74,6 +76,8 @@ class NuageFeatures(object):
                  format(self.stateless_security_groups))
         LOG.info('route_to_underlay                : {}'.
                  format(self.route_to_underlay))
+        LOG.info('switchdev_offload                : {}'.
+                 format(self.switchdev_offload))
 
     def __init__(self):
         super(NuageFeatures, self).__init__()

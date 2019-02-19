@@ -19,6 +19,7 @@ from tempest.common import utils
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 
+from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.mixins import l3
 from nuage_tempest_plugin.lib.mixins import network as network_mixin
 from nuage_tempest_plugin.lib.test.nuage_test import skip_because
@@ -185,6 +186,9 @@ class PortsDirectTest(network_mixin.NetworkMixin, l3.L3Mixin):
         super(PortsDirectTest, cls).skip_checks()
         if not CONF.service_available.neutron:
             raise cls.skipException("Neutron is not available")
+        if not NUAGE_FEATURES.switchdev_offload:
+            raise cls.skipException(
+                "OVS HW offload is not supported in current release")
 
     @classmethod
     def resource_cleanup(cls):
