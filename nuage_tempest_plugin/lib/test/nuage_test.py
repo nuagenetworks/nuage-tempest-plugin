@@ -264,13 +264,6 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             LOG.warning("Sleeping for {}s. {}.".format(seconds, msg))
         time.sleep(seconds)
 
-    @classmethod
-    def create_network_at_class_level(cls, network_name, client, **kwargs):
-        body = client.create_network(name=network_name, **kwargs)
-        network = body['network']
-        cls.addClassResourceCleanup(client.delete_network, network['id'])
-        return network
-
     def vsd_create_l2domain_template(
             self, name=None, enterprise=None,
             dhcp_managed=True, ip_type="IPV4",
@@ -327,6 +320,14 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         if cleanup:
             self.addCleanup(vsd_subnet.delete)
         return vsd_subnet
+
+    @classmethod
+    def create_cls_network(cls, network_name, client, cleanup=True, **kwargs):
+        body = client.create_network(name=network_name, **kwargs)
+        network = body['network']
+        if cleanup:
+            cls.addClassResourceCleanup(client.delete_network, network['id'])
+        return network
 
     def create_network(self, network_name=None, client=None,
                        cleanup=True, **kwargs):
@@ -389,32 +390,33 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         subnet = body['subnet']
         return subnet
 
-    def create_subnet(self, network, subnet_name=None, gateway='', cidr=None,
-                      mask_bits=None,
-                      ip_version=None, client=None, cleanup=True,
-                      no_net_partition=False,
-                      **kwargs):
+    @classmethod
+    def create_cls_subnet(cls, network, subnet_name=None,
+                          gateway='', cidr=None, mask_bits=None,
+                          ip_version=None, client=None, cleanup=True,
+                          no_net_partition=False,
+                          **kwargs):
         """Wrapper utility that returns a test subnet."""
         # allow tests to use admin client
         if not client:
-            client = self.manager
+            client = cls.manager
 
         subnet_name = subnet_name or data_utils.rand_name('test-subnet-')
 
         # The cidr and mask_bits depend on the ip version.
-        ip_version = ip_version if ip_version is not None else self._ip_version
+        ip_version = ip_version if ip_version is not None else cls._ip_version
         gateway_not_set = gateway == ''
 
         # fill in cidr and mask_bits if not set -- note that mask_bits is
         # not optional when cidr is set !  ( ~ upstream method behavior )
         if ip_version == 4:
-            cidr = cidr or self.cidr4
+            cidr = cidr or cls.cidr4
             if mask_bits is None:
-                mask_bits = self.mask_bits4
+                mask_bits = cls.mask_bits4
         elif ip_version == 6:
-            cidr = cidr or self.cidr6
+            cidr = cidr or cls.cidr6
             if mask_bits is None:
-                mask_bits = self.mask_bits6
+                mask_bits = cls.mask_bits6
 
         if mask_bits < cidr.prefixlen:
             msg = ('mask_bits of {} does not allow for subnet creation'
@@ -429,7 +431,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 gateway_ip = gateway
             try:
                 if not no_net_partition and 'net_partition' not in kwargs:
-                    kwargs['net_partition'] = self.default_netpartition_name
+                    kwargs['net_partition'] = cls.default_netpartition_name
 
                 body = client.subnets_client.create_subnet(
                     name=subnet_name,
@@ -450,7 +452,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         subnet = body['subnet']
 
         dhcp_enabled = subnet['enable_dhcp']
-        if (self.is_dhcp_agent_present() and dhcp_enabled and
+        if (cls.is_dhcp_agent_present() and dhcp_enabled and
                 not network.get('router:external')):
             current_time = time.time()
             LOG.info("Waiting for dhcp port resolution")
@@ -471,10 +473,10 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 dhcp_subnets = [x['subnet_id'] for x in dhcp_port['fixed_ips']]
             LOG.info("DHCP port resolved")
 
-        self.assertIsNotNone(subnet)
-
+        assert subnet
         if cleanup:
-            self.addCleanup(client.subnets_client.delete_subnet, subnet['id'])
+            cls.addClassResourceCleanup(
+                client.subnets_client.delete_subnet, subnet['id'])
 
         # add parent network
         subnet['parent_network'] = network
@@ -484,6 +486,23 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             network['v4_subnet'] = subnet  # keeps last created only
         else:
             network['v6_subnet'] = subnet  # keeps last created only
+
+        return subnet
+
+    def create_subnet(self, network, subnet_name=None, gateway='', cidr=None,
+                      mask_bits=None,
+                      ip_version=None, client=None, cleanup=True,
+                      no_net_partition=False,
+                      **kwargs):
+        """Wrapper utility that returns a test subnet."""
+        subnet = self.create_cls_subnet(
+            network, subnet_name, gateway, cidr, mask_bits, ip_version, client,
+            cleanup=False, no_net_partition=no_net_partition, **kwargs)
+
+        if cleanup:
+            if not client:
+                client = self.manager
+            self.addCleanup(client.subnets_client.delete_subnet, subnet['id'])
 
         return subnet
 

@@ -65,17 +65,17 @@ class BaseVSDManagedSRIOV(
         return vsd_l3_subnet, vsd_l3_domain
 
     @classmethod
-    def _create_os_vsd_managed_subnet_withoptions(self, network,
+    def _create_os_vsd_managed_subnet_withoptions(cls, network,
                                                   vsd_subnet, cidr):
         kwargs = {
             'network': network,
             'cidr': cidr,
             'mask_bits': cidr.prefixlen,
             'net_partition': Topology.def_netpartition,
-            'nuagenet': vsd_subnet[0]['ID']
-            # 'tenant_id': None
+            'nuagenet': vsd_subnet[0]['ID'],
+            'client': cls.os_admin
         }
-        return self.create_subnet(**kwargs)
+        return cls.create_cls_subnet(**kwargs)
 
     @classmethod
     def create_sriov_dummy_network_multisegment(
@@ -87,9 +87,9 @@ class BaseVSDManagedSRIOV(
         network_name = data_utils.rand_name(name)
         kwargs = {'description': 'sriov parent dummy network',
                   'segments': segments_req}
-        return cls.create_network_at_class_level(network_name,
-                                                 cls.os_admin.networks_client,
-                                                 **kwargs)
+        return cls.create_cls_network(network_name,
+                                      cls.os_admin.networks_client,
+                                      **kwargs)
 
     @classmethod
     def create_sriov_overlay_network_multisegment(
@@ -102,15 +102,16 @@ class BaseVSDManagedSRIOV(
         network_name = data_utils.rand_name(name)
         kwargs = {'description': 'sriov overlay vlan network',
                   'segments': segments_req}
-        return cls.create_network_at_class_level(network_name,
-                                                 cls.os_admin.networks_client,
-                                                 **kwargs)
+        return cls.create_cls_network(network_name,
+                                      cls.os_admin.networks_client,
+                                      **kwargs)
 
     def sriov_port_create(
             self, network, port_name="direct-port", vnic_type="direct"):
         kwargs = {
             'name': port_name,
-            'binding:vnic_type': vnic_type
+            'binding:vnic_type': vnic_type,
+            'client': self.os_admin
         }
         return self.create_port(network, **kwargs)
 
@@ -200,5 +201,6 @@ class BaseVSDManagedSRIOV(
                                   image=CONF.compute.image_ref,
                                   config_drive="true"):
         kwargs = {'networks': [{'port': port['id']}],
-                  'config_drive': config_drive}
+                  'config_drive': config_drive,
+                  'clients': self.os_admin}
         return self.create_server(name, image, flavor, **kwargs)
