@@ -1011,7 +1011,6 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                                wait_until='ACTIVE',
                                volume_backed=False, name=None, flavor=None,
                                image_id=None, keypair=None, cleanup=True,
-                               deploy_attempt_count=1,
                                return_none_on_failure=False,
                                **kwargs):
         """Common wrapper utility returning a test server.
@@ -1028,7 +1027,6 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         :param image_id: Instance image ID.
         :param keypair: Nova keypair for ssh access
         :param cleanup: Flag for cleanup (leave True for auto-cleanup).
-        :param deploy_attempt_count: max deploy attempt count
         :param return_none_on_failure: if True, return None on failure instead
         of failing the test case
         :returns: a tuple
@@ -1125,59 +1123,44 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             waiters.wait_for_server_termination(
                 client.servers_client, vm['id'])
 
-        for attempt in range(deploy_attempt_count):
+        body = client.servers_client.create_server(name=name,
+                                                   imageRef=image_id,
+                                                   flavorRef=flavor,
+                                                   **kwargs)
 
-            LOG.info("Deploying server %s (attempt %d)", name, attempt + 1)
+        vm = rest_client.ResponseBody(body.response, body['server'])
+        LOG.info("Id of vm %s", vm['id'])
 
-            body = client.servers_client.create_server(name=name,
-                                                       imageRef=image_id,
-                                                       flavorRef=flavor,
-                                                       **kwargs)
+        if wait_until:
 
-            vm = rest_client.ResponseBody(body.response, body['server'])
-            LOG.info("Id of vm %s", vm['id'])
+            LOG.info("Waiting for server %s to be %s", name, wait_until)
+            try:
+                waiters.wait_for_server_status(client.servers_client,
+                                               vm['id'], wait_until)
 
-            if wait_until:
+            except Exception as e:
 
-                LOG.info("Waiting for server %s to be %s", name, wait_until)
-                try:
-                    waiters.wait_for_server_status(client.servers_client,
-                                                   vm['id'], wait_until)
+                if ('preserve_server_on_error' not in kwargs or
+                        kwargs['preserve_server_on_error'] is False):
 
-                    break
+                    LOG.error("Deploying server %s failed (%s). "
+                              "Destroying.", name, str(e))
 
-                except Exception as e:
+                    try:
+                        cleanup_server()
+                        vm = None  # mark deletion success
 
-                    if ('preserve_server_on_error' not in kwargs or
-                            kwargs['preserve_server_on_error'] is False):
+                    except Exception as e:
+                        LOG.exception(
+                            'Destroying server %s failed (%s)',
+                            name, str(e))
 
-                        LOG.error("Deploying server %s failed (%s). "
-                                  "Destroying.", name, str(e))
-
-                        # for convenience, define equal
-                        undeploy_attempt_count = deploy_attempt_count
-
-                        for delete_attempt in range(undeploy_attempt_count):
-
-                            try:
-                                cleanup_server()
-                                vm = None  # mark deletion success
-                                break
-
-                            except Exception as e:
-                                LOG.exception(
-                                    'Destroying server %s failed (%s)',
-                                    name, str(e))
-
-                        if vm is not None:
-                            if return_none_on_failure:
-                                LOG.error('Destroying server %s failed', name)
-                                return None
-                            else:
-                                self.fail('Destroying server %s failed' % name)
-
-            else:
-                break
+                    if vm is not None:
+                        if return_none_on_failure:
+                            LOG.error('Destroying server %s failed', name)
+                            return None
+                        else:
+                            self.fail('Destroying server %s failed' % name)
 
         if vm:
             if cleanup:
