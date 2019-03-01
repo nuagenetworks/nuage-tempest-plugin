@@ -7,7 +7,7 @@ import textwrap
 
 from netaddr import IPNetwork
 
-from tempest.lib.common.utils.linux.remote_client import RemoteClient
+from tempest.common.utils.linux.remote_client import RemoteClient
 from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions as lib_exc
 
