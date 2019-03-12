@@ -276,7 +276,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.L2_DOMAIN,
             filters='externalID',
-            filter_value=subnet['id'])[0]
+            filter_value=subnet['network_id'])[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.L2_DOMAIN,
             vsd_vport_parent['ID'],
@@ -306,7 +306,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.L2_DOMAIN,
             filters='externalID',
-            filter_value=subnet['id'])[0]
+            filter_value=subnet['network_id'])[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.L2_DOMAIN,
             vsd_vport_parent['ID'],
@@ -370,7 +370,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.SUBNETWORK,
             filters='externalID',
-            filter_value=subnet['id'])[0]
+            filter_value=subnet['network_id'])[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
@@ -428,7 +428,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.SUBNETWORK,
             filters='externalID',
-            filter_value=subnet['id'])[0]
+            filter_value=subnet['network_id'])[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
@@ -484,7 +484,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.SUBNETWORK,
             filters='externalID',
-            filter_value=subnet['id'])[0]
+            filter_value=subnet['network_id'])[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
@@ -560,7 +560,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.SUBNETWORK,
             filters='externalID',
-            filter_value=subnet['id'])[0]
+            filter_value=subnet['network_id'])[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
@@ -636,7 +636,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.L2_DOMAIN,
             filters='externalID',
-            filter_value=subnet['id'])[0]
+            filter_value=subnet['network_id'])[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.L2_DOMAIN,
             vsd_vport_parent['ID'],
@@ -666,7 +666,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.L2_DOMAIN,
             filters='externalID',
-            filter_value=subnet['id'])[0]
+            filter_value=subnet['network_id'])[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.L2_DOMAIN,
             vsd_vport_parent['ID'],
@@ -737,7 +737,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.SUBNETWORK,
             filters='externalID',
-            filter_value=subnet['id'])[0]
+            filter_value=subnet['network_id'])[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
@@ -793,7 +793,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.SUBNETWORK,
             filters='externalID',
-            filter_value=subnet['id'])[0]
+            filter_value=subnet['network_id'])[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
@@ -841,7 +841,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.SUBNETWORK,
             filters='externalID',
-            filter_value=subnet['id'])[0]
+            filter_value=subnet['network_id'])[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
@@ -921,7 +921,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.SUBNETWORK,
             filters='externalID',
-            filter_value=subnet['id'])[0]
+            filter_value=subnet['network_id'])[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
@@ -1019,7 +1019,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.SUBNETWORK,
             filters='externalID',
-            filter_value=subnet['id'])[0]
+            filter_value=subnet['network_id'])[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
@@ -1118,7 +1118,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.SUBNETWORK,
             filters='externalID',
-            filter_value=subnet['id'])[0]
+            filter_value=subnet['network_id'])[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
@@ -1174,7 +1174,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                 vsd_vport_parent = self.vsd_client.get_global_resource(
                     constants.SUBNETWORK,
                     filters='externalID',
-                    filter_value=subnet['id'])[0]
+                    filter_value=subnet['network_id'])[0]
                 nuage_vport = self.vsd_client.get_vport(
                     constants.SUBNETWORK,
                     vsd_vport_parent['ID'],
@@ -1234,7 +1234,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.SUBNETWORK,
             filters='externalID',
-            filter_value=subnet['id'])[0]
+            filter_value=subnet['network_id'])[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
@@ -1294,7 +1294,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.SUBNETWORK,
             filters='externalID',
-            filter_value=subnet['id'])[0]
+            filter_value=subnet['network_id'])[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
@@ -1388,7 +1388,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.L2_DOMAIN,
             filters='externalID',
-            filter_value=subnet['id'])[0]
+            filter_value=subnet['network_id'])[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.L2_DOMAIN,
             vsd_vport_parent['ID'],
@@ -1403,7 +1403,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.SUBNETWORK,
             filters='externalID',
-            filter_value=subnet['id'])[0]
+            filter_value=subnet['network_id'])[0]
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
             nuage_vport[0]['ID'])
@@ -1452,7 +1452,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.SUBNETWORK,
             filters='externalID',
-            filter_value=subnet['id'])[0]
+            filter_value=subnet['network_id'])[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
@@ -1503,7 +1503,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.L2_DOMAIN,
             filters='externalID',
-            filter_value=subnet['id'])[0]
+            filter_value=subnet['network_id'])[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.L2_DOMAIN,
             vsd_vport_parent['ID'],

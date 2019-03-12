@@ -32,9 +32,9 @@ class NuageExtraDHCPOptionsBaseL2(
         # Find the "network:dhcp:nuage" port created by nuage
         cls.os_l2_port = cls.create_port(cls.osmgd_l2_network)
         cls.l2domain = cls.nuage_client.get_l2domain(
-            'externalID',
-            cls.nuage_client.get_vsd_external_id(cls.osmgd_l2_subnet['id'])
-        )
+            filters=['externalID', 'address'],
+            filter_value=[cls.osmgd_l2_subnet['network_id'],
+                          cls.osmgd_l2_subnet['cidr']])
 
         # Create a L2 VSD managed network and link to its OS network
         name = data_utils.rand_name('l2domain')

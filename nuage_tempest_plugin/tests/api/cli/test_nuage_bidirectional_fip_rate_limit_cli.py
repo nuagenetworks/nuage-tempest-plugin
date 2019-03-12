@@ -111,8 +111,8 @@ class TestNuageBidiFRLCliWODefault(BaseNuageFipRateLimit):
         # Check vsd
         vsd_subnets = self.nuage_client.get_domain_subnet(
             None, None,
-            'externalID',
-            self.nuage_client.get_vsd_external_id(subnet['id']))
+            filters=['externalID', 'address'],
+            filter_value=[subnet['network_id'], subnet['cidr']])
         self.assertEqual(1, len(vsd_subnets))
         vports = self.nuage_client.get_vport(
             constants.SUBNETWORK,

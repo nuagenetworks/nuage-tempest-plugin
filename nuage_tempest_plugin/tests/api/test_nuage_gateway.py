@@ -398,7 +398,8 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
 
         # Verify fip is associated in VSD
         gw_vport = self.nuage_client.get_host_vport(vport['id'])
-        self.verify_vport_properties(gw_vport[0], vport)
+        network_id = self.network['id']
+        self.verify_vport_properties(gw_vport[0], vport, network_id)
         self.assertIsNotNone(gw_vport[0]['associatedFloatingIPID'])
 
     @decorators.attr(type='smoke')
@@ -423,14 +424,15 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         vport = body['nuage_gateway_vport']
 
         gw_vport = self.nuage_client.get_host_vport(vport['id'])
-        self.verify_vport_properties(gw_vport[0], vport)
+        network_id = self.network['id']
+        self.verify_vport_properties(gw_vport[0], vport, network_id)
         body = self.admin_client.list_gateway_vport(self.subnet['id'])
         vports = body['nuage_gateway_vports']
         found_vport = False
         for vport in vports:
             if vport['name'] == gw_vport[0]['name']:
                 found_vport = True
-                self.verify_vport_properties(gw_vport[0], vport)
+                self.verify_vport_properties(gw_vport[0], vport, network_id)
 
         if not found_vport:
             assert False, "Host Vport not found"
@@ -447,14 +449,14 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         self.gatewayvports.append(vport)
 
         gw_vport = self.nuage_client.get_host_vport(vport['id'])
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport, network_id)
         body = self.admin_client.list_gateway_vport(self.subnet['id'])
         vports = body['nuage_gateway_vports']
         found_vport = False
         for vport in vports:
             if vport['name'] == gw_vport[0]['name']:
                 found_vport = True
-                self.verify_vport_properties(gw_vport[0], vport)
+                self.verify_vport_properties(gw_vport[0], vport, network_id)
 
         if not found_vport:
             assert False, "Bridge Vport not found"
@@ -481,14 +483,16 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         vport = body['nuage_gateway_vport']
 
         gw_vport = self.nuage_client.get_host_vport(vport['id'])
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport,
+                                     self.nondef_network['id'])
         body = self.admin_client.list_gateway_vport(self.nondef_subnet['id'])
         vports = body['nuage_gateway_vports']
         found_vport = False
         for vport in vports:
             if vport['name'] == gw_vport[0]['name']:
                 found_vport = True
-                self.verify_vport_properties(gw_vport[0], vport)
+                self.verify_vport_properties(gw_vport[0], vport,
+                                             self.nondef_network['id'])
 
         if not found_vport:
             assert False, "Host Vport not found"
@@ -504,14 +508,16 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         vport = body['nuage_gateway_vport']
         self.gatewayvports.append(vport)
         gw_vport = self.nuage_client.get_host_vport(vport['id'])
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport,
+                                     self.nondef_network['id'])
         body = self.admin_client.list_gateway_vport(self.nondef_subnet['id'])
         vports = body['nuage_gateway_vports']
         found_vport = False
         for vport in vports:
             if vport['name'] == gw_vport[0]['name']:
                 found_vport = True
-                self.verify_vport_properties(gw_vport[0], vport)
+                self.verify_vport_properties(gw_vport[0], vport,
+                                             self.nondef_network['id'])
 
         if not found_vport:
             assert False, "Bridge Vport not found"
@@ -540,7 +546,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         vport = body['nuage_gateway_vport']
         if vport is None:
             assert False, "Host Vport not found"
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport, self.network['id'])
 
     @decorators.attr(type='smoke')
     def test_show_nuage_vport_nondef_netpart(self):
@@ -566,7 +572,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         vport = body['nuage_gateway_vport']
         if vport is None:
             assert False, "Host Vport not found"
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport, self.network['id'])
 
     @decorators.attr(type='smoke')
     def test_default_security_group_host_port(self):
@@ -591,7 +597,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         vport = body['nuage_gateway_vport']
         if vport is None:
             assert False, "Host Vport not found"
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport, self.network['id'])
         l3domain = self.nuage_client.get_l3domain(
             filters='externalID',
             filter_value=self.router['id'])
@@ -641,7 +647,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         self.gatewayvports.append(vport1)
 
         gw_vport = self.nuage_client.get_host_vport(vport1['id'])
-        self.verify_vport_properties(gw_vport[0], vport1)
+        self.verify_vport_properties(gw_vport[0], vport1, self.network['id'])
         body = self.admin_client.list_gateway_vport(self.subnet['id'])
         vports = body['nuage_gateway_vports']
         found_vport = False
@@ -649,7 +655,8 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         for vport in vports:
             if vport['name'] == gw_vport[0]['name']:
                 found_vport = True
-                self.verify_vport_properties(gw_vport[0], vport)
+                self.verify_vport_properties(gw_vport[0], vport,
+                                             self.network['id'])
                 # TODO(Kris noticed) - shld there be break here?
 
         if not found_vport:
@@ -813,7 +820,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         vport = body['nuage_gateway_vport']
         if vport is None:
             assert False, "Host Vport not found"
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport, self.network['id'])
         l3domain = self.nuage_client.get_l3domain(
             filters='externalID',
             filter_value=self.nondef_router['id'],
@@ -865,14 +872,16 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         self.gatewayvports.append(vport)
 
         gw_vport = self.nuage_client.get_host_vport(vport['id'])
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport,
+                                     self.nondef_network['id'])
         body = self.admin_client.list_gateway_vport(self.nondef_subnet['id'])
         vports = body['nuage_gateway_vports']
         found_vport = False
         for vport in vports:
             if vport['name'] == gw_vport[0]['name']:
                 found_vport = True
-                self.verify_vport_properties(gw_vport[0], vport)
+                self.verify_vport_properties(gw_vport[0], vport,
+                                             self.nondef_network['id'])
 
         if not found_vport:
             assert False, "Bridge Vport not found"

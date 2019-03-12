@@ -64,8 +64,9 @@ class SriovTopology(object):
         if not getattr(self, '_vsd_vport_parent', False):
             self._vsd_vport_parent = self.vsd_client.get_global_resource(
                 self.vsd_vport_parent_resource,
-                filters='externalID',
-                filter_value=self.subnet['id'])[0]
+                filters=['externalID', 'address'],
+                filter_value=[self.subnet['network_id'],
+                              self.subnet['cidr']])[0]
         return self._vsd_vport_parent
 
     @property
@@ -84,7 +85,7 @@ class SriovTopology(object):
                 self.vsd_vport_parent_resource,
                 self.vsd_vport_parent['ID'],
                 filters='externalID',
-                filter_value=self.subnet['id'])
+                filter_value=self.subnet['network_id'])
             self._vsd_direct_vport = vsd_vports[0]
         return self._vsd_direct_vport
 
@@ -601,7 +602,7 @@ class PortsDirectTest(network_mixin.NetworkMixin,
             topology.vsd_vport_parent_resource,
             topology.vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=topology.subnet['id'])
+            filter_value=topology.subnet['network_id'])
         vsd_vports = [v for v in vsd_vports if v['ID'] !=
                       original_vport['ID']]
         self.assertNotEmpty(vsd_vports, "No new bridge port made for migrate")

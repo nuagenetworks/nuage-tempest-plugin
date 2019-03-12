@@ -188,14 +188,25 @@ class NuageRestClient(object):
     @staticmethod
     def get_extra_headers(attr, attr_value):
         headers = {}
-        headers['X-NUAGE-FilterType'] = "predicate"
-        if attr == 'externalID':
-            attr_value = NuageRestClient.get_vsd_external_id(attr_value)
-
-        if isinstance(attr_value, int):
-            headers['X-Nuage-Filter'] = "%s IS %s" % (attr, attr_value)
-        else:
-            headers['X-Nuage-Filter'] = "%s IS '%s'" % (attr, attr_value)
+        if not (isinstance(attr, list) and isinstance(attr_value, list)):
+            attr = [attr]
+            attr_value = [attr_value]
+        headers['X-NUAGE-FilterType'] = 'predicate'
+        headers['X-Nuage-Filter'] = ""
+        for attribute, value in zip(attr, attr_value):
+            if headers.get('X-Nuage-Filter'):
+                headers['X-Nuage-Filter'] += " and "
+            if attribute == 'externalID':
+                value = NuageRestClient.get_vsd_external_id(value)
+            if attribute == 'address' and '/' in value:
+                # extracts the address from the cidr
+                value = value.split('/')[0]
+            if isinstance(attr_value, int):
+                headers['X-Nuage-Filter'] += "{} IS {}".format(
+                    attribute, value)
+            else:
+                headers['X-Nuage-Filter'] += "{} IS '{}'".format(
+                    attribute, value)
         return headers
 
     @staticmethod

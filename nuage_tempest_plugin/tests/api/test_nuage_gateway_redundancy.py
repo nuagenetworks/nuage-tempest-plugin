@@ -331,13 +331,13 @@ class NuageGatewayTestRedundancy(base.BaseNuageGatewayTest,
         vport = body['nuage_gateway_vport']
         self.assertIsNotNone(vport)
         gw_vport = self.nuage_client.get_host_vport(vport['id'])
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport, self.network['id'])
         # tests vport-list
         body = self.admin_client.list_gateway_vport(self.subnet['id'])
         vports = body['nuage_gateway_vports']
         vport = self.get_item_by_id(gw_vport[0]['ID'], vports)
         self.assertIsNotNone(vport)
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport, self.network['id'])
 
         # tests vport-show
         body = self.admin_client.show_gateway_vport(
@@ -346,7 +346,7 @@ class NuageGatewayTestRedundancy(base.BaseNuageGatewayTest,
         vport = body['nuage_gateway_vport']
         self.assertIsNotNone(vport,
                              "Host Vport not found in gateway-vport-show")
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport, self.network['id'])
 
         # Create Bridge vport
         kwargs = {
@@ -360,14 +360,14 @@ class NuageGatewayTestRedundancy(base.BaseNuageGatewayTest,
         self.group_vports.append(vport)
 
         gw_vport = self.nuage_client.get_host_vport(vport['id'])
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport, self.network['id'])
         # tests vport-list
         body = self.admin_client.list_gateway_vport(self.subnet['id'])
         vports = body['nuage_gateway_vports']
         vport = self.get_item_by_id(gw_vport[0]['ID'], vports)
         self.assertIsNotNone(vport,
                              "Bridge Vport not found in gateway-vport-list")
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport, self.network['id'])
 
         # tests vport-show
         body = self.admin_client.show_gateway_vport(
@@ -375,7 +375,7 @@ class NuageGatewayTestRedundancy(base.BaseNuageGatewayTest,
         vport = body['nuage_gateway_vport']
         self.assertIsNotNone(vport,
                              "Bridge Vport not found in gateway-vport-show")
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport, self.network['id'])
 
     @decorators.attr(type='smoke')
     def test_nuage_vport_redundant_os_managed_nondef_netpart(self):
@@ -399,13 +399,15 @@ class NuageGatewayTestRedundancy(base.BaseNuageGatewayTest,
         vport = body['nuage_gateway_vport']
         self.assertIsNotNone(vport)
         gw_vport = self.nuage_client.get_host_vport(vport['id'])
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport,
+                                     self.nondef_network['id'])
         # tests vport-list
         body = self.admin_client.list_gateway_vport(self.nondef_subnet['id'])
         vports = body['nuage_gateway_vports']
         vport = self.get_item_by_id(gw_vport[0]['ID'], vports)
         self.assertIsNotNone(vport)
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport,
+                                     self.nondef_network['id'])
 
         # tests vport-show
         body = self.admin_client.show_gateway_vport(
@@ -414,7 +416,8 @@ class NuageGatewayTestRedundancy(base.BaseNuageGatewayTest,
         vport = body['nuage_gateway_vport']
         self.assertIsNotNone(vport,
                              "Host Vport not found in gateway-vport-show")
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport,
+                                     self.nondef_network['id'])
 
         # Create Bridge vport
         kwargs = {
@@ -428,14 +431,16 @@ class NuageGatewayTestRedundancy(base.BaseNuageGatewayTest,
         self.group_vports.append(vport)
 
         gw_vport = self.nuage_client.get_host_vport(vport['id'])
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport,
+                                     self.nondef_network['id'])
         # tests vport-list
         body = self.admin_client.list_gateway_vport(self.nondef_subnet['id'])
         vports = body['nuage_gateway_vports']
         vport = self.get_item_by_id(gw_vport[0]['ID'], vports)
         self.assertIsNotNone(vport,
                              "Bridge Vport not found in gateway-vport-list")
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport,
+                                     self.nondef_network['id'])
 
         # tests vport-show
         body = self.admin_client.show_gateway_vport(
@@ -443,7 +448,8 @@ class NuageGatewayTestRedundancy(base.BaseNuageGatewayTest,
         vport = body['nuage_gateway_vport']
         self.assertIsNotNone(vport,
                              "Bridge Vport not found in gateway-vport-show")
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport,
+                                     self.nondef_network['id'])
 
     @decorators.attr(type='smoke')
     def test_vport_l3_vsd_managed(self):
@@ -495,7 +501,8 @@ class NuageGatewayTestRedundancy(base.BaseNuageGatewayTest,
             gw_vport[0]['ID'], subnet['id'])
         vport = body['nuage_gateway_vport']
         self.assertIsNotNone(vport, "Host Vport not found")
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport,
+                                     self.nondef_network['id'])
 
         # Create Bridge vport
         kwargs = {
@@ -509,12 +516,12 @@ class NuageGatewayTestRedundancy(base.BaseNuageGatewayTest,
         self.group_vports.append(vport)
 
         gw_vport = self.nuage_client.get_host_vport(vport['id'])
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport, net['id'])
         body = self.admin_client.show_gateway_vport(
             gw_vport[0]['ID'], subnet['id'])
         vport = body['nuage_gateway_vport']
         self.assertIsNotNone(vport, "Bridge Vport not found")
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport, net['id'])
 
     @decorators.attr(type='smoke')
     def test_vport_managed_l2_vsd_managed(self):
@@ -553,7 +560,8 @@ class NuageGatewayTestRedundancy(base.BaseNuageGatewayTest,
             gw_vport[0]['ID'], subnet['id'])
         vport = body['nuage_gateway_vport']
         self.assertIsNotNone(vport, "Host Vport not found")
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport,
+                                     self.nondef_network['id'])
 
         # Create Bridge vport
         kwargs = {
@@ -567,9 +575,9 @@ class NuageGatewayTestRedundancy(base.BaseNuageGatewayTest,
         self.group_vports.append(vport)
 
         gw_vport = self.nuage_client.get_host_vport(vport['id'])
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport, net['id'])
         body = self.admin_client.show_gateway_vport(
             gw_vport[0]['ID'], subnet['id'])
         vport = body['nuage_gateway_vport']
         self.assertIsNotNone(vport, "Bridge Vport not found")
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport, net['id'])

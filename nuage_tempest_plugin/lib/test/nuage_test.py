@@ -791,7 +791,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         floatingip_subnet_id = self.osc_list_networks(
             id=external_network_id)[0]['subnets'][0]
         shared_network_resource_id = self.vsd.get_shared_network_resource(
-            by_fip_subnet_id=floatingip_subnet_id).id
+            vspk_filter='name is "{}"'.format(floatingip_subnet_id)).id
 
         # Create floating ip
         floating_ip = self.vsd.create_floating_ip(

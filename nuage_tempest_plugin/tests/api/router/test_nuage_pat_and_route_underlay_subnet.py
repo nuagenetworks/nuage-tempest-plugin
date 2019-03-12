@@ -9,8 +9,6 @@ from tempest.lib import exceptions
 from nuage_tempest_plugin.lib import features
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
-    import ExternalId
 
 CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
@@ -155,8 +153,8 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
             self.update_subnet(subnet,
                                name="new-subnetname")
             nuage_subnet = self.vsd.get_subnet(
-                vspk_filter='externalID == "{}"'.format(
-                    ExternalId(subnet['id']).at_cms_id()))
+                by_network_id=subnet['network_id'],
+                cidr=subnet['cidr'])
             self.assertIsNotNone(nuage_subnet,
                                  "Unable to retrieve L3 subnet from VSD")
             self.assertEqual(pat_enabled, nuage_subnet.pat_enabled,
@@ -190,8 +188,8 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
                 subnet,
                 nuage_underlay=no_op_nuage_underlay)
             nuage_subnet = self.vsd.get_subnet(
-                vspk_filter='externalID == "{}"'.format(
-                    ExternalId(subnet['id']).at_cms_id()))
+                by_network_id=subnet['network_id'],
+                cidr=subnet['cidr'])
             self.assertIsNotNone(nuage_subnet,
                                  "Unable to retrieve L3 subnet from VSD")
             self.assertEqual(pat_enabled, nuage_subnet.pat_enabled,
@@ -256,8 +254,7 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
                 subnet,
                 nuage_underlay=nuage_underlay)
             nuage_subnet = self.vsd.get_subnet(
-                vspk_filter='externalID == "{}"'.format(
-                    ExternalId(subnet['id']).at_cms_id()))
+                by_network_id=subnet['network_id'], cidr=subnet['cidr'])
             self.assertIsNotNone(nuage_subnet,
                                  "Unable to retrieve L3 subnet from VSD")
             self.assertEqual(pat_enabled, nuage_subnet.pat_enabled,

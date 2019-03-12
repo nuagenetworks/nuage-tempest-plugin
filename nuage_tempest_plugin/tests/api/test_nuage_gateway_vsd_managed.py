@@ -86,7 +86,8 @@ class NuageGatewayTestVSDManaged(base.BaseNuageGatewayTest,
             gw_vport[0]['ID'], subnet['id'])
         vport = body['nuage_gateway_vport']
         self.assertIsNotNone(vport, "show host vport failed")
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport,
+                                     post_body['network_id'])
 
         # Create Bridge vport
         kwargs = {
@@ -101,12 +102,14 @@ class NuageGatewayTestVSDManaged(base.BaseNuageGatewayTest,
         self.gatewayvports.append(vport)
 
         gw_vport = self.nuage_client.get_host_vport(vport['id'])
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport,
+                                     post_body['network_id'])
         body = self.admin_client.show_gateway_vport(
             gw_vport[0]['ID'], subnet['id'])
         vport = body['nuage_gateway_vport']
         self.assertIsNotNone(vport, "show Bridge Vport failed")
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport,
+                                     post_body['network_id'])
 
     @decorators.attr(type='smoke')
     def test_vport_managed_l2(self):
@@ -147,7 +150,8 @@ class NuageGatewayTestVSDManaged(base.BaseNuageGatewayTest,
             gw_vport[0]['ID'], subnet['id'])
         vport = body['nuage_gateway_vport']
         self.assertIsNotNone("show Host Vport failed")
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport,
+                                     post_body['network_id'])
 
         # Create Bridge vport
         kwargs = {
@@ -162,12 +166,14 @@ class NuageGatewayTestVSDManaged(base.BaseNuageGatewayTest,
         self.gatewayvports.append(vport)
 
         gw_vport = self.nuage_client.get_host_vport(vport['id'])
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport,
+                                     post_body['network_id'])
         body = self.admin_client.show_gateway_vport(
             gw_vport[0]['ID'], subnet['id'])
         vport = body['nuage_gateway_vport']
         self.assertIsNotNone(vport, "show Bridge Vport failed")
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport,
+                                     post_body['network_id'])
 
     @decorators.attr(type='smoke')
     def test_vport_unmanaged_l2(self):
@@ -209,4 +215,5 @@ class NuageGatewayTestVSDManaged(base.BaseNuageGatewayTest,
             gw_vport[0]['ID'], subnet['id'])
         vport = body['nuage_gateway_vport']
         self.assertIsNotNone(vport, "show Host Vport failed")
-        self.verify_vport_properties(gw_vport[0], vport)
+        self.verify_vport_properties(gw_vport[0], vport,
+                                     post_body['network_id'])

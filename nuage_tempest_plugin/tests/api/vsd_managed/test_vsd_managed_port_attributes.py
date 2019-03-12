@@ -90,7 +90,7 @@ class VSDManagedRedirectTargetTest(
         # with externalID
         if Topology.within_ext_id_release():
             self.assertEqual(vsd_redirect_target[0]['externalID'],
-                             ExternalId(subnet['id']).at_cms_id())
+                             ExternalId(subnet['network_id']).at_cms_id())
 
         # When I associate a port to the redirect-target
         rtport = self.create_port(network)

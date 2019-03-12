@@ -5,8 +5,6 @@ from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.test import tags
-from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
-    import ExternalId
 
 from tempest.lib import decorators
 
@@ -25,9 +23,10 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
         return self.create_subnet(network, ip_version=6, enable_dhcp=False,
                                   cleanup=cleanup)
 
-    def _verify_ipv6_subnet_with_vsd_l2_domain(self, subnet, external_id):
+    def _verify_ipv6_subnet_with_vsd_l2_domain(self, subnet, external_id,
+                                               cidr):
         vsd_l2_domain = self.vsd.get_l2domain(
-            vspk_filter='externalID == "{}"'.format(external_id))
+            by_network_id=external_id, cidr=cidr)
         self.assertIsNotNone(vsd_l2_domain)
         self.assertEqual('DUALSTACK', vsd_l2_domain.ip_type)
         self.assertIsNone(subnet['ipv6_ra_mode'])
@@ -52,7 +51,9 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
         self.assertIsNotNone(ipv4_subnet)
 
         # Then a VSD L2 domain is created with type IPv4
-        vsd_l2_domain = self.vsd.get_l2domain(by_subnet_id=ipv4_subnet['id'])
+        vsd_l2_domain = self.vsd.get_l2domain(
+            by_network_id=ipv4_subnet['network_id'],
+            cidr=ipv4_subnet['cidr'])
         self.assertIsNotNone(vsd_l2_domain)
         self.assertEqual("IPV4", vsd_l2_domain.ip_type)
 
@@ -63,7 +64,7 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
 
         # Then the VSD L2 domain is changed to IP type DualStack
         self._verify_ipv6_subnet_with_vsd_l2_domain(
-            ipv6_subnet, ExternalId(ipv4_subnet['id']).at_cms_id())
+            ipv6_subnet, ipv4_subnet['network_id'], ipv4_subnet['cidr'])
 
         router = self.create_router()
         self.assertIsNotNone(router)
@@ -75,8 +76,8 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
 
         vsd_l3_domain.fetch()
         vsd_l3_subnet = self.vsd.get_subnet_from_domain(
-            domain=vsd_l3_domain, by_subnet_id=ipv4_subnet['id'])
-
+            domain=vsd_l3_domain, by_network_id=ipv4_subnet['network_id'],
+            cidr=ipv4_subnet['cidr'])
         port = self.create_port(network)
         self._verify_port(port, subnet4=ipv4_subnet, subnet6=None),
         self._verify_vport_in_l3_subnet(port, vsd_l3_subnet)

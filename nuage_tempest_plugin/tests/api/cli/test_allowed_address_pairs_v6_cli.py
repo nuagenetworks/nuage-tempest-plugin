@@ -120,7 +120,9 @@ class OSManagedAllowedAddresPairsCliTest(
             addr_pair_port['mac_address'])
         # And no corresponding MultiVIP on the VSD
         vsd_l2_domain = self.nuage_client.get_l2domain(
-            filters='externalID', filter_value=cli_subnet4['id'])
+            filters=['externalID', 'address'],
+            filter_value=[cli_subnet4['network_id'],
+                          cli_subnet4['cidr']])
         vsd_l2_domain = vsd_l2_domain[0]
 
         port_ext_id = self.nuage_client.get_vsd_external_id(

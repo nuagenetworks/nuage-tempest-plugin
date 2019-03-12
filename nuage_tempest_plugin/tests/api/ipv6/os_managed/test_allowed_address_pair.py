@@ -263,8 +263,8 @@ class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
         subnet6 = self.create_subnet(
             network, ip_version=6, enable_dhcp=False)
 
-        vsd_l2_domain = self.vsd.get_l2domain(by_subnet_id=subnet4['id'])
-
+        vsd_l2_domain = self.vsd.get_l2domain(
+            by_network_id=subnet4['network_id'], cidr=subnet4['cidr'])
         for scenario, port_config in iteritems(self.port_configs):
             LOG.info("TESTCASE scenario {}".format(scenario))
             self._check_crud_port(scenario, network, subnet4, subnet6,
@@ -282,8 +282,9 @@ class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
 
         domain = self.vsd.get_domain(by_router_id=router['id'])
         zone = self.vsd.get_zone(domain=domain, by_router_id=router['id'])
-        vsd_subnet = self.vsd.get_subnet(zone=zone, by_subnet_id=subnet4['id'])
-
+        vsd_subnet = self.vsd.get_subnet(zone=zone,
+                                         by_network_id=subnet4['network_id'],
+                                         cidr=subnet4['cidr'])
         for scenario, port_config in iteritems(self.port_configs):
             LOG.info("TESTCASE scenario {}".format(scenario))
             self._check_crud_port(scenario, network, subnet4, subnet6,

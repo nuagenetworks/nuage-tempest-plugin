@@ -64,7 +64,7 @@ class SriovTopology(object):
             self._vsd_vport_parent = self.vsd_client.get_global_resource(
                 self.vsd_vport_parent_resource,
                 filters='externalID',
-                filter_value=self.subnet['id'])[0]
+                filter_value=self.subnet['network_id'])[0]
         return self._vsd_vport_parent
 
     @property

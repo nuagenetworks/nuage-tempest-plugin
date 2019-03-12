@@ -52,7 +52,8 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
 
         def get_by_external_id(self):
             vsd_l2domains = self.test.nuage_client.get_l2domain(
-                filters='externalID', filter_value=self.subnet['id'])
+                filters=['externalID', 'address'],
+                filter_value=[self.subnet['network_id'], self.subnet['cidr']])
 
             # should have exact 1 match
             self.test.assertEqual(len(vsd_l2domains), 1)
@@ -316,9 +317,9 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
                 self._build_default_security_policy_group_id(
                     vsd_vport.vsd_vport['parentID'])).at_cms_id())
         vsd_vport.has_default_egress_policy_entries(
-            with_external_id=ExternalId(subnet['id']).at_cms_id())
+            with_external_id=ExternalId(subnet['network_id']).at_cms_id())
         vsd_vport.has_default_ingress_policy_entries(
-            with_external_id=ExternalId(subnet['id']).at_cms_id())
+            with_external_id=ExternalId(subnet['network_id']).at_cms_id())
 
         # Delete
         vsd_vport.verify_cannot_delete()
@@ -353,9 +354,9 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
                 self._build_default_security_policy_group_id(
                     vsd_vport.vsd_vport['parentID'])).at_cms_id())
         vsd_vport.has_default_egress_policy_entries(
-            with_external_id=ExternalId(subnet['id']).at_cms_id())
+            with_external_id=ExternalId(subnet['network_id']).at_cms_id())
         vsd_vport.has_default_ingress_policy_entries(
-            with_external_id=ExternalId(subnet['id']).at_cms_id())
+            with_external_id=ExternalId(subnet['network_id']).at_cms_id())
 
         # Delete
         vsd_vport.verify_cannot_delete()
@@ -391,9 +392,9 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
                 self._build_default_security_policy_group_id(
                     vsd_vport.vsd_vport['parentID'])).at_cms_id())
         vsd_vport.has_default_egress_policy_entries(
-            with_external_id=ExternalId(subnet['id']).at_cms_id())
+            with_external_id=ExternalId(subnet['network_id']).at_cms_id())
         vsd_vport.has_default_ingress_policy_entries(
-            with_external_id=ExternalId(subnet['id']).at_cms_id())
+            with_external_id=ExternalId(subnet['network_id']).at_cms_id())
 
         # Delete
         vsd_vport.verify_cannot_delete()

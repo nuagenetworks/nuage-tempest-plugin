@@ -304,7 +304,8 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
     # vsd getters
 
     def _get_vsd_l2dom_port(self, subnet, port):
-        vsd_l2domain = self.vsd.get_l2domain(by_subnet_id=subnet['id'])
+        vsd_l2domain = self.vsd.get_l2domain(
+            by_network_id=subnet['network_id'], cidr=subnet['cidr'])
         self.assertIsNotNone(vsd_l2domain)
         vsd_ports = vsd_l2domain.vports.get()
         vsd_port = None
@@ -318,7 +319,8 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
     def _get_vsd_router_subnet_port(self, router, subnet, port):
         vsd_l3dom = self.vsd.get_domain(by_router_id=router['id'])
         self.assertIsNotNone(vsd_l3dom)
-        vsd_sub = self.vsd.get_subnet(by_subnet_id=subnet['id'])
+        vsd_sub = self.vsd.get_subnet(
+            by_network_id=subnet['network_id'], cidr=subnet['cidr'])
         self.assertIsNotNone(vsd_sub)
         vsd_port = self.vsd.get_vport(subnet=vsd_sub, by_port_id=port['id'])
         self.assertIsNotNone(vsd_port)

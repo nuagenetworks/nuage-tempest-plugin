@@ -70,9 +70,11 @@ class NuageSfc(NuageBaseTest):
         return domain[0]['ID']
 
     def _get_vsd_l2domain_id(self, subnet, netpart_name=None):
-        subnet_ext_id = self.nuage_client.get_vsd_external_id(subnet['id'])
         vsd_subnet = self.nuage_client.get_l2domain(
-            'externalID', subnet_ext_id, netpart_name)
+            filters=['externalID', 'address'],
+            filter_value=[subnet['network_id'],
+                          subnet['cidr']],
+            netpart_name=netpart_name)
         return vsd_subnet[0]['ID']
 
     def _verify_flow_classifier_l2(self, subnet, ingress_port, egress_port,

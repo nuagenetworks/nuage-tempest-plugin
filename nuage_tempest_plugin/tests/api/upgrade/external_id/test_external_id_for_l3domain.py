@@ -376,7 +376,7 @@ class ExternalIdForL3domainTest(base.BaseAdminNetworkTest):
         vsd_l3domain.has_zones(
             with_external_id=ExternalId(router['id']).at_cms_id())
         vsd_l3domain.has_subnet(
-            with_external_id=ExternalId(subnet['id']).at_cms_id(),
+            with_external_id=ExternalId(subnet['network_id']).at_cms_id(),
             subnet=subnet)
 
         # Delete

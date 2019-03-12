@@ -137,8 +137,12 @@ class NetpartitionsTest(NuageAdminNetworksTest):
         self.addCleanup(self.admin_subnets_client.delete_subnet,
                         ext_subnet['id'])
         # check the vsd
-        nuage_subnet = self.vsd.get_subnet(by_subnet_id=ext_subnet['id'])
-        l3domain = self.vsd.get_l3_domain_by_subnet_id(ext_subnet['id'])
+        nuage_subnet = self.vsd.get_subnet(
+            by_network_id=ext_subnet['network_id'],
+            cidr=ext_subnet['cidr'])
+        l3domain = self.vsd.get_l3_domain_by_network_id_and_cidr(
+            ext_subnet['network_id'],
+            ext_subnet['cidr'])
         self.assertEqual(ext_subnet['id'], nuage_subnet.name)
         shared_netpart_id = self.nuage_client.get_net_partition(
             self.shared_infrastructure)[0]['ID']
@@ -163,8 +167,10 @@ class NetpartitionsTest(NuageAdminNetworksTest):
         self.addCleanup(self.admin_subnets_client.delete_subnet,
                         int_subnet['id'])
         # check the vsd
-        nuage_l2dom = self.vsd.get_l2domain(enterprise=netpart['name'],
-                                            by_subnet_id=int_subnet['id'])
+        nuage_l2dom = self.vsd.get_l2domain(
+            enterprise=netpart['name'],
+            by_network_id=int_subnet['network_id'],
+            cidr=int_subnet['cidr'])
         self.assertEqual(int_subnet['id'], nuage_l2dom.name)
         self.assertEqual(netpart['id'], nuage_l2dom.parent_id)
 
@@ -206,8 +212,12 @@ class NetpartitionsTest(NuageAdminNetworksTest):
         self.addCleanup(self.admin_subnets_client.delete_subnet,
                         ext_subnet['id'])
         # check the vsd
-        nuage_subnet = self.vsd.get_subnet(by_subnet_id=ext_subnet['id'])
-        l3domain = self.vsd.get_l3_domain_by_subnet_id(ext_subnet['id'])
+        nuage_subnet = self.vsd.get_subnet(
+            by_network_id=ext_subnet['network_id'],
+            cidr=ext_subnet['cidr'])
+        l3domain = self.vsd.get_l3_domain_by_network_id_and_cidr(
+            ext_subnet['network_id'],
+            ext_subnet['cidr'])
         self.assertEqual(ext_subnet['id'], nuage_subnet.name)
         shared_netpart_id = self.nuage_client.get_net_partition(
             self.shared_infrastructure)[0]['ID']
@@ -250,8 +260,12 @@ class NetpartitionsTest(NuageAdminNetworksTest):
         self.addCleanup(self.admin_subnets_client.delete_subnet,
                         ext_subnet['id'])
         # check the vsd
-        nuage_subnet = self.vsd.get_subnet(by_subnet_id=ext_subnet['id'])
-        l3domain = self.vsd.get_l3_domain_by_subnet_id(ext_subnet['id'])
+        nuage_subnet = self.vsd.get_subnet(
+            by_network_id=ext_subnet['network_id'],
+            cidr=ext_subnet['cidr'])
+        l3domain = self.vsd.get_l3_domain_by_network_id_and_cidr(
+            ext_subnet['network_id'],
+            ext_subnet['cidr'])
         self.assertEqual(ext_subnet['id'], nuage_subnet.name)
         shared_netpart_id = self.nuage_client.get_net_partition(
             self.shared_infrastructure)[0]['ID']

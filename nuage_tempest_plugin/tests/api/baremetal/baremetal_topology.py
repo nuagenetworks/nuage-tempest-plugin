@@ -32,8 +32,9 @@ class BaremetalTopology(object):
         if not getattr(self, '_vsd_vport_parent', False):
             self._vsd_vport_parent = self.vsd_client.get_global_resource(
                 self.vsd_vport_parent_resource,
-                filters='externalID',
-                filter_value=self.subnet['id'])[0]
+                filters=['externalID', 'address'],
+                filter_value=[self.subnet['network_id'],
+                              self.subnet['cidr']])[0]
         return self._vsd_vport_parent
 
     @property

@@ -45,8 +45,9 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
             self.net_partition_name = net_partition_name
             vsd_l2domains = self.test.nuage_client.get_l2domain(
                 netpart_name=self.net_partition_name,
-                filters='externalID', filter_value=self.subnet['id'])
-
+                filters=['externalID', 'address'],
+                filter_value=[self.subnet['network_id'],
+                              self.subnet['cidr']])
             # should have exact 1 match
             self.test.assertEqual(len(vsd_l2domains), 1)
             self.vsd_l2domain = vsd_l2domains[0]
@@ -327,7 +328,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
         vsd_l2domain = self.MatchingVsdL2domain(
             self, subnet).get_by_external_id()
         vsd_l2domain.has_l2domain_template(
-            with_external_id=ExternalId(subnet['id']).at_cms_id())
+            with_external_id=ExternalId(subnet['network_id']).at_cms_id())
         vsd_l2domain.has_dhcp_options(
             with_external_id=ExternalId(subnet['id']).at_cms_id(),
             with_dhcp_opts=dhcp_opts)
@@ -338,11 +339,11 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
         vsd_l2domain.has_user(
             with_external_id=ExternalId(subnet['tenant_id']).at_openstack())
         vsd_l2domain.has_egress_acl_template(
-            with_external_id=ExternalId(subnet['id']).at_cms_id())
+            with_external_id=ExternalId(subnet['network_id']).at_cms_id())
         vsd_l2domain.has_ingress_acl_template(
-            with_external_id=ExternalId(subnet['id']).at_cms_id())
+            with_external_id=ExternalId(subnet['network_id']).at_cms_id())
         vsd_l2domain.has_forwarding_policy_template(
-            with_external_id=ExternalId(subnet['id']).at_cms_id())
+            with_external_id=ExternalId(subnet['network_id']).at_cms_id())
 
         # Delete
         vsd_l2domain.verify_cannot_delete()

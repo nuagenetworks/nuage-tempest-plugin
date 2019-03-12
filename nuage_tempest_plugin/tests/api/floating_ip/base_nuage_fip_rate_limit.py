@@ -157,7 +157,7 @@ class NuageFipRateLimitBase(base.BaseNetworkTest):
         # Check vsd
         vsd_subnets = self.nuage_client.get_domain_subnet(
             None, None, 'externalID',
-            self.nuage_client.get_vsd_external_id(self.subnet['id']))
+            self.nuage_client.get_vsd_external_id(self.subnet['network_id']))
         self.assertEqual(1, len(vsd_subnets))
         vports = self.nuage_client.get_vport(
             constants.SUBNETWORK, vsd_subnets[0]['ID'], 'externalID',

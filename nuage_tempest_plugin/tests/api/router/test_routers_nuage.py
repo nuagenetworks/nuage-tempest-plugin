@@ -215,8 +215,8 @@ class NuageRoutersTest(base.BaseNetworkTest):
         subnet = self.create_subnet(network)
         # Validate that an L2Domain is created on VSD for the subnet creation
         nuage_l2dom = self.nuage_client.get_l2domain(
-            filters='externalID',
-            filter_value=subnet['id'])
+            filters=['externalID', 'address'],
+            filter_value=[subnet['network_id'], subnet['cidr']])
         self.assertEqual(nuage_l2dom[0]['name'], subnet['id'])
 
         router = self._create_router(data_utils.rand_name('router-'))
@@ -237,8 +237,8 @@ class NuageRoutersTest(base.BaseNetworkTest):
         # Validate VSD L2 Domain created above is deleted and added as a
         # L3Domain subnet
         nuage_l2dom = self.nuage_client.get_l2domain(
-            filters='externalID',
-            filter_value=subnet['id'])
+            filters=['externalID', 'address'],
+            filter_value=[subnet['network_id'], subnet['cidr']])
         self.assertEqual(nuage_l2dom, '', "L2 domain is not deleted")
         nuage_domain_subnet = self.nuage_client.get_domain_subnet(
             parent=n_constants.DOMAIN, parent_id=nuage_domain[0]['ID'])
@@ -251,8 +251,8 @@ class NuageRoutersTest(base.BaseNetworkTest):
         subnet = self.create_subnet(network)
         # Validate that an L2Domain is created on VSD for the subnet creation
         nuage_l2dom = self.nuage_client.get_l2domain(
-            filters='externalID',
-            filter_value=subnet['id'])
+            filters=['externalID', 'address'],
+            filter_value=[subnet['network_id'], subnet['cidr']])
         self.assertEqual(nuage_l2dom[0]['name'], subnet['id'])
 
         router = self._create_router(data_utils.rand_name('router-'))
@@ -280,7 +280,8 @@ class NuageRoutersTest(base.BaseNetworkTest):
         # Validate L2 Domain created above is deleted and added as a L3Domain
         # subnet
         nuage_l2dom = self.nuage_client.get_l2domain(
-            filters='externalID', filter_value=subnet['id'])
+            filters=['externalID', 'address'],
+            filter_value=[subnet['network_id'], subnet['cidr']])
         self.assertEqual(
             nuage_l2dom, '', "L2 domain is not deleted in VSD")
         nuage_domain_subnet = self.nuage_client.get_domain_subnet(
@@ -341,7 +342,8 @@ class NuageRoutersTest(base.BaseNetworkTest):
         subnet = self.create_subnet(network)
         # Validate that L2Domain is created on VSD
         nuage_l2dom = self.nuage_client.get_l2domain(
-            filters='externalID', filter_value=subnet['id'])
+            filters=['externalID', 'address'],
+            filter_value=[subnet['network_id'], subnet['cidr']])
         self.assertEqual(nuage_l2dom[0]['name'], subnet['id'])
 
         # Create net-partition
@@ -799,7 +801,9 @@ class NuageRoutersAdminTest(NuageAdminNetworksTest):
 
         nuage_domain_subn = self.nuage_client.get_domain_subnet(
             n_constants.ZONE, shared_zone_id,
-            filters='externalID', filter_value=subn_body['subnet']['id'])
+            filters=['externalID', 'address'],
+            filter_value=[subn_body['subnet']['network_id'],
+                          subn_body['subnet']['cidr']])
         self.assertIsNotNone(nuage_domain_subn[0])
 
         # Delete the router interface
@@ -809,7 +813,9 @@ class NuageRoutersAdminTest(NuageAdminNetworksTest):
 
         # Verify that the subnet is created with everybody permissions
         nuage_l2dom = self.nuage_client.get_l2domain(
-            filters='externalID', filter_value=subn_body['subnet']['id'])
+            filters=['externalID', 'address'],
+            filter_value=[subn_body['subnet']['network_id'],
+                          subn_body['subnet']['cidr']])
         nuage_perm = self.nuage_client.get_permissions(
             n_constants.L2_DOMAIN, nuage_l2dom[0]['ID'])
         self.assertIsNotNone(nuage_perm[0])

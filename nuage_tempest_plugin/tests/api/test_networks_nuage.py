@@ -116,11 +116,10 @@ class NetworksTestJSONNuage(test_networks.NetworksTest):
         # VSD validation inserted - only for ipv4 though
         # (with ipv6 subnet, no l2domain is created yet)
         if self._ip_version == 4:
-
             nuage_l2dom = self.nuage_client.get_l2domain(
-                filters='externalID',
-                filter_value=self.nuage_client.get_vsd_external_id(
-                    subnet['id']))
+                filters=['externalID', 'address'],
+                filter_value=[subnet['network_id'],
+                              subnet['cidr']])
             nuage_dhcpopt = self.nuage_client.get_dhcpoption(
                 n_constants.L2_DOMAIN, nuage_l2dom[0]['ID'])
 
@@ -165,8 +164,7 @@ class NetworksTestJSONNuage(test_networks.NetworksTest):
                     resource_id=nuage_l2dom[0]['ID'],
                     child_resource=n_constants.EGRESS_ACL_TEMPLATE,
                     filters='externalID',
-                    filter_value=self.nuage_client.get_vsd_external_id(
-                        subnet['id']))
+                    filter_value=subnet['network_id'])
                 self.assertIsNot(default_egress_tmpl, "",
                                  "Could not Find Default EGRESS Template "
                                  "on VSD For Subnet")
@@ -176,8 +174,7 @@ class NetworksTestJSONNuage(test_networks.NetworksTest):
                         resource_id=nuage_l2dom[0]['ID'],
                         child_resource=n_constants.INGRESS_ACL_TEMPLATE,
                         filters='externalID',
-                        filter_value=self.nuage_client.get_vsd_external_id(
-                            subnet['id']))
+                        filter_value=subnet['network_id'])
                 self.assertIsNot(default_ingress_tmpl, "",
                                  "Could not Find Default INGRESS Template "
                                  "on VSD For Subnet")
@@ -187,8 +184,7 @@ class NetworksTestJSONNuage(test_networks.NetworksTest):
                         resource_id=nuage_l2dom[0]['ID'],
                         child_resource=n_constants.INGRESS_ADV_FWD_TEMPLATE,
                         filters='externalID',
-                        filter_value=self.nuage_client.get_vsd_external_id(
-                            subnet['id']))
+                        filter_value=subnet['network_id'])
                 self.assertIsNot(default_ingress_awd_tmpl, "",
                                  "Could not Find Default Forward INGRESS"
                                  " Template on VSD For Subnet")
@@ -214,8 +210,11 @@ class NetworksTestJSONNuage(test_networks.NetworksTest):
         if self._ip_version == 4:
             # VSD validation
             # Validate that an L2Domain is created on VSD at subnet creation
+
             nuage_l2dom = self.nuage_client.get_l2domain(
-                filters='externalID', filter_value=subnet['id'])
+                filters=['externalID', 'address'],
+                filter_value=[subnet['network_id'],
+                              subnet['cidr']])
 
             self.assertEqual(nuage_l2dom[0]['name'], subnet['id'])
 
@@ -367,8 +366,11 @@ class NetworkNuageAdminTest(base.BaseAdminNetworkTest):
         subnet = body['subnet']
         self.assertEqual(subnet['name'], subname)
         # TODO(team) - Add VSD check here
+        subnet_ext_id = self.nuage_client.get_vsd_external_id(
+            subnet['network_id'])
         nuage_fippool = self.nuage_client.get_sharedresource(
-            filters='externalID', filter_value=subnet['id'])
+            filters=['externalID', 'address'],
+            filter_value=[subnet_ext_id, subnet['cidr']])
         self.assertEqual(nuage_fippool[0]['underlay'], True)
         self.admin_subnets_client.delete_subnet(subnet['id'])
         nuage_fippool = self.nuage_client.get_sharedresource(
@@ -389,12 +391,16 @@ class NetworkNuageAdminTest(base.BaseAdminNetworkTest):
         self.assertEqual(subnet['name'], subname)
         # TODO(team) - Add VSD check here
         # TODO(team) - Add VSD check here
+        subnet_ext_id = self.nuage_client.get_vsd_external_id(
+            subnet['network_id'])
         nuage_fippool = self.nuage_client.get_sharedresource(
-            filters='externalID', filter_value=subnet['id'])
+            filters=['externalID', 'address'],
+            filter_value=[subnet_ext_id, subnet['cidr']])
         self.assertEqual(nuage_fippool[0]['underlay'], False)
         self.admin_subnets_client.delete_subnet(subnet['id'])
         nuage_fippool = self.nuage_client.get_sharedresource(
-            filters='externalID', filter_value=subnet['id'])
+            filters=['externalID', 'address'],
+            filter_value=[subnet_ext_id, subnet['cidr']])
         self.assertEqual(nuage_fippool, '')
 
     @decorators.attr(type='smoke')

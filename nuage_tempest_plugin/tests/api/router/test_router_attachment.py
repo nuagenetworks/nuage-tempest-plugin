@@ -128,7 +128,10 @@ class RouterAttachmentTest(NuageBaseTest):
                          observed=observed_subnet_id)
 
         # validate the vsd configuration
-        domain = self.vsd.get_l3_domain_by_subnet_id(subnet['id'])
+        domain = self.vsd.get_l3_domain_by_network_id_and_cidr(
+            subnet['network_id'],
+            subnet['cidr'],
+            ip_type=self._ip_version)
         self.assertIsNotNone(domain)
         self.assertEqual(expected=self.vsd.external_id(router['id']),
                          observed=domain.external_id)
@@ -140,5 +143,11 @@ class RouterAttachmentTest(NuageBaseTest):
         self.assertIsNone(router_interface)
 
         # Check we are at L2 in VSD
-        self.assertIsNone(self.vsd.get_l3_domain_by_subnet_id(subnet['id']))
-        self.assertIsNotNone(self.vsd.get_l2domain(by_subnet_id=subnet['id']))
+        self.assertIsNone(self.vsd.get_l3_domain_by_network_id_and_cidr(
+            subnet['network_id'],
+            subnet['cidr'],
+            ip_type=self._ip_version))
+        self.assertIsNotNone(self.vsd.get_l2domain(
+            by_network_id=subnet['network_id'],
+            cidr=subnet['cidr'],
+            ip_type=self._ip_version))

@@ -176,11 +176,12 @@ class NuageServiceChaining(base.BaseNetworkTest):
 
         subnet_ext_id = (
             self.nuage_client.get_vsd_external_id(
-                self.subnet_l2['id'])
+                self.subnet_l2['network_id'])
         )
 
         vsd_subnet = self.nuage_client.get_l2domain(
-            filters='externalID', filter_value=subnet_ext_id)
+            filters=['externalID', 'address'],
+            filter_value=[subnet_ext_id, self.subnet_l2['cidr']])
 
         # Verifying Redirect Target on VSD
         redirect_target = self._verify_redirect_target(
@@ -204,7 +205,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
 
         # Verifying Redirect Target Rule on VSD
         if Topology.within_ext_id_release():
-            external_id = ExternalId(self.subnet_l2['id']).at_cms_id()
+            external_id = ExternalId(self.subnet_l2['network_id']).at_cms_id()
         else:
             external_id = None
 
@@ -253,13 +254,15 @@ class NuageServiceChaining(base.BaseNetworkTest):
 
         subnet_ext_id = (
             self.nuage_client.get_vsd_external_id(
-                self.subnet_l3['id'])
+                self.subnet_l3['network_id'])
         )
 
         vsd_subnet = (
             self.nuage_client.get_domain_subnet(
-                'domains', domain[0]['ID'], filters='externalID',
-                filter_value=subnet_ext_id)
+                'domains', domain[0]['ID'],
+                filters=['externalID', 'address'],
+                filter_value=[subnet_ext_id,
+                              self.subnet_l3['cidr']])
         )
 
         # Verifying Redirect Target on VSD
@@ -331,13 +334,15 @@ class NuageServiceChaining(base.BaseNetworkTest):
 
         subnet_ext_id = (
             self.nuage_client.get_vsd_external_id(
-                self.subnet_l3['id'])
+                self.subnet_l3['network_id'])
         )
 
         vsd_subnet = (
             self.nuage_client.get_domain_subnet(
-                'domains', domain[0]['ID'], filters='externalID',
-                filter_value=subnet_ext_id)
+                'domains', domain[0]['ID'],
+                filters=['externalID', 'address'],
+                filter_value=[subnet_ext_id,
+                              self.subnet_l3['cidr']])
         )
 
         # Verifying Redirect Target on VSD
@@ -364,7 +369,7 @@ class NuageServiceChaining(base.BaseNetworkTest):
 
         # Verifying Redirect Target Rule on VSD
         if Topology.within_ext_id_release():
-            external_id = ExternalId(self.subnet_l3['id']).at_cms_id()
+            external_id = ExternalId(self.subnet_l3['network_id']).at_cms_id()
         else:
             external_id = None
 
@@ -409,13 +414,15 @@ class NuageServiceChaining(base.BaseNetworkTest):
 
         subnet_ext_id = (
             self.nuage_client.get_vsd_external_id(
-                self.subnet_l3['id'])
+                self.subnet_l3['network_id'])
         )
 
         vsd_subnet = (
             self.nuage_client.get_domain_subnet(
-                'domains', domain[0]['ID'], filters='externalID',
-                filter_value=subnet_ext_id)
+                'domains', domain[0]['ID'],
+                filters=['externalID', 'address'],
+                filter_value=[subnet_ext_id,
+                              self.subnet_l3['cidr']])
         )
 
         # Verifying Redirect Target on VSD
@@ -484,13 +491,15 @@ class NuageServiceChaining(base.BaseNetworkTest):
 
         subnet_ext_id = (
             self.nuage_client.get_vsd_external_id(
-                self.subnet_l3['id'])
+                self.subnet_l3['network_id'])
         )
 
         vsd_subnet = (
             self.nuage_client.get_domain_subnet(
-                'domains', domain[0]['ID'], filters='externalID',
-                filter_value=subnet_ext_id)
+                'domains', domain[0]['ID'],
+                filters=['externalID', 'address'],
+                filter_value=[subnet_ext_id,
+                              self.subnet_l3['cidr']])
         )
 
         # Verifying Redirect Target on VSD

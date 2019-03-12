@@ -368,15 +368,13 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
             nuage_d2 = self.nuage_client.get_l3domain(
                 filters='externalID',
                 filter_value=r2['id'])
-
         else:
             nuage_d1 = self.nuage_client.get_l2domain(
-                filters='externalID',
-                filter_value=s1['id'])
+                filters=['externalID', 'address'],
+                filter_value=[s1['network_id'], s1['cidr']])
             nuage_d2 = self.nuage_client.get_l2domain(
-                filters='externalID',
-                filter_value=s2['id'])
-
+                filters=['externalID', 'address'],
+                filter_value=[s2['network_id'], s2['cidr']])
         sg_id = sg1_body['security_group']['id']
         direction = 'ingress'
         protocol = 'tcp'
@@ -505,8 +503,9 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
         cls.network = cls.create_network(network_name=name)
         cls.subnet = cls.create_subnet(cls.network)
         nuage_l2domain = cls.nuage_client.get_l2domain(
-            filters='externalID',
-            filter_value=cls.subnet['id'])
+            filters=['externalID', 'address'],
+            filter_value=[cls.subnet['network_id'],
+                          cls.subnet['cidr']])
         cls.nuage_any_domain = nuage_l2domain
         cls.nuage_domain_type = n_constants.L2_DOMAIN
 
@@ -790,8 +789,9 @@ class SecGroupTestNuageL2DomainIPv6Test(SecGroupTestNuageBase):
         cls.ipv4_subnet = cls.create_subnet(cls.network, ip_version=4)
         cls.ipv6_subnet = cls.create_subnet(cls.network, enable_dhcp=False)
         nuage_l2domain = cls.nuage_client.get_l2domain(
-            filters='externalID',
-            filter_value=cls.ipv4_subnet['id'])
+            filters=['externalID', 'address'],
+            filter_value=[cls.ipv4_subnet['network_id'],
+                          cls.ipv4_subnet['cidr']])
         cls.nuage_any_domain = nuage_l2domain
         cls.nuage_domain_type = n_constants.L2_DOMAIN
 

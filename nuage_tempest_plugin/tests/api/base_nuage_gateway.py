@@ -280,7 +280,8 @@ class BaseNuageGatewayTest(NuageAdminNetworksTest):
                              self.nuage_client.get_vsd_external_id(
                                  external_id))
 
-    def verify_vport_properties(self, actual_vport, expected_vport):
+    def verify_vport_properties(self, actual_vport, expected_vport,
+                                network_id):
         self.assertEqual(actual_vport['ID'], expected_vport['id'])
         self.assertEqual(actual_vport['type'], expected_vport['type'])
         self.assertEqual(actual_vport['name'], expected_vport['name'])
@@ -288,7 +289,7 @@ class BaseNuageGatewayTest(NuageAdminNetworksTest):
             if expected_vport['type'] == n_constants.BRIDGE_VPORT:
                 self.assertEqual(actual_vport['externalID'],
                                  self.nuage_client.get_vsd_external_id(
-                                     expected_vport['subnet']))
+                                     network_id))
             else:
                 self.assertEqual(actual_vport['externalID'],
                                  self.nuage_client.get_vsd_external_id(

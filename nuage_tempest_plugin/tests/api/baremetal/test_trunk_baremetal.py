@@ -102,9 +102,9 @@ class BaremetalTrunkTest(network_mixin.NetworkMixin,
             parent_resource = constants.L2_DOMAIN
         vsd_vport_parent = self.vsd_client.get_global_resource(
             parent_resource,
-            filters='externalID',
-            filter_value=subnet['id'])[0]
-
+            filters=['externalID', 'address'],
+            filter_value=[subnet['network_id'],
+                          subnet['cidr']])[0]
         vsd_vports = self.vsd_client.get_vport(
             parent_resource,
             vsd_vport_parent['ID'],

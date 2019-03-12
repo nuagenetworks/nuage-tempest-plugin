@@ -267,14 +267,11 @@ class BaseAllowedAddressPair(NuageBaseTest):
     def _verify_l2_vport_by_id(self, port, expected_behaviour,
                                subnet4=None, subnet6=None):
         subnet = subnet6 if subnet4 is None else subnet4
-        subnet_ext_id = self.nuage_client.get_vsd_external_id(
-            subnet['id'])
         port_ext_id = self.nuage_client.get_vsd_external_id(port['id'])
 
         vsd_l2_domain = self.nuage_client.get_l2domain(
-            filters='externalID',
-            filter_value=subnet_ext_id)
-
+            filters=['externalID', 'address'],
+            filter_value=[subnet['network_id'], subnet['cidr']])
         nuage_vports = self.nuage_client.get_vport(
             constants.L2_DOMAIN, vsd_l2_domain[0]['ID'],
             filters='externalID', filter_value=port_ext_id)
@@ -292,16 +289,11 @@ class BaseAllowedAddressPair(NuageBaseTest):
             filters='externalID',
             filter_value=self.nuage_client.get_vsd_external_id(
                 router['id']))
-        subnet_ext_id = (
-            self.nuage_client.get_vsd_external_id(
-                subnet['id'])
-        )
-
         vsd_subnet = (
             self.nuage_client.get_domain_subnet(
-                'domains', nuage_domain[0]['ID'], filters='externalID',
-                filter_value=subnet_ext_id)
-        )
+                'domains', nuage_domain[0]['ID'],
+                filters=['externalID', 'address'],
+                filter_value=[subnet['network_id'], subnet['cidr']]))
         port_ext_id = self.nuage_client.get_vsd_external_id(port['id'])
         nuage_vports = self.nuage_client.get_vport(
             constants.SUBNETWORK,

@@ -191,7 +191,7 @@ class TestNuageL2BridgeSRIOV(BaseNuageL2Bridge,
                                  **kwargs)
 
                 vport_1 = self.vsd.get_vport(l2domain=l2domain,
-                                             by_port_id=s1['id'])
+                                             by_port_id=s1['network_id'])
                 self.assertIsNotNone(vport_1,
                                      "Vport not created for port in network 1")
 
@@ -257,7 +257,7 @@ class TestNuageL2BridgeSRIOV(BaseNuageL2Bridge,
                                  **kwargs)
 
                 vport_2 = self.vsd.get_vport(l2domain=l2domain,
-                                             by_port_id=s2['id'])
+                                             by_port_id=s2['network_id'])
                 self.assertIsNotNone(vport_2,
                                      "Vport not created for port in network 2")
                 policygroups = vport_2.policy_groups.get()
