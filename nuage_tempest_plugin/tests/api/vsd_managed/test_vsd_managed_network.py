@@ -356,6 +356,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
             vsd_managed_shared_l2dom['DHCPManaged'])
         self.assertTrue(self._create_and_verify_vm(network))
 
+    @nuage_test.skip_because(bug='OPENSTACK-2548')
     @nuage_test.header(tags=['smoke'])
     def test_link_vsd_unmanaged_shared_subnet_l2(self):
         vsd_unmanaged_shared_l2dom_tmplt = \
@@ -491,11 +492,12 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
             net_partition=Topology.def_netpartition)
 
     @nuage_test.header(tags=['smoke'])
-    def test_link_subnet_with_disable_dhcp_unmanaged_l2(self):
+    def test_link_subnet_with_disable_dhcp_vsd_managed_l2(self):
         # create l2domain on VSD
         name = data_utils.rand_name('l2domain-')
-        vsd_l2dom_tmplt = self.create_vsd_dhcpunmanaged_l2dom_template(
-            name=name)
+        cidr = IPNetwork('10.10.100.0/24')
+        vsd_l2dom_tmplt = self.create_vsd_dhcpmanaged_l2dom_template(
+            name=name, cidr=cidr, enableDHCPv4=False)
         vsd_l2dom = self.create_vsd_l2domain(name=name,
                                              tid=vsd_l2dom_tmplt[0]['ID'])
 
@@ -511,28 +513,6 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
             net_partition=Topology.def_netpartition,
             enable_dhcp=False)
         self.assertEqual(subnet['enable_dhcp'], False)
-
-    @nuage_test.header(tags=['smoke'])
-    def test_link_subnet_with_enable_dhcp_unmanaged_l2(self):
-        # create unmanaged l2domain on VSD
-        name = data_utils.rand_name('l2domain-')
-        vsd_l2dom_tmplt = self.create_vsd_dhcpunmanaged_l2dom_template(
-            name=name)
-        vsd_l2dom = self.create_vsd_l2domain(name=name,
-                                             tid=vsd_l2dom_tmplt[0]['ID'])
-
-        self.assertEqual(vsd_l2dom[0]['name'], name)
-        # create subnet on OS with nuagenet param set to l2domain UUID
-        net_name = data_utils.rand_name('network-')
-        network = self.create_network(network_name=net_name)
-        # Try creating subnet with enable_dhcp=True (default)
-        self.assertRaises(
-            self.failure_type,
-            self.create_subnet,
-            network,
-            cidr=IPNetwork('10.10.100.0/24'),
-            mask_bits=24, nuagenet=vsd_l2dom[0]['ID'],
-            net_partition=Topology.def_netpartition)
 
     @nuage_test.header(tags=['smoke'])
     def test_link_subnet_with_enable_dhcp_managed_l2(self):
@@ -842,7 +822,8 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
             mask_bits=64,
             nuagenet=vsd_l3_dom_public_subnet['ID'],
             gateway=subnet_ipv6_gateway,
-            net_partition=Topology.def_netpartition)
+            net_partition=Topology.def_netpartition,
+            enable_dhcp=False)
         self.assertEqual(
             str(subnet_v6['cidr']),
             vsd_shared_l3dom_subnet['IPv6Address'])
@@ -1048,6 +1029,74 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
                 mask_bits=24, nuagenet=vsd_domain_subnet2['ID'],
                 gateway='10.1.0.1',
                 net_partition=Topology.def_netpartition)
+
+    @nuage_test.header(tags=['smoke'])
+    def test_link_no_dhcp_subnet_with_dhcp_vsd_managed_l2_ipv6_neg(self):
+        # create l2domain on VSD
+        name = data_utils.rand_name('l2domain-')
+        cidr = IPNetwork('10.10.100.0/24')
+        vsd_l2dom_tmplt = self.create_vsd_dhcpmanaged_l2dom_template(
+            name=name, cidr=cidr, gateway='10.10.100.1')
+        vsd_l2dom = self.create_vsd_l2domain(name=name,
+                                             tid=vsd_l2dom_tmplt[0]['ID'])
+
+        self.assertEqual(vsd_l2dom[0]['name'], name)
+        # create subnet on OS with nuagenet param set to l2domain UUID
+        net_name = data_utils.rand_name('network-')
+        network = self.create_network(network_name=net_name)
+        self.assertRaisesRegex(exceptions.BadRequest,
+                               "Bad request: enable_dhcp in subnet must "
+                               "be True",
+                               self.create_subnet, network, gateway=None,
+                               cidr=cidr, mask_bits=24,
+                               nuagenet=vsd_l2dom[0]['ID'],
+                               net_partition=Topology.def_netpartition,
+                               enable_dhcp=False)
+
+    @nuage_test.header(tags=['smoke'])
+    def test_link_dhcp_subnet_with_no_dhcp_vsd_managed_l2_ipv4_neg(self):
+        # create l2domain on VSD
+        name = data_utils.rand_name('l2domain-')
+        cidr = IPNetwork('10.10.100.0/24')
+        vsd_l2dom_tmplt = self.create_vsd_dhcpmanaged_l2dom_template(
+            name=name, cidr=cidr, enableDHCPv4=False)
+        vsd_l2dom = self.create_vsd_l2domain(name=name,
+                                             tid=vsd_l2dom_tmplt[0]['ID'])
+
+        self.assertEqual(vsd_l2dom[0]['name'], name)
+        # create subnet on OS with nuagenet param set to l2domain UUID
+        net_name = data_utils.rand_name('network-')
+        network = self.create_network(network_name=net_name)
+        self.assertRaisesRegex(exceptions.BadRequest,
+                               "Bad request: enable_dhcp in subnet must "
+                               "be False",
+                               self.create_subnet, network,
+                               gateway=None,
+                               cidr=IPNetwork('10.10.100.0/24'),
+                               mask_bits=24, nuagenet=vsd_l2dom[0]['ID'],
+                               net_partition=Topology.def_netpartition,
+                               enable_dhcp=True)
+
+    @nuage_test.header(tags=['smoke'])
+    def test_link_dhcp_subnet_with_no_dhcp_vsd_managed_l2_ipv6_neg(self):
+        # Provision VSD managed network resources
+        l2domain_template = self.vsd_create_l2domain_template(
+            ip_type="IPV6",
+            cidr6=self.cidr6,
+            gateway6=self.gateway6,
+            enable_dhcpv6=False)
+        vsd_l2domain = self.vsd_create_l2domain(template=l2domain_template)
+
+        # Provision OpenStack network linked to VSD network resources
+        network = self.create_network()
+        self.assertRaisesRegex(exceptions.BadRequest,
+                               "Bad request: enable_dhcp in subnet must "
+                               "be False",
+                               self.create_subnet, network, gateway=None,
+                               cidr=IPNetwork('cafe:babe::/64'),
+                               nuagenet=vsd_l2domain.id,
+                               net_partition=Topology.def_netpartition,
+                               enable_dhcp=True, ip_version=6)
 
 
 class VSDManagedAdminTestNetworks(base.BaseAdminNetworkTest):

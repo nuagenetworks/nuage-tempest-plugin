@@ -238,3 +238,7 @@ class TrunkTestJSON(test_trunk.TrunkTestJSONBase):
             self.client.add_subports,
             trunk['trunk']['id'],
             subports)
+
+
+class TrunkTestJSONV6(TrunkTestJSON):
+    _ip_version = 6

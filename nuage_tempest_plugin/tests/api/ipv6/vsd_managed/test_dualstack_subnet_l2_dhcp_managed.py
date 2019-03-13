@@ -17,7 +17,7 @@ from nuage_tempest_plugin.tests.api.ipv6.vsd_managed. \
 
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
-from tempest.lib import exceptions as exceptions
+from tempest.lib import exceptions
 
 MSG_INVALID_GATEWAY = "Invalid network gateway"
 MSG_INVALID_ADDRESS = "Invalid network address"
@@ -528,17 +528,13 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
         self.assertEqual(ipv6_subnet['cidr'],
                          vsd_l2domain_template.ipv6_address)
 
-        # should not allow to create a port in this network,
-        # as we do not have IPv4 network linked
-        if Topology.from_openstack('Newton'):
-            expected_exception = exceptions.BadRequest
-        else:
-            expected_exception = exceptions.ServerFault
-
-        self.assertRaises(
-            expected_exception,
-            self.create_port,
-            network)
+        port = self.create_port(network)
+        self._verify_port(port, subnet4=None, subnet6=ipv6_subnet,
+                          status='DOWN',
+                          nuage_policy_groups=None,
+                          nuage_redirect_targets=[],
+                          nuage_floatingip=None)
+        self._verify_vport_in_l2_domain(port, vsd_l2domain)
 
         # create OpenStack IPv4 subnet on OpenStack based on VSD l2domain
         ipv4_subnet = self.create_subnet(
@@ -668,7 +664,9 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
             cidr4=self.cidr4,
             cidr6=self.cidr6,
             gateway=self.gateway4,
-            gateway6=self.gateway6)
+            gateway6=self.gateway6,
+            enable_dhcpv4=True,
+            enable_dhcpv6=True)
 
         self._verify_vsd_l2domain_template(vsd_l2domain_template,
                                            ip_type="DUALSTACK",
@@ -721,7 +719,7 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
             gateway=self.gateway6,
             cidr=self.cidr6,
             mask_bits=self.mask_bits6,
-            enable_dhcp=False,
+            enable_dhcp=True,
             nuagenet=vsd_l2domain.id,
             net_partition=self.net_partition)
 
@@ -915,40 +913,25 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
                                     'ip_address': IPAddress(
                                         self.cidr6.first + 21)}]}
 
-        if Topology.from_openstack('Newton'):
-            expected_exception = exceptions.BadRequest
-            expected_message = "Port can't be a pure ipv6 port. " \
-                               "Need ipv4 fixed ip."
-        else:
-            expected_exception = exceptions.ServerFault
-            expected_message = "Got server fault"
+        port = self.create_port(network, **port_args)
+        self._verify_port(port, subnet4=None, subnet6=ipv6_subnet,
+                          status='DOWN',
+                          nuage_policy_groups=None,
+                          nuage_redirect_targets=[],
+                          nuage_floatingip=None)
+        self._verify_vport_in_l2_domain(port, vsd_l2domain)
 
-        self.assertRaisesRegex(
-            expected_exception,
-            expected_message,
-            self.create_port,
-            network,
-            **port_args)
-
-        # shall not a port with no ip in the IPv4 subnet but only fixed-ip IPv6
         port_args = {'fixed_ips': [{'subnet_id': ipv6_subnet['id'],
                                     'ip_address': IPAddress(
-                                        self.cidr6.first + 21)}]}
+                                        self.cidr6.first + 22)}]}
 
-        if Topology.from_openstack('Newton'):
-            expected_exception = exceptions.BadRequest
-            expected_message = "Port can't be a pure ipv6 port. " \
-                               "Need ipv4 fixed ip."
-        else:
-            expected_exception = exceptions.ServerFault
-            expected_message = "Got server fault"
-
-        self.assertRaisesRegex(
-            expected_exception,
-            expected_message,
-            self.create_port,
-            network,
-            **port_args)
+        port = self.create_port(network, **port_args)
+        self._verify_port(port, subnet4=None, subnet6=ipv6_subnet,
+                          status='DOWN',
+                          nuage_policy_groups=None,
+                          nuage_redirect_targets=[],
+                          nuage_floatingip=None)
+        self._verify_vport_in_l2_domain(port, vsd_l2domain)
 
         # TODO(KRIS) Try to make sense of this
         #
@@ -1071,7 +1054,8 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
             ip_type="DUALSTACK",
             cidr4=IPNetwork('10.0.0.0/24'),
             cidr6=IPNetwork('cafe:babe::/64'),
-            dhcp_managed=True
+            dhcp_managed=True,
+            enable_dhcpv6=True
         )
         vsd_l2domain1 = self.vsd_create_l2domain(
             template=vsd_l2domain_template1)
@@ -1079,7 +1063,8 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
             ip_type="DUALSTACK",
             cidr4=IPNetwork('10.1.0.0/24'),
             cidr6=IPNetwork('cbfe:babe::/64'),
-            dhcp_managed=True
+            dhcp_managed=True,
+            enable_dhcpv6=True
         )
         vsd_l2domain2 = self.vsd_create_l2domain(
             template=vsd_l2domain_template2)
@@ -1172,7 +1157,8 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
             ip_type="DUALSTACK",
             cidr4=IPNetwork('10.0.0.0/24'),
             cidr6=IPNetwork('cafe:babe::/64'),
-            dhcp_managed=True
+            dhcp_managed=True,
+            enable_dhcpv6=True
         )
         vsd_l2domain1 = self.vsd_create_l2domain(
             template=vsd_l2domain_template1)
@@ -1180,7 +1166,8 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
             ip_type="DUALSTACK",
             cidr4=IPNetwork('10.1.0.0/24'),
             cidr6=IPNetwork('cbfe:babe::/64'),
-            dhcp_managed=True
+            dhcp_managed=True,
+            enable_dhcpv6=True
         )
         vsd_l2domain2 = self.vsd_create_l2domain(
             template=vsd_l2domain_template2)

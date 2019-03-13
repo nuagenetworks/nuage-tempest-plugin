@@ -64,6 +64,7 @@ class VSDPublicResourcesML2Test(
             raise cls.skipException('Skipping ml2 tests with '
                                     'nuage-core plugin')
 
+    @nuage_test.skip_because(bug='OPENSTACK-2548')
     @nuage_test.header()
     def test_vsd_l2_shared_unmgd_l2_unmgd_without_gw_ip(self):
         # Given I have a VSD-L2-domain without IPAM (i.e. UnManaged)
@@ -97,6 +98,7 @@ class VSDPublicResourcesML2Test(
             expect_vm_ip_addresses_equal=''
         )
 
+    @nuage_test.skip_because(bug='OPENSTACK-2548')
     @nuage_test.header()
     def test_vsd_l2_shared_unmgd_l2_unmgd_with_gw_ip_neg(self):
         # Pass on liberty, fail on kilo
@@ -129,6 +131,7 @@ class VSDPublicResourcesML2Test(
             expect_vm_ip_addresses_equal=''
         )
 
+    @nuage_test.skip_because(bug='OPENSTACK-2548')
     @nuage_test.header()
     def test_vsd_l2_shared_unmgd_l2_unmgd_no_gateway(self):
         # Given I have a VSD-L2-domain without IPAM (i.e. UnManaged)

@@ -26,9 +26,11 @@ class VSDManagedAllowedAddresPairsTest(BaseAllowedAddressPair,
 
     @nuage_test.header()
     @decorators.attr(type='smoke')
-    def test_provision_ports_without_address_pairs_in_l2_subnet_unmanaged(
+    def test_provision_ports_without_address_pairs_in_l2_subnet_vsd_managed(
             self):
-        vsd_l2_subnet = self._given_vsd_l2domain(dhcp_managed=False)
+        vsd_l2_subnet = self._given_vsd_l2domain(
+            cidr4=self.cidr4, cidr6=self.cidr6, dhcp_managed=True,
+            enable_dhcpv6=False, enable_dhcpv4=False)
         network, subnet4, subnet6 = self._given_network_linked_to_vsd_subnet(
             vsd_l2_subnet, cidr4=self.cidr4, cidr6=self.cidr6,
             enable_dhcp=False)
@@ -42,7 +44,8 @@ class VSDManagedAllowedAddresPairsTest(BaseAllowedAddressPair,
     def test_provision_ports_with_address_pairs_in_l3_subnet(self):
         # Given I have a VSD-L3-Managed subnet - dhcp-managed
         vsd_l3_domain, vsd_l3_subnet = self._given_vsd_l3subnet(
-            cidr4=self.cidr4, cidr6=self.cidr6)
+            cidr4=self.cidr4, cidr6=self.cidr6, enable_dhcpv6=True,
+            enable_dhcpv4=True)
         network, subnet4, subnet6 = self._given_network_linked_to_vsd_subnet(
             vsd_l3_subnet, cidr4=self.cidr4, cidr6=self.cidr6)
 

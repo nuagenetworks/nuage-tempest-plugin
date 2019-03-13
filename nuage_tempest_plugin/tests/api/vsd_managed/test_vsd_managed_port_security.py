@@ -111,10 +111,11 @@ class VSDManagedPortSecurity(
                          nuage_vport[0]['addressSpoofing'])
 
     @decorators.attr(type='smoke')
-    def test_create_port_security_unmanaged_l2(self):
+    def test_create_port_security_vsd_managed_no_dhcp_l2(self):
         name = data_utils.rand_name('l2domain-')
-        vsd_l2dom_tmplt = self.create_vsd_dhcpunmanaged_l2dom_template(
-            name=name)
+        cidr = IPNetwork('10.10.100.0/24')
+        vsd_l2dom_tmplt = self.create_vsd_dhcpmanaged_l2dom_template(
+            name=name, cidr=cidr, enableDHCPv4=False)
         vsd_l2dom = self.create_vsd_l2domain(name=name,
                                              tid=vsd_l2dom_tmplt[0]['ID'])
 
@@ -260,10 +261,11 @@ class VSDManagedPortSecurity(
                          nuage_vport[0]['addressSpoofing'])
 
     @decorators.attr(type='smoke')
-    def test_update_port_security_unmanaged_l2(self):
+    def test_update_port_security_vsd_managed_no_dhcp_l2(self):
         name = data_utils.rand_name('l2domain-')
-        vsd_l2dom_tmplt = self.create_vsd_dhcpunmanaged_l2dom_template(
-            name=name)
+        cidr = IPNetwork('10.10.100.0/24')
+        vsd_l2dom_tmplt = self.create_vsd_dhcpmanaged_l2dom_template(
+            name=name, cidr=cidr, enableDHCPv4=False)
         vsd_l2dom = self.create_vsd_l2domain(name=name,
                                              tid=vsd_l2dom_tmplt[0]['ID'])
 

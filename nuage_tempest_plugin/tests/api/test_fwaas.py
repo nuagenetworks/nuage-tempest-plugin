@@ -289,12 +289,25 @@ class FWaaSExtensionTestJSON(BaseFWaaSTest):
             by_fw_rule_id=fw_rules[0]['id'])
         self._verify_fw_rule(fw_rules[0], vsd_acl)
 
-    def test_create_update_delete_firewall_rule(self):
+    def test_create_update_delete_firewall_rule_ipv4(self):
+        self._create_update_delete_firewall_rule_impl(
+            ip_version=4, source_ip_address='1.1.1.1/32',
+            destination_ip_address='2.2.2.2/32')
+
+    def test_create_update_delete_firewall_rule_ipv6(self):
+        self._create_update_delete_firewall_rule_impl(
+            ip_version=6, source_ip_address='cafe:babe::1/128',
+            destination_ip_address='b16b:b5::2/128')
+
+    def _create_update_delete_firewall_rule_impl(self, ip_version,
+                                                 source_ip_address,
+                                                 destination_ip_address):
         # Create firewall rule
         body = self.firewall_rules_client.create_firewall_rule(
             name='fw-rule-2',
             action="allow",
-            protocol="tcp")
+            protocol="tcp",
+            ip_version=ip_version)
         fw_rule_id = body['firewall_rule']['id']
         vsd_acl = self.vsd.get_firewall_rule(by_fw_rule_id=fw_rule_id)
         self._verify_fw_rule(body['firewall_rule'], vsd_acl)
@@ -305,8 +318,8 @@ class FWaaSExtensionTestJSON(BaseFWaaSTest):
             shared=True,
             source_port=1000,
             destination_port=1000,
-            source_ip_address='1.1.1.1/32',
-            destination_ip_address='2.2.2.2/32')
+            source_ip_address=source_ip_address,
+            destination_ip_address=destination_ip_address)
 
         self.assertTrue(body["firewall_rule"]['shared'])
 

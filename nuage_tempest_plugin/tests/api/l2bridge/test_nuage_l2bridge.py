@@ -1020,7 +1020,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             bridge = self.get_l2bridge(bridge['id'])
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            self.assertIsNone(l2domain, 'L2domain was erronously created ')
+            self._validate_l2domain_on_vsd(bridge, l2domain)
 
     @decorators.attr(type='smoke')
     def test_nuage_l2bridge_non_normalized_ipv6_negative(self):
@@ -1088,7 +1088,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             bridge = self.get_l2bridge(bridge['id'])
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            self.assertIsNone(l2domain, 'L2domain was erronously created ')
+            self._validate_l2domain_on_vsd(bridge, l2domain)
 
     @decorators.attr(type='smoke')
     def test_nuage_l2bridge_ipv4_ipv6(self):
@@ -1167,7 +1167,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             }
             p1 = self.create_port(n1, self.admin_manager,
                                   **kwargs)
-            self.assertIsNone(l2domain.ipv6_address)
+            self.assertEqual('cafe::/64', l2domain.ipv6_address)
             vport_1 = self.vsd.get_vport(l2domain=l2domain,
                                          by_port_id=p1['id'])
             self.assertIsNotNone(vport_1,
@@ -1252,8 +1252,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             self.delete_subnet(subnet2_ipv6, client=self.admin_manager)
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            self.assertIsNone(l2domain.ipv6_address,
-                              "l2domain is still dualstack")
+            self.assertEqual('cafe::/64', l2domain.ipv6_address)
 
     @decorators.attr(type='smoke')
     def test_nuage_l2bridge_first_ipv4_then_ipv4_then_ipv6(self):

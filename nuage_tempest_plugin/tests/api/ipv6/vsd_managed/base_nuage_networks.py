@@ -87,7 +87,7 @@ class BaseNuageNetworksIpv6TestCase(NuageBaseTest):
                 ip_version=6,
                 cidr=cidr6,
                 mask_bits=IPNetwork(cidr6).prefixlen,
-                enable_dhcp=False,
+                enable_dhcp=vsd_subnet.enable_dhcpv6,
                 nuagenet=vsd_subnet.id,
                 net_partition=actual_net_partition)
 
@@ -157,10 +157,16 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
                 self.assertEqual("IPV4", l2domain_template.ip_type)
                 self.assertIsNone(l2domain_template.ipv6_address)
                 self.assertIsNone(l2domain_template.ipv6_gateway)
+            elif ip_type == "IPV6":
+                self.assertEqual("IPV6", l2domain_template.ip_type)
+                self.assertIsNone(l2domain_template.address)
+                self.assertIsNone(l2domain_template.gateway)
+                self.assertIsNone(l2domain_template.netmask)
             elif ip_type == "DUALSTACK":
                 self.assertEqual("DUALSTACK", l2domain_template.ip_type)
             else:
-                self.fail('Invalid ip_type')
+                self.assertEqual("IPV6", l2domain_template.ip_type)
+                self.assertIsNone(cidr4)
 
             if cidr4:
                 self.assertEqual(str(cidr4.ip), l2domain_template.address)
@@ -171,7 +177,10 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
 
                 if "gateway" not in kwargs:
                     gateway_ip = str(IPAddress(cidr4) + 1)
-                    self.assertEqual(gateway_ip, l2domain_template.gateway)
+                    if l2domain_template.enable_dhcpv4:
+                        self.assertEqual(gateway_ip, l2domain_template.gateway)
+                    else:
+                        self.assertIsNone(l2domain_template.gateway)
 
             else:
                 self.assertIsNone(l2domain_template.address)
@@ -180,10 +189,13 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
 
             if cidr6:
                 self.assertEqual(str(cidr6), l2domain_template.ipv6_address)
-                if "ipv6_gateway" not in kwargs:
-                    gateway_ip = str(IPAddress(cidr6) + 1)
-                    self.assertEqual(gateway_ip,
-                                     l2domain_template.ipv6_gateway)
+                if not kwargs.get('ipv6_gateway'):
+                    if kwargs.get('enable_dhcpv6'):
+                        gateway_ip = str(IPAddress(cidr6) + 1)
+                        self.assertEqual(gateway_ip,
+                                         l2domain_template.ipv6_gateway)
+                    else:
+                        self.assertIsNone(l2domain_template.ipv6_gateway)
         else:
             self.assertFalse(l2domain_template.dhcp_managed)
 
@@ -207,17 +219,24 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
 
     def _given_vsd_l2domain(self, cidr4=None, cidr6=None, dhcp_managed=False,
                             **kwargs):
-        ip_type = "DUALSTACK" if cidr6 else "IPV4"
+        if cidr4 and cidr6:
+            ip_type = "DUALSTACK"
+        elif cidr6:
+            ip_type = "IPV6"
+        else:
+            ip_type = "IPV4"
         vsd_l2domain_template = self.vsd_create_l2domain_template(
             ip_type=ip_type, dhcp_managed=dhcp_managed,
             cidr4=cidr4,
-            cidr6=cidr6)
+            cidr6=cidr6,
+            **kwargs)
 
         vsd_l2domain = self.vsd_create_l2domain(template=vsd_l2domain_template)
 
         return vsd_l2domain
 
     def _given_vsd_l3subnet(self, cidr4=None, cidr6=None, dhcp_managed=True,
+                            enable_dhcpv4=True, enable_dhcpv6=False,
                             **kwargs):
         name = data_utils.rand_name('l3domain-')
         vsd_l3domain_template = self.vsd_create_l3domain_template(
@@ -240,8 +259,10 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
                 ip_type="DUALSTACK",
                 cidr4=cidr4,
                 gateway4=str(IPAddress(cidr4) + 1),
+                enable_dhcpv4=enable_dhcpv4,
                 cidr6=cidr6,
-                gateway6=str(IPAddress(cidr6) + 1))
+                gateway6=str(IPAddress(cidr6) + 1),
+                enable_dhcpv6=enable_dhcpv6)
         else:
             # ip_type = "IPV4"
             raise NotImplementedError

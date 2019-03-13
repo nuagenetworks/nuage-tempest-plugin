@@ -151,3 +151,7 @@ class RouterAttachmentTest(NuageBaseTest):
             by_network_id=subnet['network_id'],
             cidr=subnet['cidr'],
             ip_type=self._ip_version))
+
+
+class RouterAttachmentTestV6(RouterAttachmentTest):
+    _ip_version = 6

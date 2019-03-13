@@ -34,67 +34,68 @@ CONF = Topology.get_conf()
 
 class NetworksTestJSONNuage(test_networks.NetworksTest):
     _interface = 'json'
-
-    @classmethod
-    def setup_clients(cls):
-        super(NetworksTestJSONNuage, cls).setup_clients()
-        cls.nuage_client = NuageRestClient()
+    _vsd_address = 'address'
 
     @classmethod
     def resource_setup(cls):
         super(NetworksTestJSONNuage, cls).resource_setup()
+        cls.nuage_client = NuageRestClient()
 
     @staticmethod
     def convert_dec_hex(ip_address):
-        ip_address_hex = "0x" + \
-            "".join([(hex(int(x))[2:].zfill(2))
-                     for x in ip_address.split('.')])
-        return ip_address_hex
+        hex_ip = hex(int(netaddr.IPAddress(ip_address)))[2:]
+        if hex_ip.endswith('L'):
+            hex_ip = hex_ip[:-1]
+        if len(hex_ip) % 2:  # odd amount of characters
+            return '0' + hex_ip  # make it even
+        else:
+            return hex_ip
 
     @classmethod
     def delete_router_interface(cls, router_id, subnet_id):
         cls.routers_client.remove_router_interface(
             router_id, subnet_id=subnet_id)
 
-    def _verify_vsd_dhcp_options(self, nuage_dhcpopt, subnet):
+    def _verify_vsd_dhcp_options(self, nuage_dhcpopt, subnet, l2=True):
         # VSD validation
-        if subnet.get('gateway_ip', None):
-            # Verify L2Domain dhcp options are set on VSD
+        opt_index = 0
+        if self._ip_version == 4 and subnet.get('gateway_ip', None) and l2:
+            self.assertGreater(len(nuage_dhcpopt), opt_index)
             self.assertEqual(self.convert_dec_hex(
-                subnet['gateway_ip'])[2:], nuage_dhcpopt[0]['value'])
-            self.assertEqual(nuage_dhcpopt[0]['type'], "03")
-            if Topology.within_ext_id_release():
-                self.assertEqual(nuage_dhcpopt[0]['externalID'],
-                                 self.nuage_client.get_vsd_external_id(
-                                     subnet.get('id')))
-        if subnet.get('dns_nameservers'):
-            self.assertEqual(nuage_dhcpopt[1]['type'],
-                             "06")
-            dns1 = self.convert_dec_hex(subnet['dns_nameservers'][0])[2:]
-            dns2 = self.convert_dec_hex(subnet['dns_nameservers'][1])[2:]
-            dhcp_dns = [nuage_dhcpopt[1]['value'][
-                0:8], nuage_dhcpopt[1]['value'][8:]]
-            status = False
-            if dns1 in dhcp_dns and dns2 in dhcp_dns:
-                status = True
-            self.assertTrue(
-                status, "subnet dns_nameservers do not match dhcp options")
+                subnet['gateway_ip']), nuage_dhcpopt[opt_index]['value'])
+            self.assertEqual(nuage_dhcpopt[opt_index]['type'], "03")
+            self.assertEqual(nuage_dhcpopt[opt_index]['externalID'],
+                             self.nuage_client.get_vsd_external_id(
+                                 subnet.get('id')))
+            opt_index += 1
 
-            self.assertEqual(nuage_dhcpopt[2]['type'],
-                             "79")
-            if Topology.within_ext_id_release():
-                self.assertEqual(nuage_dhcpopt[2]['externalID'],
-                                 self.nuage_client.get_vsd_external_id(
-                                     subnet.get('id')))
-        if subnet.get('host_routes'):
+        if subnet.get('dns_nameservers'):
+            self.assertGreater(len(nuage_dhcpopt), opt_index)
+            self.assertEqual(nuage_dhcpopt[opt_index]['type'],
+                             "06" if self._ip_version == 4 else "17")
+            dns1 = self.convert_dec_hex(subnet['dns_nameservers'][0])
+            dns2 = self.convert_dec_hex(subnet['dns_nameservers'][1])
+            ip_length = 8 if subnet['ip_version'] == 4 else 32
+            dhcp_dns = ([nuage_dhcpopt[opt_index]['value'][0:ip_length],
+                         nuage_dhcpopt[opt_index]['value'][ip_length:]])
+            self.assertIn(dns1, dhcp_dns)
+            self.assertIn(dns2, dhcp_dns)
+            opt_index += 1
+
+        if self._ip_version == 4 and subnet.get('host_routes'):
+            self.assertGreater(len(nuage_dhcpopt), opt_index)
+            self.assertEqual(nuage_dhcpopt[opt_index]['type'],
+                             "79")  # classless-static-route
+            self.assertEqual(nuage_dhcpopt[opt_index]['externalID'],
+                             self.nuage_client.get_vsd_external_id(
+                                 subnet.get('id')))
             self.assertEqual(
                 self.convert_dec_hex(
-                    subnet['host_routes'][0]['nexthop'])[2:],
-                nuage_dhcpopt[2]['value'][-8:])
-            if Topology.within_ext_id_release():
-                self.assertEqual(nuage_dhcpopt[2]['externalID'],
-                                 self.nuage_client.get_vsd_external_id(
-                                     subnet.get('id')))
+                    subnet['host_routes'][0]['nexthop']),
+                nuage_dhcpopt[opt_index]['value'][-8:])
+            self.assertEqual(nuage_dhcpopt[opt_index]['externalID'],
+                             self.nuage_client.get_vsd_external_id(
+                                 subnet.get('id')))
 
     def _create_verify_delete_subnet(self, cidr=None, mask_bits=None,
                                      **kwargs):
@@ -103,6 +104,80 @@ class NetworksTestJSONNuage(test_networks.NetworksTest):
         gateway = kwargs.pop('gateway', None)
         subnet = self.create_subnet(network, gateway, cidr, mask_bits,
                                     **kwargs)
+
+        nuage_l2dom = self.nuage_client.get_l2domain(
+            filters=['externalID', self._vsd_address],
+            filter_value=[subnet['network_id'],
+                          subnet['cidr']])
+
+        nuage_dhcpopt = self.nuage_client.get_dhcpoption(
+            n_constants.L2_DOMAIN, nuage_l2dom[0]['ID'], subnet['ip_version'])
+        self._verify_vsd_dhcp_options(nuage_dhcpopt, subnet)
+
+        permissions = self.nuage_client.get_permissions(
+            parent=n_constants.L2_DOMAIN,
+            parent_id=nuage_l2dom[0]['ID'])
+
+        self.assertEqual(len(permissions), 1)
+        self.assertEqual(permissions[0]['externalID'],
+                         self.nuage_client.get_vsd_external_id(
+                             subnet['tenant_id']))
+        if network['shared']:
+            self.assertEqual(permissions[0]['permittedEntityName'],
+                             "Everybody")
+        else:
+            self.assertEqual(permissions[0]['permittedEntityName'],
+                             self.subnets_client.tenant_id)
+            group_resp = self.nuage_client.get_resource(
+                resource=n_constants.GROUP,
+                filters='externalID',
+                filter_value=self.subnets_client.tenant_id +
+                '@openstack',
+                netpart_name=self.nuage_client.def_netpart_name)
+            self.assertIsNot(group_resp, "",
+                             "User Group on VSD for the user who "
+                             "created the Subnet was not Found")
+            self.assertEqual(group_resp[0]['name'],
+                             self.subnets_client.tenant_id)
+        user_resp = self.nuage_client.get_user(
+            filters='externalID',
+            filter_value=self.subnets_client.tenant_id + '@openstack',
+            netpart_name=self.nuage_client.def_netpart_name)
+        self.assertIsNot(user_resp, "",
+                         "Corresponding user on VSD who created "
+                         "the Subnet was not Found")
+        self.assertEqual(user_resp[0]['userName'],
+                         self.subnets_client.tenant_id)
+        default_egress_tmpl = self.nuage_client.get_child_resource(
+            resource=n_constants.L2_DOMAIN,
+            resource_id=nuage_l2dom[0]['ID'],
+            child_resource=n_constants.EGRESS_ACL_TEMPLATE,
+            filters='externalID',
+            filter_value=subnet['network_id'])
+        self.assertIsNot(default_egress_tmpl, "",
+                         "Could not Find Default EGRESS Template "
+                         "on VSD For Subnet")
+        default_ingress_tmpl = \
+            self.nuage_client.get_child_resource(
+                resource=n_constants.L2_DOMAIN,
+                resource_id=nuage_l2dom[0]['ID'],
+                child_resource=n_constants.INGRESS_ACL_TEMPLATE,
+                filters='externalID',
+                filter_value=subnet['network_id'])
+        self.assertIsNot(default_ingress_tmpl, "",
+                         "Could not Find Default INGRESS Template "
+                         "on VSD For Subnet")
+        default_ingress_awd_tmpl = \
+            self.nuage_client.get_child_resource(
+                resource=n_constants.L2_DOMAIN,
+                resource_id=nuage_l2dom[0]['ID'],
+                child_resource=n_constants.INGRESS_ADV_FWD_TEMPLATE,
+                filters='externalID',
+                filter_value=subnet['network_id'])
+        self.assertIsNot(default_ingress_awd_tmpl, "",
+                         "Could not Find Default Forward INGRESS"
+                         " Template on VSD For Subnet")
+
         compare_args_full = dict(gateway_ip=gateway, cidr=cidr,
                                  mask_bits=mask_bits, **kwargs)
         compare_args = dict((k, v) for k, v in listitems(compare_args_full)
@@ -112,82 +187,6 @@ class NetworksTestJSONNuage(test_networks.NetworksTest):
             self.assertEqual(sorted(compare_args['dns_nameservers']),
                              sorted(subnet['dns_nameservers']))
             del subnet['dns_nameservers'], compare_args['dns_nameservers']
-
-        # VSD validation inserted - only for ipv4 though
-        # (with ipv6 subnet, no l2domain is created yet)
-        if self._ip_version == 4:
-            nuage_l2dom = self.nuage_client.get_l2domain(
-                filters=['externalID', 'address'],
-                filter_value=[subnet['network_id'],
-                              subnet['cidr']])
-            nuage_dhcpopt = self.nuage_client.get_dhcpoption(
-                n_constants.L2_DOMAIN, nuage_l2dom[0]['ID'])
-
-            permissions = self.nuage_client.get_permissions(
-                parent=n_constants.L2_DOMAIN,
-                parent_id=nuage_l2dom[0]['ID'])
-
-            self._verify_vsd_dhcp_options(nuage_dhcpopt, subnet)
-            if Topology.within_ext_id_release():
-                self.assertEqual(len(permissions), 1)
-                self.assertEqual(permissions[0]['externalID'],
-                                 self.nuage_client.get_vsd_external_id(
-                                     subnet['tenant_id']))
-                if network['shared']:
-                    self.assertEqual(permissions[0]['permittedEntityName'],
-                                     "Everybody")
-                else:
-                    self.assertEqual(permissions[0]['permittedEntityName'],
-                                     self.subnets_client.tenant_id)
-                    group_resp = self.nuage_client.get_resource(
-                        resource=n_constants.GROUP,
-                        filters='externalID',
-                        filter_value=self.subnets_client.tenant_id +
-                        '@openstack',
-                        netpart_name=self.nuage_client.def_netpart_name)
-                    self.assertIsNot(group_resp, "",
-                                     "User Group on VSD for the user who "
-                                     "created the Subnet was not Found")
-                    self.assertEqual(group_resp[0]['name'],
-                                     self.subnets_client.tenant_id)
-                user_resp = self.nuage_client.get_user(
-                    filters='externalID',
-                    filter_value=self.subnets_client.tenant_id + '@openstack',
-                    netpart_name=self.nuage_client.def_netpart_name)
-                self.assertIsNot(user_resp, "",
-                                 "Corresponding user on VSD who created "
-                                 "the Subnet was not Found")
-                self.assertEqual(user_resp[0]['userName'],
-                                 self.subnets_client.tenant_id)
-                default_egress_tmpl = self.nuage_client.get_child_resource(
-                    resource=n_constants.L2_DOMAIN,
-                    resource_id=nuage_l2dom[0]['ID'],
-                    child_resource=n_constants.EGRESS_ACL_TEMPLATE,
-                    filters='externalID',
-                    filter_value=subnet['network_id'])
-                self.assertIsNot(default_egress_tmpl, "",
-                                 "Could not Find Default EGRESS Template "
-                                 "on VSD For Subnet")
-                default_ingress_tmpl = \
-                    self.nuage_client.get_child_resource(
-                        resource=n_constants.L2_DOMAIN,
-                        resource_id=nuage_l2dom[0]['ID'],
-                        child_resource=n_constants.INGRESS_ACL_TEMPLATE,
-                        filters='externalID',
-                        filter_value=subnet['network_id'])
-                self.assertIsNot(default_ingress_tmpl, "",
-                                 "Could not Find Default INGRESS Template "
-                                 "on VSD For Subnet")
-                default_ingress_awd_tmpl = \
-                    self.nuage_client.get_child_resource(
-                        resource=n_constants.L2_DOMAIN,
-                        resource_id=nuage_l2dom[0]['ID'],
-                        child_resource=n_constants.INGRESS_ADV_FWD_TEMPLATE,
-                        filters='externalID',
-                        filter_value=subnet['network_id'])
-                self.assertIsNot(default_ingress_awd_tmpl, "",
-                                 "Could not Find Default Forward INGRESS"
-                                 " Template on VSD For Subnet")
 
         self._compare_resource_attrs(subnet, compare_args)
         self.networks_client.delete_network(net_id)
@@ -207,16 +206,16 @@ class NetworksTestJSONNuage(test_networks.NetworksTest):
         subnet = self.create_subnet(network)
         subnet_id = subnet['id']
 
-        if self._ip_version == 4:
-            # VSD validation
-            # Validate that an L2Domain is created on VSD at subnet creation
+        # VSD validation
+        # Validate that an L2Domain is created on VSD at subnet creation
 
-            nuage_l2dom = self.nuage_client.get_l2domain(
-                filters=['externalID', 'address'],
-                filter_value=[subnet['network_id'],
-                              subnet['cidr']])
+        nuage_l2dom = self.nuage_client.get_l2domain(
+            filters=['externalID', self._vsd_address],
+            filter_value=[subnet['network_id'],
+                          subnet['cidr']])
 
-            self.assertEqual(nuage_l2dom[0]['name'], subnet['id'])
+        self.assertEqual(nuage_l2dom[0]['name'], subnet['id'])
+        self.assertEqual(nuage_l2dom[0]['description'], subnet['name'])
 
         # Delete network while the subnet still exists
         self.networks_client.delete_network(net_id)
@@ -225,38 +224,17 @@ class NetworksTestJSONNuage(test_networks.NetworksTest):
         self.assertRaises(exceptions.NotFound, self.subnets_client.show_subnet,
                           subnet_id)
 
-        if self._ip_version == 4:
-            # VSD validation
-            # Validate that an L2Domain is deleted on VSD at subnet deletion
-            nuage_dell2dom = self.nuage_client.get_l2domain(
-                filters='externalID',
-                filter_value=subnet['id'])
+        # VSD validation
+        # Validate that an L2Domain is deleted on VSD at subnet deletion
+        nuage_dell2dom = self.nuage_client.get_l2domain(
+            filters=['externalID', self._vsd_address],
+            filter_value=[subnet['network_id'],
+                          subnet['cidr']])
 
-            self.assertEqual(nuage_dell2dom, '')
-
-    @decorators.attr(type='smoke')
-    def test_create_delete_subnet_with_gw(self):
-        self._create_verify_delete_subnet(
-            **self.subnet_dict(['gateway']))
-
-    @decorators.attr(type='smoke')
-    def test_create_delete_subnet_with_gw_and_allocation_pools(self):
-        self._create_verify_delete_subnet(**self.subnet_dict(
-            ['gateway', 'allocation_pools']))
-
-    @decorators.attr(type='smoke')
-    def test_create_delete_subnet_with_host_routes_and_dns_nameservers(self):
-        self._create_verify_delete_subnet(
-            **self.subnet_dict(['host_routes', 'dns_nameservers']))
+        self.assertEqual(nuage_dell2dom, '')
 
     @decorators.attr(type='smoke')
     def test_update_subnet_gw_dns_host_routes_dhcp(self):
-
-        if self._ip_version == 6:
-            # this test does not make much sense to my view for ipv6 as
-            # we don't support dhcp options on v6
-            self.skipTest('Skipped for ipv6.')
-
         network = self.create_network()
         subnet = self.create_subnet(
             network, **self.subnet_dict(['gateway', 'host_routes',
@@ -284,18 +262,22 @@ class NetworksTestJSONNuage(test_networks.NetworksTest):
 
         self.assertEqual(sorted(updated_subnet['dns_nameservers']),
                          sorted(kwargs['dns_nameservers']))
+
+        nuage_l2dom = self.nuage_client.get_l2domain(
+            filters=['externalID', self._vsd_address],
+            filter_value=[subnet['network_id'],
+                          subnet['cidr']])
+
+        nuage_dhcpopt = self.nuage_client.get_dhcpoption(
+            n_constants.L2_DOMAIN, nuage_l2dom[0]['ID'], subnet['ip_version'])
+        self._verify_vsd_dhcp_options(nuage_dhcpopt, updated_subnet)
+
         del subnet['dns_nameservers'], kwargs['dns_nameservers']
 
         self._compare_resource_attrs(updated_subnet, kwargs)
 
     @decorators.attr(type='smoke')
     def test_update_routed_subnet_gw_dns_host_routes(self):
-
-        if self._ip_version == 6:
-            # this test does not make much sense to my view for ipv6 as
-            # we don't support dhcp options on v6
-            self.skipTest('Skipped for ipv6.')
-
         router = self.create_router(
             external_network_id=CONF.network.public_network_id)
         network = self.create_network()
@@ -324,6 +306,17 @@ class NetworksTestJSONNuage(test_networks.NetworksTest):
 
         self.assertEqual(sorted(updated_subnet['dns_nameservers']),
                          sorted(kwargs['dns_nameservers']))
+
+        nuage_subnet = self.nuage_client.get_domain_subnet(
+            parent=None, parent_id=None,
+            filters=['externalID', self._vsd_address],
+            filter_value=[subnet['network_id'], subnet['cidr']])
+
+        nuage_dhcpopt = self.nuage_client.get_dhcpoption(
+            n_constants.SUBNETWORK, nuage_subnet[0]['ID'],
+            subnet['ip_version'])
+        self._verify_vsd_dhcp_options(nuage_dhcpopt, updated_subnet, l2=False)
+
         del subnet['dns_nameservers'], kwargs['dns_nameservers']
 
         self._compare_resource_attrs(updated_subnet, kwargs)
@@ -331,13 +324,15 @@ class NetworksTestJSONNuage(test_networks.NetworksTest):
         # cleanup router itf ...
         self.delete_router_interface(router['id'], subnet['id'])
 
-    @decorators.attr(type='smoke')
-    def test_create_delete_subnet_all_attributes(self):
+    @decorators.idempotent_id('d830de0a-be47-468f-8f02-1fd996118289')
+    def test_create_delete_subnet_with_dns_nameservers(self):
         self._create_verify_delete_subnet(
-            **self.subnet_dict(['gateway', 'host_routes', 'dns_nameservers']))
+            **self.subnet_dict(['dns_nameservers']))
 
 
 class NetworkNuageAdminTest(base.BaseAdminNetworkTest):
+    _vsd_address = 'address'
+
     @classmethod
     def setup_clients(cls):
         super(NetworkNuageAdminTest, cls).setup_clients()
@@ -369,7 +364,7 @@ class NetworkNuageAdminTest(base.BaseAdminNetworkTest):
         subnet_ext_id = self.nuage_client.get_vsd_external_id(
             subnet['network_id'])
         nuage_fippool = self.nuage_client.get_sharedresource(
-            filters=['externalID', 'address'],
+            filters=['externalID', self._vsd_address],
             filter_value=[subnet_ext_id, subnet['cidr']])
         self.assertEqual(nuage_fippool[0]['underlay'], True)
         self.admin_subnets_client.delete_subnet(subnet['id'])
@@ -394,12 +389,12 @@ class NetworkNuageAdminTest(base.BaseAdminNetworkTest):
         subnet_ext_id = self.nuage_client.get_vsd_external_id(
             subnet['network_id'])
         nuage_fippool = self.nuage_client.get_sharedresource(
-            filters=['externalID', 'address'],
+            filters=['externalID', self._vsd_address],
             filter_value=[subnet_ext_id, subnet['cidr']])
         self.assertEqual(nuage_fippool[0]['underlay'], False)
         self.admin_subnets_client.delete_subnet(subnet['id'])
         nuage_fippool = self.nuage_client.get_sharedresource(
-            filters=['externalID', 'address'],
+            filters=['externalID', self._vsd_address],
             filter_value=[subnet_ext_id, subnet['cidr']])
         self.assertEqual(nuage_fippool, '')
 
@@ -442,3 +437,4 @@ class NetworkNuageAdminTest(base.BaseAdminNetworkTest):
 
 class NuageNetworksIpV6Test(NetworksTestJSONNuage):
     _ip_version = 6
+    _vsd_address = 'IPv6Address'

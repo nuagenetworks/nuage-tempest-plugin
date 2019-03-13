@@ -176,10 +176,11 @@ class NuageGatewayTestVSDManaged(base.BaseNuageGatewayTest,
                                      post_body['network_id'])
 
     @decorators.attr(type='smoke')
-    def test_vport_unmanaged_l2(self):
+    def test_vport_managed_l2_dhcp_disabled(self):
         name = data_utils.rand_name('l2domain-')
-        vsd_l2dom_tmplt = self.create_vsd_dhcpunmanaged_l2dom_template(
-            name=name)
+        cidr = IPNetwork('10.10.100.0/24')
+        vsd_l2dom_tmplt = self.create_vsd_dhcpmanaged_l2dom_template(
+            name=name, cidr=cidr, enableDHCPv4=False)
         vsd_l2dom = self.create_vsd_l2domain(name=name,
                                              tid=vsd_l2dom_tmplt[0]['ID'])
 
@@ -189,7 +190,7 @@ class NuageGatewayTestVSDManaged(base.BaseNuageGatewayTest,
         net = self.create_network(network_name=net_name)
         subnet = self.create_subnet(
             net,
-            cidr=IPNetwork('10.10.100.0/24'),
+            cidr=cidr,
             mask_bits=24, nuagenet=vsd_l2dom[0]['ID'],
             net_partition=Topology.def_netpartition,
             enable_dhcp=False)

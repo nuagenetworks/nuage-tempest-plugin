@@ -482,9 +482,11 @@ class NuageRestClient(object):
         return self.create_dhcpoption(constants.SHARED_NET_RES, parent,
                                       option_number, option_values)
 
-    def get_dhcpoption(self, parent, parent_id):
+    def get_dhcpoption(self, parent, parent_id, ip_version=4):
         return self.get_child_resource(
-            parent, parent_id, constants.DHCPOPTION, None, None)
+            parent, parent_id,
+            constants.DHCPOPTION if ip_version == 4
+            else constants.DHCPV6OPTION, None, None)
 
     # Sharedresource
     def get_sharedresource(self, filters=None, filter_value=None):

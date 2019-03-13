@@ -24,6 +24,7 @@ START_VLAN_VALUE = 100
 
 # NETWORK
 DHCPOPTION = 'dhcpoptions'
+DHCPV6OPTION = 'dhcpv6options'
 DOMAIN = 'domains'
 DOMAIN_TEMPLATE = 'domaintemplates'
 ENTERPRISE_NET_MACRO = 'enterprisenetworks'

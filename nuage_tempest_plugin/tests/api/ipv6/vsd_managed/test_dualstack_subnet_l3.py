@@ -288,7 +288,6 @@ class VSDManagedDualStackSubnetL3Test(BaseVSDManagedNetworksIPv6Test):
 
         subnet_ipv6_cidr = IPNetwork("2001:5f74:c4a5:b82e::/64")
         subnet_ipv6_gateway = str(IPAddress(subnet_ipv6_cidr) + 1)
-
         self.assertRaisesRegex(
             bambou.exceptions.BambouHTTPError,
             "Invalid IP type",
@@ -302,3 +301,52 @@ class VSDManagedDualStackSubnetL3Test(BaseVSDManagedNetworksIPv6Test):
             cidr6=subnet_ipv6_cidr,
             gateway6=subnet_ipv6_gateway,
             ip_type="IPV6")
+
+    @decorators.attr(type='smoke')
+    @nuage_test.header()
+    def test_os_managed_v6_conversions_l2_l3_v6_dualstack(self):
+        # Provision OpenStack network/subnet/router
+        network = self.create_network()
+        ipv6_subnet = self.create_subnet(network, ip_version=6)
+
+        # verify l2 dom
+        vsd_l2_domain = self.vsd.get_l2domain(
+            by_network_id=ipv6_subnet['network_id'],
+            cidr=ipv6_subnet['cidr'], ip_type=6)
+        self.assertEqual(vsd_l2_domain.ip_type, 'IPV6')
+
+        router = self.create_router()
+        vsd_l3_domain = self.vsd.get_l3domain(by_router_id=router['id'])
+
+        # attach v6 subnet to router / verify l3 dom
+        self.router_attach(router, ipv6_subnet, cleanup=False)
+        vsd_l3_subnet = self.vsd.get_subnet_from_domain(
+            domain=vsd_l3_domain, by_network_id=ipv6_subnet['network_id'],
+            cidr=ipv6_subnet['cidr'], ip_type=6)
+        self.assertEqual(vsd_l3_subnet.ip_type, 'IPV6')
+
+        # create/verify port
+        port = self.create_port(network)
+        self._verify_port(port, subnet6=ipv6_subnet),
+        self._verify_vport_in_l3_subnet(port, vsd_l3_subnet)
+
+        # pure ipv6 to dualstack
+        ipv4_subnet = self.create_subnet(network, cleanup=False)
+        vsd_l3_subnet = self.vsd.get_subnet_from_domain(
+            domain=vsd_l3_domain, by_network_id=ipv6_subnet['network_id'],
+            cidr=ipv6_subnet['cidr'], ip_type=6)
+        self.assertEqual(vsd_l3_subnet.ip_type, 'DUALSTACK')
+
+        # dualstack to ipv6
+        self.delete_subnet(ipv4_subnet)
+        vsd_l3_subnet = self.vsd.get_subnet_from_domain(
+            domain=vsd_l3_domain, by_network_id=ipv6_subnet['network_id'],
+            cidr=ipv6_subnet['cidr'], ip_type=6)
+        self.assertEqual(vsd_l3_subnet.ip_type, 'IPV6')
+
+        # v6L3 to v6L2
+        self.router_detach(router, ipv6_subnet)
+        vsd_l2_domain = self.vsd.get_l2domain(
+            by_network_id=ipv6_subnet['network_id'],
+            cidr=ipv6_subnet['cidr'], ip_type=6)
+        self.assertEqual(vsd_l2_domain.ip_type, 'IPV6')

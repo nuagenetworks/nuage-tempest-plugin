@@ -101,7 +101,9 @@ class BaseVSDManagedNetwork(NuageBaseTest):
             'DHCPManaged': True,
             'address': str(kwargs['cidr'].ip),
             'netmask': str(kwargs['cidr'].netmask),
-            'gateway': kwargs['gateway']
+            'gateway': kwargs.get('gateway'),
+            'enableDHCPv4': kwargs.get('enableDHCPv4', True),
+            'enableDHCPv6': kwargs.get('enableDHCPv6', False)
         }
         vsd_l2dom_tmplt = cls.nuage_client.create_l2domaintemplate(
             name + '-template', params, kwargs.get('netpart_name'))

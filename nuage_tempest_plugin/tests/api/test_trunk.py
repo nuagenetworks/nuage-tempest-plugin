@@ -257,3 +257,7 @@ class TrunkTestJSON(TrunkTestJSONBase):
         observed_subports = trunk['trunk']['sub_ports']
         self.assertEqual(1, len(observed_subports))
         self.assertEqual(updated_port['port']['mac_address'], mac)
+
+
+class TrunkTestJSONV6(TrunkTestJSON):
+    _ip_version = 6

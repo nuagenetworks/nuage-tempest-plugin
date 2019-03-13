@@ -125,6 +125,7 @@ class VsdHelper(object):
                                  dhcp_managed=True, ip_type="IPV4",
                                  cidr4=None, gateway4=None,
                                  cidr6=None, gateway6=None,
+                                 enable_dhcpv4=True, enable_dhcpv6=False,
                                  **kwargs):
         if enterprise and not isinstance(enterprise, self.vspk.NUEnterprise):
             # get enterprise by _name_
@@ -136,6 +137,8 @@ class VsdHelper(object):
         template_name = name or data_utils.rand_name('test-l2template')
 
         params = {}
+        params.update({'enable_dhcpv4': enable_dhcpv4})
+        params.update({'enable_dhcpv6': enable_dhcpv6})
 
         if dhcp_managed:
             params['dhcp_managed'] = dhcp_managed
@@ -151,9 +154,10 @@ class VsdHelper(object):
                 netmask = str(cidr4.netmask)
             params.update({'netmask': netmask})
 
-            if not gateway4:
+            if not gateway4 and enable_dhcpv4:
                 gateway4 = str(IPAddress(cidr4) + 1)
-            params.update({'gateway': gateway4})
+            if gateway4:
+                params.update({'gateway': gateway4})
 
         if cidr6:
             params.update({'ipv6_address': str(cidr6)})
@@ -163,9 +167,10 @@ class VsdHelper(object):
                 netmask6 = str(cidr6.netmask)
             params.update({'netmask6': netmask6})
 
-            if not gateway6:
+            if not gateway6 and enable_dhcpv6:
                 gateway6 = str(IPAddress(cidr6) + 1)
-            params.update({'ipv6_gateway': gateway6})
+            if gateway6:
+                params.update({'ipv6_gateway': gateway6})
 
         # add all other kwargs as attributes (key,value) pairs
         for key, value in iteritems(kwargs):
@@ -388,8 +393,10 @@ class VsdHelper(object):
                       ip_type="IPV4",
                       cidr4=None,
                       gateway4=None,
+                      enable_dhcpv4=True,
                       cidr6=None,
                       gateway6=None,
+                      enable_dhcpv6=False,
                       **kwargs):
 
         if not zone:
@@ -398,6 +405,8 @@ class VsdHelper(object):
         subnet_name = name or data_utils.rand_name('test-subnet')
 
         params = {}
+        params.update({'enable_dhcpv4': enable_dhcpv4})
+        params.update({'enable_dhcpv6': enable_dhcpv6})
 
         for key, value in iteritems(kwargs):
             params.update({key: value})

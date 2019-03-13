@@ -133,6 +133,8 @@ class StatelessSecuritygroupTest(network_mixin.NetworkMixin,
                                  l3.L3Mixin, sg_mixin.SGMixin):
 
     credentials = ['admin']
+    _ether_type = 'ipv4'
+    _cidr = '10.20.30.0/24'
 
     @classmethod
     def setup_clients(cls):
@@ -230,7 +232,7 @@ class StatelessSecuritygroupTest(network_mixin.NetworkMixin,
                 'protocol': 'tcp',
                 'port_range_min': 22,
                 'port_range_max': 22,
-                'ethertype': 'ipv4'
+                'ethertype': self._ether_type
             }
             self.create_security_group_rule(topology.securitygroup['id'],
                                             **sg_rule)
@@ -247,7 +249,7 @@ class StatelessSecuritygroupTest(network_mixin.NetworkMixin,
             sg_rule = {
                 'direction': 'ingress',
                 'protocol': 'icmp',
-                'ethertype': 'ipv4'
+                'ethertype': self._ether_type
             }
             self.create_security_group_rule(topology.securitygroup['id'],
                                             **sg_rule)
@@ -267,7 +269,7 @@ class StatelessSecuritygroupTest(network_mixin.NetworkMixin,
             sg_rule = {
                 'direction': 'ingress',
                 'protocol': 'icmp',
-                'ethertype': 'ipv4',
+                'ethertype': self._ether_type,
                 'port_range_min': 3,
                 'port_range_max': 1
             }
@@ -303,7 +305,7 @@ class StatelessSecuritygroupTest(network_mixin.NetworkMixin,
         if with_router:
             router = self.create_router()
         network = self.create_network()
-        subnet = self.create_subnet('10.20.30.0/24', network['id'])
+        subnet = self.create_subnet(self._cidr, network['id'])
         if with_router:
             self.add_router_interface(router['id'], subnet_id=subnet['id'])
         if with_securitygroup:
@@ -357,3 +359,8 @@ class StatelessSecuritygroupTest(network_mixin.NetworkMixin,
                 self.assertNotEqual(
                     '1', acl.get('protocol'),
                     msg='Found icmp reverse rule - ACL %s' % acl['ID'])
+
+
+class StatelessSecuritygroupTestV6(StatelessSecuritygroupTest):
+    _ether_type = 'ipv6'
+    _cidr = 'cafe:babe::/64'

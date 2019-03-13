@@ -5,6 +5,7 @@ from base64 import b64encode
 import re
 import textwrap
 
+from netaddr import IPAddress
 from netaddr import IPNetwork
 
 from tempest.common.utils.linux.remote_client import RemoteClient
@@ -248,6 +249,10 @@ class TenantServer(object):
     def unmount_config_drive(self):
         self.send('umount /mnt')
 
+    @staticmethod
+    def _is_v6_ip(ip):
+        return IPAddress(ip['ip_address']).version == 6
+
     def get_user_data_for_nic_prep(self, dhcp_client='udhcpc'):
         nbr_nics = len(self.networks) if self.networks else len(self.ports)
         if nbr_nics > 1:
@@ -260,7 +265,14 @@ class TenantServer(object):
                 if dhcp_client == 'udhcpc':
                     s += '/sbin/cirros-dhcpc up eth%s\n' % nic
                 else:
-                    s += '/sbin/dhclient -1 eth%s\n' % nic
+                    s += '/sbin/ip link set eth%s up\n' % nic
+                    if self.ports:
+                        for fixed_ip in self.ports[nic]['fixed_ips']:
+                            if self._is_v6_ip(fixed_ip):
+                                s += '/bin/sleep 2\n'
+                                s += '/sbin/dhclient -1 -6 eth%s\n' % nic
+                            else:
+                                s += '/sbin/dhclient -1 eth%s\n' % nic
             return s
         return None
 

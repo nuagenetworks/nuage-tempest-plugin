@@ -85,269 +85,277 @@ class NuageExtraDHCPOptionsOSManagedL3Test(
                 cls.osmgd_l3_subnet['id']))
 
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_001_netmask(self):
+    # def test_nuage_l3_port_with_dhcp_opts_001_netmask(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_001_netmask()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_002_time_offset(self):
+    # def test_nuage_l3_port_with_dhcp_opts_002_time_offset(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_002_time_offset()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_003_routers(self):
+    # def test_nuage_l3_port_with_dhcp_opts_003_routers(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_003_routers()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_004_time_server(self):
+    # def test_nuage_l3_port_with_dhcp_opts_004_time_server(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_004_time_server()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_006_dns_server(self):
+    # def test_nuage_l3_port_with_dhcp_opts_006_dns_server(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_006_dns_server()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_007_log_server(self):
+    # def test_nuage_l3_port_with_dhcp_opts_007_log_server(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_007_log_server()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_009_lpr_server(self):
+    # def test_nuage_l3_port_with_dhcp_opts_009_lpr_server(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_009_lpr_server()
 
     @nuage_test.header()
-    def test_nuage_os_mgd_l3_port_with_dhcp_opts_012_hostname(self):
+    def test_nuage_l3_port_with_dhcp_opts_012_hostname(self):
         self._check_nuage_crud_port_with_dhcp_opts_012_hostname()
 
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_013_boot_file_size(self):
+    # def test_nuage_l3_port_with_dhcp_opts_013_boot_file_size(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_013_boot_file_size()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_015_domain_name(self):
+    # def test_nuage_l3_port_with_dhcp_opts_015_domain_name(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_015_domain_name()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_016_swap_server(self):
+    # def test_nuage_l3_port_with_dhcp_opts_016_swap_server(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_016_swap_server()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_017_root_path(self):
+    # def test_nuage_l3_port_with_dhcp_opts_017_root_path(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_017_root_path()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_018_extension_path(self):
+    # def test_nuage_l3_port_with_dhcp_opts_018_extension_path(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_018_extension_path()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_019_ip_forward_enable(self):
+    # def test_nuage_l3_port_with_dhcp_opts_019_ip_forward_enable(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_019_ip_forward_enable()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_020_non_local_src_routing(
+    # def test_nuage_l3_port_with_dhcp_opts_020_non_local_src_routing(
     #         self):
     #     self.\
     #         _check_nuage_crud_port_with_dhcp_opts_020_non_local_src_routing()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_021_policy_filter(self):
+    # def test_nuage_l3_port_with_dhcp_opts_021_policy_filter(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_021_policy_filter()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_022_max_dgram_reassembly(
+    # def test_nuage_l3_port_with_dhcp_opts_022_max_dgram_reassembly(
     #         self):
     #     self.\
     #     _check_nuage_crud_port_with_dhcp_opts_022_max_datagram_reassembly()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_023_default_ttl(self):
+    # def test_nuage_l3_port_with_dhcp_opts_023_default_ttl(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_023_default_ttl()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_026_mtu(self):
+    # def test_nuage_l3_port_with_dhcp_opts_026_mtu(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_026_mtu()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_027_all_subnets_local(self):
+    # def test_nuage_l3_port_with_dhcp_opts_027_all_subnets_local(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_027_all_subnets_local()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_028_broadcast(self):
+    # def test_nuage_l3_port_with_dhcp_opts_028_broadcast(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_028_broadcast()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_031_router_discovery(self):
+    # def test_nuage_l3_port_with_dhcp_opts_031_router_discovery(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_031_router_discovery()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_032_rtr_solicitation(self):
+    # def test_nuage_l3_port_with_dhcp_opts_032_rtr_solicitation(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_032_router_solicitation()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_033_static_route(self):
+    # def test_nuage_l3_port_with_dhcp_opts_033_static_route(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_033_static_route()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_034_trailer_encapsulation(
+    # def test_nuage_l3_port_with_dhcp_opts_034_trailer_encapsulation(
     #         self):
     #     self.\
     #     _check_nuage_crud_port_with_dhcp_opts_034_trailer_encapsulation()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_035_arp_timeout(self):
+    # def test_nuage_l3_port_with_dhcp_opts_035_arp_timeout(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_035_arp_timeout()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_036_ethernet_encap(self):
+    # def test_nuage_l3_port_with_dhcp_opts_036_ethernet_encap(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_036_ethernet_encap()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_037_tcp_ttl(self):
+    # def test_nuage_l3_port_with_dhcp_opts_037_tcp_ttl(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_037_tcp_ttl()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_038_tcp_keepalive(self):
+    # def test_nuage_l3_port_with_dhcp_opts_038_tcp_keepalive(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_038_tcp_keepalive()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_040_nis_domain(self):
+    # def test_nuage_l3_port_with_dhcp_opts_040_nis_domain(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_040_nis_domain()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_041_nis_server(self):
+    # def test_nuage_l3_port_with_dhcp_opts_041_nis_server(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_041_nis_server()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_042_ntp_server(self):
+    # def test_nuage_l3_port_with_dhcp_opts_042_ntp_server(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_042_ntp_server()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_044_netbios_ns(self):
+    # def test_nuage_l3_port_with_dhcp_opts_044_netbios_ns(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_044_netbios_ns()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_045_netbios_dd(self):
+    # def test_nuage_l3_port_with_dhcp_opts_045_netbios_dd(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_045_netbios_dd()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_046_netbios_nodetype(self):
+    # def test_nuage_l3_port_with_dhcp_opts_046_netbios_nodetype(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_046_netbios_nodetype()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_047_netbios_scope(self):
+    # def test_nuage_l3_port_with_dhcp_opts_047_netbios_scope(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_047_netbios_scope()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_048_x_windows_fs(self):
+    # def test_nuage_l3_port_with_dhcp_opts_048_x_windows_fs(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_048_x_windows_fs()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_049_x_windows_dm(self):
+    # def test_nuage_l3_port_with_dhcp_opts_049_x_windows_dm(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_049_x_windows_dm()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_050_requested_address(self):
+    # def test_nuage_l3_port_with_dhcp_opts_050_requested_address(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_050_requested_address()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_060_vendor_class(self):
+    # def test_nuage_l3_port_with_dhcp_opts_060_vendor_class(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_060_vendor_class()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_064_nisplus_domain(self):
+    # def test_nuage_l3_port_with_dhcp_opts_064_nisplus_domain(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_064_nisplus_domain()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_065_nisplus_server(self):
+    # def test_nuage_l3_port_with_dhcp_opts_065_nisplus_server(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_065_nisplus_server()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_066_tftp_server(self):
+    # def test_nuage_l3_port_with_dhcp_opts_066_tftp_server(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_066_tftp_server()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_067_bootfile_name(self):
+    # def test_nuage_l3_port_with_dhcp_opts_067_bootfile_name(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_067_bootfile_name()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_068_mobile_ip_home(self):
+    # def test_nuage_l3_port_with_dhcp_opts_068_mobile_ip_home(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_068_mobile_ip_home()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_069_smtp_server(self):
+    # def test_nuage_l3_port_with_dhcp_opts_069_smtp_server(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_069_smtp_server()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_070_pop3_server(self):
+    # def test_nuage_l3_port_with_dhcp_opts_070_pop3_server(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_070_pop3_server()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_071_nntp_server(self):
+    # def test_nuage_l3_port_with_dhcp_opts_071_nntp_server(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_071_nntp_server()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_074_irc_server(self):
+    # def test_nuage_l3_port_with_dhcp_opts_074_irc_server(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_074_irc_server()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_077_user_class(self):
+    # def test_nuage_l3_port_with_dhcp_opts_077_user_class(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_077_user_class()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_093_client_arch(self):
+    # def test_nuage_l3_port_with_dhcp_opts_093_client_arch(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_093_client_arch()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_094_client_itf_id(self):
+    # def test_nuage_l3_port_with_dhcp_opts_094_client_itf_id(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_094_client_interface_id()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_097_client_machine_id(self):
+    # def test_nuage_l3_port_with_dhcp_opts_097_client_machine_id(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_097_client_machine_id()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_119_domain_search(self):
+    # def test_nuage_l3_port_with_dhcp_opts_119_domain_search(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_119_domain_search()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_120_sip_server(self):
+    # def test_nuage_l3_port_with_dhcp_opts_120_sip_server(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_120_sip_server()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_121_classless_static_route(
+    # def test_nuage_l3_port_with_dhcp_opts_121_classless_static_route(
     #         self):
     #     self.\
     #    _check_nuage_crud_port_with_dhcp_opts_121_classless_static_route()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_125_vendor_id_encap(self):
+    # def test_nuage_l3_port_with_dhcp_opts_125_vendor_id_encap(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_125_vendor_id_encap()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_dhcp_opts_255_server_ip_address(self):
+    # def test_nuage_l3_port_with_dhcp_opts_255_server_ip_address(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_255_server_ip_address()
     #
     # @nuage_test.header()
-    # def test_nuage_os_mgd_l3_port_with_16_extra_dhcp_options(self):
+    # def test_nuage_l3_port_with_16_extra_dhcp_options(self):
     #     self._check_nuage_crud_port_with_16_extra_dhcp_options()
 
     @decorators.attr(type='smoke')
     @testtools.skipIf(Topology.before_openstack('queens'),
                       'Unsupported pre queens')
     @nuage_test.header()
-    def test_nuage_os_mgd_l3_port_with_numerical_opt_name(self):
+    def test_nuage_l3_port_with_numerical_opt_name(self):
         self._check_nuage_crud_port_with_numerical_opt_name()
 
     @decorators.attr(type='smoke')
     @testtools.skipIf(Topology.before_openstack('queens'),
                       'Unsupported pre queens')
     @nuage_test.header()
-    def test_nuage_os_mgd_l3_delete_port_extra_dhcp_opt(self):
+    def test_nuage_l3_delete_port_extra_dhcp_opt(self):
         self._check_nuage_delete_port_extra_dhcp_opt()
 
     @decorators.attr(type='smoke')
-    @testtools.skipIf(Topology.before_openstack('queens'),
-                      'Unsupported pre queens')
     @nuage_test.header()
-    def test_nuage_os_mgd_l3_crud_ipv6_extra_dhcp_opt(self):
-        self._check_nuage_crud_port_with_ipv6_opt()
+    def test_nuage_l3_crud_dhcpv6_dns_server_opt(self):
+        self._check_nuage_crud_port_with_dhcpv6_dns_server_opt()
+
+    @decorators.attr(type='smoke')
+    @nuage_test.header()
+    def test_nuage_l3_crud_dhcpv6_domain_search_opt(self):
+        self._check_nuage_crud_port_with_dhcpv6_domain_search_opt()
+
+    @decorators.attr(type='smoke')
+    @nuage_test.header()
+    def test_nuage_l3_crud_multiple_dhcpv6_opts(self):
+        self._check_nuage_crud_port_with_multiple_dhcpv6_opts()
 
 
 class NuageExtraDHCPOptionsVsdManagedL3Test(

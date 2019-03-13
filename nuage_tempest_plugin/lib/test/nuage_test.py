@@ -222,6 +222,16 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                  .format(str(cls.cidr6)))
 
     @classmethod
+    def ip_to_hex(cls, ip):
+        hex_ip = hex(int(IPAddress(ip)))[2:]
+        if hex_ip.endswith('L'):
+            hex_ip = hex_ip[:-1]
+        if len(hex_ip) % 2:  # odd amount of characters
+            return '0' + hex_ip  # make it even
+        else:
+            return hex_ip
+
+    @classmethod
     def is_dhcp_agent_present(cls):
         if cls.dhcp_agent_present is None:
             agents = cls.os_admin.network_agents_client.list_agents() \
@@ -269,10 +279,13 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             self, name=None, enterprise=None,
             dhcp_managed=True, ip_type="IPV4",
             cidr4=None, gateway4=None,
-            cidr6=None, gateway6=None, cleanup=True, **kwargs):
+            cidr6=None, gateway6=None, cleanup=True, enable_dhcpv4=True,
+            enable_dhcpv6=False, **kwargs):
         l2domain_template = self.vsd.create_l2domain_template(
-            name, enterprise, dhcp_managed, ip_type,
-            cidr4, gateway4, cidr6, gateway6, **kwargs)
+            name=name, enterprise=enterprise, dhcp_managed=dhcp_managed,
+            ip_type=ip_type, cidr4=cidr4, gateway4=gateway4, cidr6=cidr6,
+            gateway6=gateway6, enable_dhcpv4=enable_dhcpv4,
+            enable_dhcpv6=enable_dhcpv6, **kwargs)
         self.assertIsNotNone(l2domain_template)
         if cleanup:
             self.addCleanup(l2domain_template.delete)
@@ -313,11 +326,13 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         return vsd_zone
 
     def create_vsd_subnet(self, name=None, zone=None, ip_type="IPV4",
-                          cidr4=None, gateway4=None,
-                          cidr6=None, gateway6=None, cleanup=True, **kwargs):
-        vsd_subnet = self.vsd.create_subnet(name, zone, ip_type,
-                                            cidr4, gateway4, cidr6, gateway6,
-                                            **kwargs)
+                          cidr4=None, gateway4=None, enable_dhcpv4=True,
+                          cidr6=None, gateway6=None, enable_dhcpv6=False,
+                          cleanup=True, **kwargs):
+        vsd_subnet = self.vsd.create_subnet(
+            name=name, zone=zone, ip_type=ip_type, cidr4=cidr4,
+            gateway4=gateway4, enable_dhcpv4=enable_dhcpv4, cidr6=cidr6,
+            gateway6=gateway6, enable_dhcpv6=enable_dhcpv6, **kwargs)
         self.assertIsNotNone(vsd_subnet)
         if cleanup:
             self.addCleanup(vsd_subnet.delete)

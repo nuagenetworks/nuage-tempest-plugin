@@ -1320,11 +1320,32 @@ class NuageExtraDHCPOptionsBase(base.BaseAdminNetworkTest, NuageBaseTest):
         self._nuage_delete_port_extra_dhcp_opt(self.nuage_network_type,
                                                extra_dhcp_opts)
 
-    def _check_nuage_crud_port_with_ipv6_opt(self):
+    def _check_nuage_crud_port_with_dhcpv6_dns_server_opt(self):
         extra_dhcp_opts = [
-            {'opt_value': '255.255.255.0', 'opt_name': 'netmask',
+            {'opt_value': 'cafe:beef::a',
+             'opt_name': 'dns-server',
              'ip_version': '6'}
         ]
-        # No failure expected
+        self._nuage_crud_port_with_dhcp_opts(self.nuage_network_type,
+                                             extra_dhcp_opts, extra_dhcp_opts)
+
+    def _check_nuage_crud_port_with_dhcpv6_domain_search_opt(self):
+        extra_dhcp_opts = [
+            {'opt_value': 'sales.domain.com;eng.domain.org',
+             'opt_name': 'domain-search',
+             'ip_version': '6'}
+        ]
+        self._nuage_crud_port_with_dhcp_opts(self.nuage_network_type,
+                                             extra_dhcp_opts, extra_dhcp_opts)
+
+    def _check_nuage_crud_port_with_multiple_dhcpv6_opts(self):
+        extra_dhcp_opts = [
+            {'opt_value': 'cafe:beef::a',
+             'opt_name': 'dns-server',
+             'ip_version': '6'},
+            {'opt_value': 'sales.domain.com;eng.domain.org',
+             'opt_name': 'domain-search',
+             'ip_version': '6'}
+        ]
         self._nuage_crud_port_with_dhcp_opts(self.nuage_network_type,
                                              extra_dhcp_opts, extra_dhcp_opts)

@@ -822,6 +822,34 @@ class SecGroupTestNuageL2DomainIPv6Test(SecGroupTestNuageBase):
         # Nuage specific resource addition
         name = data_utils.rand_name('network-')
         cls.network = cls.create_network(network_name=name)
+        cls.ipv6_subnet = cls.create_subnet(cls.network, enable_dhcp=True)
+        nuage_l2domain = cls.nuage_client.get_l2domain(
+            filters=['externalID', 'IPv6Address'],  # mind
+            filter_value=[cls.ipv6_subnet['network_id'],
+                          cls.ipv6_subnet['cidr']])
+        cls.nuage_any_domain = nuage_l2domain
+        cls.nuage_domain_type = n_constants.L2_DOMAIN
+
+    @decorators.attr(type='smoke')
+    def test_create_show_delete_security_group_rule(self):
+        self._test_create_show_delete_security_group_rule(ipv6=True)
+
+
+class SecGroupTestNuageL2DomainDualstackTest(SecGroupTestNuageBase):
+    _ip_version = 6
+    _project_network_cidr = CONF.network.project_network_v6_cidr
+
+    # TODO(KRIS) THIS NEEDS TO GO OUT BUT NEED TO FIGURE OUT HOW
+    if netaddr.IPNetwork(CONF.network.project_network_v6_cidr).prefixlen < 64:
+        _project_network_cidr = netaddr.IPNetwork('cafe:babe::/64')
+
+    @classmethod
+    def resource_setup(cls):
+        super(SecGroupTestNuageL2DomainDualstackTest, cls).resource_setup()
+
+        # Nuage specific resource addition
+        name = data_utils.rand_name('network-')
+        cls.network = cls.create_network(network_name=name)
         cls.ipv4_subnet = cls.create_subnet(cls.network, ip_version=4)
         cls.ipv6_subnet = cls.create_subnet(cls.network, enable_dhcp=False)
         nuage_l2domain = cls.nuage_client.get_l2domain(
@@ -847,6 +875,56 @@ class SecGroupTestNuageL3DomainIPv6Test(SecGroupTestNuageBase):
     @classmethod
     def resource_setup(cls):
         super(SecGroupTestNuageL3DomainIPv6Test, cls).resource_setup()
+
+        # Create a network
+        name = data_utils.rand_name('network-')
+        cls.network = cls.create_network(network_name=name)
+
+        # Create dualstack subnet
+        cls.ipv6_subnet = cls.create_subnet(cls.network)
+
+        # Create a router
+        name = data_utils.rand_name('router-')
+        create_body = cls.routers_client.create_router(
+            name=name, external_gateway_info={
+                "network_id": CONF.network.public_network_id},
+            admin_state_up=False)
+        cls.router = create_body['router']
+        cls.routers_client.add_router_interface(
+            cls.router['id'], subnet_id=cls.ipv6_subnet['id'])
+
+        nuage_l3domain = cls.nuage_client.get_l3domain(
+            filters='externalID',
+            filter_value=cls.router['id'])
+
+        cls.nuage_any_domain = nuage_l3domain
+        cls.nuage_domain_type = n_constants.DOMAIN
+
+    @classmethod
+    def resource_cleanup(cls):
+        try:
+            cls.routers_client.remove_router_interface(
+                cls.router['id'], subnet_id=cls.ipv6_subnet['id'])
+        finally:
+            pass
+        super(SecGroupTestNuageL3DomainIPv6Test, cls).resource_cleanup()
+
+    @decorators.attr(type='smoke')
+    def test_create_show_delete_security_group_rule(self):
+        self._test_create_show_delete_security_group_rule(ipv6=True)
+
+
+class SecGroupTestNuageL3DomainDualstackTest(SecGroupTestNuageBase):
+    _ip_version = 6
+    _project_network_cidr = CONF.network.project_network_v6_cidr
+
+    # TODO(KRIS) THIS NEEDS TO GO OUT BUT NEED TO FIGURE OUT HOW
+    if netaddr.IPNetwork(CONF.network.project_network_v6_cidr).prefixlen < 64:
+        _project_network_cidr = netaddr.IPNetwork('cafe:babe::/64')
+
+    @classmethod
+    def resource_setup(cls):
+        super(SecGroupTestNuageL3DomainDualstackTest, cls).resource_setup()
 
         # Create a network
         name = data_utils.rand_name('network-')
@@ -880,7 +958,7 @@ class SecGroupTestNuageL3DomainIPv6Test(SecGroupTestNuageBase):
                 cls.router['id'], subnet_id=cls.ipv4_subnet['id'])
         finally:
             pass
-        super(SecGroupTestNuageL3DomainIPv6Test, cls).resource_cleanup()
+        super(SecGroupTestNuageL3DomainDualstackTest, cls).resource_cleanup()
 
     @decorators.attr(type='smoke')
     def test_create_show_delete_security_group_rule(self):

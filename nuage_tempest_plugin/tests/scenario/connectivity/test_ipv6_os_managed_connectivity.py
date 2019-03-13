@@ -3,6 +3,8 @@
 
 import nuage_tempest_plugin.lib.test.nuage_test as nuage_test
 from nuage_tempest_plugin.lib.test.nuage_test import skip_because
+
+from netaddr import IPNetwork
 from tempest.test import decorators
 
 LOG = nuage_test.Topology.get_logger(__name__)
@@ -71,6 +73,73 @@ class Ipv6OsManagedConnectivityTest(nuage_test.NuageBaseTest):
 
         # Test IPv6 connectivity between peer servers
         self.assert_ping(server1, server2, network, ip_type=6)
+
+    # @decorators.attr(type='smoke')
+    def test_icmp_connectivity_l2_os_managed_pure_v6(self):
+        # Provision OpenStack network
+        networkv6 = self.create_network()
+        self.create_subnet(
+            networkv6, ip_version=6, enable_dhcp=True, gateway=None)
+
+        # create open-ssh security group
+        ssh_security_group = self.create_open_ssh_security_group()
+
+        # Launch tenant servers in OpenStack network
+        server1 = self.create_tenant_server(
+            networks=[networkv6],
+            security_groups=[ssh_security_group],
+            make_reachable=True)
+
+        server2 = self.create_tenant_server(
+            networks=[networkv6],
+            security_groups=[ssh_security_group])
+
+        # Test IPv6 connectivity between peer servers
+        self.assert_ping(server1, server2, networkv6, ip_type=6)
+
+    # @decorators.attr(type='smoke')
+    def test_icmp_connectivity_l3_os_managed_pure_v6(self):
+        # Provision OpenStack network
+        networkv6_1 = self.create_network()
+        networkv6_2 = self.create_network()
+        networkv4 = self.create_network()
+
+        # provision subnets
+        subnetv4 = self.create_subnet(networkv4)
+        subnetv6_1 = self.create_subnet(
+            networkv6_1, ip_version=6, enable_dhcp=True,
+            cidr=IPNetwork("cafe:aabe::/64"))
+        subnetv6_2 = self.create_subnet(
+            networkv6_2, ip_version=6, enable_dhcp=True,
+            cidr=IPNetwork("cafe:babe::/64"))
+
+        # create open-ssh security group
+        ssh_security_group = self.create_open_ssh_security_group()
+
+        # provision ports
+        portv6_1 = self.create_port(networkv6_1,
+                                    security_groups=[ssh_security_group['id']])
+        portv6_2 = self.create_port(networkv6_2,
+                                    security_groups=[ssh_security_group['id']])
+        portv4 = self.create_port(networkv4,
+                                  security_groups=[ssh_security_group['id']])
+
+        # attach subnets to router
+        router = self.create_test_router()
+        self.router_attach(router, subnetv6_1)
+        self.router_attach(router, subnetv4)
+        self.router_attach(router, subnetv6_2)
+
+        # Launch tenant servers in OpenStack network
+        server1 = self.create_tenant_server(
+            ports=[portv4, portv6_1],
+            make_reachable=True)
+
+        server2 = self.create_tenant_server(
+            ports=[portv6_2])
+
+        # Test IPv6 connectivity between peer servers
+        self.assert_ping(server1, server2, networkv6_2, ip_type=6)
 
     @decorators.attr(type='smoke')
     @nuage_test.skip_because(bug='The test is not stable')

@@ -141,7 +141,7 @@ class OSManagedDualStackCliTest(
 
     @nuage_test.header()
     @decorators.attr(type='smoke')
-    def test_dualstack_with_reserved_ipv6_address_neg(self):
+    def test_dualstack_with_reserved_ipv6_address_ipv4_first_neg(self):
         network_name = data_utils.rand_name('cli_network')
         network = self.create_network_with_args(network_name)
         self.addCleanup(self._delete_network, network['id'])
@@ -172,7 +172,7 @@ class OSManagedDualStackCliTest(
 
     @nuage_test.header()
     @decorators.attr(type='smoke')
-    def test_dualstack_with_reserved_ipv6_address_and_ip4v_last_neg(self):
+    def test_dualstack_with_reserved_ipv6_address_neg(self):
         network_name = data_utils.rand_name('cli_network')
         network = self.create_network_with_args(network_name)
         self.addCleanup(self._delete_network, network['id'])
@@ -180,23 +180,13 @@ class OSManagedDualStackCliTest(
 
         subnet_name = data_utils.rand_name('cli-subnet')
 
-        cidr4 = IPNetwork('1.1.20.0/24')
         cidr6 = IPNetwork("2002:5f74:c4a5:b82e::/64")
-
-        subnet6 = self.create_subnet_with_args(
-            network['name'], str(cidr6),
-            "--name ", subnet_name + "-6",
-            "--ip-version 6",
-            "--disable-dhcp ")
-        self.subnets.remove(subnet6)
-        show_subnet6 = self.show_subnet(subnet6['id'])
-        self.assertEqual(subnet6['id'],
-                         show_subnet6['id'], "subnet not found")
 
         self.assertCommandFailed("IP Address {} is not valid"
                                  " or cannot be in reserved address space."
                                  .format(str(cidr6)),
                                  self.create_subnet_with_args,
                                  network['name'],
-                                 str(cidr4),
-                                 "--name ", subnet_name)
+                                 str(cidr6),
+                                 "--name ", subnet_name + "-6",
+                                 "--ip-version 6")
