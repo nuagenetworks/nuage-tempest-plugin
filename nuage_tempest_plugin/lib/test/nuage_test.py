@@ -674,10 +674,10 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                                    by_port_id=port['id'])
         self.assertEqual(port['id'], vport.name)
 
-    def create_open_ssh_security_group(self):
+    def create_open_ssh_security_group(self, sg_name=None):
         if not self.ssh_security_group:
             self.ssh_security_group = self._create_security_group(
-                namestart='tempest-open-ssh')
+                namestart=sg_name or 'tempest-open-ssh')
         return self.ssh_security_group
 
     def create_security_group_rule(self, security_group=None, **kwargs):

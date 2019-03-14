@@ -8,6 +8,7 @@ from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import data_utils
 from tempest.lib import decorators
 
+CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
 
 
@@ -34,29 +35,61 @@ class Ipv4OsManagedConnectivityTest(NuageBaseTest):
         # Test IPv4 connectivity between peer servers
         self.assert_ping(server1, server2, network)
 
-    @decorators.attr(type='smoke')
-    def test_icmp_connectivity_l3_os_managed(self):
+    def _icmp_connectivity_l3_os_managed_by_name(self, name=None,
+                                                 nova_friendly_name=None):
         # Provision OpenStack network resources
-        router = self.create_test_router()
-        network = self.create_network()
-        subnet = self.create_subnet(network)
+        router = self.create_router(
+            router_name=name,
+            external_network_id=CONF.network.public_network_id)
+        network = self.create_network(network_name=name)
+        subnet = self.create_subnet(network, subnet_name=name)
         self.router_attach(router, subnet)
 
+        # ---
+        # for some chars like line tab, nova itself has issues with passing it,
+        # hence support for a optional nova friendly name.
+        # More specifically, Nova can't deal with line tab in SG name,
+        # nor in the instance name.
+        # ---
+        nova_friendly_name = nova_friendly_name or name
+
         # create open-ssh security group
-        ssh_security_group = self.create_open_ssh_security_group()
+        ssh_security_group = self.create_open_ssh_security_group(
+            sg_name=nova_friendly_name)
 
         # Launch tenant servers in OpenStack network
         server2 = self.create_tenant_server(
+            name=nova_friendly_name,
             networks=[network],
             security_groups=[ssh_security_group])
 
         server1 = self.create_tenant_server(
+            name=nova_friendly_name,
             networks=[network],
             security_groups=[ssh_security_group],
             make_reachable=True)
 
         # Test IPv4 connectivity between peer servers
         self.assert_ping(server1, server2, network)
+
+    @decorators.attr(type='smoke')
+    def test_icmp_connectivity_l3_os_managed(self):
+        self._icmp_connectivity_l3_os_managed_by_name()
+
+    @decorators.attr(type='smoke')
+    def test_icmp_connectivity_l3_os_managed_russian(self):
+        # Russian, ask Vlad :)
+        name = (u'\u0445\u0440\u0435\u043d-\u0441-' +
+                u'\u0440\u0443\u0447\u043a\u043e\u0439')
+
+        self._icmp_connectivity_l3_os_managed_by_name(name)
+
+    @decorators.attr(type='smoke')
+    def test_icmp_connectivity_l3_os_managed_line_tab(self):
+        line_tab = u'\u000b'
+        name = 'hi' + line_tab + 'there'
+
+        self._icmp_connectivity_l3_os_managed_by_name(name, 'hi there')
 
     def test_icmp_connectivity_l3_os_managed_neg(self):
         # Provision OpenStack network resources
