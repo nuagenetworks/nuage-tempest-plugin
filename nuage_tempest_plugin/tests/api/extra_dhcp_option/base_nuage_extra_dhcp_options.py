@@ -329,8 +329,72 @@ class NuageExtraDHCPOptionsBase(base.BaseAdminNetworkTest, NuageBaseTest):
                                             new_extra_dhcp_opts)
         pass
 
+    def _nuage_create_list_show_delete_layer_x_port_with_dhcp_opts(
+            self, network_id,
+            vsd_network_id,
+            nuage_network_type,
+            extra_dhcp_opts):
+        # Create a port with given extra DHCP Options on an Openstack layer X
+        # managed network
+        name = data_utils.rand_name('extra-dhcp-opt-port-name')
+        create_body = self.ports_client.create_port(
+            name=name,
+            network_id=network_id,
+            extra_dhcp_opts=extra_dhcp_opts)
+        port_id = create_body['port']['id']
+        self.addCleanup(self.ports_client.delete_port, port_id)
+        # Does the response contain the dhcp options we passed in the request
+        self._confirm_extra_dhcp_options(create_body['port'], extra_dhcp_opts)
+        # Confirm port created has Extra DHCP Options via show
+        show_body = self.ports_client.show_port(port_id)
+        self._confirm_extra_dhcp_options(show_body['port'], extra_dhcp_opts)
+        # Confirm port created has Extra DHCP Options via lis ports
+        list_body = self.ports_client.list_ports()
+        ports = list_body['ports']
+        port = [p for p in ports if p['id'] == port_id]
+        self.assertTrue(port)
+        self._confirm_extra_dhcp_options(port[0], extra_dhcp_opts)
+        # Depending on the network type (L2 or L3) fetch the appropriate
+        # domain/subnet from the VSD
+        if nuage_network_type in [NUAGE_NETWORK_TYPE['OS_Managed_L3'],
+                                  NUAGE_NETWORK_TYPE['VSD_Managed_L3']]:
+            parent = constants.DOMAIN
+        else:
+            parent = constants.L2_DOMAIN
+        vports = self.nuage_client.get_vport(
+            parent,
+            vsd_network_id,
+            'externalID',
+            self.nuage_client.get_vsd_external_id(port_id))
+        vsd_dchp_options = self.nuage_client.get_dhcpoption(
+            constants.VPORT, vports[0]['ID'])
+        self._verify_vsd_extra_dhcp_options(vsd_dchp_options, extra_dhcp_opts)
+
+        # Delete DHCP port
+        new_extra_dhcp_opts = [
+            {'opt_value': None, 'opt_name': extra_dhcp_opts[0]['opt_name']}]
+        name = data_utils.rand_name('new-extra-dhcp-opt-port-name')
+        update_body = self.ports_client.update_port(
+            port_id, name=name, extra_dhcp_opts=new_extra_dhcp_opts)
+        # Confirm extra dhcp options were deleted on the port
+        # OPENSTACK-1059: update response contains old dhcp options
+        self._confirm_extra_dhcp_options(update_body['port'],
+                                         [])
+        upd_show_body = self.ports_client.show_port(port_id)
+        self._confirm_extra_dhcp_options(upd_show_body['port'],
+                                         [])
+        vsd_dchp_options = self.nuage_client.get_dhcpoption(
+            constants.VPORT, vports[0]['ID'])
+        self._verify_vsd_extra_dhcp_options(vsd_dchp_options,
+                                            [])
+        pass
+
     def _nuage_crud_port_with_dhcp_opts(
             self, nuage_network_type, extra_dhcp_opts, new_extra_dhcp_opts):
+        raise exceptions.NotImplemented
+
+    def _nuage_delete_port_extra_dhcp_opt(self, nuage_network_type,
+                                          extra_dhcp_opts):
         raise exceptions.NotImplemented
 
     def _confirm_extra_dhcp_options(self, port, extra_dhcp_opts):
@@ -454,8 +518,10 @@ class NuageExtraDHCPOptionsBase(base.BaseAdminNetworkTest, NuageBaseTest):
                 # Compare element by element, as the VSD stores it all in hex
                 converted_os_opt_values = self._convert_to_vsd_opt_values(
                     option_value_list, option['opt_name'])
-                if converted_os_opt_values == vsd_opt_value and \
-                        vsd_opt_name == option['opt_name']:
+                if (converted_os_opt_values == vsd_opt_value and
+                        (vsd_opt_name == option['opt_name'] or str(
+                            retrieved_option['actualType']) ==
+                            option['opt_name'])):
                     # Now check whether the length of this value > 0
                     if retrieved_option['length'] != '00':
                         break
@@ -1224,3 +1290,41 @@ class NuageExtraDHCPOptionsBase(base.BaseAdminNetworkTest, NuageBaseTest):
 
         self._nuage_crud_port_with_dhcp_opts(
             self.nuage_network_type, extra_dhcp_opts_16, extra_dhcp_opts_16)
+
+    def _check_nuage_crud_port_with_numerical_opt_name(self):
+        # Create a port with Extra DHCP Options nbr 1 netmask
+        extra_dhcp_opts = [
+            {'opt_value': '255.255.255.0', 'opt_name': '1'}
+        ]
+        new_extra_dhcp_opts = [
+            {'opt_value': '255.255.255.0', 'opt_name': '1'}
+        ]
+        self._nuage_crud_port_with_dhcp_opts(
+            self.nuage_network_type, extra_dhcp_opts, new_extra_dhcp_opts)
+
+        extra_dhcp_opts = [
+            {'opt_value': '10.20.33.10;10.33.33.33',
+             'opt_name': '33'}
+        ]
+        new_extra_dhcp_opts = [
+            {'opt_value': '10.33.33.0;10.33.33.33;10.33.34.0;10.33.34.10',
+             'opt_name': '33'}
+        ]
+        self._nuage_crud_port_with_dhcp_opts(
+            self.nuage_network_type, extra_dhcp_opts, new_extra_dhcp_opts)
+
+    def _check_nuage_delete_port_extra_dhcp_opt(self):
+        extra_dhcp_opts = [
+            {'opt_value': '0x100a110a0b0c0d', 'opt_name': 'server-ip-address'}
+        ]
+        self._nuage_delete_port_extra_dhcp_opt(self.nuage_network_type,
+                                               extra_dhcp_opts)
+
+    def _check_nuage_crud_port_with_ipv6_opt(self):
+        extra_dhcp_opts = [
+            {'opt_value': '255.255.255.0', 'opt_name': 'netmask',
+             'ip_version': '6'}
+        ]
+        # No failure expected
+        self._nuage_crud_port_with_dhcp_opts(self.nuage_network_type,
+                                             extra_dhcp_opts, extra_dhcp_opts)

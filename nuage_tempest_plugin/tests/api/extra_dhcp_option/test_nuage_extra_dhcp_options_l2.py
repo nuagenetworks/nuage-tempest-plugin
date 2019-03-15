@@ -1,11 +1,14 @@
-# Copyright 2015 Alcatel-Lucent
+# Copyright 2017 NOKIA
 
 from netaddr import IPNetwork
+import testtools
 
 from tempest.lib.common.utils import data_utils
 
-from . import base_nuage_extra_dhcp_options
-from .base_nuage_extra_dhcp_options import NUAGE_NETWORK_TYPE
+from nuage_tempest_plugin.tests.api.extra_dhcp_option import \
+    base_nuage_extra_dhcp_options
+from nuage_tempest_plugin.tests.api.extra_dhcp_option\
+    .base_nuage_extra_dhcp_options import NUAGE_NETWORK_TYPE
 
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
@@ -88,6 +91,13 @@ class NuageExtraDHCPOptionsBaseL2(
         else:
             self.assertTrue(False, 'Unknown NUAGE_NETWORK_TYPE detected')
         pass
+
+    def _nuage_delete_port_extra_dhcp_opt(self, nuage_network_type,
+                                          extra_dhcp_opts):
+        if nuage_network_type == NUAGE_NETWORK_TYPE['OS_Managed_L2']:
+            self._nuage_create_list_show_delete_layer_x_port_with_dhcp_opts(
+                self.osmgd_l2_network['id'], self.l2domain[0]['ID'],
+                nuage_network_type, extra_dhcp_opts)
 
     @classmethod
     def resource_cleanup(cls):
@@ -363,6 +373,24 @@ class NuageExtraDHCPOptionsOSManagedL2Test(NuageExtraDHCPOptionsBaseL2):
     # @nuage_test.header()
     # def test_nuage_os_mgd_l2_port_with_16_extra_dhcp_options(self):
     #     self._check_nuage_crud_port_with_16_extra_dhcp_options()
+
+    @testtools.skipIf(Topology.before_openstack('queens'),
+                      'Unsupported pre queens')
+    @nuage_test.header()
+    def test_nuage_os_mgd_l2_port_with_numerical_opt_name(self):
+        self._check_nuage_crud_port_with_numerical_opt_name()
+
+    @testtools.skipIf(Topology.before_openstack('queens'),
+                      'Unsupported pre queens')
+    @nuage_test.header()
+    def test_nuage_os_mgd_l2_delete_port_extra_dhcp_opt(self):
+        self._check_nuage_delete_port_extra_dhcp_opt()
+
+    @testtools.skipIf(Topology.before_openstack('queens'),
+                      'Unsupported pre queens')
+    @nuage_test.header()
+    def test_nuage_os_mgd_l2_crud_ipv6_extra_dhcp_opt(self):
+        self._check_nuage_crud_port_with_ipv6_opt()
 
 
 class NuageExtraDHCPOptionsVsdManagedL2Test(
