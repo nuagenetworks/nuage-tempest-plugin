@@ -4,6 +4,7 @@ from netaddr import IPNetwork
 import testtools
 
 from tempest.lib.common.utils import data_utils
+from tempest.lib import decorators
 
 from nuage_tempest_plugin.tests.api.extra_dhcp_option import \
     base_nuage_extra_dhcp_options
@@ -374,18 +375,21 @@ class NuageExtraDHCPOptionsOSManagedL2Test(NuageExtraDHCPOptionsBaseL2):
     # def test_nuage_os_mgd_l2_port_with_16_extra_dhcp_options(self):
     #     self._check_nuage_crud_port_with_16_extra_dhcp_options()
 
+    @decorators.attr(type='smoke')
     @testtools.skipIf(Topology.before_openstack('queens'),
                       'Unsupported pre queens')
     @nuage_test.header()
     def test_nuage_os_mgd_l2_port_with_numerical_opt_name(self):
         self._check_nuage_crud_port_with_numerical_opt_name()
 
+    @decorators.attr(type='smoke')
     @testtools.skipIf(Topology.before_openstack('queens'),
                       'Unsupported pre queens')
     @nuage_test.header()
     def test_nuage_os_mgd_l2_delete_port_extra_dhcp_opt(self):
         self._check_nuage_delete_port_extra_dhcp_opt()
 
+    @decorators.attr(type='smoke')
     @testtools.skipIf(Topology.before_openstack('queens'),
                       'Unsupported pre queens')
     @nuage_test.header()
