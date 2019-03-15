@@ -106,18 +106,26 @@ class TenantServer(object):
     def boot(self, wait_until='ACTIVE', cleanup=True,
              return_none_on_failure=False, **kwargs):
 
+        assert not ("user_data" in kwargs and self.get_user_data_for_nic_prep(
+            dhcp_client=CONF.scenario.dhcp_client))  # one of both, not both
+
         # add user data for configuring extra nics
-        user_data = self.get_user_data_for_nic_prep(
-            dhcp_client=CONF.scenario.dhcp_client)
-        if user_data:
-            kwargs['user_data'] = user_data
+        if not kwargs.get('user_data'):
+            user_data = self.get_user_data_for_nic_prep(
+                dhcp_client=CONF.scenario.dhcp_client)
+            if user_data:
+                kwargs['user_data'] = user_data
+        # cleans and logs the user_data script
+        if kwargs.get('user_data'):
+            kwargs['user_data'] = b64encode(textwrap.dedent(
+                kwargs['user_data']).lstrip().encode('utf8'))
+            LOG.info('user_data:\n---\n{}---'.format(kwargs['user_data']))
 
         self.openstack_data = self.parent_test.osc_create_test_server(
             self.client, self.networks, self.ports, self.security_groups,
             wait_until, self.volume_backed, self.name, self.flavor,
             self.image_id, self.keypair, cleanup,
             return_none_on_failure=return_none_on_failure, **kwargs)
-
         return self.openstack_data
 
     def did_deploy(self):
@@ -237,9 +245,7 @@ class TenantServer(object):
                 s = '#!/bin/sh\n'
                 for nic in range(1, nbr_nics):
                     s += '/sbin/cirros-dhcpc up eth%s\n' % nic
-                script_clean = textwrap.dedent(s).lstrip().encode('utf8')
-                LOG.info('get_user_data_for_nic_prep:\n---\n%s---', s)
-                return b64encode(script_clean)
+                return s
         return None
 
     def needs_fip_access(self):

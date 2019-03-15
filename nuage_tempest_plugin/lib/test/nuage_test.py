@@ -6,6 +6,7 @@ import functools
 import inspect
 import os.path
 from six import iteritems
+import socket
 import testtools
 import time
 import yaml
@@ -1557,6 +1558,19 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             if IPAddress(ip_address) in ip_range:
                 in_pool = True
         self.assertTrue(in_pool, msg="IP address not in allocation pools")
+
+    @staticmethod
+    # ref: https://stackoverflow.com/a/28950776/6244487
+    def get_local_ip():  # creates a socket to get the local ip
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            # doesn't have to be reachable
+            s.connect(('13.255.255.255', 1))
+            ip = s.getsockname()[0]
+        finally:
+            s.close()
+        LOG.debug("Local IP: {}".format(ip))
+        return ip
 
 
 class NuageBaseOrchestrationTest(NuageBaseTest):
