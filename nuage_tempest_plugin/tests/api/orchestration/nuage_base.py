@@ -38,7 +38,10 @@ class BaseOrchestrationTest(tempest.test.BaseTestCase):
         super(BaseOrchestrationTest, cls).skip_checks()
         if not CONF.service_available.neutron:
             # this check prevents this test to be run in unittests
-            raise cls.skipException("Neutron support is required")
+            raise cls.skipException('Neutron support is required')
+        if not hasattr(CONF, 'heat_plugin'):
+            raise cls.skipException('heat_plugin is not configured '
+                                    'in tempest.conf')
 
     @classmethod
     def setup_clients(cls):

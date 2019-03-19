@@ -35,8 +35,9 @@ class NuageBaseOrchestrationTest(tempest.test.BaseTestCase):
     @classmethod
     def skip_checks(cls):
         super(NuageBaseOrchestrationTest, cls).skip_checks()
-        if not CONF.service_available.heat_plugin:
-            raise cls.skipException("Heat support is required")
+        if not hasattr(CONF, 'heat_plugin'):
+            raise cls.skipException('heat_plugin is not configured '
+                                    'in tempest.conf')
 
     @classmethod
     def setup_clients(cls):
