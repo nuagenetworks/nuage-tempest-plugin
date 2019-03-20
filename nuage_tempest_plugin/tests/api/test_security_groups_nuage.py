@@ -97,10 +97,14 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
         self.assertEqual(nuage_policy_grp[0]['name'],
                          remote_group_id)
 
-    def _verify_vsd_network_macro(self, remote_ip_prefix):
+    def _verify_vsd_network_macro(self, remote_ip_prefix, ethertype='IPv4'):
         net_addr = remote_ip_prefix.split('/')
-        ent_net_macro = self.nuage_client.get_enterprise_net_macro(
-            filters='address', filter_value=net_addr[0])
+        if ethertype == 'IPv4':
+            ent_net_macro = self.nuage_client.get_enterprise_net_macro(
+                filters='address', filter_value=net_addr[0])
+        else:
+            ent_net_macro = self.nuage_client.get_enterprise_net_macro(
+                filters='IPv6Address', filter_value=remote_ip_prefix)
         self.assertNotEqual(ent_net_macro, '', msg='Macro not found')
         if Topology.within_ext_id_release():
             self.assertEqual(ent_net_macro[0]['externalID'],
@@ -137,7 +141,8 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
                                         nuage_domain=nuage_domain)
 
         if sec_group_rule.get('remote_ip_prefix'):
-            self._verify_vsd_network_macro(sec_group_rule['remote_ip_prefix'])
+            self._verify_vsd_network_macro(sec_group_rule['remote_ip_prefix'],
+                                           sec_group_rule['ethertype'])
 
         nuage_acl_entry = self._get_nuage_acl_entry_template(
             sec_group_rule, nuage_domain=nuage_domain)
@@ -574,6 +579,35 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
                                msg,
                                self._create_nuage_port_with_security_group,
                                sg_id, self.network['id'])
+
+    @decorators.attr(type='smoke')
+    def test_create_security_group_rule_ipv6_ip_prefix(self):
+        sg1_body, _ = self._create_security_group()
+        sg_id = sg1_body['security_group']['id']
+        sg_rule_list = []
+        for prefix in [0, 1, 30, 63, 64, 65, 127, 128]:
+            direction = 'ingress'
+            protocol = 'tcp'
+            port_range_min = 76
+            port_range_max = 77
+            if prefix == 0:
+                ip_prefix = '::/' + str(prefix)
+            else:
+                ip_prefix = '2001::/' + str(prefix)
+            sg_rule = (
+                self.security_group_rules_client.create_security_group_rule(
+                    security_group_id=sg_id, direction=direction,
+                    ethertype="IPv6", protocol=protocol,
+                    port_range_min=port_range_min,
+                    port_range_max=port_range_max,
+                    remote_ip_prefix=ip_prefix))
+            sg_rule_list.append(sg_rule)
+        self._create_nuage_port_with_security_group(sg_id, self.network['id'])
+        self._verify_vsd_policy_grp(
+            sg_id,
+            name=sg1_body['security_group']['name'])
+        for sg_rule in sg_rule_list:
+            self._verify_nuage_acl(sg_rule['security_group_rule'])
 
     # @decorators.attr(type='smoke')
     def test_create_security_group_rule_invalid_nw_macro_negative(self):
