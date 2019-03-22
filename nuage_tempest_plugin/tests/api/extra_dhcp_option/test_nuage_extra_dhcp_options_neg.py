@@ -790,6 +790,7 @@ class NuageExtraDHCPOptionsNegativeTest(
                           self.ports_client.show_port,
                           bad_port_id)
 
+    @decorators.attr(type='smoke')
     @testtools.skipIf(Topology.before_openstack('queens'),
                       'Unsupported pre queens')
     @nuage_test.header()
@@ -801,6 +802,7 @@ class NuageExtraDHCPOptionsNegativeTest(
         self._assert_create_update_port_with_bad_dhcp_opts_neg(
             network_id, bad_values, '0')
 
+    @decorators.attr(type='smoke')
     @testtools.skipIf(Topology.before_openstack('queens'),
                       'Unsupported pre queens')
     @nuage_test.header()
