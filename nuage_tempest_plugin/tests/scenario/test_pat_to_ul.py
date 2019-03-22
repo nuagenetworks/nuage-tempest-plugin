@@ -12,8 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from tempest.lib import decorators
-
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
 
@@ -48,7 +46,7 @@ class NuagePatToUnderlayScenarioTest(NuageBaseTest):
         server = self.create_tenant_server(
             ports=[port],
             user_data=ping_script)
-        self.sleep(seconds=40,
+        self.sleep(seconds=60,
                    msg='waiting for cloud-init script to finish.')
         self.create_fip_to_server(server, port)
         result = server.console().exec_command('cat {}'.format(output_path))
@@ -57,10 +55,8 @@ class NuagePatToUnderlayScenarioTest(NuageBaseTest):
         else:
             self.assertNotEqual(result, '0\n')
 
-    @decorators.attr(type='smoke')
     def test_pat_to_underlay_up_to_hv(self):
         self._test_pat_to_underlay_up_to_hv('snat', True)
 
-    @decorators.attr(type='smoke')
     def test_pat_to_underlay_disabled_up_to_hv(self):
         self._test_pat_to_underlay_up_to_hv('off', False)
