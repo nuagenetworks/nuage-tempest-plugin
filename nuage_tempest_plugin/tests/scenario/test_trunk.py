@@ -25,11 +25,17 @@ from nuage_tempest_plugin.lib.utils import data_utils as utils
 LOG = Topology.get_logger(__name__)
 CONF = Topology.get_conf()
 
+DHCP_CMD = (
+    'ps -ef | grep -q "udhcpc .*%(itf)s.%(tag)d" || '
+    'sudo udhcpc -i %(itf)s.%(tag)d -s /sbin/cirros-dhcpc;'
+    if CONF.scenario.dhcp_client == 'udhcpc' else
+    'ps -ef | grep -q "dhclient .*%(itf)s.%(tag)d" || '
+    'sudo dhclient -1 %(itf)s.%(tag)d;'
+)
+
 CONFIGURE_VLAN_INTERFACE_COMMANDS = (
     'sudo ip l a link %(itf)s name %(itf)s.%(tag)d type vlan id %(tag)d &&'
-    'sudo ip l s up dev %(itf)s.%(tag)d && '
-    'ps -ef | grep -q "udhcpc .*%(itf)s.%(tag)d" || '
-    'sudo udhcpc -i %(itf)s.%(tag)d -s /sbin/cirros-dhcpc;')
+    'sudo ip l s up dev %(itf)s.%(tag)d && ' + DHCP_CMD)
 
 
 class TrunkTest(NuageBaseTest):

@@ -167,31 +167,45 @@ class TenantServer(object):
                  '  subnet: {}\n'
                  '  device: {}\n'
                  .format(ip, subnet, device))
-        # grdinv - assume full blown cloud-init on images
-        # where dhclient available. This might not be true,
-        # but currently seems a best way to handle ipv6 itf config
-        # when we are not sure on interface naming
-        if CONF.scenario.dhcp_client == 'dhclient':
+
+        def device_served_by_dhclient(device_):
+            try:
+                cmd = 'ps -ef | grep "dhclient.*-6.*{}" |' \
+                      ' grep -v grep'.format(device_)
+                self.console().exec_command(cmd)
+                return True
+
+            except lib_exc.SSHExecCommandFailed:
+                return False
+
+        # If dhclient is used, check if it does serve interface already
+        if (CONF.scenario.dhcp_client == 'dhclient' and
+                device_served_by_dhclient(device)):
             LOG.info('VM configure_dualstack_interface: '
-                     'skipping in favor of cloud-init')
+                     'skipping - detected running dhclient process')
+            # nothing to do
             return
+
+        # else, configure statically
         mask_bits = IPNetwork(subnet['cidr']).prefixlen
         gateway_ip = subnet['gateway_ip']
 
         self.send('ip -6 addr add {}/{} dev {}'.format(ip, mask_bits, device))
         self.send('ip link set dev {} up'.format(device))
-        if gateway_ip:  # In L2 domains having a gateway does not make sense
-            # gridinv - following may fail if default route does exist on host
+
+        if gateway_ip:
             try:
-                assert self.console()
                 self.console().exec_command(
                     'sudo ip -6 route add default via {}'.format(gateway_ip))
+
             except lib_exc.SSHExecCommandFailed:
+                # default route may exist already; then fine - proceed
                 LOG.warn("Failed to add default route for ipv6")
+
         self.send('ip a')
         self.send('route -n -A inet6')
 
-        LOG.info('VM configure_dualstack_interface: Done.\n')
+        LOG.info('VM configure_dualstack_interface: Done.')
 
     def configure_vlan_interface(self, ip, interface, vlan):
         self.send('ip link add link %s name %s.%s type vlan id %s ' % (
@@ -241,11 +255,13 @@ class TenantServer(object):
             if dhcp_client not in supported_clients:
                 raise lib_exc.exceptions.InvalidConfiguration(
                     '%s DHCP client unsupported' % dhcp_client)
-            if dhcp_client == 'udhcpc':
-                s = '#!/bin/sh\n'
-                for nic in range(1, nbr_nics):
+            s = '#!/bin/sh\n'
+            for nic in range(1, nbr_nics):
+                if dhcp_client == 'udhcpc':
                     s += '/sbin/cirros-dhcpc up eth%s\n' % nic
-                return s
+                else:
+                    s += '/sbin/dhclient -1 eth%s\n' % nic
+            return s
         return None
 
     def needs_fip_access(self):
