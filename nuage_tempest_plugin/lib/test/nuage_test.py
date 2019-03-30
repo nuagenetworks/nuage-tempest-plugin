@@ -1594,6 +1594,14 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
 class NuageBaseOrchestrationTest(NuageBaseTest):
     """Base test case class for all Nuage Orchestration API tests."""
+
+    @classmethod
+    def skip_checks(cls):
+        super(NuageBaseOrchestrationTest, cls).skip_checks()
+        if not hasattr(CONF, 'heat_plugin'):
+            raise cls.skipException('heat_plugin is not configured '
+                                    'in tempest.conf')
+
     @classmethod
     def setup_credentials(cls):
         super(NuageBaseOrchestrationTest, cls).setup_credentials()
