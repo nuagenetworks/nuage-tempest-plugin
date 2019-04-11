@@ -1267,9 +1267,12 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                               name, networks, ports, security_groups,
                               flavor, keypair, volume_backed)
 
-        if l2_deployment and make_reachable:
+        # fip is only supported on L3 v4, so in L2 or L3 pure v6 cases,
+        # another L3 domain with v4 subnet will be created to associate FIP.
+        if (make_reachable and
+                (l2_deployment or not first_network.get('v4_subnet'))):
             server.networks = None
-            server.ports = self.prepare_l3_topology_for_l2_network(
+            server.ports = self.prepare_fip_topology(
                 networks, ports, security_groups)
             server.security_groups = None
             data_interface = 'eth1'
@@ -1329,22 +1332,22 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         LOG.info("create_tenant_server %s: DONE!", name)
         return server
 
-    def prepare_l3_topology_for_l2_network(
+    def prepare_fip_topology(
             self, networks, ports, security_groups=None, client=None):
 
-        # L2 (existing)
-        l2_network = (networks[0] if networks
-                      else ports[0]['parent_network'])
+        # Current network (L2 or L3 pure v6)
+        test_network = (networks[0] if networks
+                        else ports[0]['parent_network'])
         if security_groups:
-            l2_sgs = []
+            test_sgs = []
             for sg in security_groups:
-                l2_sgs.append(sg['id'])
-            l2_port = self.create_port(l2_network, client,
-                                       security_groups=l2_sgs)
+                test_sgs.append(sg['id'])
+            test_port = self.create_port(test_network, client,
+                                         security_groups=test_sgs)
         else:
-            l2_port = self.create_port(l2_network, client)
+            test_port = self.create_port(test_network, client)
 
-        # L3 (new)
+        # New network (L3)
         fip_network = self.create_network(client=client)
         subnet = self.create_subnet(
             fip_network, cidr=IPNetwork("192.168.0.0/24"),
@@ -1352,11 +1355,10 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         router = self.create_test_router(client=client)
         self.router_attach(router, subnet, client=client)
 
-        # l3 port
         open_ssh_sg = self.create_open_ssh_security_group()
-        l3_port = self.create_port(fip_network, client,
-                                   security_groups=[open_ssh_sg['id']])
-        return [l3_port, l2_port]
+        fip_port = self.create_port(fip_network, client,
+                                    security_groups=[open_ssh_sg['id']])
+        return [fip_port, test_port]
 
     def create_fip_to_server(self, server, port=None, validate_access=False,
                              vsd_domain=None, vsd_subnet=None, client=None):
