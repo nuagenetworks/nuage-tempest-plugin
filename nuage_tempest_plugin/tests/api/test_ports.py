@@ -4,6 +4,7 @@ from netaddr import IPNetwork
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageAdminNetworksTest
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.test.nuage_test import skip_because
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
@@ -886,6 +887,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                 vip_mismatch = True
             self.assertEqual(vip_mismatch, False)
 
+    @skip_because(bug='VSD-33476')
     @decorators.attr(type='smoke')
     def test_nuage_port_update_fixed_ips_same_subnet_l3_with_aap_with_vm(self):
         # Set up resources
@@ -984,6 +986,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                 vip_mismatch = True
             self.assertEqual(vip_mismatch, False)
 
+    @skip_because(bug='VSD-33476')
     @decorators.attr(type='smoke')
     def test_nuage_port_update_app_to_fixed_ips_l3_with_vm(self):
         # Set up resources
@@ -1082,6 +1085,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                 vip_mismatch = True
             self.assertEqual(vip_mismatch, False)
 
+    @skip_because(bug='VSD-33476')
     @decorators.attr(type='smoke')
     def test_nuage_port_update_fixed_ip_with_vm_and_conflict_with_aap_neg(
             self):

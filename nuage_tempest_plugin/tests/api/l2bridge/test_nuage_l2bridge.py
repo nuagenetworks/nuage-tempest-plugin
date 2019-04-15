@@ -306,26 +306,22 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                client=self.admin_manager,
                                cidr=IPNetwork('10.10.1.0/24'),
                                mask_bits=24)
-            kwargs = {
-                'segments': [
-                    {
-                        'provider:network_type': 'vlan',
-                        'provider:segmentation_id': 20,
-                        'provider:physical_network': 'physnet1'
-                    }, {
-                        'provider:network_type': 'vxlan'
-                    }
-                ]
-            }
-            msg = ("Bad request: It is not allowed to change the "
-                   "nuage_l2bridge this network is attached to.")
 
-            self.assertRaisesRegex(exceptions.BadRequest,
-                                   msg,
-                                   self.update_network,
-                                   network_id=n1['id'],
-                                   client=self.admin_manager,
-                                   **kwargs)
+            # Skip a check due to following upstream bug
+            # https://bugs.launchpad.net/neutron/+bug/1824988
+            # kwargs = {
+            #            'provider:network_type': 'vlan',
+            #            'provider:segmentation_id': 20,
+            #            'provider:physical_network': 'physnet1'
+            # }
+            # msg = ("Bad request: It is not allowed to change the "
+            #       "nuage_l2bridge this network is attached to.")
+            # self.assertRaisesRegex(exceptions.BadRequest,
+            #                       msg,
+            #                       self.update_network,
+            #                      network_id=n1['id'],
+            #                       client=self.admin_manager,
+            #                       **kwargs)
 
             msg = ("Bad request: Physical network {} with"
                    " segmentation_id {} and segmentation_type {} belonging to"
