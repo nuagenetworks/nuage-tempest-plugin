@@ -58,6 +58,16 @@
               - ^doc/.*$
               - ^setup.cfg$
               - ^tox.ini$
+        - legacy-tempest-aio-sriov-allow-existing-flat-vlan:
+            required-projects:
+              - OpenStack/nuage-openstack-neutron
+            irrelevant-files:
+              - ^(test-|)requirements.txt$
+              - ^.*\.rst$
+              - ^doc/.*$
+              - ^setup.cfg$
+              - ^tox.ini$
+
     switchdev:
       jobs:
         - legacy-tempest-aio-switchdev:

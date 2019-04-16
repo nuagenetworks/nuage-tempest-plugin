@@ -28,11 +28,26 @@ from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
 CONF = Topology.get_conf()
+LOG = Topology.get_logger(__name__)
 
 
 class SriovTopology(object):
     def __init__(self, vsd_client, network, subnet, router, port, subnetv6,
-                 trunk, l2domain=None):
+                 trunk, l2domain=None, is_flat_vlan_in_use=False):
+        """SriovTopology
+
+        :param vsd_client:
+        :param network:
+        :param subnet:
+        :param router:
+        :param port:
+        :param subnetv6:
+        :param trunk:
+        :param l2domain:
+        :param is_flat_vlan_in_use: Whether VLAN-0 is in use by another
+                                    system, used to test vlan reuse on
+                                    flat networks in sriov driver
+        """
         super(SriovTopology, self).__init__()
         self.vsd_client = vsd_client
         self.network = network
@@ -43,6 +58,7 @@ class SriovTopology(object):
         self.direct_port = None
         self.subnetv6 = subnetv6
         self.vsd_managed = l2domain is not None
+        self.is_flat_vlan_in_use = is_flat_vlan_in_use
 
         self.gw_port = None
         self.binding_data = None
@@ -80,13 +96,17 @@ class SriovTopology(object):
 
     @property
     def vsd_direct_vport(self):
+        """vsd_direct_vport
+
+        :return: The vport or None if not found
+        """
         if not getattr(self, '_vsd_direct_vport', False):
             vsd_vports = self.vsd_client.get_vport(
                 self.vsd_vport_parent_resource,
                 self.vsd_vport_parent['ID'],
                 filters='externalID',
                 filter_value=self.subnet['network_id'])
-            self._vsd_direct_vport = vsd_vports[0]
+            self._vsd_direct_vport = vsd_vports[0] if vsd_vports else None
         return self._vsd_direct_vport
 
     @property
@@ -260,8 +280,10 @@ class PortsDirectTest(network_mixin.NetworkMixin,
         self._test_direct_port(topology, update=False)
 
     @utils.requires_ext(extension='trunk', service='network')
-    def test_direct_port_l3_create_with_trunk(self):
-        topology = self._create_topology(with_router=True, for_trunk=True)
+    def test_direct_port_l3_create_with_trunk(self, is_flat_vlan_in_use=False):
+        topology = self._create_topology(
+            with_router=True, for_trunk=True,
+            is_flat_vlan_in_use=is_flat_vlan_in_use)
         trunk_topology = self._test_direct_port(topology, update=True,
                                                 is_trunk=True)
         sub_topology, sub_topology2 = self._create_topology_with_subports(
@@ -275,7 +297,8 @@ class PortsDirectTest(network_mixin.NetworkMixin,
             topology.router,
             port=None,
             subnetv6=sub_topology.subport_subnet_ipv6,
-            trunk=trunk_topology.trunk)
+            trunk=trunk_topology.trunk,
+            is_flat_vlan_in_use=is_flat_vlan_in_use)
         verify_topology.direct_port = sub_topology.direct_subport
         verify_topology._direct_port_is_subport = True
         subport_mapping = {'switch_id': self.gateway['systemID'],
@@ -291,7 +314,8 @@ class PortsDirectTest(network_mixin.NetworkMixin,
             topology.router,
             port=None,
             subnetv6=sub_topology2.subport_subnet_ipv6,
-            trunk=trunk_topology.trunk)
+            trunk=trunk_topology.trunk,
+            is_flat_vlan_in_use=is_flat_vlan_in_use)
         verify_topology.direct_port = sub_topology2.direct_subport
         verify_topology._direct_port_is_subport = True
         subport2_mapping = {'switch_id': self.gateway['systemID'],
@@ -300,6 +324,25 @@ class PortsDirectTest(network_mixin.NetworkMixin,
                             'pci_slot': '0000:03:50.5'}
         self._test_direct_subport(verify_topology, subport2_mapping,
                                   use_subport_check=True)
+
+    @utils.requires_ext(extension='trunk', service='network')
+    def test_direct_port_l3_create_with_trunk_vlan0_in_use(self):
+        # Make sure VLAN 0 is in use
+        self.vsd_client.create_gateway_vlan(self.gw_port['ID'],
+                                            "infra_network", 0)
+        # run the original test
+        kwargs = {"is_flat_vlan_in_use": True}
+        if Topology.is_existing_flat_vlan_allowed():
+            LOG.info("Nuage SR-IOV with trunking: VLAN-0 is in use but we "
+                     "expect port binding to succeed")
+            self.test_direct_port_l3_create_with_trunk(**kwargs)
+        else:
+            LOG.info("Nuage SR-IOV with trunking: VLAN-0 is in use and we "
+                     "expect port binding to fail")
+            self.assertRaisesRegex(AssertionError,
+                                   "Direct port status is not ACTIVE",
+                                   self.test_direct_port_l3_create_with_trunk,
+                                   **kwargs)
 
     def test_direct_port_l3_update(self):
         topology = self._create_topology(with_router=True)
@@ -612,7 +655,8 @@ class PortsDirectTest(network_mixin.NetworkMixin,
 
     def _create_topology(self, with_router=False,
                          with_port=False, dualstack=False,
-                         vsd_managed=False, for_trunk=False):
+                         vsd_managed=False, for_trunk=False,
+                         is_flat_vlan_in_use=False):
         assert (not with_router or not vsd_managed)  # but not both
         assert (not dualstack or not vsd_managed)  # initially not both (later)
 
@@ -676,8 +720,9 @@ class PortsDirectTest(network_mixin.NetworkMixin,
         if with_port:
             port = self.create_port(network['id'])
         return SriovTopology(self.vsd_client, network,
-                             subnet, router, port, subnetv6, trunk,
-                             vsd_l2dom)
+                             subnet, router, port, subnetv6,
+                             trunk, vsd_l2dom,
+                             is_flat_vlan_in_use=is_flat_vlan_in_use)
 
     def _create_topology_with_subports(self, topology, with_router=False):
         kwargs = {'segments': [
@@ -779,8 +824,15 @@ class PortsDirectTest(network_mixin.NetworkMixin,
                         as_admin=True,
                         **self.binding_data)
 
-            self._validate_vsd(topology, is_trunk=is_trunk)
             self._validate_os(topology, is_trunk=is_trunk)
+            if topology.is_flat_vlan_in_use:
+                self.assertIsNone(topology.vsd_direct_vport,
+                                  message="Direct vport found but it"
+                                          " should not exists as"
+                                          " VLAN-0 is already in use"
+                                          " by an another system")
+            else:
+                self._validate_vsd(topology, is_trunk=is_trunk)
         return topology
 
     def _test_direct_subport(self, subport_topology, subport_mapping,
@@ -813,6 +865,8 @@ class PortsDirectTest(network_mixin.NetworkMixin,
                 topology, pg_name='defaultPG-VSG-BRIDGE', nr_vports=nr_vports)
 
     def _validate_direct_vport(self, topology):
+        direct_vport = topology.vsd_direct_vport
+        self.assertIsNotNone(direct_vport, message="No direct vport found")
         self.assertThat(topology.vsd_direct_vport['type'],
                         matchers.Equals(self.expected_vport_type),
                         message="Vport has wrong type")
@@ -844,7 +898,8 @@ class PortsDirectTest(network_mixin.NetworkMixin,
 
     def _validate_policygroup(self, topology, pg_name=None, nr_vports=1):
         if topology.router and topology._direct_port_is_subport:
-            expected_pgs = 3  # Expecting only hardware
+            # If the flat network is in use, we won't have a vport in it.
+            expected_pgs = 2 if topology.is_flat_vlan_in_use else 3
         else:
             expected_pgs = 1  # Expecting only hardware
         self.assertThat(topology.vsd_policygroups,
@@ -888,6 +943,8 @@ class PortsDirectTest(network_mixin.NetworkMixin,
     def _validate_os(self, topology, is_trunk=False, is_subport=False,
                      use_subport_vlan=False):
         port = topology.direct_port
+        self.assertEqual(expected='ACTIVE', observed=port.get('status'),
+                         message='Direct port status is not ACTIVE')
         profile = port.get('binding:profile')
         vif_details = port.get('binding:vif_details')
         expected_vlan = (self.expected_vlan_subport_2 if use_subport_vlan

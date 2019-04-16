@@ -132,3 +132,11 @@ class Topology(Singleton):
     @staticmethod
     def new_route_to_underlay_model_enabled():
         return CONF.nuage_sut.nuage_pat_legacy.lower() == 'disabled'
+
+    @staticmethod
+    def is_existing_flat_vlan_allowed():
+        """Whether nuage sriov option allow_existing_flat_vlan is set to True
+
+        See neutron setting [nuage_sriov] allow_existing_flat_vlan
+        """
+        return bool(CONF.nuage_sut.nuage_sriov_allow_existing_flat_vlan)
