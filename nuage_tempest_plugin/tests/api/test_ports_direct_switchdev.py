@@ -22,9 +22,10 @@ from tempest.lib import decorators
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.mixins import l3
 from nuage_tempest_plugin.lib.mixins import network as network_mixin
-from nuage_tempest_plugin.lib.test.nuage_test import skip_because
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
+from nuage_tempest_plugin.lib.utils import data_utils as lib_utils
+
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
 CONF = Topology.get_conf()
@@ -201,6 +202,18 @@ class PortsDirectTest(network_mixin.NetworkMixin, l3.L3Mixin):
             cls.vsd_client.delete_l2domaintemplate(
                 vsd_l2dom_template['ID'])
 
+    def _is_port_down(self, port_id):
+        p = self.show_port(port_id)
+        return p['status'] == 'DOWN'
+
+    def _is_port_active(self, port_id):
+        p = self.show_port(port_id)
+        return p['status'] == 'ACTIVE'
+
+    def _is_trunk_active(self, trunk_id):
+        t = self.show_trunk(trunk_id)
+        return t['status'] == 'ACTIVE'
+
     def setUp(self):
         super(PortsDirectTest, self).setUp()
         self.clear_binding = {
@@ -320,6 +333,16 @@ class PortsDirectTest(network_mixin.NetworkMixin, l3.L3Mixin):
             topology.direct_port = self.update_port(direct_port['id'],
                                                     as_admin=True,
                                                     **self.binding_data)
+        if is_trunk:
+            # ensure trunk transitions to ACTIVE
+            lib_utils.wait_until_true(
+                lambda: self._is_trunk_active(trunk['id']),
+                exception=RuntimeError("Timed out waiting for trunk %s to "
+                                       "transition to ACTIVE." % trunk['id']))
+            # ensure all underlying subports transitioned to ACTIVE
+            for s in trunk.get('sub_ports'):
+                lib_utils.wait_until_true(
+                    lambda: self._is_port_active(s['port_id']))
 
         self._validate_vsd(topology, is_trunk=is_trunk)
         self._validate_os(topology, is_trunk=is_trunk)
@@ -404,9 +427,6 @@ class PortsDirectTest(network_mixin.NetworkMixin, l3.L3Mixin):
             self.assertThat(trunk_details.get('trunk_id'),
                             matchers.Equals(topology.trunk['id']),
                             message="Port has unexpected trunk assosciation")
-            self.assertThat(topology.trunk['status'],
-                            matchers.Equals('ACTIVE'),
-                            message="Trunk didn't reach ACTIVE state")
         else:
             if is_subport:
                 sub_port_details = self.get_subports(
@@ -468,13 +488,11 @@ class PortsDirectTest(network_mixin.NetworkMixin, l3.L3Mixin):
         topology = self._create_topology(with_router=False)
         self._test_direct_port(topology, update=True, aap=True)
 
-    @skip_because(bug='OPENSTACK-2336')
     @utils.requires_ext(extension='trunk', service='network')
     def test_direct_port_l3_create_with_trunk(self):
         topology = self._create_topology(with_router=True, for_trunk=True)
         self._test_direct_port(topology, update=True, is_trunk=True)
 
-    @skip_because(bug='OPENSTACK-2336')
     @utils.requires_ext(extension='trunk', service='network')
     def test_direct_port_l2_create_with_trunk(self):
         topology = self._create_topology(with_router=False, for_trunk=True)
