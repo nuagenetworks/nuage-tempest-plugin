@@ -65,8 +65,8 @@ class BaseAllowedAddressPair(NuageBaseTest):
                 'vip-created-on-vsd': True},
             'case-aap-ipv6': {
                 'fixed-ips': [
-                    {'ip_address': str(IPAddress(cls.cidr4.first) + 3)},
-                    {'ip_address': str(IPAddress(cls.cidr6.first) + 3)}
+                    {'ip_address': str(IPAddress(cls.cidr4.first) + 4)},
+                    {'ip_address': str(IPAddress(cls.cidr6.first) + 4)}
                 ],
                 'allowed-address-pairs': [
                     {'ip_address': str(IPAddress(cls.cidr6.first) + 10)}
