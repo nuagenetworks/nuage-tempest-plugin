@@ -84,4 +84,9 @@ NuageSutGroup = [
     cfg.BoolOpt('image_is_advanced',
                 default=False,
                 help='Whether image supports advanced features like 8021q'),
+    cfg.BoolOpt('nuage_sriov_allow_existing_flat_vlan',
+                default=False,
+                help='Set to true to enable driver to complete port '
+                     'binding on a flat network, when corresponding'
+                     'GW port has vlan 0 provisioned by external entity'),
 ]
