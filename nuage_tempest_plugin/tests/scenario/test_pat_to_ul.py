@@ -41,15 +41,16 @@ class NuagePatToUnderlayScenarioTest(NuageBaseTest):
                                 security_groups=[security_group['id']])
         # Launch tenant servers in OpenStack network with cloud-init script
         output_path = '/tmp/ping_result'
-        ping_script = ('#!/bin/sh\nping {} -c 1; '
+        ping_script = ('#!/bin/sh\nping {} -c 1 -w 3; '
                        'echo $? > {}'.format(local_ip, output_path))
         server = self.create_tenant_server(
             ports=[port],
             user_data=ping_script)
-        self.sleep(seconds=60,
+        self.sleep(seconds=120,
                    msg='waiting for cloud-init script to finish.')
         self.create_fip_to_server(server, port)
-        result = server.console().exec_command('cat {}'.format(output_path))
+        result = server.console().exec_command('cat {}'.format(
+            output_path)).encode('ascii', 'ignore')
         if should_succeed:
             self.assertEqual(result, '0\n')
         else:
