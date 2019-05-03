@@ -255,24 +255,6 @@ class NuageBidirectionalFipRateLimitBase(base.BaseNetworkTest):
 
         return created_floating_ip
 
-    def _create_fip_with_fip_rate_limit_backward(self, port, rate_limit=None):
-        # When I create a fip with default rate limit
-
-        created_floating_ip = \
-            self._do_create_fip_for_port_with_rate_limit_backward(port['id'],
-                                                                  rate_limit)
-
-        show_floating_ip = self._do_get_floating_ip(created_floating_ip['id'])
-        # Then I got a valid OpenStack FIP with the default rate limit
-        self._verify_fip_openstack(port, show_floating_ip, None, rate_limit,
-                                   backward=True)
-
-        # Then I got a valid VSD FIP with the default rate limit
-        self._verify_fip_vsd(port, created_floating_ip, None, rate_limit,
-                             backward=True)
-
-        return created_floating_ip
-
     def _update_fip_with_fip_rate_limit(self, port, floating_ip,
                                         ingress_rate_limit=None,
                                         egress_rate_limit=None):

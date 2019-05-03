@@ -17,7 +17,6 @@ from netaddr import IPAddress
 from netaddr import IPNetwork
 import uuid
 
-from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
@@ -369,7 +368,7 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
 
     @decorators.attr(type='smoke')
     def test_create_floatingip_with_rate_limiting(self):
-        rate_limit = 10
+        rate_limit = 10000
         # Create port
         post_body = {"network_id": self.network['id']}
         body = self.ports_client.create_port(**post_body)
@@ -382,7 +381,7 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
             floating_network_id=self.ext_net_id,
             port_id=port['id'],
             fixed_ip_address=port['fixed_ips'][0]['ip_address'],
-            nuage_fip_rate=rate_limit)
+            nuage_egress_fip_rate_kbps=rate_limit)
         created_floating_ip = body['floatingip']
         self.addCleanup(self.floating_ips_client.delete_floatingip,
                         created_floating_ip['id'])
@@ -392,18 +391,14 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
         body = self.floating_ips_client.show_floatingip(fip_id)
         fip = body['floatingip']
 
-        if NUAGE_FEATURES.bidirectional_fip_rate_limit:
-            # rate_limit is in kbps now!
-            self.assertThat(fip, ContainsDict(
-                {'nuage_ingress_fip_rate_kbps': Equals(-1)}))
-            self.assertThat(fip, ContainsDict(
-                {'nuage_egress_fip_rate_kbps': Equals(rate_limit * 1000)}))
+        # rate_limit is in kbps now!
+        self.assertThat(fip, ContainsDict(
+            {'nuage_ingress_fip_rate_kbps': Equals(-1)}))
+        self.assertThat(fip, ContainsDict(
+            {'nuage_egress_fip_rate_kbps': Equals(rate_limit)}))
 
-            # attribute 'nuage_fip_rate' is no longer in response
-            self.assertIsNone(fip.get('nuage_fip_rate'))
-        else:
-            self.assertThat(fip, ContainsDict(
-                {'nuage_fip_rate': Equals(str(rate_limit))}))
+        # attribute 'nuage_fip_rate' is no longer in response
+        self.assertIsNone(fip.get('nuage_fip_rate'))
 
         # Check vsd
         subnet_ext_id = self.nuage_client.get_vsd_external_id(
@@ -426,17 +421,14 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
         self.assertThat(qos[0], ContainsDict(
             {'FIPRateLimitingActive': Equals(True)}))
         self.assertThat(qos[0], ContainsDict(
-            {'FIPPeakInformationRate': Equals(str(rate_limit))}))
+            {'FIPPeakInformationRate': Equals(str(float(rate_limit / 1000)))}))
         self.assertThat(qos[0], ContainsDict(
             {'FIPPeakBurstSize': Equals(str(100))}))
 
-        if NUAGE_FEATURES.bidirectional_fip_rate_limit:
-            self.assertThat(qos[0], ContainsDict(
-                {'EgressFIPPeakInformationRate': Equals('INFINITY')}))
-            self.assertThat(qos[0], ContainsDict(
-                {'EgressFIPPeakBurstSize': Equals(str(100))}))
-        else:
-            self.assertEqual(str(rate_limit), qos[0]['FIPPeakInformationRate'])
+        self.assertThat(qos[0], ContainsDict(
+            {'EgressFIPPeakInformationRate': Equals('INFINITY')}))
+        self.assertThat(qos[0], ContainsDict(
+            {'EgressFIPPeakBurstSize': Equals(str(100))}))
 
     @decorators.attr(type='smoke')
     def test_create_floatingip_without_rate_limiting(self):
@@ -461,12 +453,8 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
         body = self.floating_ips_client.show_floatingip(fip_id)
         fip = body['floatingip']
 
-        if NUAGE_FEATURES.bidirectional_fip_rate_limit:
-            self.assertIsNotNone(fip.get('nuage_ingress_fip_rate_kbps'))
-            self.assertIsNotNone(fip.get('nuage_egress_fip_rate_kbps'))
-        else:
-            os_fip_rate = fip.get('nuage_fip_rate')
-            self.assertIsNotNone(os_fip_rate)
+        self.assertIsNotNone(fip.get('nuage_ingress_fip_rate_kbps'))
+        self.assertIsNotNone(fip.get('nuage_egress_fip_rate_kbps'))
 
         # Check vsd
         subnet_ext_id = self.nuage_client.get_vsd_external_id(
@@ -486,12 +474,9 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
                          qos[0]['externalID'])
         self.assertEqual(True, qos[0]['FIPRateLimitingActive'])
 
-        if NUAGE_FEATURES.bidirectional_fip_rate_limit:
-            self.assertEqual('INFINITY', qos[0]['FIPPeakInformationRate'])
-            self.assertEqual('INFINITY',
-                             qos[0]['EgressFIPPeakInformationRate'])
-        else:
-            self.assertEqual('INFINITY', qos[0]['FIPPeakInformationRate'])
+        self.assertEqual('INFINITY', qos[0]['FIPPeakInformationRate'])
+        self.assertEqual('INFINITY',
+                         qos[0]['EgressFIPPeakInformationRate'])
 
     @decorators.attr(type='smoke')
     def test_delete_associated_port_fip_cleanup(self):

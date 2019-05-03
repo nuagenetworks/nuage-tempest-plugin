@@ -164,49 +164,6 @@ class TestNuageFipRateLimitCliWithoutDefault(BaseNuageFipRateLimit):
         self._verify_fip_vsd(subnet, port, created_floating_ip,
                              self.expected_default_fip_rate)
 
-    @nuage_test.header()
-    def test_create_update_fip_with_rate_limit_normal_value(self):
-        #     """
-        #     neutron net-create net1
-        #     neutron subnet-create net1 10.0.0.0/24
-        #
-        #     neutron router-create router1
-        #     neutron router-gateway-set router1 <thePublicNetworkID>
-        #     neutron router-interface-add router1 <theSubnetID>
-        #
-        #     port-create net1
-        #     floatingip-create public --port-id <thePortID> --nuage-fip-rate
-        #          <theRateLimit>
-        #     """
-        self._as_admin()
-
-        network = self.create_network()
-        subnet = self.create_subnet_with_args(network['name'], '10.1.0.0/24')
-        router = self.create_router()
-
-        self.set_router_gateway_with_args(router['id'], self.ext_net_id)
-        self.add_router_interface_with_args(router['id'], subnet['id'])
-
-        port = self.create_port_with_args(network['name'])
-
-        rate_limit = 67
-        created_floating_ip = self.create_floating_ip_with_args(
-            self.ext_net_id, '--port-id', port['id'],
-            '--nuage-fip-rate', str(rate_limit))
-        self.addCleanup(self._delete_floating_ip,
-                        created_floating_ip['id'])
-
-        # Then I got a valid OpenStack FIP with the default rate limit
-        self._verify_fip_openstack(port, created_floating_ip, rate_limit)
-
-        # Then I got a valid VSD FIP with the default rate limit
-        self._verify_fip_vsd(subnet, port, created_floating_ip, rate_limit)
-
-        # Update value
-        updated_rate_limit = 856
-        self._update_fip_rate_limit(subnet, port, created_floating_ip['id'],
-                                    updated_rate_limit)
-
 
 class TestNuageFipRateLimitCliWithDefaultUnlimited(
         TestNuageFipRateLimitCliWithoutDefault):

@@ -218,8 +218,3 @@ class TestNuageBidirectionalFipRateLimit(
     def test_update_floatingip_with_rate_limit_high_value_egress(self):
         self._create_fip_with_fip_rate_limit(
             self.ports[0], egress_rate_limit=3000)
-
-    @nuage_test.header()
-    def test_create_floatingip_with_rate_limit_backward(self):
-        self._create_fip_with_fip_rate_limit_backward(
-            self.ports[0], rate_limit=3000)

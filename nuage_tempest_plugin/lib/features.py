@@ -30,17 +30,13 @@ class NuageFeatures(object):
     """
 
     def _set_features(self):
-        if Topology.nuage_release.major_release == '3.2':
-            self.bidirectional_fip_rate_limit = Topology.from_nuage('3.2R10')
 
-        elif Topology.nuage_release.major_release == '4.0':
+        if Topology.nuage_release.major_release == '4.0':
             self.full_external_id_support = Topology.from_nuage('4.0R5')
-            self.bidirectional_fip_rate_limit = Topology.from_nuage('4.0R6')
             self.vsd_managed_dualstack_subnets = Topology.from_nuage('4.0VZ')
 
         else:
             self.full_external_id_support = True
-            self.bidirectional_fip_rate_limit = True
             self.ml2_limited_exceptions = False
             self.full_os_networking = True
             self.vsd_managed_dualstack_subnets = Topology.is_ml2
@@ -62,8 +58,6 @@ class NuageFeatures(object):
         LOG.info('FEATURES:')
         LOG.info('full_external_id_support         : {}'.
                  format(self.full_external_id_support))
-        LOG.info('bidirectional_fip_rate_limit     : {}'.
-                 format(self.bidirectional_fip_rate_limit))
         LOG.info('ml2_limited_exceptions           : {}'.
                  format(self.ml2_limited_exceptions))
         LOG.info('full_os_networking               : {}'.
@@ -85,7 +79,6 @@ class NuageFeatures(object):
         self.ipv6_enabled = CONF.network_feature_enabled.ipv6
 
         self.full_external_id_support = False
-        self.bidirectional_fip_rate_limit = False
         self.ml2_limited_exceptions = Topology.is_ml2
         self.full_os_networking = not Topology.is_ml2
         self.vsd_managed_dualstack_subnets = False
