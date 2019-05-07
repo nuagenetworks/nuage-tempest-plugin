@@ -126,7 +126,8 @@ FLOW = 'flows'
 SERVICE = 'applicationservices'
 
 # Gateway personality
-PERSONALITY_LIST = ['VRSG', 'VSG']
+# PERSONALITY_LIST = ['VRSG', 'VSG', 'NUAGE_210_WBX_32_Q']  # TODO(Kris)
+PERSONALITY_LIST = ['VRSG', 'NUAGE_210_WBX_32_Q']
 
 # Vport type
 HOST_VPORT = 'HOST'

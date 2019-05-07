@@ -39,6 +39,10 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
                            base_vsdman.BaseVSDManagedNetwork):
     _interface = 'json'
 
+    @staticmethod
+    def is_hw_gateway_personality(personality):
+        return personality == 'VSG' or 'WBX' in personality
+
     @classmethod
     def create_gateway(cls, personality):
         name = rand_name('tempest-gw')
@@ -116,7 +120,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
             cls.rdn_gateways.append(gw1)
             cls.rdn_gateways.append(gw2)
 
-            if personality == 'VSG':
+            if cls.is_hw_gateway_personality(personality):
                 name = 'rd-gw-port-vsg'
                 gw_1_port = cls.nuage_client.create_gateway_port(
                     name, 'test', 'ACCESS', gw1[0]['ID'])
@@ -128,14 +132,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
             rdn_grp = cls.create_redundancy_group(gw1, gw2)
             cls.rdn_groups.append(rdn_grp)
 
-            if personality == 'VRSG':
-                gw_port = cls.create_vrsg_redundancy_ports(rdn_grp)
-                cls.rdn_gw_ports_vrsg.append(gw_port)
-                gw_vlan = cls.create_gateway_vlan(
-                    gw_port, n_constants.START_VLAN_VALUE)
-                cls.gatewayvlans.append(gw_vlan)
-
-            if personality == 'VSG':
+            if cls.is_hw_gateway_personality(personality):
                 name = 'rd-gw-port-vsg'
                 gw_port = cls.nuage_client.create_vsg_redundancy_ports(
                     name, 'test', 'ACCESS',
@@ -143,6 +140,13 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
                     gw_2_port[0]['ID'], rdn_grp)
                 cls.rdn_gw_ports_vsg_combn.append(gw_port)
                 gw_vlan = cls.create_vsg_redundancy_vlans(
+                    gw_port, n_constants.START_VLAN_VALUE)
+                cls.gatewayvlans.append(gw_vlan)
+
+            else:
+                gw_port = cls.create_vrsg_redundancy_ports(rdn_grp)
+                cls.rdn_gw_ports_vrsg.append(gw_port)
+                gw_vlan = cls.create_gateway_vlan(
                     gw_port, n_constants.START_VLAN_VALUE)
                 cls.gatewayvlans.append(gw_vlan)
 

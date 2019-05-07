@@ -48,7 +48,6 @@ class SriovTopology(object):
                                     system, used to test vlan reuse on
                                     flat networks in sriov driver
         """
-        super(SriovTopology, self).__init__()
         self.vsd_client = vsd_client
         self.network = network
         self.subnet = subnet
@@ -195,6 +194,7 @@ class PortsDirectTest(network_mixin.NetworkMixin,
                       topology_mixin.NetTopologyMixin):
 
     credentials = ['admin']
+    personality = 'NUAGE_210_WBX_48_S'
 
     @classmethod
     def setUpClass(cls):
@@ -223,7 +223,7 @@ class PortsDirectTest(network_mixin.NetworkMixin,
         # own gateway port so no VLAN overlap should occur.
         cls.gateway = cls.vsd_client.create_gateway(
             data_utils.rand_name(name='vsg'),
-            data_utils.rand_name(name='sys_id'), 'VSG')[0]
+            data_utils.rand_name(name='sys_id'), cls.personality)[0]
 
         # for VSD managed
         cls.vsd_l2dom_template = []

@@ -36,6 +36,10 @@ LOG = Topology.get_logger(__name__)
 class BaseNuageGatewayTest(NuageAdminNetworksTest):
     _interface = 'json'
 
+    @staticmethod
+    def is_hw_gateway_personality(personality):
+        return personality == 'VSG' or 'WBX' in personality
+
     @classmethod
     def create_gateway(cls, type):
         name = rand_name('tempest-gw')

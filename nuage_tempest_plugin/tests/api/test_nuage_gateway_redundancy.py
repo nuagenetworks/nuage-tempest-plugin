@@ -122,7 +122,7 @@ class NuageGatewayTestRedundancy(base.BaseNuageGatewayTest,
             gw_grp = cls.create_gateway_group(
                 gw1[0]['ID'], gw2[0]['ID'])
             cls.gatewaygroups.append(gw_grp)
-            if personality is 'VSG':
+            if cls.is_hw_gateway_personality(personality):
                 cls.nuage_client.create_vsg_redundant_port(
                     port_name,
                     'test',
