@@ -32,7 +32,7 @@ NuageVsdGroup = [
                default="/me",
                help="api path to authenticate for nuage vsd"),
     cfg.StrOpt('nuage_base_uri',
-               default="/nuage/api/v5_0",
+               default="/nuage/api/v6_0",
                help="base nuage vsd api url"),
     cfg.StrOpt('nuage_vsd_user',
                default='csproot',
