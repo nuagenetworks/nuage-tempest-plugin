@@ -39,6 +39,10 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
                            base_vsdman.BaseVSDManagedNetwork):
     _interface = 'json'
 
+    @staticmethod
+    def is_hw_gateway_personality(personality):
+        return personality not in n_constants.SW_GW_TYPES
+
     @classmethod
     def create_gateway(cls, personality):
         name = rand_name('tempest-gw')
@@ -90,7 +94,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
 
     @classmethod
     def create_test_gateway_topology(cls):
-        for personality in n_constants.PERSONALITY_LIST:
+        for personality in n_constants.GW_TYPES_UNDER_TEST:
             gw = cls.create_gateway(personality)
             cls.gateways.append(gw)
 
@@ -110,13 +114,13 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
     def create_test_gateway_redundancy_topology(cls):
         gw_1_port = []
         gw_2_port = []
-        for personality in n_constants.PERSONALITY_LIST:
+        for personality in n_constants.GW_TYPES_UNDER_TEST:
             gw1 = cls.create_gateway(personality)
             gw2 = cls.create_gateway(personality)
             cls.rdn_gateways.append(gw1)
             cls.rdn_gateways.append(gw2)
 
-            if personality == 'VSG':
+            if cls.is_hw_gateway_personality(personality):
                 name = 'rd-gw-port-vsg'
                 gw_1_port = cls.nuage_client.create_gateway_port(
                     name, 'test', 'ACCESS', gw1[0]['ID'])
@@ -128,14 +132,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
             rdn_grp = cls.create_redundancy_group(gw1, gw2)
             cls.rdn_groups.append(rdn_grp)
 
-            if personality == 'VRSG':
-                gw_port = cls.create_vrsg_redundancy_ports(rdn_grp)
-                cls.rdn_gw_ports_vrsg.append(gw_port)
-                gw_vlan = cls.create_gateway_vlan(
-                    gw_port, n_constants.START_VLAN_VALUE)
-                cls.gatewayvlans.append(gw_vlan)
-
-            if personality == 'VSG':
+            if cls.is_hw_gateway_personality(personality):
                 name = 'rd-gw-port-vsg'
                 gw_port = cls.nuage_client.create_vsg_redundancy_ports(
                     name, 'test', 'ACCESS',
@@ -143,6 +140,13 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
                     gw_2_port[0]['ID'], rdn_grp)
                 cls.rdn_gw_ports_vsg_combn.append(gw_port)
                 gw_vlan = cls.create_vsg_redundancy_vlans(
+                    gw_port, n_constants.START_VLAN_VALUE)
+                cls.gatewayvlans.append(gw_vlan)
+
+            else:
+                gw_port = cls.create_vrsg_redundancy_ports(rdn_grp)
+                cls.rdn_gw_ports_vrsg.append(gw_port)
+                gw_vlan = cls.create_gateway_vlan(
                     gw_port, n_constants.START_VLAN_VALUE)
                 cls.gatewayvlans.append(gw_vlan)
 

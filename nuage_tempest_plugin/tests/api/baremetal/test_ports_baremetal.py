@@ -37,6 +37,7 @@ LOG = Topology.get_logger(__name__)
 class BaremetalPortsTest(network_mixin.NetworkMixin,
                          l3.L3Mixin, sg_mixin.SGMixin):
     credentials = ['admin']
+    personality = 'VSG'
 
     @classmethod
     def setUpClass(cls):
@@ -72,7 +73,7 @@ class BaremetalPortsTest(network_mixin.NetworkMixin,
         # own gateway port so no VLAN overlap should occur.
         cls.gateway = cls.vsd_client.create_gateway(
             data_utils.rand_name(name='vsg'),
-            data_utils.rand_name(name='sys_id'), 'VSG')[0]
+            data_utils.rand_name(name='sys_id'), cls.personality)[0]
 
     @classmethod
     def resource_cleanup(cls):

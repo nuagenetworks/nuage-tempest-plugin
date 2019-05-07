@@ -38,6 +38,7 @@ LOG = Topology.get_logger(__name__)
 class BaremetalRedcyTest(network_mixin.NetworkMixin,
                          l3.L3Mixin, sg_mixin.SGMixin):
     credentials = ['admin']
+    personality = 'NUAGE_210_WBX_32_Q'
 
     @classmethod
     def setUpClass(cls):
@@ -76,11 +77,11 @@ class BaremetalRedcyTest(network_mixin.NetworkMixin,
         # tests makes its own gateway port so no VLAN overlap should occur.
         cls.peer1 = cls.vsd_client.create_gateway(
             data_utils.rand_name(name='vsg-1'),
-            data_utils.rand_name(name='sys_id'), 'VSG')[0]
+            data_utils.rand_name(name='sys_id'), cls.personality)[0]
 
         cls.peer2 = cls.vsd_client.create_gateway(
             data_utils.rand_name(name='vsg-2'),
-            data_utils.rand_name(name='sys_id'), 'VSG')[0]
+            data_utils.rand_name(name='sys_id'), cls.personality)[0]
 
         cls.redcy_group = cls.vsd_client.create_redundancy_group(
             data_utils.rand_name(name='redcy_group'),

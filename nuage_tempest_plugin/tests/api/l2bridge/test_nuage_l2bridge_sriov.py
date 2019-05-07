@@ -33,6 +33,8 @@ class TestNuageL2BridgeSRIOV(BaseNuageL2Bridge,
                              base_vsd_managed.BaseVSDManagedNetwork,
                              topology_mixin.NetTopologyMixin
                              ):
+    personality = 'VSG'
+
     # This class assumes that the following resources are available:
     # physnet1,100,vlan
     # physnet2,100,vlan
@@ -58,7 +60,7 @@ class TestNuageL2BridgeSRIOV(BaseNuageL2Bridge,
         # own gateway port so no VLAN overlap should occur.
         cls.gateway = cls.nuage_client.create_gateway(
             data_utils.rand_name(name='vsg'),
-            data_utils.rand_name(name='sys_id'), 'VSG')[0]
+            data_utils.rand_name(name='sys_id'), cls.personality)[0]
 
     @classmethod
     def resource_cleanup(cls):

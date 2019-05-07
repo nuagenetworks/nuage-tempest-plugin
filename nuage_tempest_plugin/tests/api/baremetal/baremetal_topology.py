@@ -18,7 +18,6 @@ from nuage_tempest_plugin.lib.utils import constants
 class BaremetalTopology(object):
     def __init__(self, vsd_client, network, subnet,
                  router, port, security_group):
-        super(BaremetalTopology, self).__init__()
         self.vsd_client = vsd_client
         self.network = network
         self.subnet = subnet

@@ -126,7 +126,10 @@ FLOW = 'flows'
 SERVICE = 'applicationservices'
 
 # Gateway personality
-PERSONALITY_LIST = ['VRSG', 'VSG']
+SW_GW_TYPES = ['VRSG', 'VRSB']
+
+# GW_TYPES_UNDER_TEST = ['VRSG', 'VSG', 'NUAGE_210_WBX_32_Q']  # TODO(Kris)
+GW_TYPES_UNDER_TEST = ['VRSG', 'NUAGE_210_WBX_32_Q']
 
 # Vport type
 HOST_VPORT = 'HOST'

@@ -1129,6 +1129,10 @@ class NuageRestClient(object):
     def get_gateway_vlan_by_id(self, vlan_id):
         return self.get_global_resource(constants.VLAN + '/' + vlan_id)[0]
 
+    @staticmethod
+    def is_hw_gateway_personality(personality):
+        return personality not in constants.SW_GW_TYPES
+
     def create_vsg_redundancy_ports(self, name, userMnemonic, type,
                                     gw_1_port_id, gw_2_port_id, rdn_grp,
                                     extra_params=None):
@@ -1228,7 +1232,7 @@ class NuageRestClient(object):
         return self.post(res_path, data)
 
     def list_ports_by_redundancy_group(self, gw_id, personality):
-        if personality == 'VSG':
+        if self.is_hw_gateway_personality(personality):
             child_resource = constants.GATEWAY_VSG_REDCY_PORT
         else:
             child_resource = constants.GATEWAY_PORT
@@ -1249,7 +1253,7 @@ class NuageRestClient(object):
             'userMnemonic': userMnemonic,
             'value': value
         }
-        if personality == 'VSG':
+        if self.is_hw_gateway_personality(personality):
             resource = constants.GATEWAY_VSG_REDCY_PORT
         else:
             resource = constants.GATEWAY_PORT
