@@ -1120,7 +1120,7 @@ class NuageRestClient(object):
 
     @staticmethod
     def is_hw_gateway_personality(personality):
-        return personality == 'VSG' or 'WBX' in personality
+        return personality not in constants.SW_GW_TYPES
 
     def create_vsg_redundancy_ports(self, name, userMnemonic, type,
                                     gw_1_port_id, gw_2_port_id, rdn_grp,

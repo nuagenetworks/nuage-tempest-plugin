@@ -109,7 +109,7 @@ class NuageGatewayTestRedundancy(base.BaseNuageGatewayTest,
 
     @classmethod
     def create_redundant_gateway_topology(cls):
-        for personality in n_constants.PERSONALITY_LIST:
+        for personality in n_constants.GW_TYPES_UNDER_TEST:
             gw1 = cls.create_gateway(personality)
             cls.redundant_gateways.append(gw1)
             gw2 = cls.create_gateway(personality)

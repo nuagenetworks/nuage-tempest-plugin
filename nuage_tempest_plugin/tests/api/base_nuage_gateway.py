@@ -38,7 +38,7 @@ class BaseNuageGatewayTest(NuageAdminNetworksTest):
 
     @staticmethod
     def is_hw_gateway_personality(personality):
-        return personality == 'VSG' or 'WBX' in personality
+        return personality not in n_constants.SW_GW_TYPES
 
     @classmethod
     def create_gateway(cls, type):
@@ -70,7 +70,7 @@ class BaseNuageGatewayTest(NuageAdminNetworksTest):
 
     @classmethod
     def create_test_gateway_topology(cls):
-        for personality in n_constants.PERSONALITY_LIST:
+        for personality in n_constants.GW_TYPES_UNDER_TEST:
             gw = cls.create_gateway(personality)
             cls.gateways.append(gw)
 
