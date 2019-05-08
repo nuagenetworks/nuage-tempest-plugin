@@ -77,11 +77,8 @@ class OrchestrationRouterTest(nuage_base.NuageBaseOrchestrationTest):
         rt = "12:" + str(unique_int)
 
         # launch a heat stack
-        if Topology.new_route_to_underlay_model_enabled():
-            # Exclude snat = True router
-            stack_file_name = 'router_extended_attributes_underlay'
-        else:
-            stack_file_name = 'router_extended_attributes'
+        # Exclude snat = True router
+        stack_file_name = 'router_extended_attributes_underlay'
         stack_parameters = {
             'public_net': ext_net_id,
             'netpartition_name': self.net_partition_name,
@@ -97,8 +94,6 @@ class OrchestrationRouterTest(nuage_base.NuageBaseOrchestrationTest):
                               'router_tunnel_type_gre',
                               'router_tunnel_type_vxlan',
                               'router_tunnel_type_default']
-        if not Topology.new_route_to_underlay_model_enabled():
-            expected_resources.append('router_snat_true')
 
         self.verify_stack_resources(expected_resources,
                                     self.template_resources,
@@ -120,17 +115,6 @@ class OrchestrationRouterTest(nuage_base.NuageBaseOrchestrationTest):
         self.assertEqual(ext_net_id, router['external_gateway_info'][
             'network_id'], "External gateway info")
         self._verify_router_with_vsd_l3domain(router)
-
-        if not Topology.new_route_to_underlay_model_enabled():
-            # Test snat true
-            router = self.verify_created_router('router_snat_true')
-            self.assertEqual(True,
-                             router['external_gateway_info']['enable_snat'],
-                             "SNAT enabled")
-            self.assertEqual(ext_net_id,
-                             router['external_gateway_info']['network_id'],
-                             "External gateway info")
-            self._verify_router_with_vsd_l3domain(router)
 
         # Test tunnel type GRE
         router = self.verify_created_router('router_tunnel_type_gre')
