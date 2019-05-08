@@ -1551,8 +1551,8 @@ class VSDManagedAssociateFIPCLITest(
         # When I try to associate the same claimed flaoting IP to another port
         port_2 = self.create_port(cli_network)
         # I expect a failure
-        msg = 'Bad request: Floating IP %s is already in use' % \
-              claimed_fip[0]['address']
+        msg = ('Bad request: Error in REST call to VSD: Floating IP %s is '
+               'already in use' % claimed_fip[0]['address'])
         if NUAGE_FEATURES.ml2_limited_exceptions:
             if Topology.at_openstack('kilo'):
                 msg = "update_port_postcommit failed"

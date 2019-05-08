@@ -577,8 +577,9 @@ class VSDManagedRedirectTargetTest(
         # TODO(team) VSD-14420 adapt expected return code into badrequest
         LOG.warning("VSD-14420: throws wrong http error code: "
                     "ServerFault iso BadRequest")
-        msg = "Nuage API: vPort Tag with endpoint type as NONE/VIRTUAL_WIRE " \
-              "cannot have redundancy enabled and trigger type as GARP"
+        msg = ('Nuage API: Error in REST call to VSD: vPort Tag with endpoint'
+               ' type as NONE/VIRTUAL_WIRE cannot have redundancy enabled and'
+               ' trigger type as GARP')
         expected_exception = exceptions.ServerFault
 
         self.assertRaisesRegex(
@@ -610,8 +611,8 @@ class VSDManagedRedirectTargetTest(
             # See VSD-14421
             LOG.warning("VSD-14421: throws wrong http error code: "
                         "ServerFault iso BadRequest")
-            msg = "Nuage API: An L2 domain redirectiontarget cannot have an " \
-                  "L3 endpoint"
+            msg = ('Nuage API: Error in REST call to VSD: An L2 domain '
+                   'redirectiontarget cannot have an L3 endpoint.')
             expected_exception = exceptions.ServerFault
 
         self.assertRaisesRegex(
@@ -1933,8 +1934,8 @@ class VSDManagedAssociateFIPTest(
         port_2 = self.create_port(network)
         # I expect a failure
         expected_exception = exceptions.BadRequest
-        msg = 'Bad request: Floating IP %s is already in use' % \
-              claimed_fip[0]['address']
+        msg = ('Bad request: Error in REST call to VSD: Floating IP %s is '
+               'already in use' % claimed_fip[0]['address'])
 
         if NUAGE_FEATURES.ml2_limited_exceptions:
             expected_exception = exceptions.ServerFault
