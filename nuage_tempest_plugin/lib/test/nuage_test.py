@@ -1408,7 +1408,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         return test_utils.call_until_true(
             ping_address, timeout, 1)
 
-    def assert_ping(self, server1, server2, network, ip_type=4,
+    def assert_ping(self, server1, server2=None, network=None, ip_type=4,
                     should_pass=True, interface=None, address=None,
                     ping_count=3, servers=None, timeout=None):
         if not server1.console():

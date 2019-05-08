@@ -6,8 +6,10 @@ from tempest.test import decorators
 
 import nuage_tempest_plugin.lib.test.nuage_test as nuage_test
 from nuage_tempest_plugin.lib.test.nuage_test import skip_because
+from nuage_tempest_plugin.lib.topology import Topology
 
 LOG = nuage_test.Topology.get_logger(__name__)
+CONF = Topology.get_conf()
 
 
 class Ipv6OsManagedConnectivityTest(nuage_test.NuageBaseTest):
@@ -247,3 +249,126 @@ class Ipv6OsManagedConnectivityTest(nuage_test.NuageBaseTest):
         self.assertNotEmpty(server1.send('cat server1.log'),
                             "TCP connection is not active although"
                             " stateful ingress rule is present.")
+
+    def test_icmp_connectivity_l2_os_managed_no_dhcp_v6(self):
+        # Provision OpenStack network resources
+        network = self.create_network()
+        self.create_subnet(network, enable_dhcp=False, ip_version=6)
+
+        # create open-ssh security group
+        ssh_security_group = self.create_open_ssh_security_group()
+        port_1 = self.create_port(network,
+                                  security_groups=[ssh_security_group['id']])
+        port_2 = self.create_port(network,
+                                  security_groups=[ssh_security_group['id']])
+
+        # Launch tenant servers in OpenStack network
+        self.create_tenant_server(
+            ports=[port_1],
+            user_data='#!/bin/sh\n/sbin/ifconfig eth0 {}/64 up'.format(
+                port_1['fixed_ips'][0]['ip_address']))
+
+        server1 = self.create_tenant_server(
+            ports=[port_2],
+            make_reachable=True,
+            user_data='#!/bin/sh\n/sbin/ifconfig eth1 {}/64 up'.format(
+                port_2['fixed_ips'][0]['ip_address']))
+
+        # Test IPv6 connectivity between peer servers
+        self.assert_ping(server1=server1, timeout=300,
+                         address=port_1['fixed_ips'][0]['ip_address'],
+                         interface='eth1', ip_type=6)
+
+    def test_icmp_connectivity_l2_os_managed_no_dhcp_v6_neg(self):
+        # Provision OpenStack network resources
+        network = self.create_network()
+        self.create_subnet(network, enable_dhcp=False, ip_version=6)
+
+        # create open-ssh security group
+        ssh_security_group = self.create_open_ssh_security_group()
+        port_1 = self.create_port(network,
+                                  security_groups=[ssh_security_group['id']])
+        port_2 = self.create_port(network,
+                                  security_groups=[ssh_security_group['id']])
+
+        # Launch tenant servers in OpenStack network
+        # There is neither IP config nor DHCP, so connectivity test should fail
+        self.create_tenant_server(
+            ports=[port_1])
+
+        server1 = self.create_tenant_server(
+            ports=[port_2],
+            make_reachable=True)
+
+        # Test IPv6 connectivity between peer servers (should fail)
+        self.assertFalse(self._assert_ping(
+            server=server1, dest=port_1['fixed_ips'][0]['ip_address'],
+            interface='eth1'))
+
+    @decorators.attr(type='smoke')
+    def test_icmp_connectivity_l3_os_managed_no_dhcp_v6(self):
+        # Provision OpenStack network resources
+        network = self.create_network()
+        subnet = self.create_subnet(network, enable_dhcp=False, ip_version=6)
+
+        # attach subnets to router
+        router = self.create_router(
+            external_network_id=CONF.network.public_network_id)
+        # self.router_attach(router, subnet)
+        self.create_router_interface(router['id'], subnet['id'])
+
+        # create open-ssh security group
+        ssh_security_group = self.create_open_ssh_security_group()
+        port_1 = self.create_port(network,
+                                  security_groups=[ssh_security_group['id']])
+        port_2 = self.create_port(network,
+                                  security_groups=[ssh_security_group['id']])
+
+        # Launch tenant servers in OpenStack network
+        self.create_tenant_server(
+            ports=[port_1],
+            user_data='#!/bin/sh\n/sbin/ifconfig eth0 {}/64 up'.format(
+                port_1['fixed_ips'][0]['ip_address']))
+
+        # to make it reachable via FIP, gateway also must be configured.
+        server1 = self.create_tenant_server(
+            ports=[port_2],
+            make_reachable=True,
+            user_data='#!/bin/sh\n/sbin/ifconfig eth1 {}/64 up;'.format(
+                port_2['fixed_ips'][0]['ip_address']))
+
+        # Test IPv6 connectivity between peer servers
+        self.assert_ping(server1=server1, timeout=300,
+                         address=port_1['fixed_ips'][0]['ip_address'],
+                         interface='eth1', ip_type=6)
+
+    def test_icmp_connectivity_l3_os_managed_no_dhcp_v6_neg(self):
+        # Provision OpenStack network resources
+        network = self.create_network()
+        subnet = self.create_subnet(network, enable_dhcp=False, ip_version=6)
+
+        # attach subnets to router
+        router = self.create_router(
+            external_network_id=CONF.network.public_network_id)
+        self.create_router_interface(router['id'], subnet['id'])
+
+        # create open-ssh security group
+        ssh_security_group = self.create_open_ssh_security_group()
+        port_1 = self.create_port(network,
+                                  security_groups=[ssh_security_group['id']])
+        port_2 = self.create_port(network,
+                                  security_groups=[ssh_security_group['id']])
+
+        # Launch tenant servers in OpenStack network
+        # There is neither IP config nor DHCP, connectivity should fail
+        self.create_tenant_server(
+            ports=[port_1])
+
+        server1 = self.create_tenant_server(
+            ports=[port_2],
+            make_reachable=True)
+
+        # Test IPv6 connectivity between peer servers
+        self.assertFalse(self._assert_ping(
+            server=server1, dest=port_1['fixed_ips'][0]['ip_address'],
+            interface='eth1'))

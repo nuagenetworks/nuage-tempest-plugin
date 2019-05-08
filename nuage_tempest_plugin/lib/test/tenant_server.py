@@ -111,11 +111,15 @@ class TenantServer(object):
     def boot(self, wait_until='ACTIVE', cleanup=True,
              return_none_on_failure=False, **kwargs):
 
-        assert not ("user_data" in kwargs and self.get_user_data_for_nic_prep(
-            dhcp_client=CONF.scenario.dhcp_client))  # one of both, not both
-
-        # add user data for configuring extra nics
-        if not kwargs.get('user_data'):
+        # If both, user passes userdata and vm has multiple NICs, scripts
+        # will be appended
+        if (kwargs.get('user_data') and self.get_user_data_for_nic_prep(
+                dhcp_client=CONF.scenario.dhcp_client)):
+            kwargs['user_data'] = '{}\n{}'.format(
+                self.get_user_data_for_nic_prep(
+                    dhcp_client=CONF.scenario.dhcp_client),
+                kwargs['user_data'])
+        elif not kwargs.get('user_data'):
             user_data = self.get_user_data_for_nic_prep(
                 dhcp_client=CONF.scenario.dhcp_client)
             if user_data:
