@@ -95,6 +95,7 @@ class VSDManagedDualStackL2DomainDHCPManagedTest(
     # Negative cases
     ###########################################################################
     @decorators.attr(type='smoke')
+    @nuage_test.skip_because(bug="VSD-34068")
     def test_vsd_l2domain_managed_unsupported_ip_type_neg(self):
         self.assertRaisesRegex(
             bambou.exceptions.BambouHTTPError,

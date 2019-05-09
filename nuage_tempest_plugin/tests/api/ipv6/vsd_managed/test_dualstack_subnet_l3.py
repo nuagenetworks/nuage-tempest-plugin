@@ -268,9 +268,8 @@ class VSDManagedDualStackSubnetL3Test(BaseVSDManagedNetworksIPv6Test):
             nuagenet=vsd_l3domain_subnet.id,
             net_partition=Topology.def_netpartition)
 
-    # see VSD-18779 (CLOSED) - VSD should not allow creation of a l3 subnet
-    # with IPType=IPV6
     @decorators.attr(type='smoke')
+    @nuage_test.skip_because(bug="VSD-34068")
     def test_create_vsd_managed_l3domain_subnet_ipv6_neg(self):
         name = data_utils.rand_name('l3domain-')
         vsd_l3domain_template = self.vsd_create_l3domain_template(
