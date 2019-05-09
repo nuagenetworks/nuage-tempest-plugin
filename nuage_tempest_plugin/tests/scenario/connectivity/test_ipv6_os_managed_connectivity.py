@@ -71,6 +71,7 @@ class Ipv6OsManagedConnectivityTest(nuage_test.NuageBaseTest):
         self.assert_ping(server1, server2, network, ip_type=6)
 
     @decorators.attr(type='smoke')
+    @nuage_test.skip_because(bug='The test is not stable')
     def test_icmp_connectivity_os_managed_dualstack_128_sg_prefix(self):
         # Provision OpenStack network
         network = self.create_network()
