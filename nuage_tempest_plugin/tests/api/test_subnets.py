@@ -64,3 +64,51 @@ class SubnetsTest(NuageAdminNetworksTest):
                                self.subnets_client.update_subnet,
                                subnet['id'],
                                **kwargs)
+
+    @decorators.attr(type='smoke')
+    def test_subnet_delete_in_network_with_nuage_dhcp_ports(self):
+        network = self.create_network()
+        subnet1 = self.create_subnet(network)
+        subnet2 = self.create_subnet(network)
+
+        filters = {
+            'device_owner': 'network:dhcp:nuage',
+            'network_id': network['id']
+        }
+        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+
+        # check dhcp port number
+        self.assertEqual(2, len(dhcp_ports))
+
+        self.subnets_client.delete_subnet(subnet1['id'])
+        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+
+        # check one dhcp port is deleted
+        self.assertEqual(1, len(dhcp_ports))
+        self.assertEqual(dhcp_ports[0]['fixed_ips'][0]['subnet_id'],
+                         subnet2['id'])
+
+    @decorators.attr(type='smoke')
+    def test_subnet_update_dhcp_disabled_in_network_with_nuage_dhcp_ports(
+            self):
+        network = self.create_network()
+        subnet1 = self.create_subnet(network)
+        subnet2 = self.create_subnet(network)
+
+        filters = {
+            'device_owner': 'network:dhcp:nuage',
+            'network_id': network['id']
+        }
+        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+
+        # check dhcp port number
+        self.assertEqual(2, len(dhcp_ports))
+
+        kwargs = {'enable_dhcp': False}
+        self.subnets_client.update_subnet(subnet1['id'], **kwargs)
+        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+
+        # check dhcp port is deleted
+        self.assertEqual(1, len(dhcp_ports))
+        self.assertEqual(dhcp_ports[0]['fixed_ips'][0]['subnet_id'],
+                         subnet2['id'])

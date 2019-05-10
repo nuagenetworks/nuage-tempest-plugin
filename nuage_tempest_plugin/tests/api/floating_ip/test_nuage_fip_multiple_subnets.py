@@ -170,8 +170,19 @@ class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
         s2 = self.create_subnet(n1, cidr=data_utils.gimme_a_cidr(),
                                 mask_bits=24,
                                 client=self.admin_manager)
+        filters = {
+            'device_owner': 'network:dhcp:nuage',
+            'network_id': n1['id']
+        }
+        dhcp_ports = self.os_admin.ports_client.list_ports(**filters)['ports']
+        self.assertEqual(2, len(dhcp_ports))
+
         kwargs = {'router:external': True}
         self.update_network(n1['id'], client=self.admin_manager, **kwargs)
+
+        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+        self.assertEqual(0, len(dhcp_ports))
+
         s1 = self.os_admin.subnets_client.show_subnet(s1['id'])['subnet']
         s2 = self.os_admin.subnets_client.show_subnet(s2['id'])['subnet']
         self.assertEqual(s1['nuage_uplink'], s2['nuage_uplink'],
