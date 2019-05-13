@@ -572,9 +572,10 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
             port_range_min=port_range_min,
             port_range_max=port_range_max,
             remote_ip_prefix=ip_prefix)
-        msg = ('Non supported remote CIDR in security rule: Does not match'
-               ' n.n.n.n where n=1-3 decimal digits and the mask is not all'
-               ' zeros , address is 192.168.1.0 , mask is 0.0.0.0')
+        msg = ('Bad request: Error in REST call to VSD: Non supported remote'
+               ' CIDR in security rule: Does not match n.n.n.n where n=1-3'
+               ' decimal digits and the mask is not all zeros , address is'
+               ' 192.168.1.0 , mask is 0.0.0.0')
         self.assertRaisesRegex(exceptions.BadRequest,
                                msg,
                                self._create_nuage_port_with_security_group,
@@ -624,9 +625,9 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
             port_range_min=port_range_min,
             port_range_max=port_range_max,
             remote_ip_prefix=ip_prefix)
-        msg = ('Non supported remote CIDR in security rule:'
-               ' Network IP Address 172.16.50.210 must have host'
-               ' bits set to 0.')
+        msg = ('Bad request: Error in REST call to VSD: Non supported remote'
+               ' CIDR in security rule: Network IP Address 172.16.50.210 must'
+               ' have host bits set to 0.')
         self.assertRaisesRegex(exceptions.BadRequest,
                                msg,
                                self._create_nuage_port_with_security_group,
@@ -646,9 +647,10 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
             port_range_min=port_range_min,
             port_range_max=port_range_max,
             remote_ip_prefix=ip_prefix)
-        msg = ('Non supported remote CIDR in security rule: Does not match'
-               ' n.n.n.n where n=1-3 decimal digits and the mask is not all'
-               ' zeros , address is 192.168.1.0 , mask is 0.0.0.0')
+        msg = ('Bad request: Error in REST call to VSD: Non supported remote'
+               ' CIDR in security rule: Does not match n.n.n.n where n=1-3'
+               ' decimal digits and the mask is not all zeros , address is'
+               ' 192.168.1.0 , mask is 0.0.0.0')
         post_body = {
             "network_id": self.network['id'],
             "name": data_utils.rand_name('port-')
@@ -691,9 +693,9 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
             port_range_min=port_range_min,
             port_range_max=port_range_max,
             remote_ip_prefix=ip_prefix)
-        msg = ('Non supported remote CIDR in security rule:'
-               ' Network IP Address 172.16.50.210 must have host'
-               ' bits set to 0.')
+        msg = ('Bad request: Error in REST call to VSD: Non supported remote'
+               ' CIDR in security rule: Network IP Address 172.16.50.210 must'
+               ' have host bits set to 0.')
         post_body = {
             "network_id": self.network['id'],
             "name": data_utils.rand_name('port-')
