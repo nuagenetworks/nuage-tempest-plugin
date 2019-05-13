@@ -43,6 +43,7 @@ class BaseNuageNetworksCliTestCase(
             network['name'], cidr4,
             "--name ", subnet_name + "-4",
             "--net-partition ", net_partition,
+            "--no-gateway "
             "--nuagenet ", nuagenet)
         self.addCleanup(self._delete_subnet, subnet4['id'])
         self.subnets.remove(subnet4)
@@ -60,6 +61,35 @@ class BaseNuageNetworksCliTestCase(
             self.addCleanup(self._delete_subnet, subnet6['id'])
             self.subnets.remove(subnet6)
 
+        return network, subnet4, subnet6
+
+    def _cli_create_os_l3_vsd_managed_subnet(self, vsd_l3_subnet):
+        network = self.create_network_with_args(data_utils.rand_name(
+            'cli-osl3network'))
+        subnet_name = data_utils.rand_name('cli-subnet')
+
+        prefixlen = mask_to_prefix(vsd_l3_subnet.netmask)
+        cidr4 = "%s/%d" % (vsd_l3_subnet.address, prefixlen)
+
+        subnet4 = self.create_subnet_with_args(
+            network['name'],
+            cidr4,
+            "--name", data_utils.rand_name('cli-osl3subnet'),
+            "--net-partition ", Topology.def_netpartition,
+            "--nuagenet ", vsd_l3_subnet.id)
+
+        cidr6 = vsd_l3_subnet.ipv6_address
+        subnet6 = None
+        if cidr6:
+            subnet6 = self.create_subnet_with_args(
+                network['name'], cidr6,
+                "--name ", subnet_name + "-6",
+                "--ip-version 6",
+                "--disable-dhcp ",
+                "--net-partition ", Topology.def_netpartition,
+                "--nuagenet ", vsd_l3_subnet.id)
+            self.addCleanup(self._delete_subnet, subnet6['id'])
+            self.subnets.remove(subnet6)
         return network, subnet4, subnet6
 
     def _cli_create_os_l2_vsd_unmanaged_dualstack_subnet(

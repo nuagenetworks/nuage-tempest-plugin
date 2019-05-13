@@ -190,6 +190,7 @@ class NuageGatewayTestVSDManaged(base.BaseNuageGatewayTest,
         net = self.create_network(network_name=net_name)
         subnet = self.create_subnet(
             net,
+            gateway=None,
             cidr=cidr,
             mask_bits=24, nuagenet=vsd_l2dom[0]['ID'],
             net_partition=Topology.def_netpartition,

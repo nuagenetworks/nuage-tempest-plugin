@@ -166,6 +166,7 @@ class VSDManagedDualStackCommonBase(BaseVSDManagedNetworksIPv6Test):
                     'cidr': self.cidr4,
                     'mask_bits': self.mask_bits4_unsliced,
                     'enable_dhcp': self.os_dhcp_managed,
+                    'gateway': None,
                     # gateway is not set (which ~ to option 3 not set)
                     'nuagenet': vsd_l2domain.id,
                     'net_partition': self.net_partition
@@ -176,7 +177,7 @@ class VSDManagedDualStackCommonBase(BaseVSDManagedNetworksIPv6Test):
                     pool = {'start': start4, 'end': end4}
                     kwargs['allocation_pools'] = [pool]
                 else:
-                    start4 = self.cidr4[2]  # .2 as of gateway taking .1
+                    start4 = self.cidr4[1]  # .1 as of gateway not set.
                     end4 = self.cidr4[-2]  # .254
 
                 # create OpenStack IPv4 subnet based on VSD l2domain
@@ -251,7 +252,7 @@ class VSDManagedL2DualStackDhcpDisabledTest(VSDManagedDualStackCommonBase):
         ipv4_subnet = self.create_subnet(
             network,
             cidr=self.cidr4, mask_bits=self.mask_bits4_unsliced,
-            gateway=self.gateway4, enable_dhcp=False,
+            gateway=None, enable_dhcp=False,
             nuagenet=vsd_l2_domain.id, net_partition=Topology.def_netpartition)
         self.assertEqual(
             str(next(IPNetwork(self.cidr4).subnet(self.mask_bits4_unsliced))),
@@ -309,7 +310,7 @@ class VSDManagedL2DualStackDhcpDisabledTest(VSDManagedDualStackCommonBase):
         network = self.create_network(network_name=net_name)
         ipv4_subnet = self.create_subnet(
             network,
-            cidr=self.cidr4, gateway=self.gateway4,
+            cidr=self.cidr4, gateway=None,
             mask_bits=self.mask_bits4_unsliced, enable_dhcp=False,
             nuagenet=vsd_l2_domain.id, net_partition=Topology.def_netpartition)
         self.assertEqual(
@@ -350,7 +351,7 @@ class VSDManagedL2DualStackDhcpDisabledTest(VSDManagedDualStackCommonBase):
         ipv4_subnet = self.create_subnet(
             network,
             cidr=self.cidr4, mask_bits=self.mask_bits4_unsliced,
-            gateway=self.gateway4, enable_dhcp=False,
+            gateway=None, enable_dhcp=False,
             nuagenet=vsd_l2_domain.id, net_partition=Topology.def_netpartition)
         self.assertEqual(
             str(next(IPNetwork(self.cidr4).subnet(self.mask_bits4_unsliced))),
@@ -445,7 +446,7 @@ class VSDManagedL2DualStackDhcpDisabledTest(VSDManagedDualStackCommonBase):
         ipv4_subnet = self.create_subnet(
             network,
             cidr=self.cidr4, mask_bits=self.mask_bits4_unsliced,
-            gateway=self.gateway4, enable_dhcp=False,
+            gateway=None, enable_dhcp=False,
             nuagenet=vsd_l2_domain.id, net_partition=Topology.def_netpartition)
 
         ipv6_subnet = self.create_subnet(

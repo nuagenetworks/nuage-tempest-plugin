@@ -83,7 +83,7 @@ class VSDPublicResourcesML2Test(
             os_shared_network=self.os_shared_network,
             enable_dhcp=False,
             cidr=VALID_CIDR,
-            gateway_ip='',
+            gateway_ip=None,
 
             # Then the OS subnet has
             #   an OS allocation pool covering the full CIDR range
@@ -115,7 +115,7 @@ class VSDPublicResourcesML2Test(
             #   nuagenet == UUID of VSD-L2-domain
             os_shared_network=self.os_shared_network,
             enable_dhcp=False,
-            gateway_ip=VALID_CIDR_GW,
+            gateway_ip=None,
             cidr=VALID_CIDR,
 
             # Then the OS subnet has
@@ -177,7 +177,7 @@ class VSDPublicResourcesML2Test(
             os_shared_network=self.os_shared_network,
             enable_dhcp=True,
             cidr=base_vsd_managed_networks.VSD_L2_SHARED_MGD_CIDR,
-            gateway_ip='',
+            gateway_ip=None,
 
             # Then the OS subnet has
             #   gateway_ip equal to None
@@ -198,44 +198,29 @@ class VSDPublicResourcesML2Test(
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # And these are linked
         vsd_l2dom_unmgd = self._given_vsdl2sharedmgd_lnkd_to_vsdl2domunmgd()
-        if Topology.at_openstack('kilo'):
-            self.assertRaisesRegex(
-                exceptions.ServerFault,
-                "create_subnet_postcommit failed.",
-                self._check_vsd_l2_shared_l2_unmgd,
-                vsd_l2dom_unmgd=vsd_l2dom_unmgd,
-                os_shared_network=self.os_shared_network,
-                enable_dhcp=True,
-                cidr=base_vsd_managed_networks.VSD_L2_SHARED_MGD_CIDR,
-                gateway_ip=base_vsd_managed_networks.VSD_L2_SHARED_MGD_GW,
-                expect_network_dhcp_nuage_port=False,
-                expected_gateway_ip=None,
-                expect_vm_ip_addresses_equal=True
-            )
-        else:
-            # In ML2 Liberty this is not a negative test so it should pass
-            self._check_vsd_l2_shared_l2_unmgd(
-                vsd_l2dom_unmgd=vsd_l2dom_unmgd,
-                #  When I create an OS subnet with
-                #   enable_dhcp == False
-                #   a valid CIDR
-                #   nuagenet == UUID of VSD-L2-domain
-                os_shared_network=self.os_shared_network,
-                enable_dhcp=True,
-                cidr=base_vsd_managed_networks.VSD_L2_SHARED_MGD_CIDR,
-                gateway_ip=base_vsd_managed_networks.VSD_L2_SHARED_MGD_GW,
 
-                # Then the OS subnet has
-                #   gateway_ip equal to None
-                expected_gateway_ip=None,
-                #   and no network:dhcp:nuage port
-                expect_network_dhcp_nuage_port=self.dhcp_port,
+        self._check_vsd_l2_shared_l2_unmgd(
+            vsd_l2dom_unmgd=vsd_l2dom_unmgd,
+            #  When I create an OS subnet with
+            #   enable_dhcp == False
+            #   a valid CIDR
+            #   nuagenet == UUID of VSD-L2-domain
+            os_shared_network=self.os_shared_network,
+            enable_dhcp=True,
+            cidr=base_vsd_managed_networks.VSD_L2_SHARED_MGD_CIDR,
+            gateway_ip=None,
 
-                # When I spin a VM in this network
-                # Then the OS  VM-IP-address is in the valid CIDR range
-                # And the VM-interface-IP-address in the VSD-L2-domain is empty
-                expect_vm_ip_addresses_equal=True
-            )
+            # Then the OS subnet has
+            #   gateway_ip equal to None
+            expected_gateway_ip=None,
+            #   and no network:dhcp:nuage port
+            expect_network_dhcp_nuage_port=self.dhcp_port,
+
+            # When I spin a VM in this network
+            # Then the OS  VM-IP-address is in the valid CIDR range
+            # And the VM-interface-IP-address in the VSD-L2-domain is empty
+            expect_vm_ip_addresses_equal=True
+        )
 
     @nuage_test.header()
     def test_vsd_l2_shared_mgd_l2_unmgd_no_gateway(self):
@@ -550,7 +535,7 @@ class VSDPublicResourcesML2Test(
             os_shared_network=self.os_shared_network,
             enable_dhcp=False,  # bad
             cidr=base_vsd_managed_networks.VSD_L2_SHARED_MGD_CIDR,
-            gateway_ip=base_vsd_managed_networks.VSD_L2_SHARED_MGD_GW,
+            gateway_ip=None,
             must_fail=True)
 
     @decorators.attr(type=['negative'])

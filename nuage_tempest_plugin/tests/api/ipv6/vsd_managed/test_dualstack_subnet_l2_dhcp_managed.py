@@ -396,7 +396,7 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
         network = self.create_network(network_name=net_name)
         ipv4_subnet = self.create_subnet(
             network,
-            gateway=self.gateway4,
+            gateway=None,
             cidr=self.cidr4,
             mask_bits=self.mask_bits4_unsliced,
             nuagenet=vsd_l2domain.id,
@@ -540,7 +540,7 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
         # create OpenStack IPv4 subnet on OpenStack based on VSD l2domain
         ipv4_subnet = self.create_subnet(
             network,
-            gateway=self.gateway4,
+            gateway=None,
             cidr=self.cidr4,
             mask_bits=self.mask_bits4_unsliced,
             nuagenet=vsd_l2domain.id,
@@ -601,6 +601,7 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
         network = self.create_network(network_name=net_name)
         ipv4_subnet = self.create_subnet(
             network,
+            gateway=None,
             cidr=self.cidr4,
             mask_bits=self.mask_bits4_unsliced,
             nuagenet=vsd_l2domain.id,
@@ -686,7 +687,7 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
         network = self.create_network(network_name=net_name)
         ipv4_subnet = self.create_subnet(
             network,
-            gateway=self.gateway4,
+            gateway=None,
             cidr=self.cidr4,
             mask_bits=self.mask_bits4_unsliced,
             nuagenet=vsd_l2domain.id,
@@ -829,7 +830,7 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
         network = self.create_network(network_name=net_name)
         ipv4_subnet = self.create_subnet(
             network,
-            gateway=self.gateway4,
+            gateway=None,
             cidr=self.cidr4,
             mask_bits=self.mask_bits4_unsliced,
             nuagenet=vsd_l2domain.id,
@@ -986,7 +987,7 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
         network = self.create_network(network_name=net_name)
         ipv4_subnet = self.create_subnet(
             network,
-            gateway=self.gateway4,
+            gateway=None,
             cidr=self.cidr4,
             enable_dhcp=True,
             mask_bits=self.mask_bits4_unsliced,
@@ -1074,6 +1075,7 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
             network,
             cidr=IPNetwork('10.0.0.0/24'),
             mask_bits=24,
+            gateway=None,
             nuagenet=vsd_l2domain1.id,
             net_partition=Topology.def_netpartition)
         v6_1 = self.create_subnet(
@@ -1090,6 +1092,7 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
                 network,
                 cidr=IPNetwork('10.1.0.0/24'),
                 mask_bits=24,
+                gateway=None,
                 nuagenet=vsd_l2domain2.id,
                 net_partition=Topology.def_netpartition)
             self.assertRaises(
@@ -1106,6 +1109,7 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
                 network,
                 cidr=IPNetwork('10.1.0.0/24'),
                 mask_bits=24,
+                gateway=None,
                 nuagenet=vsd_l2domain2.id,
                 net_partition=Topology.def_netpartition)
             v6_2 = self.create_subnet(
@@ -1177,6 +1181,7 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
             network,
             cidr=IPNetwork('10.0.0.0/24'),
             mask_bits=24,
+            gateway=None,
             nuagenet=vsd_l2domain1.id,
             net_partition=Topology.def_netpartition)
         if self.is_dhcp_agent_present():

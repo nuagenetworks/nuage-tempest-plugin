@@ -599,7 +599,8 @@ class BaseVSDManagedPortAttributes(
             'cidr': cidr,
             'mask_bits': cidr.prefixlen,
             'net_partition': Topology.def_netpartition,
-            'nuagenet': vsd_l2_subnet[0]['ID']
+            'nuagenet': vsd_l2_subnet[0]['ID'],
+            'gateway': None
         }
         subnet = self.create_subnet(**kwargs)
         return network, subnet
@@ -1080,6 +1081,7 @@ class BaseVSDManagedPortAttributes(
 # CLI
 #
 ###############################################################################
+
     def _cli_create_os_l2_vsd_managed_subnet(self, vsd_l2_subnet):
         network_name = data_utils.rand_name('cli_network')
         network = self.create_network_with_args(network_name)
@@ -1093,6 +1095,7 @@ class BaseVSDManagedPortAttributes(
                                               subnet_name,
                                               "--net-partition ",
                                               net_partition,
+                                              "--no-gateway ",
                                               "--nuagenet ",
                                               nuagenet)
         return network, subnet

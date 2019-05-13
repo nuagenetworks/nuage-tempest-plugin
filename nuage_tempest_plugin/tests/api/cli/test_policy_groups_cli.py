@@ -368,8 +368,7 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
         vsd_l3_domain_x, vsd_l3_subnet_x = self._given_vsd_l3subnet(
             cidr4=cidr4, cidr6=cidr6, enable_dhcpv4=True)
         cli_network_x, cli_subnet4_x, cli_subnet6_x = \
-            self._cli_create_os_l2_vsd_managed_dualstack_subnet(
-                vsd_l3_subnet_x)
+            self._cli_create_os_l3_vsd_managed_subnet(vsd_l3_subnet_x)
 
         policy_group_x = self.nuage_client.create_policygroup(
             constants.DOMAIN,
@@ -383,8 +382,7 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
         vsd_l3_domain_y, vsd_l3_subnet_y = self._given_vsd_l3subnet(
             cidr4=cidr4, cidr6=cidr6)
         cli_network_y, cli_subnet4_y, cli_subnet6_y = \
-            self._cli_create_os_l2_vsd_managed_dualstack_subnet(
-                vsd_l3_subnet_y)
+            self._cli_create_os_l3_vsd_managed_subnet(vsd_l3_subnet_y)
         policy_group_y = self.nuage_client.create_policygroup(
             constants.DOMAIN,
             vsd_l3_domain_y.id,
@@ -479,7 +477,7 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
         vsd_l3_domain, vsd_l3_subnet = self._given_vsd_l3subnet(
             cidr4=cidr4, cidr6=cidr6, enable_dhcpv4=True)
         cli_network, cli_subnet4, cli_subnet6 = \
-            self._cli_create_os_l2_vsd_managed_dualstack_subnet(vsd_l3_subnet)
+            self._cli_create_os_l3_vsd_managed_subnet(vsd_l3_subnet)
 
         # And I have multiple policy_groups
         for i in range(SEVERAL_POLICY_GROUPS):

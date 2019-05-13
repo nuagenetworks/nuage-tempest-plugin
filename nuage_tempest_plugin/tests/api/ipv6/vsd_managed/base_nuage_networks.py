@@ -71,13 +71,23 @@ class BaseNuageNetworksIpv6TestCase(NuageBaseTest):
         else:
             actual_net_partition = self.net_partition[0]['name']
 
-        subnet4 = self.create_subnet(
-            network,
-            cidr=cidr4,
-            enable_dhcp=enable_dhcp,
-            mask_bits=cidr4.prefixlen,
-            nuagenet=vsd_subnet.id,
-            net_partition=actual_net_partition)
+        if vsd_subnet.parent_type == 'zone':
+            subnet4 = self.create_subnet(
+                network,
+                cidr=cidr4,
+                enable_dhcp=enable_dhcp,
+                mask_bits=cidr4.prefixlen,
+                nuagenet=vsd_subnet.id,
+                net_partition=actual_net_partition)
+        else:
+            subnet4 = self.create_subnet(
+                network,
+                gateway=None,
+                cidr=cidr4,
+                enable_dhcp=enable_dhcp,
+                mask_bits=cidr4.prefixlen,
+                nuagenet=vsd_subnet.id,
+                net_partition=actual_net_partition)
 
         # create OpenStack IPv6 subnet on OpenStack based on VSD l3dom subnet
         subnet6 = None

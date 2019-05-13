@@ -125,6 +125,7 @@ class VSDManagedPortSecurity(
         net = self.create_network(network_name=net_name)
         self.create_subnet(
             net,
+            gateway=None,
             cidr=IPNetwork('10.10.100.0/24'),
             mask_bits=24, nuagenet=vsd_l2dom[0]['ID'],
             net_partition=CONF.nuage.nuage_default_netpartition,
@@ -275,6 +276,7 @@ class VSDManagedPortSecurity(
         net = self.create_network(network_name=net_name)
         self.create_subnet(
             net,
+            gateway=None,
             cidr=IPNetwork('10.10.100.0/24'),
             mask_bits=24, nuagenet=vsd_l2dom[0]['ID'],
             net_partition=CONF.nuage.nuage_default_netpartition,
