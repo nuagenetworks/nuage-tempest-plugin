@@ -50,11 +50,11 @@ class NuagePatToUnderlayScenarioTest(NuageBaseTest):
                    msg='waiting for cloud-init script to finish.')
         self.create_fip_to_server(server, port)
         result = server.console().exec_command('cat {}'.format(
-            output_path)).encode('ascii', 'ignore')
+            output_path)).strip()
         if should_succeed:
-            self.assertEqual(result, '0\n')
+            self.assertEqual(result, '0')
         else:
-            self.assertNotEqual(result, '0\n')
+            self.assertNotEqual(result, '0')
 
     def test_pat_to_underlay_up_to_hv(self):
         self._test_pat_to_underlay_up_to_hv('snat', True)
