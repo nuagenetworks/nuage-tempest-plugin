@@ -6,10 +6,10 @@ from netaddr import IPAddress
 from tempest.common import utils
 from tempest.lib.common.utils import data_utils
 
-from . import nuage_base
 
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
+from nuage_tempest_plugin.tests.api.orchestration import nuage_base
 from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_networks
 from nuage_tempest_plugin.tests.api.vsd_managed \
@@ -219,7 +219,9 @@ class HeatVsdManagedPortAttributesTest(
         l2_aap_mac_address = VALID_MAC_ADDRESS
 
         l3_port_fixed_ip = str(IPAddress(l3_cidr) + 10)
-        l3_aap_fixed_ip = str(IPAddress(l3_port_fixed_ip) + 5)
+        # Originally without /32, but now HEAT requires CIDR for validation.
+        # Upstream bug: https://storyboard.openstack.org/#!/story/2005674
+        l3_aap_fixed_ip = str(IPAddress(l3_port_fixed_ip) + 5) + '/32'
         l3_aap_mac_address = VALID_MAC_ADDRESS
 
         stack_parameters = {
