@@ -2,6 +2,7 @@
 # All Rights Reserved.
 
 import nuage_tempest_plugin.lib.test.nuage_test as nuage_test
+from nuage_tempest_plugin.lib.test.nuage_test import skip_because
 from tempest.test import decorators
 
 LOG = nuage_test.Topology.get_logger(__name__)
@@ -9,6 +10,7 @@ LOG = nuage_test.Topology.get_logger(__name__)
 
 class Ipv6OsManagedConnectivityTest(nuage_test.NuageBaseTest):
 
+    @skip_because(bug='VSD-34117')
     def test_icmp_connectivity_l2_os_managed_dualstack(self):
         # Provision OpenStack network
         network = self.create_network()
