@@ -164,31 +164,11 @@ class VSDManagedDualStackL2DomainDHCPManagedTest(
             cidr6=self.cidr6,
             dhcp_managed=True)
 
-    # VSD-18510 - VSD API should fail on creation of DUALSTACK l2 dom template
-    # with cidr ::0 has been successfully created
-    @decorators.attr(type='smoke')
-    def test_create_vsd_l2domain_template_dualstack_invalid_ipv6_neg_vsd_18510(
-            self):
-        invalid_ipv6 = [
-            ("::/0", "::1", "Invalid IPv6 netmask")
-            # prefix 0
-        ]
-
-        for ipv6_cidr, ipv6_gateway, msg in invalid_ipv6:
-            self.assertRaisesRegex(
-                bambou.exceptions.BambouHTTPError,
-                msg,
-                self.vsd_create_l2domain_template,
-                ip_type="DUALSTACK",
-                cidr4=self.cidr4,
-                dhcp_managed=True,
-                ipv6_address=ipv6_cidr,
-                ipv6_gateway=ipv6_gateway)
-
     @decorators.attr(type='smoke')
     def test_create_vsd_l2domain_template_dualstack_invalid_ipv6_neg(self):
         invalid_ipv6 = [
-            ('FE80::/8', 'FE80::1', MSG_INVALID_IPV6_NETMASK),
+            # Caused-By: VSD-34209
+            # ('FE80::/8', 'FE80::1', MSG_INVALID_IPV6_NETMASK),
             # Link local address
             ("FF00:5f74:c4a5:b82e::/64",
              "FF00:5f74:c4a5:b82e:ffff:ffff:ffff:ffff",
@@ -198,8 +178,10 @@ class VSDManagedDualStackL2DomainDHCPManagedTest(
             # multicast address
             ('::/128', '::1', MSG_IP_ADDRESS_INVALID_OR_RESERVED),
             # not specified address
-            ('::/0', '', "Invalid IPv6 netmask"),
+            # ('::/0', '', "Invalid IPv6 netmask"),  # Caused-By: VSD-34209
             # empty string
+            # ('::/0', '::1', "Invalid IPv6 netmask"),  # Caused-By: VSD-34209
+            # invalid netmask
             ("2001:5f74:c4a5:b82e::/64",
              "2001:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
              MSG_INVALID_IPV6_GATEWAY),
@@ -212,29 +194,30 @@ class VSDManagedDualStackL2DomainDHCPManagedTest(
              "2001:5f74:c4a5:b82e:100.12.13.1",
              MSG_INVALID_IPV6_GATEWAY),
             # needs :: between hex and decimal part.
-            ("2001:5f74:c4a5:b82e:b000::/63",
-             "2001:5f74:c4a5:b82e:b0:000::1",
-             MSG_INVALID_IPV6_NETMASK),
-            # unsupported netmask
             ("2001:5f74:c4a5:b82e::/129",
-             "2001:5f74:c4a5:b82e::0", MSG_INVALID_IPV6_ADDRESS),
+             "2001:5f74:c4a5:b82e::0", MSG_INVALID_IPV6_ADDRESS)
             # unsupported netmask
-            ("3ffe:0b00::/32", "3ffe:0b00::1", MSG_INVALID_IPV6_NETMASK),
-            # prefix < 64
-            ("2001::/16", "2001::1", MSG_INVALID_IPV6_NETMASK),
-            # prefix 16
         ]
 
+        failure_set = []
         for ipv6_cidr, ipv6_gateway, msg in invalid_ipv6:
-            self.assertRaisesRegex(
-                bambou.exceptions.BambouHTTPError,
-                msg,
-                self.vsd_create_l2domain_template,
-                ip_type="DUALSTACK",
-                cidr4=self.cidr4,
-                dhcp_managed=True,
-                ipv6_address=ipv6_cidr,
-                ipv6_gateway=ipv6_gateway)
+            try:
+                self.vsd_create_l2domain_template(
+                    ip_type="DUALSTACK",
+                    cidr4=self.cidr4,
+                    dhcp_managed=True,
+                    ipv6_address=ipv6_cidr,
+                    ipv6_gateway=ipv6_gateway)
+            except bambou.exceptions.BambouHTTPError as e:
+                if msg in str(e):
+                    pass  # expected (negative test)
+                else:
+                    raise
+            else:
+                failure_set.append([ipv6_cidr, ipv6_gateway])
+
+        self.assertEmpty(failure_set, 'Invalid ipv6 addressed passed '
+                                      'unexpectedly')
 
 
 class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
