@@ -55,10 +55,10 @@ class VsdHelper(object):
 
     @staticmethod
     def base_uri_to_version(base_uri):
-        pattern = re.compile(r'(\d+_\d+)')
+        pattern = re.compile(r'(v\d+$)')
         match = pattern.search(base_uri)
         version = match.group()
-        return 'v' + str(version)
+        return str(version)
 
     def get_enterprise_by_name(self, ent_name):
         if ent_name in self.enterprise_name_to_enterprise:
