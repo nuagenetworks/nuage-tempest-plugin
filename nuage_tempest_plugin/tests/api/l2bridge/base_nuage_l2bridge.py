@@ -12,13 +12,30 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+from netaddr import IPNetwork
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
+from tempest import config
+
+CONF = config.CONF
 
 
 class BaseNuageL2Bridge(NuageBaseTest):
+
+    _ip_version = 4
+    _cidr = IPNetwork('10.10.1.0/24')
+    _mask_bits = 24
+    _dual_cidr = IPNetwork('cafe:babe::/64')
+    _dual_mask_bits = 64
+    _dual_ip_version = 6
+    _host_routes = [{'destination': '10.20.0.0/32',
+                     'nexthop': '10.10.1.10'}]
+    _dns_nameservers = ['7.8.8.8', '7.8.4.4']
+    _segmentation_id_1 = 200
+    _segmentation_id_2 = 201
+
     @classmethod
     def setup_clients(cls):
         super(BaseNuageL2Bridge, cls).setup_clients()
@@ -47,6 +64,7 @@ class BaseNuageL2Bridge(NuageBaseTest):
 
     def update_l2bridge(self, l2bridge_id, name=None, physnets=None,
                         is_admin=True):
+        body = None
         if is_admin:
             if name and physnets:
                 body = self.NuageNetworksClient.update_nuage_l2bridge(
@@ -73,7 +91,36 @@ class BaseNuageL2Bridge(NuageBaseTest):
                 body = self.NuageNetworksClientNonAdmin.update_nuage_l2bridge(
                     l2bridge_id,
                     physnets=physnets)
+        self.assertIsNotNone(body['nuage_l2bridge'])
         return body['nuage_l2bridge']
 
     def delete_l2bridge(self, l2bridge_id):
         self.NuageNetworksClient.delete_nuage_l2bridge(l2bridge_id)
+
+    def validate_bridge_config(self, bridge, name, phys_nets):
+        self.assertEqual(name, bridge['name'])
+        self.assertEqual(len(phys_nets), len(bridge['physnets']))
+        for phys_net in phys_nets:
+            found_matching_phys_net = False
+            for bridge_physnet in bridge['physnets']:
+                if phys_net['physnet_name'] == bridge_physnet['physnet']:
+                    self.assertEqual(phys_net['segmentation_id'],
+                                     bridge_physnet['segmentation_id'])
+                    self.assertEqual(phys_net['segmentation_type'],
+                                     bridge_physnet['segmentation_type'])
+                    found_matching_phys_net = True
+                    break
+            self.assertEqual(True, found_matching_phys_net)
+
+    def validate_l2domain_on_vsd(self, bridge, l2domain, ip_type):
+        self.assertEqual(bridge['id'], l2domain.name)
+        self.assertEqual(bridge['name'], l2domain.description)
+        dhcp_options = self.vsd.get_l2domain_dhcp_options(l2domain)
+        for dhcp_option in dhcp_options:
+            self.assertEqual(self.ext_id(bridge['id']),
+                             dhcp_option.external_id)
+        self.assertEqual(l2domain.ip_type, ip_type)
+
+    @staticmethod
+    def ext_id(ext_id):
+        return ext_id + '@' + CONF.nuage.nuage_cms_id
