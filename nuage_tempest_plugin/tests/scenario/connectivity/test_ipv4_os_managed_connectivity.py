@@ -4,6 +4,7 @@
 from netaddr import IPNetwork
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.test.nuage_test import skip_because
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import data_utils
 from tempest.lib import decorators
@@ -76,6 +77,7 @@ class Ipv4OsManagedConnectivityTest(NuageBaseTest):
     def test_icmp_connectivity_l3_os_managed(self):
         self._icmp_connectivity_l3_os_managed_by_name()
 
+    @skip_because(bug='OPENSTACK-2570')
     @decorators.attr(type='smoke')
     def test_icmp_connectivity_l3_os_managed_russian(self):
         # Russian, ask Vlad :)
