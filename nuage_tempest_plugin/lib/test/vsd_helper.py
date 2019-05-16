@@ -60,7 +60,7 @@ class VsdHelper(object):
 
     @staticmethod
     def base_uri_to_version(base_uri):
-        pattern = re.compile(r'(v\d+$)')
+        pattern = re.compile(r'(v\d+_?\d*$)')
         match = pattern.search(base_uri)
         version = match.group()
         return str(version)
