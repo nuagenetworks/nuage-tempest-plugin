@@ -283,10 +283,9 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         time.sleep(seconds)
 
     def vsd_create_l2domain_template(
-            self, name=None, enterprise=None,
-            dhcp_managed=True, ip_type="IPV4",
-            cidr4=None, gateway4=None,
-            cidr6=None, gateway6=None, cleanup=True, enable_dhcpv4=True,
+            self, name=None, enterprise=None, dhcp_managed=True,
+            ip_type="IPV4", cidr4=None, gateway4=None, cidr6=None,
+            gateway6=None, cleanup=True, enable_dhcpv4=True,
             enable_dhcpv6=False, **kwargs):
         l2domain_template = self.vsd.create_l2domain_template(
             name=name, enterprise=enterprise, dhcp_managed=dhcp_managed,

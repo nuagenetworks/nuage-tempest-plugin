@@ -636,3 +636,28 @@ class NuageNetworkClientJSON(service_client.RestClient):
         uri = '%s/nuage-l2bridges/%s' % (self.uri_prefix, l2bridge_id)
         resp, body = self.delete(uri)
         self.expected_success(204, resp.status)
+
+    def get_domains(self, netpartition_id, **kwargs):
+        uri = '{}/vsd-domains'.format(self.uri_prefix)
+        kwargs = {} or kwargs
+        kwargs['vsd_organisation_id'] = netpartition_id
+        uri += '?' + urlparse.urlencode(kwargs, doseq=1)
+        resp, body = self.get(uri)
+        self.expected_success(200, resp.status)
+        body = json.loads(body)
+        return service_client.ResponseBody(resp, body)
+
+    def get_vsd_subnet(self, subnet_id, **kwargs):
+        uri = '{}/vsd-subnets/{}'.format(self.uri_prefix, subnet_id)
+        uri += '?' + urlparse.urlencode(kwargs, doseq=1)
+        return self._get_request(uri)
+
+    def get_vsd_subnets(self, vsd_zone_id, **kwargs):
+        uri = '{}/vsd-subnets'.format(self.uri_prefix)
+        kwargs = {} or kwargs
+        kwargs['vsd_zone_id'] = vsd_zone_id
+        uri += '?' + urlparse.urlencode(kwargs, doseq=1)
+        resp, body = self.get(uri)
+        self.expected_success(200, resp.status)
+        body = json.loads(body)
+        return service_client.ResponseBody(resp, body)

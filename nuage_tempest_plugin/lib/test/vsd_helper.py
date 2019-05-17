@@ -53,6 +53,11 @@ class VsdHelper(object):
 
         self.enterprise_name_to_enterprise = {}
 
+    @ staticmethod
+    def assertIsNotNone(obj, message):
+        if obj is None:
+            raise AssertionError(message or "{} is None".format(obj))
+
     @staticmethod
     def base_uri_to_version(base_uri):
         pattern = re.compile(r'(v\d+$)')
@@ -88,8 +93,9 @@ class VsdHelper(object):
             self.default_enterprise = self.get_enterprise_by_name(
                 self.default_netpartition_name)
 
-        if not self.default_enterprise:
-            assert "Should have a default enterprise for Nuage plugin"
+        self.assertIsNotNone(self.default_enterprise,
+                             "Should have a default "
+                             "enterprise for Nuage plugin")
 
         return self._session
 
@@ -193,8 +199,7 @@ class VsdHelper(object):
         if not enterprise:
             enterprise = self.get_default_enterprise()
 
-        if not template:
-            assert "must provide a valid template"
+        self.assertIsNotNone(template, "Must provide a valid template")
 
         name = name or data_utils.rand_name('test-l2domain')
 
@@ -290,8 +295,7 @@ class VsdHelper(object):
         elif not enterprise:
             enterprise = self.get_default_enterprise()
 
-        if not template_id:
-            assert "Must provide a valid template ID"
+        self.assertIsNotNone(template_id, "Must provide a valid template ID")
 
         name = name or data_utils.rand_name('test-l3domain')
 
@@ -399,8 +403,7 @@ class VsdHelper(object):
                       enable_dhcpv6=False,
                       **kwargs):
 
-        if not zone:
-            assert "Must provide a valid zone"
+        self.assertIsNotNone(zone, "Must provide a valid zone")
 
         subnet_name = name or data_utils.rand_name('test-subnet')
 
@@ -592,11 +595,8 @@ class VsdHelper(object):
         elif not enterprise:
             enterprise = self.get_default_enterprise()
 
-        if not vport_id:
-            assert "must provide a vport id"
-
-        if not router_id:
-            assert "must provide a router id"
+        self.assertIsNotNone(vport_id, "Must provide a vport id")
+        self.assertIsNotNone(router_id, "Must provide a router id")
 
         domain = enterprise.domains.get_first(
             filter='externalID == "{}"'.format(
