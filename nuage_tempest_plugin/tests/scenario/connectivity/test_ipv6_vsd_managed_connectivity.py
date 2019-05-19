@@ -7,6 +7,7 @@ from netaddr import IPNetwork
 from tempest.lib import decorators
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.test.nuage_test import skip_because
 
 
 class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
@@ -167,7 +168,8 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
             vsd_domain=vsd_domain, vsd_subnet=vsd_subnet,
             server2_pre_set_up=server)
 
-    # @decorators.attr(type='smoke')
+    @skip_because(reason='pure v6 connectivity tests are not stable yet (WIP)')
+    @decorators.attr(type='smoke')
     def test_icmp_connectivity_l2_vsd_managed_pure_v6(self):
         # Provision VSD managed network resources
         l2domain_template = self.vsd_create_l2domain_template(
@@ -195,7 +197,8 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
         # Test IPv6 connectivity between peer servers
         self.assert_ping(server1, server2, network, ip_type=6)
 
-    # @decorators.attr(type='smoke')
+    @skip_because(reason='pure v6 connectivity tests are not stable yet (WIP)')
+    @decorators.attr(type='smoke')
     def test_icmp_connectivity_l3_vsd_managed_pure_v6(self):
         # provision nuage resource
         vsd_l3domain_template = self.vsd_create_l3domain_template()

@@ -43,21 +43,28 @@ LOG = Topology.get_logger(__name__)
 def skip_because(*args, **kwargs):
     """A decorator useful to skip tests hitting known bugs
 
-    @param bug: bug number causing the test to skip
     @param condition: optional condition to be True for the skip to have place
+    @param bug: bug number causing the test to skip
+    @param reason: (other) reason causing the test to skip
     """
     def decorator(f):
         @functools.wraps(f)
         def wrapper(self, *func_args, **func_kwargs):
             skip = False
-            if "condition" in kwargs:
-                if kwargs["condition"] is True:
+            if 'condition' in kwargs:
+                if kwargs['condition'] is True:
                     skip = True
             else:
                 skip = True
-            if "bug" in kwargs and skip is True:
-                msg = "Skipped until Bug: %s is resolved." % kwargs["bug"]
+
+            if 'bug' in kwargs and skip is True:
+                msg = 'Skipped until Bug: {} is resolved'.format(kwargs['bug'])
                 raise testtools.TestCase.skipException(msg)
+
+            elif 'reason' in kwargs and skip is True:
+                msg = 'Skipped because {}'.format(kwargs["reason"])
+                raise testtools.TestCase.skipException(msg)
+
             return f(self, *func_args, **func_kwargs)
         return wrapper
     return decorator

@@ -74,7 +74,8 @@ class Ipv6OsManagedConnectivityTest(nuage_test.NuageBaseTest):
         # Test IPv6 connectivity between peer servers
         self.assert_ping(server1, server2, network, ip_type=6)
 
-    # @decorators.attr(type='smoke')
+    @skip_because(reason='pure v6 connectivity tests are not stable yet (WIP)')
+    @decorators.attr(type='smoke')
     def test_icmp_connectivity_l2_os_managed_pure_v6(self):
         # Provision OpenStack network
         networkv6 = self.create_network()
@@ -97,7 +98,8 @@ class Ipv6OsManagedConnectivityTest(nuage_test.NuageBaseTest):
         # Test IPv6 connectivity between peer servers
         self.assert_ping(server1, server2, networkv6, ip_type=6)
 
-    # @decorators.attr(type='smoke')
+    @skip_because(reason='pure v6 connectivity tests are not stable yet (WIP)')
+    @decorators.attr(type='smoke')
     def test_icmp_connectivity_l3_os_managed_pure_v6(self):
         # Provision OpenStack network
         networkv6_1 = self.create_network()
