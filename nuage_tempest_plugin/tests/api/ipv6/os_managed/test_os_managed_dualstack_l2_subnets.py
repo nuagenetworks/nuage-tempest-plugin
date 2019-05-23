@@ -1045,11 +1045,6 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
                 "2001:5f74:c4a5:b82e::/64",
                 "2001:5f74:c4a5:b82b:ffff:ffff:ffff:ffff",
                 MSG_GATEWAY_NOT_IN_SUBNET_CIDR),
-            # Gateway not in CIDR
-            (
-                "2001:5f74:c4a5:b82e::/64",
-                "2001:5f74:c4a5:b82e::",
-                MSG_GATEWAY_NOT_VALID_ON_SUBNET),
             # Gateway not valid on CIDR
             (
                 "2001:5f74:c4a5:b82e::/64",
