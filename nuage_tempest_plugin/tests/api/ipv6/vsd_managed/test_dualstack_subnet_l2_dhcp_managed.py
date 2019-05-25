@@ -222,7 +222,8 @@ class VSDManagedDualStackL2DomainDHCPManagedTest(
 
 class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
 
-    dhcp_managed = True
+    os_dhcp_managed = True
+    vsd_dhcp_managed = True
 
     @classmethod
     def resource_setup(cls):

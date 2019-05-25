@@ -218,6 +218,7 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
                              getattr(l2domain, matching_attribute))
 
     def _given_vsd_l2domain(self, cidr4=None, cidr6=None, dhcp_managed=False,
+                            verify_l2domain=True, return_template=False,
                             **kwargs):
         if cidr4 and cidr6:
             ip_type = "DUALSTACK"
@@ -233,11 +234,17 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
 
         vsd_l2domain = self.vsd_create_l2domain(template=vsd_l2domain_template)
 
-        return vsd_l2domain
+        if verify_l2domain:
+            self._verify_vsd_l2domain_with_template(vsd_l2domain,
+                                                    vsd_l2domain_template)
 
-    def _given_vsd_l3subnet(self, cidr4=None, cidr6=None, dhcp_managed=True,
-                            enable_dhcpv4=True, enable_dhcpv6=False,
-                            **kwargs):
+        if return_template:
+            return vsd_l2domain_template, vsd_l2domain
+        else:
+            return vsd_l2domain
+
+    def _given_vsd_l3subnet(self, cidr4=None, cidr6=None,
+                            enable_dhcpv4=True, enable_dhcpv6=False):
         name = data_utils.rand_name('l3domain-')
         vsd_l3domain_template = self.vsd_create_l3domain_template(
             name=name)

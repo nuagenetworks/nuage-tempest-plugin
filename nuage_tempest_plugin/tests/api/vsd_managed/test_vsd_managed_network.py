@@ -495,6 +495,49 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
             nuagenet=vsd_l2dom[0]['ID'],
             net_partition=Topology.def_netpartition)
 
+    # @nuage_test.header(tags=['smoke'])
+    def test_link_subnet_with_disable_dhcp_unmanaged_l2(self):
+        # create l2domain on VSD
+        name = data_utils.rand_name('l2domain-')
+        vsd_l2dom_tmplt = self.create_vsd_dhcpunmanaged_l2dom_template(
+            name=name)
+        vsd_l2dom = self.create_vsd_l2domain(name=name,
+                                             tid=vsd_l2dom_tmplt[0]['ID'])
+        self.assertEqual(vsd_l2dom[0]['name'], name)
+
+        # create subnet on OS with nuagenet param set to l2domain UUID
+        net_name = data_utils.rand_name('network-')
+        network = self.create_network(network_name=net_name)
+        subnet = self.create_subnet(
+            network,
+            gateway=None,
+            cidr=IPNetwork('10.10.100.0/24'),
+            mask_bits=24, nuagenet=vsd_l2dom[0]['ID'],
+            net_partition=Topology.def_netpartition,
+            enable_dhcp=False)
+        self.assertEqual(subnet['enable_dhcp'], False)
+
+    def test_link_subnet_with_enable_dhcp_unmanaged_l2_neg(self):
+        # create unmanaged l2domain on VSD
+        name = data_utils.rand_name('l2domain-')
+        vsd_l2dom_tmplt = self.create_vsd_dhcpunmanaged_l2dom_template(
+            name=name)
+        vsd_l2dom = self.create_vsd_l2domain(name=name,
+                                             tid=vsd_l2dom_tmplt[0]['ID'])
+        self.assertEqual(vsd_l2dom[0]['name'], name)
+
+        # create subnet on OS with nuagenet param set to l2domain UUID
+        net_name = data_utils.rand_name('network-')
+        network = self.create_network(network_name=net_name)
+        # Try creating subnet with enable_dhcp=True (default)
+        self.assertRaises(
+            self.failure_type,
+            self.create_subnet,
+            network,
+            cidr=IPNetwork('10.10.100.0/24'),
+            mask_bits=24, nuagenet=vsd_l2dom[0]['ID'],
+            net_partition=Topology.def_netpartition)
+
     @nuage_test.header(tags=['smoke'])
     def test_link_subnet_with_disable_dhcp_vsd_managed_l2(self):
         # create l2domain on VSD
