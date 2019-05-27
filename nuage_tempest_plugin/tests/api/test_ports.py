@@ -758,7 +758,6 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                 vip_mismatch = True
             self.assertEqual(vip_mismatch, False)
 
-    @skip_because(reason='seems broken as of CNA-Server/pull/4675 merge, TBC')
     @decorators.attr(type='smoke')
     def test_nuage_port_create_fixed_ips_same_subnet_l3_with_aap_outside_cidr(
             self):
