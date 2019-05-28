@@ -130,10 +130,6 @@ class Topology(Singleton):
         return Topology.is_devstack()
 
     @staticmethod
-    def new_route_to_underlay_model_enabled():
-        return CONF.nuage_sut.nuage_pat_legacy.lower() == 'disabled'
-
-    @staticmethod
     def is_existing_flat_vlan_allowed():
         """Whether nuage sriov option allow_existing_flat_vlan is set to True
 

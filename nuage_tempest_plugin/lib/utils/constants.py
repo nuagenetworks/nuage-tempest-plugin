@@ -192,11 +192,6 @@ MAX_RD = (2 ** 16) - 1
 # PAT constants
 NUAGE_PAT_VSD_ENABLED = 'ENABLED'
 NUAGE_PAT_VSD_DISABLED = 'DISABLED'
-NUAGE_PAT_NOTAVAILABLE = 'not_available'
-NUAGE_PAT_DEFAULTDISABLED = 'default_disabled'
-NUAGE_PAT_DEFAULTENABLED = 'default_enabled'
-NUAGE_PAT = 'nuage_pat'
-NUAGE_PAT_GROUP = 'restproxy'
 
 # nuage-uplink constants
 NUAGE_UPLINK_GROUP = 'restproxy'

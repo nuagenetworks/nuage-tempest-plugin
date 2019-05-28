@@ -1,8 +1,6 @@
 # Copyright 2017 NOKIA
 # All Rights Reserved.
 
-import testtools
-
 from tempest.lib import decorators
 from tempest.lib import exceptions
 
@@ -24,25 +22,6 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
             raise cls.skipException(msg)
 
     @decorators.attr(type='smoke')
-    @testtools.skipIf(Topology.new_route_to_underlay_model_enabled(),
-                      'Skipping test as legacy nuage_pat model is not enabled')
-    def test_nuage_pat_and_route_to_underlay_legacy(self):
-        # this test assumes nuage_pat is not None/legacy_disabled
-        # Base resources
-        network = self.create_network()
-        self.assertIsNotNone(network, "Unable to create network")
-        router = self.create_router(
-            admin_state_up=True,
-            external_network_id=CONF.network.public_network_id)
-        self.assertIsNotNone(router, "Unable to create router")
-        # Possible invalid configurations for l3 subnet
-        configs = ['snat', 'route', 'off', 'inherited', ]
-        for conf in configs:
-            self._subnet_update_legacy(conf, router, network)
-
-    @decorators.attr(type='smoke')
-    @testtools.skipIf(not Topology.new_route_to_underlay_model_enabled(),
-                      'Skipping test as new route-to-UL model is not enabled')
     def test_nuage_pat_and_underlay_subnet_create_negative(self):
         # Base resources
         network = self.create_network()
@@ -54,8 +33,6 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
             self._subnet_create_check_exception(conf, network)
 
     @decorators.attr(type='smoke')
-    @testtools.skipIf(not Topology.new_route_to_underlay_model_enabled(),
-                      'Skipping test as new route-to-UL model is not enabled')
     def test_nuage_pat_and_route_to_underlay_subnet(self):
         # Base resources
         network = self.create_network()
@@ -77,8 +54,6 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
                                           router, network)
 
     @decorators.attr(type='smoke')
-    @testtools.skipIf(not Topology.new_route_to_underlay_model_enabled(),
-                      'Skipping test as new route-to-UL model is not enabled')
     def test_nuage_pat_and_route_to_underlay_subnet_negative(self):
         # Base resources
         network = self.create_network()
@@ -90,8 +65,6 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
             self._subnet_update_check_exception(conf, network)
 
     @decorators.attr(type='smoke')
-    @testtools.skipIf(not Topology.new_route_to_underlay_model_enabled(),
-                      'Skipping test as new route-to-UL model is not enabled')
     def test_nuage_pat_and_route_to_underlay_subnet_namechange(self):
         # Base resources
         network = self.create_network()
@@ -111,8 +84,6 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
                                                      router, network)
 
     @decorators.attr(type='smoke')
-    @testtools.skipIf(not Topology.new_route_to_underlay_model_enabled(),
-                      'Skipping test as new route-to-UL model is not enabled')
     def test_nuage_pat_and_route_to_underlay_subnet_no_op(self):
         """Reinforce the value that has been set for nuage_underlay again.
 
@@ -226,20 +197,6 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
                               subnet,
                               nuage_underlay=nuage_underlay)
         finally:
-            self.delete_subnet(subnet=subnet)
-        LOG.debug("Verified failure for nuage_underlay={}"
-                  .format(nuage_underlay))
-
-    def _subnet_update_legacy(self, nuage_underlay, router, network):
-        subnet = self.create_subnet(network, cleanup=False)
-        self.create_router_interface(router['id'], subnet['id'], cleanup=False)
-        try:
-            self.assertRaises(exceptions.BadRequest,
-                              self.update_subnet,
-                              subnet,
-                              nuage_underlay=nuage_underlay)
-        finally:
-            self.router_detach(router, subnet)
             self.delete_subnet(subnet=subnet)
         LOG.debug("Verified failure for nuage_underlay={}"
                   .format(nuage_underlay))

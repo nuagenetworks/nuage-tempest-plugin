@@ -1,8 +1,6 @@
 # Copyright 2017 NOKIA
 # All Rights Reserved.
 
-import testtools
-
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions
@@ -26,27 +24,7 @@ class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
             msg = "Route to underlay not enabled"
             raise cls.skipException(msg)
 
-    @testtools.skipIf(Topology.new_route_to_underlay_model_enabled(),
-                      'Skipping test as new route-to-UL model is  enabled')
-    def test_nuage_pat_legacy(self):
-        """Relevant router interface:
-
-            Router: {
-                external_gateway_info: {enable_snat: True/False}
-                enable_underlay_routing: True/False
-        """
-        # Assumption: nuage_pat!=legacy_disabled/None
-        # Possible configurations
-        # nuage_underlay enable_snat PATEnabled
-        configs = [(None, True, 'ENABLED', 'ENABLED'),
-                   (None, False, 'DISABLED', 'DISABLED')]
-        for conf in configs:
-            self._router_create_check_vsd(conf[0], conf[1], conf[2],
-                                          conf[3])
-
     @decorators.attr(type='smoke')
-    @testtools.skipIf(not Topology.new_route_to_underlay_model_enabled(),
-                      'Skipping test as new route-to-UL model is not enabled')
     def test_nuage_pat_and_route_to_underlay_domain_create(self):
         """Relevant router interface:
 
@@ -67,8 +45,6 @@ class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
                                           conf[2], conf[3])
 
     @decorators.attr(type='smoke')
-    @testtools.skipIf(not Topology.new_route_to_underlay_model_enabled(),
-                      'Skipping test as new route-to-UL model is not enabled')
     def test_nuage_pat_and_route_to_underlay_domain_update(self):
         """Relevant router interface:
 
@@ -121,8 +97,6 @@ class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
                                           conf[4], conf[5])
 
     @decorators.attr(type='smoke')
-    @testtools.skipIf(not Topology.new_route_to_underlay_model_enabled(),
-                      'Skipping test as new route-to-UL model is not enabled')
     def test_nuage_pat_and_route_to_underlay_domain_namechange(self):
         configs = [('snat', False, 'ENABLED', 'ENABLED'),
                    ('snat', None, 'ENABLED', 'ENABLED'),
@@ -135,8 +109,6 @@ class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
                                                      conf[2], conf[3])
 
     @decorators.attr(type='smoke')
-    @testtools.skipIf(not Topology.new_route_to_underlay_model_enabled(),
-                      'Skipping test as new route-to-UL model is not enabled')
     def test_nuage_pat_and_route_to_underlay_domain_no_op(self):
         configs = [('snat', False, 'ENABLED', 'ENABLED', 'snat', None),
                    ('off', False, 'DISABLED', 'DISABLED', 'off', None),
@@ -154,8 +126,6 @@ class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
                                                       conf[4], conf[5])
 
     @decorators.attr(type='smoke')
-    @testtools.skipIf(not Topology.new_route_to_underlay_model_enabled(),
-                      'Skipping test as new route-to-UL model is not enabled')
     def test_nuage_pat_and_route_to_underlay_domain_update_neg(self):
         # nuage_underlay enable_snat
         # updated nuage_underlay updated enable_snat
