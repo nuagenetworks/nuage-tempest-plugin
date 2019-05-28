@@ -348,16 +348,16 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
         # Delete
         vsd_l2domain.verify_cannot_delete()
 
-    @classmethod
-    def _create_netpartition(cls):
+    def _create_netpartition(self):
         name = data_utils.rand_name('netpartition')
-
-        body = cls.nuage_network_client.create_netpartition(name)
+        try:
+            body = self.nuage_network_client.create_netpartition(name)
+        except AssertionError:
+            self.skipTest('Skip-Because: VSD-34554')
         netpartition = body['net_partition']
-
-        cls.addClassResourceCleanup(
+        self.addCleanup(
             test_utils.call_and_ignore_notfound_exc,
-            cls.nuage_network_client.delete_netpartition,
+            self.nuage_network_client.delete_netpartition,
             netpartition['id'])
         return netpartition
 

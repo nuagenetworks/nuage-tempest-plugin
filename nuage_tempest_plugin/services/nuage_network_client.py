@@ -23,6 +23,7 @@ from six.moves.urllib import parse as urlparse
 
 from tempest.lib.common import rest_client as service_client
 from tempest.lib.common.utils import data_utils
+from tempest.lib.exceptions import ServerFault
 
 from nuage_tempest_plugin.lib.topology import Topology
 import nuage_tempest_plugin.lib.utils.constants as constants
@@ -274,8 +275,14 @@ class NuageNetworkClientJSON(service_client.RestClient):
         post_body = {'net_partition': kwargs}
         post_body['net_partition']['name'] = name
         body = json.dumps(post_body)
-        uri = '%s/net-partitions' % (self.uri_prefix)
-        resp, body = self.post(uri, body)
+        uri = '%s/net-partitions' % self.uri_prefix
+        try:
+            resp, body = self.post(uri, body)
+        except ServerFault:  # this probably should eventually be done
+            #                  generically, inside the post method
+            resp = {
+                'status': 500
+            }
         self.expected_success(201, resp.status)
         body = json.loads(body)
         return service_client.ResponseBody(resp, body)
