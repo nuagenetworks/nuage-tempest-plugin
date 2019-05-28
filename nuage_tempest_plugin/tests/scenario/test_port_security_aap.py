@@ -14,8 +14,6 @@
 
 from netaddr import IPNetwork
 
-from tempest.lib import decorators
-
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import data_utils
@@ -57,7 +55,7 @@ class PortSecAAPTest(NuageBaseTest):
         server = self.create_tenant_server(
             ports=ports,
             make_reachable=True)
-        return (server, server.associated_fip)
+        return server, server.associated_fip
 
     def _setup_resources(self, is_l2=False):
         # setup basic topology for servers we can log into
@@ -155,10 +153,8 @@ class PortSecAAPTest(NuageBaseTest):
             interface=port_for_aap['fixed_ips'][0]['ip_address'],
             address=servers[1]['test_port']['fixed_ips'][0]['ip_address'])
 
-    @decorators.attr(type='smoke')
     def test_port_security_aap_l3(self):
         self._test_port_security_aap()
 
-    @decorators.attr(type='smoke')
     def test_port_security_aap_l2(self):
         self._test_port_security_aap(is_l2=True)

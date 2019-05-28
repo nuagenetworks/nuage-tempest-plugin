@@ -65,7 +65,6 @@ class Ipv4VsdManagedConnectivityTest(NuageBaseTest):
         # Test IPv4 connectivity between peer servers
         self.assert_ping(server1, server2, network)
 
-    @decorators.attr(type='smoke')
     def test_icmp_connectivity_l3_vsd_managed_link_shared_subnet(self):
         # Provision shared dualstack subnet in shared infrastructure
         shared_vsd_l3domain_template = self.vsd_create_l3domain_template(

@@ -15,7 +15,6 @@
 import testtools
 
 from tempest.common import utils as tutils
-from tempest.lib import decorators
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
@@ -58,7 +57,7 @@ class TrunkTest(NuageBaseTest):
         server = self.create_tenant_server(
             ports=[port],
             make_reachable=True)
-        return (server, server.associated_fip)
+        return server, server.associated_fip
 
     def _is_port_down(self, port_id):
         p = self.plugin_network_client.show_port(port_id)['port']
@@ -105,7 +104,6 @@ class TrunkTest(NuageBaseTest):
             security_group=self.secgroup,
             direction='ingress', ethertype='IPv4', protocol='tcp')
 
-    @decorators.attr(type='smoke')
     def test_trunk_subport_lifecycle(self):
         """Test trunk creation and subport transition to ACTIVE status.
 

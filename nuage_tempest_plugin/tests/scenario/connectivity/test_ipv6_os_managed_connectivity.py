@@ -141,8 +141,6 @@ class Ipv6OsManagedConnectivityTest(nuage_test.NuageBaseTest):
         # Test IPv6 connectivity between peer servers
         self.assert_ping(server1, server2, networkv6_2, ip_type=6)
 
-    @decorators.attr(type='smoke')
-    @nuage_test.skip_because(reason='the test is not stable')
     def test_icmp_connectivity_os_managed_dualstack_128_sg_prefix(self):
         # Provision OpenStack network
         network = self.create_network()

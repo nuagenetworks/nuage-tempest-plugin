@@ -9,7 +9,6 @@ from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
 from netaddr import IPNetwork
-from tempest.test import decorators
 import testtools
 
 CONF = Topology.get_conf()
@@ -38,7 +37,6 @@ class VlanTransparentConnectivityTest(NuageBaseTest):
     @testtools.skipUnless(
         CONF.nuage_sut.image_is_advanced,
         "Advanced image is required to run this test.")
-    @decorators.attr(type='smoke')
     def test_l2_transparent_network(self):
         kwargs = {
             'vlan_transparent': 'true'
