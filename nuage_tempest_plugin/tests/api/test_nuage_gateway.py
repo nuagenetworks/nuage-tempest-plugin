@@ -670,11 +670,13 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
                          'defaultPG-VRSG-BRIDGE-' + vport['subnet'])
 
         if Topology.within_ext_id_release():
-            # must have external ID as subnet@ cms_id
+            # must have external ID as network_id @ cms_id
+            # TODO(lina) OPENSTACK-2370
+            # change to use the same externalID of PG_FOR_LESS
             self.assertThat(default_pg[0],
                             ContainsDict(
                                 {'externalID':
-                                 Equals(ExternalId(self.subnet['id']
+                                 Equals(ExternalId(self.subnet['network_id']
                                                    ).at_cms_id())}))
         else:
             self.assertThat(default_pg[0],
@@ -707,11 +709,14 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
                 nuage_eacl_template[0]['ID'])
 
         if Topology.within_ext_id_release():
-            # must have external ID as router_id @ cms_id
+            # must have external ID as network_id @ cms_id
+            # TODO(lina) OPENSTACK-2370
+            # change to use the same externalID of PG_FOR_LESS
             self.assertThat(nuage_eacl_entrytemplate[0],
                             ContainsDict({'externalID':
-                                         Equals(ExternalId(self.subnet['id']
-                                                           ).at_cms_id())}))
+                                         Equals(ExternalId(
+                                             self.subnet['network_id']
+                                         ).at_cms_id())}))
         else:
             self.assertThat(nuage_eacl_entrytemplate[0],
                             ContainsDict({'externalID': Equals(None)}))
@@ -720,11 +725,13 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         for nuage_eacl_entry in nuage_eacl_entrytemplate:
             if nuage_eacl_entry['locationID'] == default_pg[0]['ID']:
                 if Topology.within_ext_id_release():
-                    # must have external ID as ???
+                    # must have external ID as network_id @ cms_id
+                    # TODO(lina) OPENSTACK-2370
+                    # change to use the same externalID of PG_FOR_LESS
                     self.assertThat(nuage_eacl_entry,
                                     ContainsDict({'externalID':
                                                  Equals(ExternalId(
-                                                     self.subnet['id']
+                                                     self.subnet['network_id']
                                                  ).at_cms_id())}))
                 else:
                     self.assertThat(nuage_eacl_entry,
@@ -763,11 +770,13 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
                 nuage_iacl_template[0]['ID'])
 
         if Topology.within_ext_id_release():
-            # must have external ID as router_id @ cms_id
+            # must have external ID as network_id @ cms_id
+            # TODO(lina) OPENSTACK-2370
+            # change to use the same externalID of PG_FOR_LESS
             self.assertThat(nuage_iacl_entrytemplate[0],
-                            ContainsDict({'externalID':
-                                         Equals(ExternalId(self.subnet['id']
-                                                           ).at_cms_id())}))
+                            ContainsDict({'externalID': Equals(
+                                ExternalId(self.subnet['network_id']
+                                           ).at_cms_id())}))
         else:
             self.assertThat(nuage_iacl_entrytemplate[0],
                             ContainsDict({'externalID': Equals(None)}))
@@ -776,11 +785,13 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         for nuage_iacl_entry in nuage_iacl_entrytemplate:
             if nuage_iacl_entry['locationID'] == default_pg[0]['ID']:
                 if Topology.within_ext_id_release():
-                    # must have external ID as ???
+                    # must have external ID as network_id @ cms_id
+                    # TODO(lina) OPENSTACK-2370
+                    # change to be the same externalID of PG_FOR_LESS
                     self.assertThat(nuage_iacl_entry,
                                     ContainsDict({'externalID':
                                                  Equals(ExternalId(
-                                                     self.subnet['id']
+                                                     self.subnet['network_id']
                                                  ).at_cms_id())}))
                 else:
                     self.assertThat(nuage_iacl_entry,
