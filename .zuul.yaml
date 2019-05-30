@@ -1,3 +1,61 @@
+- job:
+    name: devstack-tempest
+    parent: base-minimal
+    # parent: devstack
+    description: |
+      Base Tempest job.
+
+      This Tempest job provides the base for both the single and multi-node
+      test setup. To run a multi-node test inherit from devstack-tempest and
+      set the nodeset to a multi-node one.
+    required-projects:
+      - opendev.org/openstack/tempest
+    timeout: 7200
+    roles:
+      - zuul: opendev.org/openstack/devstack
+      - zuul: opendev.org/openstack/tempest
+    vars:
+      devstack_services:
+        tempest: true
+      devstack_local_conf:
+        test-config:
+          $TEMPEST_CONFIG:
+            compute:
+              min_compute_nodes: "{{ groups['compute'] | default(['controller']) | length }}"
+      test_results_stage_name: test_results
+      zuul_copy_output:
+        '{{ devstack_base_dir }}/tempest/etc/tempest.conf': logs
+        '{{ devstack_base_dir }}/tempest/etc/accounts.yaml': logs
+        '{{ devstack_base_dir }}/tempest/tempest.log': logs
+        '{{ stage_dir }}/{{ test_results_stage_name }}.subunit': logs
+        '{{ stage_dir }}/{{ test_results_stage_name }}.html': logs
+        '{{ stage_dir }}/stackviz': logs
+      extensions_to_txt:
+        conf: true
+        log: true
+        yaml: true
+        yml: true
+    run: playbooks/devstack-tempest.yaml
+    post-run: playbooks/post-tempest.yaml
+
+- job:
+    name: tempest-full
+    parent: devstack-tempest
+    # This currently works from stable/pike on.
+    # Before stable/pike, legacy version of tempest-full
+    # 'legacy-tempest-dsvm-neutron-full' run.
+    branches: ^(?!stable/(newton|ocata)).*$
+    description: |
+      Base integration test with Neutron networking and py27.
+      Former names for this job where:
+        * legacy-tempest-dsvm-neutron-full
+        * gate-tempest-dsvm-neutron-full-ubuntu-xenial
+    vars:
+      tox_envlist: full
+      devstack_localrc:
+        ENABLE_FILE_INJECTION: true
+        ENABLE_VOLUME_MULTIATTACH: true
+
 - project:
     check:
       jobs:
