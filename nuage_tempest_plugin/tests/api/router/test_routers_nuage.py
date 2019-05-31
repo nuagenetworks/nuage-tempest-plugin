@@ -351,10 +351,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
         netpart = {
             'net_partition': netpart_name
         }
-        try:
-            netpart_body = self.client.create_netpartition(netpart_name)
-        except AssertionError:
-            self.skipTest('Skip-Because: VSD-34554')
+        netpart_body = self.client.create_netpartition(netpart_name)
         self.addCleanup(self.client.delete_netpartition,
                         netpart_body['net_partition']['id'])
 

@@ -94,10 +94,7 @@ class ExternalIdForNetworkMacroTest(base.BaseAdminNetworkTest):
 
     def _create_netpartition(self):
         name = data_utils.rand_name('netpartition')
-        try:
-            body = self.nuage_network_client.create_netpartition(name)
-        except AssertionError:
-            self.skipTest('Skip-Because: VSD-34554')
+        body = self.nuage_network_client.create_netpartition(name)
         netpartition = body['net_partition']
         self.addCleanup(
             test_utils.call_and_ignore_notfound_exc,
