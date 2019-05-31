@@ -23,7 +23,7 @@ from six.moves.urllib import parse as urlparse
 
 from tempest.lib.common import rest_client as service_client
 from tempest.lib.common.utils import data_utils
-from tempest.lib.exceptions import ServerFault
+from tempest.lib import exceptions
 
 from nuage_tempest_plugin.lib.topology import Topology
 import nuage_tempest_plugin.lib.utils.constants as constants
@@ -278,11 +278,11 @@ class NuageNetworkClientJSON(service_client.RestClient):
         uri = '%s/net-partitions' % self.uri_prefix
         try:
             resp, body = self.post(uri, body)
-        except ServerFault:  # this probably should eventually be done
-            #                  generically, inside the post method
-            resp = {
-                'status': 500
-            }
+        except exceptions.ServerFault:  # should this be generally applied in
+            #                             the post method?
+            msg = ("Unexpected http success status code {}. "
+                   "The expected status code is {}".format(500, 201))
+            raise exceptions.InvalidHttpSuccessCode(msg)
         self.expected_success(201, resp.status)
         body = json.loads(body)
         return service_client.ResponseBody(resp, body)
