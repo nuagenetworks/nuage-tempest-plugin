@@ -1,0 +1,25 @@
+- project:
+    templates:
+      - openstack-python35-jobs
+    check:
+      jobs:
+        - openstack-tox-pep8
+        - networking-nuage-tempest-smoke-py3
+    gate:
+      jobs:
+        - openstack-tox-pep8
+        - networking-nuage-tempest-smoke-py3
+    full:
+      jobs:
+        - networking-nuage-tempest-full-py3
+    agent:
+      jobs:
+        - networking-nuage-tempest-qdhcp
+    sriov:
+      jobs:
+        - networking-nuage-tempest-sriov
+        - networking-nuage-tempest-sriov-flat-vlan
+    switchdev:
+      jobs:
+        - networking-nuage-tempest-sriov-switchdev
+
