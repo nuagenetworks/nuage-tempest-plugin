@@ -56,16 +56,13 @@ class NetpartitionsTest(NuageAdminNetworksTest):
         return network
 
     def create_netpartition(self, name):
-        try:
-            body = self.client.create_netpartition(name)
-        except AssertionError:
-            self.skipTest('Skip-Because: VSD-34554')
+        body = self.client.create_netpartition(name)
         self.assertEqual('201', body.response['status'])
         netpart = body['net_partition']
         self.assertEqual(name, netpart['name'])
         return netpart
 
-    @decorators.attr(type='smoke')
+    # @decorators.attr(type='smoke')
     def test_create_list_verify_delete_netpartition(self):
         name = data_utils.rand_name('tempest-np')
         netpart = self.create_netpartition(name)
@@ -73,7 +70,7 @@ class NetpartitionsTest(NuageAdminNetworksTest):
             net_partition = self.nuage_client.get_global_resource(
                 resource=constants.NET_PARTITION,
                 filters='externalID',
-                filter_value=netpart['id'] + '@openstack')
+                filter_value=name + '@openstack')
             self.assertEqual(name, net_partition[0]['name'])
             default_l2dom_template = self.nuage_client.get_resource(
                 resource=constants.L2_DOMAIN_TEMPLATE,

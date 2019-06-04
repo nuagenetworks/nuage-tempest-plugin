@@ -75,10 +75,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
     def create_netpartition(self, np_name=None):
         """Wrapper utility that returns a test network."""
         np_name = np_name or data_utils.rand_name('tempest-np-')
-        try:
-            body = self.client.create_netpartition(np_name)
-        except AssertionError:
-            self.skipTest('Skip-Because: VSD-34554')
+        body = self.client.create_netpartition(np_name)
         netpartition = body['net_partition']
         self.net_partitions.append(netpartition)
         return netpartition
@@ -404,10 +401,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
     def test_link_subnet_with_diff_netpartition_l2(self):
         # link l2domain on VSD in different net-partition
         netpart_name = data_utils.rand_name('netpart-')
-        try:
-            netpart = self.create_netpartition(netpart_name)
-        except AssertionError:
-            self.skipTest('Skip-Because: VSD-34554')
+        netpart = self.create_netpartition(netpart_name)
         self.link_subnet_l2(net_partition=netpart)
 
     @nuage_test.header(tags=['smoke'])
