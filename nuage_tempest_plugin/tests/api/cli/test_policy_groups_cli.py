@@ -366,7 +366,7 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
         cidr4 = IPNetwork('1.1.20.0/24')
         cidr6 = IPNetwork("2001:5f74:1111:b82e::/64")
         vsd_l3_domain_x, vsd_l3_subnet_x = self._given_vsd_l3subnet(
-            cidr4=cidr4, cidr6=cidr6, dhcp_managed=True)
+            cidr4=cidr4, cidr6=cidr6, enable_dhcpv4=True)
         cli_network_x, cli_subnet4_x, cli_subnet6_x = \
             self._cli_create_os_l2_vsd_managed_dualstack_subnet(
                 vsd_l3_subnet_x)
@@ -477,7 +477,7 @@ class VSDManagedPolicyGroupsCliTest(BaseNuageNetworksCliTestCase,
         cidr4 = IPNetwork('1.1.20.0/24')
         cidr6 = IPNetwork("2001:5f74:1111:b82e::/64")
         vsd_l3_domain, vsd_l3_subnet = self._given_vsd_l3subnet(
-            cidr4=cidr4, cidr6=cidr6, dhcp_managed=True)
+            cidr4=cidr4, cidr6=cidr6, enable_dhcpv4=True)
         cli_network, cli_subnet4, cli_subnet6 = \
             self._cli_create_os_l2_vsd_managed_dualstack_subnet(vsd_l3_subnet)
 
