@@ -954,14 +954,14 @@ class NuageRestClient(object):
     def create_ingress_acl(self):
         pass
 
-    def get_ingressacl_entytemplate(self, parent, parent_id,
-                                    filters=None, filter_value=None):
+    def get_ingressacl_entrytemplate(self, parent, parent_id,
+                                     filters=None, filter_value=None):
         return self.get_child_resource(parent, parent_id,
                                        constants.INGRESS_ACL_ENTRY_TEMPLATE,
                                        filters, filter_value)
 
-    def get_egressacl_entytemplate(self, parent, parent_id,
-                                   filters=None, filter_value=None):
+    def get_egressacl_entrytemplate(self, parent, parent_id,
+                                    filters=None, filter_value=None):
         return self.get_child_resource(parent, parent_id,
                                        constants.EGRESS_ACL_ENTRY_TEMPLATE,
                                        filters, filter_value)

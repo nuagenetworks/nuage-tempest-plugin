@@ -85,6 +85,7 @@ CIDR_TO_NETMASK = {
 }
 
 PROTO_NAME_TO_NUM = {
+    # protocols
     'ah': '51',
     'dccp': '33',
     'egp': '8',
@@ -108,6 +109,7 @@ PROTO_NAME_TO_NUM = {
     'udp': '17',
     'udplite': '136',
     'vrrp': '112',
+    # ether types
     'IPv4': '0x0800',
     'IPv6': '0x86DD'
 }

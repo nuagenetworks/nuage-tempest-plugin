@@ -101,7 +101,7 @@ class SecurityGroupsTopology(object):
     def vsd_egress_acl_entries(self):
         if not getattr(self, '_vsd_egress_acl_entries', False):
             self._vsd_egress_acl_entries = \
-                self.vsd_client.get_egressacl_entytemplate(
+                self.vsd_client.get_egressacl_entrytemplate(
                     constants.EGRESS_ACL_TEMPLATE,
                     self.vsd_egress_acl_template['ID'])
             if not self._vsd_egress_acl_entries:
@@ -121,7 +121,7 @@ class SecurityGroupsTopology(object):
     def vsd_ingress_acl_entries(self):
         if not getattr(self, '_vsd_ingress_acl_entries', False):
             self._vsd_ingress_acl_entries = \
-                self.vsd_client.get_ingressacl_entytemplate(
+                self.vsd_client.get_ingressacl_entrytemplate(
                     constants.INGRESS_ACL_TEMPLATE,
                     self.vsd_ingress_acl_template['ID'])
             if not self._vsd_ingress_acl_entries:

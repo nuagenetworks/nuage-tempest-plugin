@@ -617,7 +617,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
             n_constants.DOMAIN,
             l3domain[0]['ID'])
         nuage_eacl_entrytemplate = \
-            self.nuage_client.get_egressacl_entytemplate(
+            self.nuage_client.get_egressacl_entrytemplate(
                 n_constants.EGRESS_ACL_TEMPLATE,
                 nuage_eacl_template[0]['ID'])
         vport_tp_pg_mapping = False
@@ -704,7 +704,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
                             ContainsDict({'externalID': Equals(None)}))
 
         nuage_eacl_entrytemplate = \
-            self.nuage_client.get_egressacl_entytemplate(
+            self.nuage_client.get_egressacl_entrytemplate(
                 n_constants.EGRESS_ACL_TEMPLATE,
                 nuage_eacl_template[0]['ID'])
 
@@ -765,7 +765,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
                             ContainsDict({'externalID': Equals(None)}))
 
         nuage_iacl_entrytemplate = \
-            self.nuage_client.get_ingressacl_entytemplate(
+            self.nuage_client.get_ingressacl_entrytemplate(
                 n_constants.INGRESS_ACL_TEMPLATE,
                 nuage_iacl_template[0]['ID'])
 
@@ -853,7 +853,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
             n_constants.DOMAIN,
             l3domain[0]['ID'])
         nuage_eacl_entrytemplate = \
-            self.nuage_client.get_egressacl_entytemplate(
+            self.nuage_client.get_egressacl_entrytemplate(
                 n_constants.EGRESS_ACL_TEMPLATE,
                 nuage_eacl_template[0]['ID'])
         vport_tp_pg_mapping = False
@@ -912,7 +912,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
             n_constants.DOMAIN,
             l3domain[0]['ID'])
         nuage_eacl_entrytemplate = \
-            self.nuage_client.get_egressacl_entytemplate(
+            self.nuage_client.get_egressacl_entrytemplate(
                 n_constants.EGRESS_ACL_TEMPLATE,
                 nuage_eacl_template[0]['ID'])
         vport_tp_pg_mapping = False

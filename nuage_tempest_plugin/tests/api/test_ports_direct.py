@@ -166,7 +166,7 @@ class SriovTopology(object):
     def vsd_egress_acl_entries(self):
         if not getattr(self, '_vsd_egress_acl_entries', False):
             self._vsd_egress_acl_entries = \
-                self.vsd_client.get_egressacl_entytemplate(
+                self.vsd_client.get_egressacl_entrytemplate(
                     constants.EGRESS_ACL_TEMPLATE,
                     self.vsd_egress_acl_template['ID'])
         return self._vsd_egress_acl_entries

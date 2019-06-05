@@ -93,14 +93,14 @@ class NuageExtSecGroup(test_security_groups_nuage.SecGroupTestNuageBase):
                                        l3domain[0]['ID'])
             if not isList:
                 nuage_entrytemplate = self.nuageclient.\
-                    get_egressacl_entytemplate(
+                    get_egressacl_entrytemplate(
                         constants.EGRESS_ACL_TEMPLATE,
                         nuage_eacl_template[0]['ID'],
                         filters='ID',
                         filter_value=ext_sg_rule['id'])
             else:
                 nuage_entrytemplate = self.nuageclient.\
-                    get_egressacl_entytemplate(
+                    get_egressacl_entrytemplate(
                         constants.EGRESS_ACL_TEMPLATE,
                         nuage_eacl_template[0]['ID'])
         else:
@@ -110,14 +110,14 @@ class NuageExtSecGroup(test_security_groups_nuage.SecGroupTestNuageBase):
                     l3domain[0]['ID'])
             if not isList:
                 nuage_entrytemplate = self.nuageclient.\
-                    get_ingressacl_entytemplate(
+                    get_ingressacl_entrytemplate(
                         constants.INGRESS_ACL_TEMPLATE,
                         nuage_iacl_template[0]['ID'],
                         filters='ID',
                         filter_value=ext_sg_rule['id'])
             else:
                 nuage_entrytemplate = self.nuageclient. \
-                    get_ingressacl_entytemplate(
+                    get_ingressacl_entrytemplate(
                         constants.INGRESS_ACL_TEMPLATE,
                         nuage_iacl_template[0]['ID'])
         return nuage_entrytemplate

@@ -33,7 +33,13 @@ CONF = Topology.get_conf()
 
 
 class SecGroupTestNuageBase(base.BaseSecGroupTest):
+
     _tenant_network_cidr = CONF.network.project_network_cidr
+
+    # ICMP types/codes under test
+    # list of tuples of (ICMP type, ICMP code, stateful ACL @ VSD expected)
+    _icmp_type_codes = [(None, None, False), (69, 0, False), (8, 0, True)]
+
     nuage_any_domain = None
     nuage_domain_type = None
 
@@ -42,16 +48,18 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
         super(SecGroupTestNuageBase, cls).setup_clients()
         cls.nuage_client = NuageRestClient()
 
-    def _create_verify_security_group_rule(self, nuage_domains=None, **kwargs):
+    def _create_verify_security_group_rule(self, nuage_domains=None,
+                                           expected_stateful=True, **kwargs):
         sec_group_rule = self.security_group_rules_client \
             .create_security_group_rule(**kwargs)
         if nuage_domains:
             for nuage_domain in nuage_domains:
                 self._verify_nuage_acl(
                     sec_group_rule.get('security_group_rule'),
-                    nuage_domain)
+                    nuage_domain, expected_stateful=expected_stateful)
         else:
-            self._verify_nuage_acl(sec_group_rule.get('security_group_rule'))
+            self._verify_nuage_acl(sec_group_rule.get('security_group_rule'),
+                                   expected_stateful=expected_stateful)
 
     def _create_nuage_port_with_security_group(self, sg_id, nw_id):
         post_body = {"network_id": nw_id,
@@ -110,31 +118,75 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
             self.assertEqual(ent_net_macro[0]['externalID'],
                              ent_net_macro[0]['parentID'] + '@openstack')
 
-    def _get_nuage_acl_entry_template(self, sec_group_rule, nuage_domain=None):
+    def _get_nuage_acl_entry_template(self, sec_group_rule, nuage_domain=None,
+                                      reverse=False):
         if not nuage_domain:
             nuage_domain = self.nuage_any_domain
-        if sec_group_rule['direction'] == 'ingress':
+
+        if reverse:
+            # if meant to retrieve the reverse rule (~ some of icmp type)
+            # reverse the OS/VSP reverse logic, so egress stays egress
+            fetch_egress = sec_group_rule['direction'] == 'egress'
+        else:
+            # normal condition
+            # OS and VSP have reversed logic, so ingress becomes egress
+            fetch_egress = sec_group_rule['direction'] == 'ingress'
+
+        if fetch_egress:
             nuage_eacl_template = self.nuage_client. \
                 get_egressacl_template(self.nuage_domain_type,
                                        nuage_domain[0]['ID'])
-            nuage_eacl_entrytemplate = self.nuage_client. \
-                get_egressacl_entytemplate(n_constants.EGRESS_ACL_TEMPLATE,
-                                           nuage_eacl_template[0]['ID'],
-                                           filters='externalID',
-                                           filter_value=sec_group_rule['id'])
-            return nuage_eacl_entrytemplate
+            nuage_eacl_entry_template = self.nuage_client. \
+                get_egressacl_entrytemplate(n_constants.EGRESS_ACL_TEMPLATE,
+                                            nuage_eacl_template[0]['ID'],
+                                            filters='externalID',
+                                            filter_value=sec_group_rule['id'])
+            return nuage_eacl_entry_template
         else:
             nuage_iacl_template = self.nuage_client. \
                 get_ingressacl_template(self.nuage_domain_type,
                                         nuage_domain[0]['ID'])
-            nuage_iacl_entrytemplate = self.nuage_client. \
-                get_ingressacl_entytemplate(n_constants.INGRESS_ACL_TEMPLATE,
-                                            nuage_iacl_template[0]['ID'],
-                                            filters='externalID',
-                                            filter_value=sec_group_rule['id'])
-            return nuage_iacl_entrytemplate
 
-    def _verify_nuage_acl(self, sec_group_rule, nuage_domain=None):
+            nuage_iacl_entry_template = self.nuage_client. \
+                get_ingressacl_entrytemplate(n_constants.INGRESS_ACL_TEMPLATE,
+                                             nuage_iacl_template[0]['ID'],
+                                             filters='externalID',
+                                             filter_value=sec_group_rule['id'])
+            return nuage_iacl_entry_template
+
+    def _verify_reverse_acl_entry_template(self, sec_group_rule,
+                                           stateful=True, nuage_domain=None):
+        nuage_reverse_entry_template = self._get_nuage_acl_entry_template(
+            sec_group_rule, nuage_domain, reverse=True)
+
+        # for stateful security groups (normal case),
+        # if VSP supports the protocol as stateful (normal case), we don't
+        # program a reverse rule;
+        # if VSP doesn't support stateful (some of icmp), we do.
+
+        if stateful:
+            self.assertEqual(0, len(nuage_reverse_entry_template),
+                             'Didn\'t expect a reverse acl for stateful '
+                             'protocol/ethertype {}/{} [{}-{}] '
+                             'but found {}'.format(
+                                 sec_group_rule['protocol'],
+                                 sec_group_rule['ethertype'],
+                                 sec_group_rule['port_range_min'],
+                                 sec_group_rule['port_range_max'],
+                                 len(nuage_reverse_entry_template)))
+        else:
+            self.assertEqual(1, len(nuage_reverse_entry_template),
+                             'Expected a reverse acl for stateless '
+                             'protocol/ethertype {}/{} [{}-{}] '
+                             'but found {}'.format(
+                                 sec_group_rule['protocol'],
+                                 sec_group_rule['ethertype'],
+                                 sec_group_rule['port_range_min'],
+                                 sec_group_rule['port_range_max'],
+                                 len(nuage_reverse_entry_template)))
+
+    def _verify_nuage_acl(self, sec_group_rule, nuage_domain=None,
+                          expected_stateful=True):
 
         if sec_group_rule.get('remote_group_id'):
             self._verify_vsd_policy_grp(sec_group_rule['remote_group_id'],
@@ -145,26 +197,47 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
                                            sec_group_rule['ethertype'])
 
         nuage_acl_entry = self._get_nuage_acl_entry_template(
-            sec_group_rule, nuage_domain=nuage_domain)
+            sec_group_rule, nuage_domain)
         self.assertNotEmpty(nuage_acl_entry, "Did not find acl entry for sec"
                                              "group rule {} on "
                                              "VSD".format(sec_group_rule))
-        self.assertEqual(nuage_acl_entry[0]['externalID'],
-                         ExternalId(sec_group_rule['id']).at_cms_id())
+        self.assertEqual(ExternalId(sec_group_rule['id']).at_cms_id(),
+                         nuage_acl_entry[0]['externalID'])
+        # self.assertEqual(expected_stateful, nuage_acl_entry[0]['stateful'],
+        #                  'Unexpected stateful value {} for protocol/ethtype '
+        #                  '= {}/{} [{}-{}], expected {}'.format(
+        #                      nuage_acl_entry[0]['stateful'],
+        #                      sec_group_rule['protocol'],
+        #                      sec_group_rule['ethertype'],
+        #                      sec_group_rule['port_range_min'],
+        #                      sec_group_rule['port_range_max'],
+        #                      expected_stateful))
+        # self._verify_reverse_acl_entry_template(
+        #     sec_group_rule, expected_stateful, nuage_domain)
 
-        to_verify = ['protocol', 'etherType', 'sourcePort', 'destinationPort']
+        to_verify = ['etherType', 'protocol', 'sourcePort', 'destinationPort']
         expected = {}
         for parameter in to_verify:
             parm_value = nuage_acl_entry[0][parameter]
             if parm_value and parameter == 'etherType':
                 expected['ethertype'] = parm_value
             elif parm_value:
-                expected[parameter] = parm_value
+                if (expected['ethertype'] ==
+                        n_constants.PROTO_NAME_TO_NUM['IPv6'] and
+                        nuage_acl_entry[0][parameter] ==
+                        n_constants.PROTO_NAME_TO_NUM['ipv6-icmp']):
+                    expected[parameter] = [
+                        # neutron can be multiple options, they all map to
+                        # 58 in VSD
+                        n_constants.PROTO_NAME_TO_NUM['icmp'],
+                        n_constants.PROTO_NAME_TO_NUM['ipv6-icmp']]
+                else:
+                    expected[parameter] = parm_value
 
         for key, value in iteritems(expected):
-            if key in ['sourcePort']:
+            if key == 'sourcePort':
                 self.assertEqual(value, '*')
-            elif key in ['destinationPort']:
+            elif key == 'destinationPort':
                 if not sec_group_rule['port_range_max']:
                     self.assertEqual(value, '*')
                 elif sec_group_rule['port_range_max'] == \
@@ -176,6 +249,13 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
                         value,
                         str(sec_group_rule['port_range_min']) + '-' + str(
                             sec_group_rule['port_range_max']))
+            elif isinstance(value, list):
+                self.assertIn(n_constants.PROTO_NAME_TO_NUM[
+                              sec_group_rule[key]],
+                              value,
+                              "Field %s of the created security group "
+                              "rule does not match any of %s." %
+                              (key, value))
             else:
                 self.assertEqual(value,
                                  n_constants.PROTO_NAME_TO_NUM[
@@ -255,7 +335,10 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
                 self.assertEqual(value,
                                  show_rule_body['security_group_rule'][key],
                                  "%s does not match." % key)
-            self._verify_nuage_acl(rule_create_body['security_group_rule'])
+            self._verify_nuage_acl(
+                rule_create_body['security_group_rule'],
+                expected_stateful='icmp' not in protocol)
+
             # List rules and verify created rule is in response
             rule_list_body = (self.security_group_rules_client.
                               list_security_group_rules())
@@ -284,11 +367,13 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
             port_range_min=port_range_min,
             port_range_max=port_range_max)
 
-    def _test_create_security_group_rule_with_icmp_type_code(self):
+    def _test_create_security_group_rule_with_icmp_type_code(self,
+                                                             protocol,
+                                                             icmp_type_codes):
         """Verify security group rule for icmp protocol works.
 
         Specify icmp type (port_range_min) and icmp code
-        (port_range_max) with different values. A seperate testcase
+        (port_range_max) with different values. A separate testcase
         is added for icmp protocol as icmp validation would be
         different from tcp/udp.
         """
@@ -297,13 +382,18 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
             group_create_body['security_group']['id'], self.network['id'])
         sg_id = group_create_body['security_group']['id']
         direction = 'ingress'
-        protocol = 'icmp'
-        icmp_type_codes = [(3, 2), (2, 3), (3, 0), (2, None)]
-        for icmp_type, icmp_code in icmp_type_codes:
-            self._create_verify_security_group_rule(
-                security_group_id=sg_id, direction=direction,
-                ethertype=self.ethertype, protocol=protocol,
-                port_range_min=icmp_type, port_range_max=icmp_code)
+        for icmp_type, icmp_code, stateful in icmp_type_codes:
+            if icmp_type is not None and icmp_code is not None:
+                self._create_verify_security_group_rule(
+                    security_group_id=sg_id, direction=direction,
+                    ethertype=self.ethertype, protocol=protocol,
+                    port_range_min=icmp_type, port_range_max=icmp_code,
+                    expected_stateful=stateful)
+            else:
+                self._create_verify_security_group_rule(
+                    security_group_id=sg_id, direction=direction,
+                    ethertype=self.ethertype, protocol=protocol,
+                    expected_stateful=stateful)
 
     def _test_create_security_group_rule_with_remote_group_id(self):
         # Verify creating security group rule with remote_group_id works
@@ -503,6 +593,7 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
 
 
 class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
+
     @classmethod
     def resource_setup(cls):
         super(TestSecGroupTestNuageL2Domain, cls).resource_setup()
@@ -530,9 +621,9 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
     def test_create_security_group_rule_with_additional_args(self):
         self._test_create_security_group_rule_with_additional_args()
 
-    @decorators.attr(type='smoke')
     def test_create_security_group_rule_with_icmp_type_code(self):
-        self._test_create_security_group_rule_with_icmp_type_code()
+        self._test_create_security_group_rule_with_icmp_type_code(
+            'icmp', icmp_type_codes=self._icmp_type_codes)
 
     @decorators.attr(type='smoke')
     def test_create_security_group_rule_with_remote_group_id(self):
@@ -778,9 +869,9 @@ class TestSecGroupTestNuageL3Domain(SecGroupTestNuageBase):
     def test_create_security_group_rule_with_additional_args(self):
         self._test_create_security_group_rule_with_additional_args()
 
-    @decorators.attr(type='smoke')
     def test_create_security_group_rule_with_icmp_type_code(self):
-        self._test_create_security_group_rule_with_icmp_type_code()
+        self._test_create_security_group_rule_with_icmp_type_code(
+            'icmp', icmp_type_codes=self._icmp_type_codes)
 
     @decorators.attr(type='smoke')
     def test_create_security_group_rule_with_remote_group_id(self):
@@ -811,13 +902,21 @@ class TestSecGroupTestNuageL3Domain(SecGroupTestNuageBase):
             n_constants.MAX_SG_PER_PORT + 1, should_succeed=False)
 
 
-class SecGroupTestNuageL2DomainIPv6Test(SecGroupTestNuageBase):
+class SecGroupTestNuageBaseV6(SecGroupTestNuageBase):
+
     _ip_version = 6
     _project_network_cidr = CONF.network.project_network_v6_cidr
+
+    # ICMP types/codes under test
+    # list of tuples of (ICMP type, ICMP code, stateful ACL @ VSD expected)
+    _icmp_type_codes = [(None, None, False), (69, 0, False), (128, 0, True)]
 
     # TODO(KRIS) THIS NEEDS TO GO OUT BUT NEED TO FIGURE OUT HOW
     if netaddr.IPNetwork(CONF.network.project_network_v6_cidr).prefixlen < 64:
         _project_network_cidr = netaddr.IPNetwork('cafe:babe::/64')
+
+
+class SecGroupTestNuageL2DomainIPv6Test(SecGroupTestNuageBaseV6):
 
     @classmethod
     def resource_setup(cls):
@@ -838,14 +937,20 @@ class SecGroupTestNuageL2DomainIPv6Test(SecGroupTestNuageBase):
     def test_create_show_delete_security_group_rule(self):
         self._test_create_show_delete_security_group_rule(ipv6=True)
 
+    def test_create_security_group_rule_with_icmp_type_code_legacy(self):
+        self._test_create_security_group_rule_with_icmp_type_code(
+            'icmp', icmp_type_codes=self._icmp_type_codes)
 
-class SecGroupTestNuageL2DomainDualstackTest(SecGroupTestNuageBase):
-    _ip_version = 6
-    _project_network_cidr = CONF.network.project_network_v6_cidr
+    def test_create_security_group_rule_with_icmp_type_code_legacy_v6(self):
+        self._test_create_security_group_rule_with_icmp_type_code(
+            'icmpv6', icmp_type_codes=self._icmp_type_codes)
 
-    # TODO(KRIS) THIS NEEDS TO GO OUT BUT NEED TO FIGURE OUT HOW
-    if netaddr.IPNetwork(CONF.network.project_network_v6_cidr).prefixlen < 64:
-        _project_network_cidr = netaddr.IPNetwork('cafe:babe::/64')
+    def test_create_security_group_rule_with_icmp_type_code(self):
+        self._test_create_security_group_rule_with_icmp_type_code(
+            'ipv6-icmp', icmp_type_codes=self._icmp_type_codes)
+
+
+class SecGroupTestNuageL2DomainDualstackTest(SecGroupTestNuageBaseV6):
 
     @classmethod
     def resource_setup(cls):
@@ -867,14 +972,20 @@ class SecGroupTestNuageL2DomainDualstackTest(SecGroupTestNuageBase):
     def test_create_show_delete_security_group_rule(self):
         self._test_create_show_delete_security_group_rule(ipv6=True)
 
+    def test_create_security_group_rule_with_icmp_type_code_legacy(self):
+        self._test_create_security_group_rule_with_icmp_type_code(
+            'icmp', icmp_type_codes=self._icmp_type_codes)
 
-class SecGroupTestNuageL3DomainIPv6Test(SecGroupTestNuageBase):
-    _ip_version = 6
-    _project_network_cidr = CONF.network.project_network_v6_cidr
+    def test_create_security_group_rule_with_icmp_type_code_legacy_v6(self):
+        self._test_create_security_group_rule_with_icmp_type_code(
+            'icmpv6', icmp_type_codes=self._icmp_type_codes)
 
-    # TODO(KRIS) THIS NEEDS TO GO OUT BUT NEED TO FIGURE OUT HOW
-    if netaddr.IPNetwork(CONF.network.project_network_v6_cidr).prefixlen < 64:
-        _project_network_cidr = netaddr.IPNetwork('cafe:babe::/64')
+    def test_create_security_group_rule_with_icmp_type_code(self):
+        self._test_create_security_group_rule_with_icmp_type_code(
+            'ipv6-icmp', icmp_type_codes=self._icmp_type_codes)
+
+
+class SecGroupTestNuageL3DomainIPv6Test(SecGroupTestNuageBaseV6):
 
     @classmethod
     def resource_setup(cls):
@@ -917,14 +1028,20 @@ class SecGroupTestNuageL3DomainIPv6Test(SecGroupTestNuageBase):
     def test_create_show_delete_security_group_rule(self):
         self._test_create_show_delete_security_group_rule(ipv6=True)
 
+    def test_create_security_group_rule_with_icmp_type_code_legacy(self):
+        self._test_create_security_group_rule_with_icmp_type_code(
+            'icmp', icmp_type_codes=self._icmp_type_codes)
 
-class SecGroupTestNuageL3DomainDualstackTest(SecGroupTestNuageBase):
-    _ip_version = 6
-    _project_network_cidr = CONF.network.project_network_v6_cidr
+    def test_create_security_group_rule_with_icmp_type_code_legacy_v6(self):
+        self._test_create_security_group_rule_with_icmp_type_code(
+            'icmpv6', icmp_type_codes=self._icmp_type_codes)
 
-    # TODO(KRIS) THIS NEEDS TO GO OUT BUT NEED TO FIGURE OUT HOW
-    if netaddr.IPNetwork(CONF.network.project_network_v6_cidr).prefixlen < 64:
-        _project_network_cidr = netaddr.IPNetwork('cafe:babe::/64')
+    def test_create_security_group_rule_with_icmp_type_code(self):
+        self._test_create_security_group_rule_with_icmp_type_code(
+            'ipv6-icmp', icmp_type_codes=self._icmp_type_codes)
+
+
+class SecGroupTestNuageL3DomainDualstackTest(SecGroupTestNuageBaseV6):
 
     @classmethod
     def resource_setup(cls):
@@ -967,3 +1084,15 @@ class SecGroupTestNuageL3DomainDualstackTest(SecGroupTestNuageBase):
     @decorators.attr(type='smoke')
     def test_create_show_delete_security_group_rule(self):
         self._test_create_show_delete_security_group_rule(ipv6=True)
+
+    def test_create_security_group_rule_with_icmp_type_code_legacy(self):
+        self._test_create_security_group_rule_with_icmp_type_code(
+            'icmp', icmp_type_codes=self._icmp_type_codes)
+
+    def test_create_security_group_rule_with_icmp_type_code_legacy_v6(self):
+        self._test_create_security_group_rule_with_icmp_type_code(
+            'icmpv6', icmp_type_codes=self._icmp_type_codes)
+
+    def test_create_security_group_rule_with_icmp_type_code(self):
+        self._test_create_security_group_rule_with_icmp_type_code(
+            'ipv6-icmp', icmp_type_codes=self._icmp_type_codes)
