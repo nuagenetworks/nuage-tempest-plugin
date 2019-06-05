@@ -62,7 +62,7 @@ class NetpartitionsTest(NuageAdminNetworksTest):
         self.assertEqual(name, netpart['name'])
         return netpart
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_create_list_verify_delete_netpartition(self):
         name = data_utils.rand_name('tempest-np')
         netpart = self.create_netpartition(name)

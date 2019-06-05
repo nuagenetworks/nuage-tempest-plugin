@@ -489,7 +489,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
             nuagenet=vsd_l2dom[0]['ID'],
             net_partition=Topology.def_netpartition)
 
-    # @nuage_test.header(tags=['smoke'])
+    @nuage_test.header(tags=['smoke'])
     def test_link_subnet_with_disable_dhcp_unmanaged_l2(self):
         # create l2domain on VSD
         name = data_utils.rand_name('l2domain-')
