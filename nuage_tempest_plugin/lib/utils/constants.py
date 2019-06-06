@@ -116,8 +116,9 @@ IPV4_PROTO_NAME = ['ah', 'dccp', 'egp', 'esp', 'gre', 'icmp', 'igmp', 'ipip',
                    'ospf', 'pgm', 'rsvp', 'sctp', 'tcp', 'udp', 'udplite',
                    'vrrp']
 
-IPV6_PROTO_NAME = ['ipv6-encap', 'ipv6-frag', 'ipv6-icmp', 'icmpv6',
+IPV6_PROTO_NAME = ['ipv6-encap', 'ipv6-frag', 'ipv6-icmp',
                    'ipv6-nonxt', 'ipv6-opts', 'ipv6-route']
+IPV6_PROTO_NAME_LEGACY = 'icmpv6'
 
 # Application Designer
 APPLICATION_DOMAIN = 'application-domains'

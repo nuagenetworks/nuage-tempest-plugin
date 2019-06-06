@@ -228,13 +228,17 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
         self._create_nuage_port_with_security_group(security_group_id,
                                                     self.network['id'])
         if ipv6:
-            protocols = n_constants.IPV6_PROTO_NAME
+            if Topology.up_to_openstack('stein'):
+                protocols = (n_constants.IPV6_PROTO_NAME +
+                             [n_constants.IPV6_PROTO_NAME_LEGACY])
+            else:
+                # Train onwards, legacy is canonicalized
+                # https://review.opendev.org/#/c/453346/14
+                protocols = n_constants.IPV6_PROTO_NAME
         else:
             protocols = n_constants.IPV4_PROTO_NAME
         # Create rules for each protocol
         for protocol in protocols:
-            if protocol == 'ipip' and Topology.before_openstack('Queens'):
-                continue
             rule_create_body = (
                 self.security_group_rules_client.create_security_group_rule(
                     security_group_id=security_group_id,
