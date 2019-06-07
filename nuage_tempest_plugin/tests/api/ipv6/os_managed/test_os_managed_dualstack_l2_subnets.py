@@ -85,7 +85,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
         self.assertEqual(subnet['enable_dhcp'],
                          False, "IPv6 subnet MUST have enable_dhcp=FALSE")
         # TODO(waelj) VSD-20971 / VSD-21874
-        # self.assertFalse(vsd_l2_domain.dynamicIpv6Address,
+        # self.assertFalse(vsd_l2_domain.dualStackDynamicIPAllocation,
         #                  "VSD should not allocated IPv6 address")
 
     def _verify_ipv6_subnet_with_vsd_l2_domain_unmanaged(self, subnetv6,
@@ -103,7 +103,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
         self.assertEqual(subnetv6['enable_dhcp'],
                          False, "IPv6 subnet MUST have enable_dhcp=FALSE")
         # TODO(waelj) VSD-20971 / VSD-21874
-        # self.assertFalse(vsd_l2_domain.dynamicIpv6Address,
+        # self.assertFalse(vsd_l2_domain.dualStackDynamicIPAllocation,
         #                  "VSD should not allocated IPv6 address")
 
     # TODO(waelj) port to VSD helper
@@ -563,7 +563,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
             filter_value=[ipv4_subnet['network_id'], ipv4_subnet['cidr']])
         self.assertIsNotNone(vsd_l2_domain)
         self.assertIsNotNone(vsd_l2_domain[0])
-        self.assertFalse(vsd_l2_domain[0]['dynamicIpv6Address'],
+        self.assertFalse(vsd_l2_domain[0]['dualStackDynamicIPAllocation'],
                          "VSD should not allocated IPv6 address")
 
         # When I add an IPv6 subnet
@@ -580,7 +580,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
             filter_value=[ipv4_subnet['network_id'], ipv4_subnet['cidr']])[0]
         self.assertIsNotNone(vsd_l2_domain)
         self.assertIsNotNone(vsd_l2_domain)
-        self.assertFalse(vsd_l2_domain['dynamicIpv6Address'],
+        self.assertFalse(vsd_l2_domain['dualStackDynamicIPAllocation'],
                          "VSD should not allocated IPv6 address")
 
         # Allocated port for each address in the allocation pools
