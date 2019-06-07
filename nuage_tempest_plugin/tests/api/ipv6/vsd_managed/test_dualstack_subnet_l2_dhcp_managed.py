@@ -1,6 +1,6 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
-import bambou
+
 from netaddr import IPAddress
 from netaddr import IPNetwork
 from testtools.matchers import ContainsDict
@@ -9,8 +9,6 @@ from testtools.matchers import Equals
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as nuage_constants
-from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
-    import BaseVSDManagedNetworksIPv6Test
 from nuage_tempest_plugin.tests.api.ipv6.vsd_managed. \
     test_dualstack_subnet_l2_dhcp_unmanaged \
     import VSDManagedDualStackCommonBase
@@ -33,191 +31,6 @@ MSG_INVALID_INPUT_FOR_FIXED_IPS = "Invalid input for fixed_ips. " \
                                   "Reason: '%s' is not a valid IP address."
 MSG_INVALID_IP_ADDRESS_FOR_SUBNET = "IP address %s is not a valid IP for " \
                                     "the specified subnet."
-
-
-class VSDManagedDualStackL2DomainDHCPManagedTest(
-        BaseVSDManagedNetworksIPv6Test):
-
-    @decorators.attr(type='smoke')
-    def test_create_vsd_managed_l2domain_dhcp_managed_ipv4(self):
-        vsd_l2domain_template = self.vsd_create_l2domain_template(
-            dhcp_managed=True,
-            ip_type="IPV4",
-            cidr4=self.cidr4)
-
-        self._verify_vsd_l2domain_template(vsd_l2domain_template,
-                                           dhcp_managed=True,
-                                           ip_type='IPV4',
-                                           cidr4=self.cidr4,
-                                           ipv6_address=None,
-                                           ipv6_gateway=None)
-
-    @decorators.attr(type='smoke')
-    def test_create_vsd_managed_l2domain_dhcp_managed_dualstack(self):
-        vsd_l2domain_template = self.vsd_create_l2domain_template(
-            ip_type="DUALSTACK",
-            dhcp_managed=True,
-            cidr4=self.cidr4,
-            cidr6=self.cidr6,
-            gateway=self.gateway4,
-            gateway6=self.gateway6)
-
-        self._verify_vsd_l2domain_template(vsd_l2domain_template,
-                                           ip_type="DUALSTACK",
-                                           dhcp_managed=True,
-                                           cidr4=self.cidr4,
-                                           cidr6=self.cidr6,
-                                           ipv6_gateway=self.gateway6,
-                                           gateway=self.gateway4)
-
-    ###########################################################################
-    # Special cases
-    ###########################################################################
-    @decorators.attr(type='smoke')
-    def test_create_vsd_managed_l2domain_dhcp_managed_no_ip_type(self):
-        """test_create_vsd_managed_l2domain_dhcp_managed_no_ip_type
-
-        If not IPType is sent to VSD, by default IPV4 is selected.
-        The selected IPType appears in the VSD API response
-        """
-        vsd_l2domain_template = self.vsd_create_l2domain_template(
-            dhcp_managed=True,
-            cidr4=self.cidr4)
-
-        self._verify_vsd_l2domain_template(vsd_l2domain_template,
-                                           dhcp_managed=True,
-                                           ip_type='IPV4',
-                                           cidr4=self.cidr4,
-                                           ipv6_address=None,
-                                           ipv6_gateway=None)
-
-    ###########################################################################
-    # Negative cases
-    ###########################################################################
-    @decorators.attr(type='smoke')
-    @nuage_test.skip_because(bug="VSD-34068")
-    def test_vsd_l2domain_managed_unsupported_ip_type_neg(self):
-        self.assertRaisesRegex(
-            bambou.exceptions.BambouHTTPError,
-            "Invalid IP type",
-            self.vsd_create_l2domain_template,
-            dhcp_managed=True,
-            cidr4=self.cidr4,
-            cidr6=self.cidr6,
-            ip_type="IPV6")
-
-    @decorators.attr(type='smoke')
-    def test_vsd_l2domain_managed_unsupported_ip_type_no_addressing_neg(
-            self):
-        self.assertRaisesRegex(
-            bambou.exceptions.BambouHTTPError,
-            MSG_INVALID_ADDRESS,
-            self.vsd_create_l2domain_template,
-            dhcp_managed=True,
-            ip_type="MULTISTACK")
-
-    @decorators.attr(type='smoke')
-    def test_vsd_l2domain_managed_dualstack_with_only_ipv4_addressing_neg(
-            self):
-        self.assertRaisesRegex(
-            bambou.exceptions.BambouHTTPError,
-            MSG_INVALID_IPV6_ADDRESS,
-            self.vsd_create_l2domain_template,
-            dhcp_managed=True,
-            ip_type="DUALSTACK",
-            cidr4=self.cidr4,
-            cidr6=None)
-
-    @decorators.attr(type='smoke')
-    def test_vsd_l2domain_managed_dualstack_with_only_ipv6_addressing_neg(
-            self):
-        self.assertRaisesRegex(
-            bambou.exceptions.BambouHTTPError,
-            MSG_INVALID_ADDRESS,
-            self.vsd_create_l2domain_template,
-            dhcp_managed=True,
-            ip_type="DUALSTACK",
-            cidr4=None,
-            cidr6=self.cidr6)
-
-    @decorators.attr(type='smoke')
-    def test_l2domain_template_with_dhcp_management_should_have_ipv4_cidr_neg(
-            self):
-        """test_l2domain_template_with_dhcp_mgd_should_have_ipv4_cidr_neg
-
-        create l2domain on VSD with
-        - dhcp management
-        - no IPv4 addressing information
-        """
-
-        # no IPv4 nor IPv6 addressing information
-        self.assertRaises(
-            bambou.exceptions.BambouHTTPError,
-            self.vsd_create_l2domain_template,
-            dhcp_managed=True)
-
-        # no IPv6 addressing information for DUALSTACK
-        self.assertRaises(
-            bambou.exceptions.BambouHTTPError,
-            self.vsd_create_l2domain_template,
-            ip_type="DUALSTACK",
-            cidr6=self.cidr6,
-            dhcp_managed=True)
-
-    @decorators.attr(type='smoke')
-    def test_create_vsd_l2domain_template_dualstack_invalid_ipv6_neg(self):
-        invalid_ipv6 = [
-            # Caused-By: VSD-34209
-            # ('FE80::/8', 'FE80::1', MSG_INVALID_IPV6_NETMASK),
-            # Link local address
-            ("FF00:5f74:c4a5:b82e::/64",
-             "FF00:5f74:c4a5:b82e:ffff:ffff:ffff:ffff",
-             MSG_IP_ADDRESS_INVALID_OR_RESERVED),
-            # multicast
-            ('FF00::/8', 'FF00::1', MSG_IP_ADDRESS_INVALID_OR_RESERVED),
-            # multicast address
-            ('::/128', '::1', MSG_IP_ADDRESS_INVALID_OR_RESERVED),
-            # not specified address
-            # ('::/0', '', "Invalid IPv6 netmask"),  # Caused-By: VSD-34209
-            # empty string
-            # ('::/0', '::1', "Invalid IPv6 netmask"),  # Caused-By: VSD-34209
-            # invalid netmask
-            ("2001:5f74:c4a5:b82e::/64",
-             "2001:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
-             MSG_INVALID_IPV6_GATEWAY),
-            # valid address, invalid gateway - not in cidr
-            ("2001:5f74:c4a5:b82e::/64",
-             "2001:5f74:c4a5:b82e:ffff:ffff:ffff",
-             MSG_INVALID_IPV6_GATEWAY),
-            # valid address, invalid gateway - seven segments
-            ("2001:5f74:c4a5:b82e::/64",
-             "2001:5f74:c4a5:b82e:100.12.13.1",
-             MSG_INVALID_IPV6_GATEWAY),
-            # needs :: between hex and decimal part.
-            ("2001:5f74:c4a5:b82e::/129",
-             "2001:5f74:c4a5:b82e::0", MSG_INVALID_IPV6_ADDRESS)
-            # unsupported netmask
-        ]
-
-        failure_set = []
-        for ipv6_cidr, ipv6_gateway, msg in invalid_ipv6:
-            try:
-                self.vsd_create_l2domain_template(
-                    ip_type="DUALSTACK",
-                    cidr4=self.cidr4,
-                    dhcp_managed=True,
-                    ipv6_address=ipv6_cidr,
-                    ipv6_gateway=ipv6_gateway)
-            except bambou.exceptions.BambouHTTPError as e:
-                if msg in str(e):
-                    pass  # expected (negative test)
-                else:
-                    raise
-            else:
-                failure_set.append([ipv6_cidr, ipv6_gateway])
-
-        self.assertEmpty(failure_set, 'Invalid ipv6 addressed passed '
-                                      'unexpectedly')
 
 
 class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):

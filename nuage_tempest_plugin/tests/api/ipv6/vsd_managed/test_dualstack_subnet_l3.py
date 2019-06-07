@@ -1,6 +1,6 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
-import bambou
+
 from netaddr import IPAddress
 from netaddr import IPNetwork
 
@@ -267,40 +267,6 @@ class VSDManagedDualStackSubnetL3Test(BaseVSDManagedNetworksIPv6Test):
             enable_dhcp=False,
             nuagenet=vsd_l3domain_subnet.id,
             net_partition=Topology.def_netpartition)
-
-    @decorators.attr(type='smoke')
-    @nuage_test.skip_because(bug="VSD-34068")
-    def test_create_vsd_managed_l3domain_subnet_ipv6_neg(self):
-        name = data_utils.rand_name('l3domain-')
-        vsd_l3domain_template = self.vsd_create_l3domain_template(
-            name=name)
-        vsd_l3domain = self.vsd_create_l3domain(
-            name=name, template_id=vsd_l3domain_template.id)
-
-        self.assertEqual(vsd_l3domain.name, name)
-        zone_name = data_utils.rand_name('zone-')
-        vsd_zone = self.vsd_create_zone(name=zone_name,
-                                        domain=vsd_l3domain)
-
-        subnet_name = data_utils.rand_name('l3domain-subnet-')
-        subnet_cidr = IPNetwork('10.10.100.0/24')
-        subnet_gateway = str(IPAddress(subnet_cidr) + 1)
-
-        subnet_ipv6_cidr = IPNetwork("2001:5f74:c4a5:b82e::/64")
-        subnet_ipv6_gateway = str(IPAddress(subnet_ipv6_cidr) + 1)
-        self.assertRaisesRegex(
-            bambou.exceptions.BambouHTTPError,
-            "Invalid IP type",
-            self.create_vsd_subnet,
-            name=subnet_name,
-            zone=vsd_zone,
-            cidr4=subnet_cidr,
-            gateway4=subnet_gateway,
-            # cidr=None,
-            # gateway=None,
-            cidr6=subnet_ipv6_cidr,
-            gateway6=subnet_ipv6_gateway,
-            ip_type="IPV6")
 
     @decorators.attr(type='smoke')
     @nuage_test.header()
