@@ -152,7 +152,7 @@ class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
         self.assertEqual(s1['nuage_uplink'], s2['nuage_uplink'],
                          "Subnet not created with provided nuage_uplink")
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_nuage_network_update_to_external(self):
         """test_nuage_network_update_to_external
 

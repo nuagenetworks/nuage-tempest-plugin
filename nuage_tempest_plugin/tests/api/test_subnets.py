@@ -65,7 +65,7 @@ class SubnetsTest(NuageAdminNetworksTest):
                                subnet['id'],
                                **kwargs)
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_subnet_delete_in_network_with_nuage_dhcp_ports(self):
         network = self.create_network()
         subnet1 = self.create_subnet(network)
@@ -88,7 +88,7 @@ class SubnetsTest(NuageAdminNetworksTest):
         self.assertEqual(dhcp_ports[0]['fixed_ips'][0]['subnet_id'],
                          subnet2['id'])
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_subnet_update_dhcp_disabled_in_network_with_nuage_dhcp_ports(
             self):
         network = self.create_network()
