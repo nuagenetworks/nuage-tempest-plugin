@@ -215,12 +215,13 @@ class HeatVsdManagedPortAttributesTest(
 
         stack_name = 'port_attributes'
         l2_port_fixed_ip = str(IPAddress(l2_cidr) + 10)
-        l2_aap_fixed_ip = str(IPAddress(l2_port_fixed_ip) + 5)
+        # Originally without /32, but now HEAT requires CIDR for validation.
+        # Upstream bug: https://storyboard.openstack.org/#!/story/2005674
+        l2_aap_fixed_ip = str(IPAddress(l2_port_fixed_ip) + 5) + '/32'
         l2_aap_mac_address = VALID_MAC_ADDRESS
 
         l3_port_fixed_ip = str(IPAddress(l3_cidr) + 10)
-        # Originally without /32, but now HEAT requires CIDR for validation.
-        # Upstream bug: https://storyboard.openstack.org/#!/story/2005674
+        # Same here: https://storyboard.openstack.org/#!/story/2005674
         l3_aap_fixed_ip = str(IPAddress(l3_port_fixed_ip) + 5) + '/32'
         l3_aap_mac_address = VALID_MAC_ADDRESS
 
