@@ -28,6 +28,12 @@ class OsManagedSingleStackV4L2SubnetsTest(NuageBaseTest):
             vspk_filter='externalID == "{}"'.format(
                 ExternalId(subnet['network_id']).at_cms_id()))
         self._validate_dhcp_flag(vsd_l2_domain, False)
+        filters = {
+            'device_owner': 'network:dhcp:nuage',
+            'network_id': network['id']
+        }
+        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+        self.assertEqual(0, len(dhcp_ports))
 
         # change the name and verify it with vsd
         self.update_subnet(subnet, name="nametest")
@@ -44,6 +50,16 @@ class OsManagedSingleStackV4L2SubnetsTest(NuageBaseTest):
         self._validate_dhcp_flag(vsd_l2_domain, True)
         self.assertEqual(vsd_l2_domain.ip_type, 'IPV{}'.format(
             self._ip_version))
+        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+        self.assertEqual(1, len(dhcp_ports))
+        self.assertEqual(dhcp_ports[0]['fixed_ips'][0]['subnet_id'],
+                         subnet['id'])
+        if self._ip_version == 4:
+            self.assertEqual(dhcp_ports[0]['fixed_ips'][0]['ip_address'],
+                             vsd_l2_domain.gateway)
+        else:
+            self.assertEqual(dhcp_ports[0]['fixed_ips'][0]['ip_address'],
+                             vsd_l2_domain.ipv6_gateway)
 
         # disable dhcp and verify with vsd
         self.update_subnet(subnet, enable_dhcp=False)
@@ -51,6 +67,8 @@ class OsManagedSingleStackV4L2SubnetsTest(NuageBaseTest):
             vspk_filter='externalID == "{}"'.format(
                 ExternalId(subnet['network_id']).at_cms_id()))
         self._validate_dhcp_flag(vsd_l2_domain, False)
+        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+        self.assertEqual(0, len(dhcp_ports))
 
 
 class OsManagedSingleStackV6L2SubnetsTest(OsManagedSingleStackV4L2SubnetsTest):

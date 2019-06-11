@@ -80,6 +80,15 @@ class VSDManagedDualStackSubnetL3Test(BaseVSDManagedNetworksIPv6Test):
             enable_dhcp=False,
             nuagenet=vsd_l3domain_subnet.id,
             net_partition=Topology.def_netpartition)
+        filters = {
+            'device_owner': 'network:dhcp:nuage',
+            'network_id': ipv4_subnet['network_id']
+        }
+        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+        self.assertEqual(1, len(dhcp_ports))
+        self.assertEqual(1, len(dhcp_ports[0]['fixed_ips']))
+        self.assertEqual(dhcp_ports[0]['fixed_ips'][0]['subnet_id'],
+                         ipv4_subnet['id'])
 
         self.assertEqual(
             ipv6_subnet['cidr'], vsd_l3domain_subnet.ipv6_address)

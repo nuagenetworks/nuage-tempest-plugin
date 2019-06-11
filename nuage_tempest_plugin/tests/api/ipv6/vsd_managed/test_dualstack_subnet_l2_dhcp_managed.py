@@ -341,6 +341,12 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
 
         self.assertEqual(ipv6_subnet['cidr'],
                          vsd_l2domain_template.ipv6_address)
+        filters = {
+            'device_owner': 'network:dhcp:nuage',
+            'network_id': network['id']
+        }
+        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+        self.assertEqual(0, len(dhcp_ports))
 
         port = self.create_port(network)
         self._verify_port(port, subnet4=None, subnet6=ipv6_subnet,
@@ -359,6 +365,13 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
             nuagenet=vsd_l2domain.id,
             net_partition=self.net_partition)
         self.assertEqual(ipv4_subnet['cidr'], str(self.cidr4))
+        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+        self.assertEqual(1, len(dhcp_ports))
+        self.assertEqual(dhcp_ports[0]['fixed_ips'][0]['subnet_id'],
+                         ipv4_subnet['id'])
+        self.assertEqual(dhcp_ports[0]['fixed_ips'][0]['ip_address'],
+                         vsd_l2domain.gateway)
+
         # create a port in the network - IPAM by OS
         port = self.create_port(network)
         self._verify_port(port, subnet4=ipv4_subnet, subnet6=ipv6_subnet,
@@ -861,6 +874,7 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
                                    self.create_port, network, **port_args)
 
     # Telenor scenario with multiple vsd managed subnets in a network
+    @decorators.attr(type='smoke')
     def test_link_multi_l2domain_to_network_dualstack(self):
         net_name = data_utils.rand_name('multi-vsd-mgd-dualstack')
         network = self.create_network(network_name=net_name)
@@ -891,6 +905,16 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
             gateway=None,
             nuagenet=vsd_l2domain1.id,
             net_partition=Topology.def_netpartition)
+        filters = {
+            'device_owner': 'network:dhcp:nuage',
+            'network_id': network['id']
+        }
+        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+        self.assertEqual(1, len(dhcp_ports))
+        self.assertEqual(dhcp_ports[0]['fixed_ips'][0]['subnet_id'],
+                         v4_1['id'])
+        self.assertEqual(dhcp_ports[0]['fixed_ips'][0]['ip_address'],
+                         vsd_l2domain1.gateway)
         v6_1 = self.create_subnet(
             network,
             ip_version=6,
@@ -898,6 +922,12 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
             mask_bits=self.mask_bits6,
             nuagenet=vsd_l2domain1.id,
             net_partition=Topology.def_netpartition)
+        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+        self.assertEqual(1, len(dhcp_ports))
+        self.assertEqual(dhcp_ports[0]['fixed_ips'][1]['subnet_id'],
+                         v6_1['id'])
+        self.assertEqual(dhcp_ports[0]['fixed_ips'][1]['ip_address'],
+                         vsd_l2domain1.ipv6_gateway)
         if self.is_dhcp_agent_present():
             self.assertRaises(
                 exceptions.BadRequest,
@@ -925,6 +955,12 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
                 gateway=None,
                 nuagenet=vsd_l2domain2.id,
                 net_partition=Topology.def_netpartition)
+            dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+            self.assertEqual(2, len(dhcp_ports))
+            for dhcp_port in dhcp_ports:
+                if dhcp_port['fixed_ips'][0]['subnet_id'] == v4_2['id']:
+                    self.assertEqual(dhcp_port['fixed_ips'][0]['ip_address'],
+                                     vsd_l2domain2.gateway)
             v6_2 = self.create_subnet(
                 network,
                 ip_version=6,
@@ -932,6 +968,12 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
                 mask_bits=self.mask_bits6,
                 nuagenet=vsd_l2domain2.id,
                 net_partition=Topology.def_netpartition)
+            dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+            self.assertEqual(2, len(dhcp_ports))
+            for dhcp_port in dhcp_ports:
+                if dhcp_port['fixed_ips'][1]['subnet_id'] == v6_2['id']:
+                    self.assertEqual(dhcp_port['fixed_ips'][1]['ip_address'],
+                                     vsd_l2domain2.ipv6_gateway)
 
             # check ports
             # dualstack port of same l2domain
@@ -967,6 +1009,7 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
             )
 
     # Telenor scenario with multiple vsd managed subnets in a network
+    @decorators.attr(type='smoke')
     def test_link_multi_l2domain_to_network_mix_dualstack(self):
         net_name = data_utils.rand_name('multi-vsd-mgd-dualstack')
         network = self.create_network(network_name=net_name)
@@ -990,13 +1033,23 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
         vsd_l2domain2 = self.vsd_create_l2domain(
             template=vsd_l2domain_template2)
 
-        self.create_subnet(
+        v4_subnet = self.create_subnet(
             network,
             cidr=IPNetwork('10.0.0.0/24'),
             mask_bits=24,
             gateway=None,
             nuagenet=vsd_l2domain1.id,
             net_partition=Topology.def_netpartition)
+        filters = {
+            'device_owner': 'network:dhcp:nuage',
+            'network_id': network['id']
+        }
+        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+        self.assertEqual(1, len(dhcp_ports))
+        self.assertEqual(dhcp_ports[0]['fixed_ips'][0]['subnet_id'],
+                         v4_subnet['id'])
+        self.assertEqual(dhcp_ports[0]['fixed_ips'][0]['ip_address'],
+                         vsd_l2domain1.gateway)
         if self.is_dhcp_agent_present():
             self.assertRaises(
                 exceptions.BadRequest,
@@ -1008,13 +1061,20 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
                 nuagenet=vsd_l2domain2.id,
                 net_partition=Topology.def_netpartition)
         else:
-            self.create_subnet(
+            v6_subnet = self.create_subnet(
                 network,
                 ip_version=6,
                 cidr=IPNetwork('cbfe:babe::/64'),
                 mask_bits=64,
                 nuagenet=vsd_l2domain2.id,
                 net_partition=Topology.def_netpartition)
+            dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+            self.assertEqual(2, len(dhcp_ports))
+            for dhcp_port in dhcp_ports:
+                if dhcp_port['fixed_ips'][0]['subnet_id'] == v6_subnet['id']:
+                    self.assertEqual(
+                        dhcp_port['fixed_ips'][0]['ip_address'],
+                        vsd_l2domain2.ipv6_gateway)
 
     # TODO(team): shared VSD networks use case?
     # def test_create_vsd_shared_l2domain_dualstack_neg(self):

@@ -257,6 +257,12 @@ class VSDManagedL2DualStackDhcpDisabledTest(VSDManagedDualStackCommonBase):
         self.assertEqual(
             str(next(IPNetwork(self.cidr4).subnet(self.mask_bits4_unsliced))),
             ipv4_subnet['cidr'])
+        filters = {
+            'device_owner': 'network:dhcp:nuage',
+            'network_id': network['id']
+        }
+        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+        self.assertEqual(0, len(dhcp_ports))
 
         # create a port in the network
         port_ipv4_only = self.create_port(network)
@@ -275,6 +281,12 @@ class VSDManagedL2DualStackDhcpDisabledTest(VSDManagedDualStackCommonBase):
             cidr=self.cidr6, gateway=self.gateway6,
             mask_bits=self.mask_bits6, enable_dhcp=False,
             nuagenet=vsd_l2_domain.id, net_partition=Topology.def_netpartition)
+        filters = {
+            'device_owner': 'network:dhcp:nuage',
+            'network_id': network['id']
+        }
+        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+        self.assertEqual(0, len(dhcp_ports))
 
         # create a port in the network
         port = self.create_port(network)
@@ -316,6 +328,12 @@ class VSDManagedL2DualStackDhcpDisabledTest(VSDManagedDualStackCommonBase):
         self.assertEqual(
             str(next(IPNetwork(self.cidr4).subnet(self.mask_bits4_unsliced))),
             ipv4_subnet['cidr'])
+        filters = {
+            'device_owner': 'network:dhcp:nuage',
+            'network_id': network['id']
+        }
+        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+        self.assertEqual(0, len(dhcp_ports))
 
         # create a port in the network
         port_ipv4_only = self.create_port(network)

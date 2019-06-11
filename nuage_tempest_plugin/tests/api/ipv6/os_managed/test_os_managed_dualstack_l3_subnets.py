@@ -42,8 +42,19 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
         self.assertIsNone(subnet['ipv6_address_mode'])
         self.assertEqual(subnet['cidr'], vsd_l2_domain.ipv6_address)
         if subnet.get('enable_dhcp'):
-            self.assertEqual(subnet['gateway_ip'], vsd_l2_domain.ipv6_gateway)
+            self.assertTrue(vsd_l2_domain.enable_dhcpv6)
+            filters = {
+                'device_owner': 'network:dhcp:nuage',
+                'network_id': subnet['network_id']
+            }
+            dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+            self.assertEqual(1, len(dhcp_ports))
+            for fixed_ip in dhcp_ports[0]['fixed_ips']:
+                if fixed_ip['subnet_id'] == subnet['id']:
+                    self.assertEqual(fixed_ip['ip_address'],
+                                     vsd_l2_domain.ipv6_gateway)
         else:
+            self.assertFalse(vsd_l2_domain.enable_dhcpv6)
             self.assertIsNone(vsd_l2_domain.ipv6_gateway)
         self.assertFalse(subnet['vsd_managed'])
         self.assertEqual(subnet['enable_dhcp'],
@@ -284,11 +295,23 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
 
         ipv4_subnet = self.create_subnet(network)
         ipv6_subnet = self.create_v6_subnet(network)
+        filters = {
+            'device_owner': 'network:dhcp:nuage',
+            'network_id': ipv4_subnet['network_id']
+        }
+        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+        self.assertEqual(1, len(dhcp_ports))
+        self.assertEqual(dhcp_ports[0]['fixed_ips'][0]['subnet_id'],
+                         ipv4_subnet['id'])
 
         self.router_attach(router, ipv4_subnet, cleanup=False)
+        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+        self.assertEqual(0, len(dhcp_ports))
         self.router_attach(router, ipv6_subnet)
 
         self.router_detach(router, ipv4_subnet)
+        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+        self.assertEqual(0, len(dhcp_ports))
 
     @decorators.attr(type='smoke')
     @nuage_test.header()
@@ -310,11 +333,52 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
 
         ipv4_subnet = self.create_subnet(network)
         ipv6_subnet = self.create_v6_subnet(network)
+        filters = {
+            'device_owner': 'network:dhcp:nuage',
+            'network_id': ipv4_subnet['network_id']
+        }
+        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+        self.assertEqual(1, len(dhcp_ports))
+        self.assertEqual(dhcp_ports[0]['fixed_ips'][0]['subnet_id'],
+                         ipv4_subnet['id'])
 
         self.router_attach(router, ipv6_subnet, cleanup=False)
+        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+        self.assertEqual(0, len(dhcp_ports))
         self.router_attach(router, ipv4_subnet)
 
         self.router_detach(router, ipv6_subnet)
+        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+        self.assertEqual(0, len(dhcp_ports))
+
+    @decorators.attr(type='smoke')
+    @nuage_test.header()
+    def test_dualstack_attach_detach_check_nuage_dhcp_port(self):
+        network = self.create_network()
+        router = self.create_router()
+
+        ipv4_subnet = self.create_subnet(network)
+        ipv6_subnet = self.create_v6_subnet(network)
+        filters = {
+            'device_owner': 'network:dhcp:nuage',
+            'network_id': ipv4_subnet['network_id']
+        }
+        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+        self.assertEqual(1, len(dhcp_ports))
+        self.assertEqual(dhcp_ports[0]['fixed_ips'][0]['subnet_id'],
+                         ipv4_subnet['id'])
+
+        self.router_attach(router, ipv6_subnet, cleanup=False)
+        self.router_attach(router, ipv4_subnet, cleanup=False)
+        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+        self.assertEqual(0, len(dhcp_ports))
+
+        self.router_detach(router, ipv6_subnet)
+        self.router_detach(router, ipv4_subnet)
+        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+        self.assertEqual(1, len(dhcp_ports))
+        self.assertEqual(dhcp_ports[0]['fixed_ips'][0]['subnet_id'],
+                         ipv4_subnet['id'])
 
     # -------------------------------------------------------------------------
     # Section D: Special cases
