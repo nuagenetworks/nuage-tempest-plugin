@@ -49,6 +49,8 @@ class NuageFeatures(object):
                                       Topology.from_openstack('queens'))
 
     def _log_features(self):
+
+        LOG.info('')
         LOG.info('RELEASES:')
         LOG.info('NUAGE release                    : {}'.
                  format(Topology.nuage_release_qualifier))

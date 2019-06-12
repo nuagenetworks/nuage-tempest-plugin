@@ -306,8 +306,10 @@ class BaseVSDManagedNetwork(NuageBaseTest):
         if type == 'DUALSTACK':
             return (vm_details.get('interfaces')[0]['IPAddress'],
                     vm_details.get('interfaces')[0]['IPv6Address'])
-        else:
+        elif type == 'IPV4':
             return vm_details.get('interfaces')[0]['IPAddress']
+        else:
+            return vm_details.get('interfaces')[0]['IPv6Address']
 
     @staticmethod
     def _configure_smart_nic_attributes(kwargs):

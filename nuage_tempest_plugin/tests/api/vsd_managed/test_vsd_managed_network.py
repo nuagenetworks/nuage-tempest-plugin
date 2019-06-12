@@ -63,11 +63,10 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
 
     def _create_and_verify_vm(self, network):
         name = data_utils.rand_name('server-smoke')
-        server = self.create_tenant_server(name=name,
-                                           networks=[network])
+        server = self.create_tenant_server([network], name=name)
         ip_addr_on_openstack = server.get_server_details()['addresses'][
             network['name']][0]['addr']
-        ip_addr_on_vsd = self.get_server_ip_from_vsd(server.id())
+        ip_addr_on_vsd = self.get_server_ip_from_vsd(server.id)
         return ip_addr_on_openstack == ip_addr_on_vsd
 
     def _create_unmgd_link_unmanaged_shared_subnet_l2(self):
@@ -144,7 +143,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
                        should_pass=True, create_server=False, network=None):
 
         def verify_subnet_info(i_subnet, i_vsd_l2dom, i_cidr, i_pool,
-                               i_dhcp_option_3, net_partition):
+                               i_dhcp_option_3, net_part):
             self.assertEqual(i_subnet['cidr'], str(i_cidr))
             # self.assertEqual(i_subnet['vsd_managed'], True)
             # self.assertEqual(i_subnet['nuagenet'], i_vsd_l2dom['ID'])
@@ -178,7 +177,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
                 else:
                     self.assertEqual(sub_pool['start'], str(i_cidr[1]))
                     self.assertEqual(sub_pool['end'], str(i_cidr[-2]))
-            if net_partition:
+            if net_part:
                 self.assertEqual(i_subnet['net_partition'],
                                  i_vsd_l2dom['parentID'])
 
@@ -476,7 +475,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
         port = self.create_port(network=network, fixed_ips=fixed_ips)
         self.assertIsNotNone(port, "Unable to create port on network")
         server = self.create_tenant_server(ports=[port])
-        ipv4_ip, ipv6_ip = self.get_server_ip_from_vsd(server.id(),
+        ipv4_ip, ipv6_ip = self.get_server_ip_from_vsd(server.id,
                                                        type='DUALSTACK')
         self.assertIsNone(ipv4_ip)
         self.assertIsNone(ipv6_ip)
@@ -502,7 +501,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
         self.assertIsNotNone(port, "Unable to update port")
         self.assertEqual(port["fixed_ips"], fixed_ips,
                          message="The port did not update properly.")
-        ipv4_ip, ipv6_ip = self.get_server_ip_from_vsd(server.id(),
+        ipv4_ip, ipv6_ip = self.get_server_ip_from_vsd(server.id,
                                                        type='DUALSTACK')
         self.assertIsNone(ipv4_ip)
         self.assertIsNone(ipv6_ip)
@@ -553,7 +552,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
         port = self.create_port(network=network, fixed_ips=fixed_ips)
         self.assertIsNotNone(port, "Unable to create port on network")
         server = self.create_tenant_server(ports=[port])
-        ipv4_ip, ipv6_ip = self.get_server_ip_from_vsd(server.id(),
+        ipv4_ip, ipv6_ip = self.get_server_ip_from_vsd(server.id,
                                                        type='DUALSTACK')
         self.assertEqual("10.0.0.4", ipv4_ip)
         self.assertEqual("cafe:babe::4/64", ipv6_ip)
@@ -579,7 +578,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
         self.assertIsNotNone(port, "Unable to update port")
         self.assertEqual(port["fixed_ips"], fixed_ips,
                          message="The port did not update properly.")
-        ipv4_ip, ipv6_ip = self.get_server_ip_from_vsd(server.id(),
+        ipv4_ip, ipv6_ip = self.get_server_ip_from_vsd(server.id,
                                                        type='DUALSTACK')
         self.assertEqual("10.0.0.6", ipv4_ip)
         self.assertEqual("cafe:babe::6/64", ipv6_ip)

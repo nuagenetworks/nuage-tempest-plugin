@@ -32,7 +32,7 @@ class RESTResponse(object):
 
 
 class RESTProxyBaseException(Exception):
-    message = ("An unknown exception occurred.")
+    message = "An unknown exception occurred."
 
     def __init__(self, **kwargs):
         try:

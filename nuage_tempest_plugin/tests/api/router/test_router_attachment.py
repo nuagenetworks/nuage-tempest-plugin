@@ -30,15 +30,14 @@ class RouterAttachmentTest(NuageBaseTest):
         router = self.create_router()
         network = self.create_network()
         subnet = self.create_subnet(network)
-        self.create_tenant_server(networks=[network])
+        self.create_tenant_server([network])
         self.router_attach(router, subnet)
 
     @decorators.attr(type='smoke')
     def test_router_attachment_add_server_before_attach(self):
         network = self.create_network()
         subnet = self.create_subnet(network)
-        self.create_tenant_server(networks=[network])
-
+        self.create_tenant_server([network])
         router = self.create_router()
         self.router_attach(router, subnet)
 

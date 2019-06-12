@@ -47,15 +47,10 @@ class PortSecAAPTest(NuageBaseTest):
             ports.append(test_port)
         else:
             test_port = port
-        server, fip = self._create_server_with_fip(ports)
-        return {'port': port, 'test_port': test_port, 'fip': fip,
-                'server': server}
-
-    def _create_server_with_fip(self, ports, **server_kwargs):
         server = self.create_tenant_server(
             ports=ports,
-            make_reachable=True)
-        return server, server.associated_fip
+            prepare_for_connectivity=True)
+        return {'port': port, 'test_port': test_port, 'server': server}
 
     def _setup_resources(self, is_l2=False):
         # setup basic topology for servers we can log into
@@ -100,11 +95,7 @@ class PortSecAAPTest(NuageBaseTest):
 
         servers = [
             self._create_server_with_ports(is_l2=is_l2)
-            for i in range(2)]
-
-        # Check that we can ssh to both servers prior to running tests
-        servers[0]['server'].console().validate_authentication()
-        servers[1]['server'].console().validate_authentication()
+            for _ in range(2)]
 
         # Configure secondary ip (and mac in case of L2) on servers[0]
         dev = servers[0]['server'].console().get_nic_name_by_mac(

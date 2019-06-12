@@ -26,14 +26,6 @@ class VlanTransparentConnectivityTest(NuageBaseTest):
             cls.os_primary.auth_provider,
             **cls.os_primary.default_params)
 
-    def setUp(self):
-        self.addCleanup(self.resource_cleanup)
-        super(VlanTransparentConnectivityTest, self).setUp()
-
-    @classmethod
-    def resource_setup(cls):
-        super(VlanTransparentConnectivityTest, cls).resource_setup()
-
     @testtools.skipUnless(
         CONF.nuage_sut.image_is_advanced,
         "Advanced image is required to run this test.")
@@ -49,13 +41,13 @@ class VlanTransparentConnectivityTest(NuageBaseTest):
 
         # Launch tenant servers in OpenStack network
         vm1 = self.create_tenant_server(
-            networks=[network],
+            [network],
             security_groups=[ssh_security_group],
-            make_reachable=True)
+            prepare_for_connectivity=True)
         vm2 = self.create_tenant_server(
-            networks=[network],
+            [network],
             security_groups=[ssh_security_group],
-            make_reachable=True)
+            prepare_for_connectivity=True)
 
         vm1_ip = '13.13.13.13/24'
         vm2_ip = '13.13.13.14/24'
@@ -76,24 +68,24 @@ class VlanTransparentConnectivityTest(NuageBaseTest):
             'vlan_transparent': 'true'
         }
         router = self.create_test_router()
-        l3network = self.create_network(**kwargs)
-        subnet = self.create_subnet(l3network)
+        network = self.create_network(**kwargs)
+        subnet = self.create_subnet(network)
         self.router_attach(router, subnet)
 
         # create open-ssh security group
         ssh_security_group = self.create_open_ssh_security_group()
 
         vm1 = self.create_tenant_server(
-            networks=[l3network],
+            [network],
             security_groups=[ssh_security_group],
             name='vm1',
-            make_reachable=True)
+            prepare_for_connectivity=True)
 
         vm2 = self.create_tenant_server(
-            networks=[l3network],
+            [network],
             security_groups=[ssh_security_group],
             name='vm2',
-            make_reachable=True)
+            prepare_for_connectivity=True)
 
         vm1_ip = '13.13.13.13/24'
         vm2_ip = '13.13.13.14/24'
@@ -102,5 +94,5 @@ class VlanTransparentConnectivityTest(NuageBaseTest):
         vm1.configure_vlan_interface(vm1_ip, 'eth0', vlan='10')
         vm2.configure_vlan_interface(vm2_ip, 'eth0', vlan='10')
 
-        self.assert_ping(vm1, vm2, l3network,
+        self.assert_ping(vm1, vm2, network,
                          address=str(ping_tgt.ip), interface='eth0.10')

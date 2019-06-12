@@ -37,6 +37,7 @@ class TestFWaaS(fwaas_mixins.FWaaSClientMixin, NuageBaseTest):
 
     def assert_icmp_connectivity(self, from_server, to_server,
                                  is_connectivity_expected=True):
+        to_server.complete_prepare_for_connectivity()
         _, to = to_server.get_ip_addresses()
 
         error_msg = ("Ping error: timed out waiting for {} to "
@@ -44,7 +45,7 @@ class TestFWaaS(fwaas_mixins.FWaaSClientMixin, NuageBaseTest):
                      if is_connectivity_expected
                      else ("Ping error: ip address {} is reachable while "
                            "it shouldn't be".format(to)))
-        has_connectivity = from_server.ping(to, ip_type=6)
+        has_connectivity = from_server.ping(to)
         self.assertEqual(expected=is_connectivity_expected,
                          observed=has_connectivity,
                          message=error_msg)
@@ -53,19 +54,19 @@ class TestFWaaS(fwaas_mixins.FWaaSClientMixin, NuageBaseTest):
                                 is_connectivity_expected=True,
                                 source_port=None,
                                 destination_port=80):
+        to_server.complete_prepare_for_connectivity()
         _, to = to_server.get_ip_addresses()
-
-        error_msg = ("HTTP error: timed out waiting for {} to "
-                     "become reachable".format(to)
-                     if is_connectivity_expected
-                     else ("HTTP error: server [{}]:{} is reachable while "
-                           "it shouldn't be".format(to, destination_port)))
 
         output = from_server.curl(destination_ip=to,
                                   destination_port=destination_port,
                                   source_port=source_port)
         has_connectivity = output is not False
 
+        error_msg = ("HTTP error: timed out waiting for {} to "
+                     "become reachable".format(to)
+                     if is_connectivity_expected
+                     else ("HTTP error: server [{}]:{} is reachable while "
+                           "it shouldn't be".format(to, destination_port)))
         self.assertEqual(expected=is_connectivity_expected,
                          observed=has_connectivity,
                          message=error_msg)
@@ -338,16 +339,16 @@ class TestFWaaS(fwaas_mixins.FWaaSClientMixin, NuageBaseTest):
         self.create_security_group_rule(security_group, direction='ingress',
                                         protocol='tcp', ethertype='IPv6',
                                         port_range_min=80, port_range_max=9999)
-        server = self.create_tenant_server(networks=[network],
+        server = self.create_tenant_server([network],
                                            security_groups=[security_group],
-                                           make_reachable=True)
+                                           prepare_for_connectivity=True)
         fixed_ip4, fixed_ip6 = server.get_ip_addresses()
         return server, fixed_ip4, fixed_ip6
 
     def _test_firewall_basic(self, block, allow=None,
                              confirm_allowed=None, confirm_blocked=None,
                              ports_for_webserver=(80,)):
-        LOG.info('Begin _test_firewall_basic')
+        LOG.info('[{}] Begin _test_firewall_basic'.format(self.test_name))
         if allow is None:
             allow = self._delete_firewall
         if confirm_allowed is None:
@@ -355,7 +356,7 @@ class TestFWaaS(fwaas_mixins.FWaaSClientMixin, NuageBaseTest):
         if confirm_blocked is None:
             confirm_blocked = self.assert_no_connectivity
 
-        LOG.info('1. Creating topology')
+        LOG.info('[{}] 1. Creating topology'.format(self.test_name))
         router = self._get_router()
 
         (server2, server2_fixed_ip4,
@@ -367,36 +368,36 @@ class TestFWaaS(fwaas_mixins.FWaaSClientMixin, NuageBaseTest):
             router, cidrv4=IPNetwork('10.0.0.0/24'),
             cidrv6=IPNetwork('cafe:babe::/64'))
         for port in ports_for_webserver:
-            self.start_webserver(server1, port=port)
-            self.start_webserver(server2, port=port)
+            self.start_web_server(server1, port=port)
+            self.start_web_server(server2, port=port)
 
-        self.sleep(10, 'Naively mitigating slow CI')
+        self.sleep(10, 'Naively mitigating slow CI', tag=self.test_name)
 
         server1.echo_debug_info()
         server2.echo_debug_info()
 
-        LOG.info('2. Verify connectivity')
+        LOG.info('[{}] 2. Verify connectivity'.format(self.test_name))
         self.assert_connectivity(from_server=server1,
                                  to_server=server2)
 
         self.sleep(10, 'Naively mitigating slow CI')
 
-        LOG.info('3. Create firewall')
+        LOG.info('[{}] 3. Create firewall'.format(self.test_name))
         ctx = block(server1_fixed_ip=server1_fixed_ip6,
                     server2_fixed_ip=server2_fixed_ip6,
                     router_id=router['id'])
 
-        self.sleep(10, 'Naively mitigating slow CI')
+        self.sleep(10, 'Naively mitigating slow CI', tag=self.test_name)
 
-        LOG.info('4. Verify no connectivity')
+        LOG.info('[{}] 4. Verify no connectivity'.format(self.test_name))
         confirm_blocked(from_server=server1, to_server=server2)
 
-        LOG.info('5. Allow traffic')
+        LOG.info('[{}] 5. Allow traffic'.format(self.test_name))
         allow(ctx)
 
-        self.sleep(10, 'Naively mitigating slow CI')
+        self.sleep(10, 'Naively mitigating slow CI', tag=self.test_name)
 
-        LOG.info('6. Verify connectivity')
+        LOG.info('[{}] 6. Verify connectivity'.format(self.test_name))
         confirm_allowed(from_server=server1, to_server=server2)
 
     def test_block_port(self):

@@ -234,7 +234,7 @@ class VSDManagedL2DualStackDhcpDisabledTest(VSDManagedDualStackCommonBase):
         vm_details = self.nuage_client.get_resource(
             'vms',
             filters='externalID',
-            filter_value=self.nuage_client.get_vsd_external_id(server.id()),
+            filter_value=self.nuage_client.get_vsd_external_id(server.id),
             flat_rest_path=True)[0]
         if self.vsd_dhcp_managed:
             self.assertEqual(vm_details.get('interfaces')[0]['IPAddress'],

@@ -21,13 +21,7 @@ CONF = Topology.get_conf()
 
 class NuagePatToUnderlayScenarioTest(NuageBaseTest):
 
-    @classmethod
-    def resource_setup(cls):
-        super(NuagePatToUnderlayScenarioTest, cls).resource_setup()
-
     def _test_pat_to_underlay_up_to_hv(self, nuage_underlay, should_succeed):
-        local_ip = self.get_local_ip()
-
         # Provision OpenStack network resources
         network = self.create_network()
         subnet = self.create_subnet(network)
@@ -39,18 +33,21 @@ class NuagePatToUnderlayScenarioTest(NuageBaseTest):
         security_group = self.create_open_ssh_security_group()
         port = self.create_port(network,
                                 security_groups=[security_group['id']])
+
         # Launch tenant servers in OpenStack network with cloud-init script
         output_path = '/tmp/ping_result'
-        ping_script = ('#!/bin/sh\nping {} -c 1 -w 3; '
-                       'echo $? > {}'.format(local_ip, output_path))
+        ping_script = ('#!/bin/sh\n'
+                       'ping {} -c 1 -w 3\n'
+                       'echo $? > {}'.format(self.get_local_ip(), output_path))
         server = self.create_tenant_server(
             ports=[port],
             user_data=ping_script)
         self.sleep(seconds=120,
                    msg='waiting for cloud-init script to finish.')
+
         self.create_fip_to_server(server, port)
-        result = server.console().exec_command('cat {}'.format(
-            output_path)).strip()
+        result = server.send('cat {}'.format(output_path)).strip()
+
         if should_succeed:
             self.assertEqual(result, '0')
         else:

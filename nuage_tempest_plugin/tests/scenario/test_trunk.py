@@ -49,15 +49,10 @@ class TrunkTest(NuageBaseTest):
         port = self.create_port(self.network, security_groups=[
             self.secgroup['id']])
         trunk = self.create_trunk(port)
-        server, fip = self._create_server_with_fip(port)
-        return {'port': port, 'trunk': trunk, 'fip': fip,
-                'server': server}
-
-    def _create_server_with_fip(self, port, **server_kwargs):
         server = self.create_tenant_server(
             ports=[port],
-            make_reachable=True)
-        return server, server.associated_fip
+            prepare_for_connectivity=True)
+        return {'port': port, 'trunk': trunk, 'server': server}
 
     def _is_port_down(self, port_id):
         p = self.plugin_network_client.show_port(port_id)['port']
@@ -84,11 +79,12 @@ class TrunkTest(NuageBaseTest):
             'segmentation_id': vlan_tag}
         self.create_trunk(parent_port, [subport])
 
-        server, fip = self._create_server_with_fip(parent_port)
+        server = self.create_tenant_server(
+            ports=[parent_port],
+            prepare_for_connectivity=True)
 
         return {
             'server': server,
-            'fip': fip,
             'subport': port_for_subport,
         }
 
@@ -152,8 +148,9 @@ class TrunkTest(NuageBaseTest):
         # ensure all underlying subports transitioned to ACTIVE
         for s in subports:
             utils.wait_until_true(lambda: self._is_port_active(s['port_id']))
+
         # ensure main dataplane wasn't interrupted
-        server1['server'].check_connectivity()
+        server1['server'].validate_authentication()
 
         # move subports over to other server
         self.plugin_network_client.remove_subports(trunk1_id, subports)
@@ -179,9 +176,10 @@ class TrunkTest(NuageBaseTest):
                 lambda: self._is_port_active(s['port_id']),
                 exception=RuntimeError("Timed out waiting for subport %s to "
                                        "transition to ACTIVE." % s['port_id']))
+
         # final connectivity check
-        server1['server'].vm_console.validate_authentication()
-        server2['server'].vm_console.validate_authentication()
+        server1['server'].validate_authentication()
+        server2['server'].validate_authentication()
 
     @testtools.skipUnless(
         CONF.nuage_sut.image_is_advanced,
@@ -197,7 +195,7 @@ class TrunkTest(NuageBaseTest):
         servers = [
             self._create_server_with_port_and_subport(
                 subport_network, vlan_tag)
-            for i in range(2)]
+            for _ in range(2)]
 
         for server in servers:
             # Configure VLAN interfaces on server
@@ -213,7 +211,6 @@ class TrunkTest(NuageBaseTest):
         self.assert_ping(
             servers[0]['server'],
             servers[1]['server'],
-            subport_network,
             address=servers[1]['subport']['fixed_ips'][0]['ip_address'],
             should_pass=False)
 
@@ -226,5 +223,4 @@ class TrunkTest(NuageBaseTest):
         self.assert_ping(
             servers[0]['server'],
             servers[1]['server'],
-            subport_network,
             address=servers[1]['subport']['fixed_ips'][0]['ip_address'])

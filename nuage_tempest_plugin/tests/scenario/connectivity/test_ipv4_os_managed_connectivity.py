@@ -25,13 +25,14 @@ class Ipv4OsManagedConnectivityTest(NuageBaseTest):
 
         # Launch tenant servers in OpenStack network
         server2 = self.create_tenant_server(
-            networks=[network],
-            security_groups=[ssh_security_group])
+            [network],
+            security_groups=[ssh_security_group],
+            prepare_for_connectivity=True)
 
         server1 = self.create_tenant_server(
-            networks=[network],
+            [network],
             security_groups=[ssh_security_group],
-            make_reachable=True)
+            prepare_for_connectivity=True)
 
         # Test IPv4 connectivity between peer servers
         self.assert_ping(server1, server2, network)
@@ -60,22 +61,23 @@ class Ipv4OsManagedConnectivityTest(NuageBaseTest):
 
         # Launch tenant servers in OpenStack network
         server2 = self.create_tenant_server(
-            name=nova_friendly_name,
-            networks=[network],
-            security_groups=[ssh_security_group])
+            [network],
+            name=nova_friendly_name + ' 1',
+            security_groups=[ssh_security_group],
+            prepare_for_connectivity=True)
 
         server1 = self.create_tenant_server(
-            name=nova_friendly_name,
-            networks=[network],
+            [network],
+            name=nova_friendly_name + ' 2',
             security_groups=[ssh_security_group],
-            make_reachable=True)
+            prepare_for_connectivity=True)
 
         # Test IPv4 connectivity between peer servers
         self.assert_ping(server1, server2, network)
 
     @decorators.attr(type='smoke')
     def test_icmp_connectivity_l3_os_managed(self):
-        self._icmp_connectivity_l3_os_managed_by_name()
+        self._icmp_connectivity_l3_os_managed_by_name('hi there')
 
     @skip_because(bug='OPENSTACK-2570')
     @decorators.attr(type='smoke')
@@ -104,13 +106,14 @@ class Ipv4OsManagedConnectivityTest(NuageBaseTest):
         ssh_security_group = self.create_open_ssh_security_group()
 
         # Launch tenant servers in OpenStack network
-        server1 = self.create_tenant_server(
-            networks=[network],
-            security_groups=[ssh_security_group],
-            make_reachable=True)
-
         server2 = self.create_tenant_server(
-            networks=[network])  # in default sg - so not accessible!
+            [network])  # in default sg - so not accessible!
+        #                 -- hence also can't set prepare_for_connectivity
+
+        server1 = self.create_tenant_server(
+            [network],
+            security_groups=[ssh_security_group],
+            prepare_for_connectivity=True)
 
         # Test IPv4 connectivity between peer servers
         self.assert_ping(server1, server2, network, should_pass=False)
@@ -134,7 +137,18 @@ class Ipv4OsManagedConnectivityTest(NuageBaseTest):
         # create open-ssh security group
         ssh_security_group = self.create_open_ssh_security_group()
 
-        # create server12 port
+        # Launch tenant servers in OpenStack network
+        server1 = self.create_tenant_server(
+            [network1],
+            security_groups=[ssh_security_group],
+            prepare_for_connectivity=True)
+
+        server2 = self.create_tenant_server(
+            [network2],
+            security_groups=[ssh_security_group],
+            prepare_for_connectivity=True)
+
+        # create server12 ports
         p1 = self.create_port(
             network=network1,
             security_groups=[ssh_security_group['id']])
@@ -143,18 +157,9 @@ class Ipv4OsManagedConnectivityTest(NuageBaseTest):
             security_groups=[ssh_security_group['id']],
             extra_dhcp_opts=[{'opt_name': 'router', 'opt_value': '0'}])
 
-        # Launch tenant servers in OpenStack network
-        server1 = self.create_tenant_server(
-            networks=[network1],
-            security_groups=[ssh_security_group])
-
-        server2 = self.create_tenant_server(
-            networks=[network2],
-            security_groups=[ssh_security_group])
-
         server12 = self.create_tenant_server(
             ports=[p1, p2],
-            make_reachable=True)
+            prepare_for_connectivity=True)
 
         # Test IPv4 connectivity between peer servers
         self.assert_ping(server12, server1, network1)
@@ -205,10 +210,13 @@ class Ipv4OsManagedConnectivityTest(NuageBaseTest):
         fl2 = self.create_floatingip(external_network_id=ext_network['id'],
                                      subnet_id=ext_s2['id'], port_id=p2['id'])
 
-        server2 = self.create_tenant_server(ports=[p2])
-        server1 = self.create_tenant_server(ports=[p1])
+        server2 = self.create_tenant_server(
+            ports=[p2])
+        server1 = self.create_tenant_server(
+            ports=[p1])
 
         server1.associate_fip(fl1['floating_ip_address'])
+        server1.validate_authentication()
 
         # Test IPv4 connectivity between peer servers
         self.assert_ping(server1, server2, ext_network,
@@ -222,29 +230,20 @@ class Ipv4OsManagedConnectivityTest(NuageBaseTest):
 
         # create open-ssh security group
         ssh_security_group = self.create_open_ssh_security_group()
-        port_1 = self.create_port(network,
-                                  security_groups=[ssh_security_group['id']])
-        port_2 = self.create_port(network,
-                                  security_groups=[ssh_security_group['id']])
 
         # Launch tenant servers in OpenStack network
-        self.create_tenant_server(
-            ports=[port_1],
-            user_data='#!/bin/sh\n/sbin/ifconfig eth0 {} netmask '
-                      '255.255.255.0 up'.format(
-                port_1['fixed_ips'][0]['ip_address']))
+        server2 = self.create_tenant_server(
+            [network],
+            security_groups=[ssh_security_group],
+            prepare_for_connectivity=True)
 
         server1 = self.create_tenant_server(
-            ports=[port_2],
-            make_reachable=True,
-            user_data='#!/bin/sh\n/sbin/ifconfig eth1 {} netmask '
-                      '255.255.255.0 up'.format(
-                port_2['fixed_ips'][0]['ip_address']))
+            [network],
+            security_groups=[ssh_security_group],
+            prepare_for_connectivity=True)
 
         # Test IPv4 connectivity between peer servers
-        self.assert_ping(server1=server1, timeout=300,
-                         address=port_1['fixed_ips'][0]['ip_address'],
-                         interface='eth1')
+        self.assert_ping(server1, server2, network)
 
     def test_icmp_connectivity_l2_os_managed_no_dhcp_v4_neg(self):
         # Provision OpenStack network resources
@@ -253,24 +252,22 @@ class Ipv4OsManagedConnectivityTest(NuageBaseTest):
 
         # create open-ssh security group
         ssh_security_group = self.create_open_ssh_security_group()
-        port_1 = self.create_port(network,
-                                  security_groups=[ssh_security_group['id']])
-        port_2 = self.create_port(network,
-                                  security_groups=[ssh_security_group['id']])
 
-        # Launch tenant servers in OpenStack network
-        # There is neither IP config nor DHCP, so connectivity test should fail
-        self.create_tenant_server(
-            ports=[port_1])
+        # Launch tenant servers in OpenStack networks
+        # Force DHCP config even though subnet has no DHCP enabled (won't work)
+        server2 = self.create_tenant_server(
+            [network],
+            security_groups=[ssh_security_group],
+            force_dhcp_config=True,
+            prepare_for_connectivity=True)
 
         server1 = self.create_tenant_server(
-            ports=[port_2],
-            make_reachable=True)
+            [network],
+            security_groups=[ssh_security_group],
+            prepare_for_connectivity=True)
 
         # Test IPv4 connectivity between peer servers (should fail)
-        self.assertFalse(self._assert_ping(
-            server=server1, dest=port_1['fixed_ips'][0]['ip_address'],
-            interface='eth1'))
+        self.assert_ping(server1, server2, network, should_pass=False)
 
     def test_icmp_connectivity_l3_os_managed_no_dhcp_v4(self):
         # Provision OpenStack network resources
@@ -284,31 +281,21 @@ class Ipv4OsManagedConnectivityTest(NuageBaseTest):
 
         # create open-ssh security group
         ssh_security_group = self.create_open_ssh_security_group()
-        port_1 = self.create_port(network,
-                                  security_groups=[ssh_security_group['id']])
-        port_2 = self.create_port(network,
-                                  security_groups=[ssh_security_group['id']])
 
         # Launch tenant servers in OpenStack network
-        self.create_tenant_server(
-            ports=[port_1],
-            user_data='#!/bin/sh\n/sbin/ifconfig eth0 {} netmask '
-                      '255.255.255.0 up'.format(
-                port_1['fixed_ips'][0]['ip_address']))
+        server2 = self.create_tenant_server(
+            [network],
+            security_groups=[ssh_security_group],
+            prepare_for_connectivity=True)
 
         # to make it reachable via FIP, gateway also must be configured.
         server1 = self.create_tenant_server(
-            ports=[port_2],
-            make_reachable=True,
-            user_data='#!/bin/sh\n/sbin/ifconfig eth0 {} netmask '
-                      '255.255.255.0 up; route add default gw {}'.format(
-                port_2['fixed_ips'][0]['ip_address'],
-                port_2['parent_network']['v4_subnet']['gateway_ip']))
+            [network],
+            security_groups=[ssh_security_group],
+            prepare_for_connectivity=True)
 
         # Test IPv4 connectivity between peer servers
-        self.assert_ping(server1=server1, timeout=300,
-                         address=port_1['fixed_ips'][0]['ip_address'],
-                         interface='eth0')
+        self.assert_ping(server1, server2, network)
 
     def test_icmp_connectivity_l3_os_managed_no_dhcp_v4_neg(self):
         # Provision OpenStack network resources
@@ -322,21 +309,19 @@ class Ipv4OsManagedConnectivityTest(NuageBaseTest):
 
         # create open-ssh security group
         ssh_security_group = self.create_open_ssh_security_group()
-        port_1 = self.create_port(network,
-                                  security_groups=[ssh_security_group['id']])
-        port_2 = self.create_port(network,
-                                  security_groups=[ssh_security_group['id']])
 
-        # Launch tenant servers in OpenStack network
-        # There is neither IP config nor DHCP, connectivity should fail
-        self.create_tenant_server(
-            ports=[port_1])
+        # Launch tenant servers in OpenStack networks
+        # Force DHCP config even though subnet has no DHCP enabled (won't work)
+        server2 = self.create_tenant_server(
+            [network],
+            security_groups=[ssh_security_group],
+            force_dhcp_config=True,
+            prepare_for_connectivity=True)
 
         server1 = self.create_tenant_server(
-            ports=[port_2],
-            make_reachable=True)
+            [network],
+            security_groups=[ssh_security_group],
+            prepare_for_connectivity=True)
 
         # Test IPv4 connectivity between peer servers
-        self.assertFalse(self._assert_ping(
-            server=server1, dest=port_1['fixed_ips'][0]['ip_address'],
-            interface='eth1'))
+        self.assert_ping(server1, server2, network, should_pass=False)

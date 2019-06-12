@@ -71,7 +71,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
     """NuageBaseTest
 
-    Base class for all testcases.
+    Base class for all test cases.
     This class will have all the common function and will initiate object
     of other class in setup_client rather then inheritance.
     """
@@ -86,6 +86,8 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
     ssh_security_group = None
     ssh_keypair = None
+
+    cls_name = None
 
     @classmethod
     def setup_clients(cls):
@@ -103,6 +105,32 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         cls.setup_network_resources(cls)
 
     @classmethod
+    def setUpClass(cls):
+        cls.long_cls_name = cls.__name__
+        cls.cls_name = cls._shorten_name(cls.__name__)
+
+        LOG.info('')
+        LOG.info('========== [{}] Test setUpClass =========='.format(
+            cls.long_cls_name))
+        super(NuageBaseTest, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        LOG.info('[{}] Test {} tearDownClass'.format(cls.cls_name,
+                                                     cls.long_cls_name))
+        super(NuageBaseTest, cls).tearDownClass()
+
+    @classmethod
+    def _shorten_name(cls, name,
+                      shorten_to_x_chars=32, pre_fill_with_spaces=True):
+        if shorten_to_x_chars:
+            if len(name) > shorten_to_x_chars:
+                name = '...' + name[-(shorten_to_x_chars - 3):]
+            elif pre_fill_with_spaces:
+                name = ' ' * (shorten_to_x_chars - len(name)) + name
+        return name
+
+    @classmethod
     def setup_credentials(cls):
         # Create no network resources for these tests.
         cls.set_network_resources()
@@ -118,6 +146,26 @@ class NuageBaseTest(manager.NetworkScenarioTest):
     def skipTest(self, reason):
         LOG.warn('TEST SKIPPED: ' + reason)
         super(NuageBaseTest, self).skipTest(reason)
+
+    def setUp(self):
+        self.long_test_name = self.get_long_test_name()
+        self.test_name = self._shorten_name(self.long_test_name)
+
+        LOG.info('')
+        LOG.info('----- [{}] Test setUp -----'.format(self.long_test_name))
+        super(NuageBaseTest, self).setUp()
+
+    def tearDown(self):
+        LOG.info('[{}] Test {} tearDown'.format(self.test_name,
+                                                self.long_test_name))
+        super(NuageBaseTest, self).tearDown()
+
+    def get_long_test_name(self):
+        name = self.id().split('.')[-1]
+        for tag in ['[smoke]', '[negative]', '[slow]']:
+            if name.endswith(tag):
+                name = name[:-len(tag)]
+        return name
 
     @staticmethod
     # As reused by other classes, left as static and passing cls explicitly
@@ -190,14 +238,17 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         except lib_exc.NotFound:
             pass
 
-    @staticmethod
-    def sleep(seconds=1, msg=None):
+    def sleep(self, seconds=1, msg=None, tag=None):
+        if tag is None:
+            tag = self.test_name
         if not msg:
             LOG.error(
-                "Added a {}s sleep without clarification. "
-                "Please add motivation for this sleep.".format(seconds))
+                "{}Added a {}s sleep without clarification. "
+                "Please add motivation for this sleep.".format(
+                    seconds, '[{}] '.format(tag) if tag else ''))
         else:
-            LOG.warning("Sleeping for {}s. {}.".format(seconds, msg))
+            LOG.warning("{}Sleeping for {}s. {}.".format(
+                '[{}] '.format(tag) if tag else '', seconds, msg))
         time.sleep(seconds)
 
     def vsd_create_l2domain_template(
@@ -391,12 +442,13 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             raise ValueError(message)
 
         subnet = body['subnet']
-
         dhcp_enabled = subnet['enable_dhcp']
+
         if (cls.is_dhcp_agent_present() and dhcp_enabled and
                 not network.get('router:external')):
             current_time = time.time()
-            LOG.info("Waiting for dhcp port resolution")
+            LOG.info('[{}] waiting for dhcp port resolution'.format(
+                cls.cls_name))
             dhcp_subnets = []
             while subnet['id'] not in dhcp_subnets:
                 if time.time() - current_time > 30:
@@ -412,7 +464,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                     continue
                 dhcp_port = dhcp_ports[0]
                 dhcp_subnets = [x['subnet_id'] for x in dhcp_port['fixed_ips']]
-            LOG.info("DHCP port resolved")
+            LOG.info('[{}] DHCP port resolved'.format(cls.cls_name))
 
         assert subnet
         if cleanup:
@@ -747,9 +799,9 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         vport.associated_floating_ip_id = floating_ip.id
         vport.save()
 
-        def cleanup_floatingip_vport(vport):
-            vport.associated_floating_ip_id = None
-            vport.save()
+        def cleanup_floatingip_vport(vport_):
+            vport_.associated_floating_ip_id = None
+            vport_.save()
 
         self.addCleanup(cleanup_floatingip_vport, vport)
         return floating_ip
@@ -885,9 +937,9 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         self.addCleanup(client.delete_keypair, name)
         return body['keypair']
 
-    def create_keypair(self):
+    def create_keypair(self, client=None):
         if not self.ssh_keypair:
-            self.ssh_keypair = self._create_keypair()
+            self.ssh_keypair = self._create_keypair(client)
         return self.ssh_keypair
 
     def osc_list_networks(self, client=None, *args, **kwargs):
@@ -924,7 +976,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
     def osc_get_server_port_in_network(self, server, network):
         return self.osc_list_ports(
-            device_id=server.id(),
+            device_id=server.id,
             network_id=network['id'])[0]
 
     def osc_list_server(self, server_id, client=None):
@@ -946,10 +998,8 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         for image in images['images']:
             # add them all
             self.image_name_to_id_cache[image['name']] = image['id']
-
             if image_name == image['name']:
                 image_id = image['id']
-
         return image_id
 
     def osc_server_add_interface(self, server, port, client=None):
@@ -967,8 +1017,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             server.server_details['id'],
             iface['port_id'])
 
-    # noinspection PyBroadException
-    def osc_create_test_server(self, client=None, tenant_networks=None,
+    def osc_create_test_server(self, tag, client=None, tenant_networks=None,
                                ports=None, security_groups=None,
                                wait_until='ACTIVE',
                                volume_backed=False, name=None, flavor=None,
@@ -977,6 +1026,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                                **kwargs):
         """Common wrapper utility returning a test server.
 
+        :param tag: used for tagging at logging
         :param client: Client manager which provides OpenStack Tempest clients.
         :param tenant_networks: Tenant networks used for creating the server.
         :param security_groups: Tenant security groups for the server.
@@ -1091,11 +1141,12 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                                                    **kwargs)
 
         vm = rest_client.ResponseBody(body.response, body['server'])
-        LOG.info("Id of vm %s", vm['id'])
+
+        LOG.info('[{}] ID is {}'.format(tag, vm['id']))
 
         if wait_until:
-
-            LOG.info("Waiting for server %s to be %s", name, wait_until)
+            LOG.info('[{}] Waiting for becoming {}'.format(tag,
+                                                           wait_until))
             try:
                 waiters.wait_for_server_status(client.servers_client,
                                                vm['id'], wait_until)
@@ -1105,8 +1156,8 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 if ('preserve_server_on_error' not in kwargs or
                         kwargs['preserve_server_on_error'] is False):
 
-                    LOG.error("Deploying server %s failed (%s). "
-                              "Destroying.", name, str(e))
+                    LOG.error('[{}] Deploy failed ({}). '
+                              'Destroying.'.format(name, str(e)))
 
                     try:
                         cleanup_server()
@@ -1114,15 +1165,14 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
                     except Exception as e:
                         LOG.exception(
-                            'Destroying server %s failed (%s)',
-                            name, str(e))
+                            '[{}] Failed destroying ({})'.format(name, str(e)))
 
                     if vm is not None:
                         if return_none_on_failure:
-                            LOG.error('Destroying server %s failed', name)
+                            LOG.error('[{}] Destroy failed'.format(name))
                             return None
                         else:
-                            self.fail('Destroying server %s failed' % name)
+                            self.fail('[{}] Destroy failed'.format(name))
 
         if vm:
             if cleanup:
@@ -1135,11 +1185,12 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             # FAILED TO DEPLOY SERVER
 
             if return_none_on_failure:
-                LOG.error('Deploying server %s failed', name)
+                LOG.error('[{}] Deploying server {} failed'.format(
+                    self.test_name, name))
                 return None
 
             else:
-                self.fail('Deploying server %s failed' % name)
+                self.fail('Deploying server {} failed'.format(name))
 
     def osc_create_floatingip(self, external_network_id=None, client=None):
         if not external_network_id:
@@ -1155,63 +1206,99 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                         floating_ip['id'])
         return floating_ip
 
-    def create_tenant_server(self, client=None, networks=None,
-                             ports=None, security_groups=None,
-                             wait_until='ACTIVE',
+    def create_tenant_server(self, networks=None, ports=None,
+                             security_groups=None, wait_until='ACTIVE',
                              volume_backed=False, name=None, flavor=None,
-                             cleanup=True,
-                             make_reachable=False,
-                             configure_dualstack_itf=False,
-                             wait_until_initialized=True,
-                             **kwargs):
+                             prepare_for_connectivity=False,
+                             force_dhcp_config=False,
+                             client=None, cleanup=True, **kwargs):
 
-        assert not (wait_until_initialized and wait_until != 'ACTIVE')
         assert not (networks and ports)  # one of both, not both
         assert networks or ports  # but one at least
         assert not (ports and security_groups)  # one of both, not both
-        assert not (configure_dualstack_itf and not make_reachable)
-
-        # the 1st network/port determines for l2/l3
-        first_network = (networks[0] if networks
-                         else ports[0].get('parent_network'))
-        l2_deployment = self.is_l2_network(first_network)
 
         name = name or data_utils.rand_name('test-server')
-        data_interface = 'eth0'
+
+        LOG.info('[{}] Creating tenant server {}'.format(self.test_name,
+                                                         name))
+
+        def needs_provisioning(server_networks=None, server_ports=None):
+            # we configure through cloudinit the interfaces for DHCP;
+            # hence we only need provisioning for non-DHCP networks
+            if force_dhcp_config:
+                return False
+            if server_networks:
+                for net in server_networks:
+                    if (net.get('v4_subnet') and
+                            not net['v4_subnet']['enable_dhcp']):
+                        return True
+                    if (net.get('v6_subnet') and
+                            not net['v6_subnet']['enable_dhcp']):
+                        return True
+                return False
+            else:
+                server_networks = []
+                for port in server_ports:
+                    server_networks.append(port['parent_network'])
+                return needs_provisioning(server_networks)
+
+        provisioning_needed = (needs_provisioning(networks, ports)
+                               if prepare_for_connectivity
+                               else False)
+
+        first_network = (networks[0] if networks
+                         else ports[0].get('parent_network'))
+        is_l3 = self.is_l3_network(first_network)
+
+        if prepare_for_connectivity:
+            # fip is only supported on L3 v4, so in L2 or L3 pure v6 cases,
+            # another L3 domain with v4 subnet will be created to associate FIP
+            # - this is also done for L3 subnets that have v4 but no dhcpv4,
+            #   as the nic won't obtain ip then
+            if (not is_l3 or
+                    not first_network.get('v4_subnet') or
+                    not first_network.get('v4_subnet')['enable_dhcp']):
+                ports = self.prepare_fip_topology(
+                    name, networks, ports, security_groups)
+                networks = []
+                security_groups = []
+                provisioning_needed |= needs_provisioning(server_ports=ports)
 
         keypair = self.create_keypair()
-
         server = TenantServer(self, client, self.admin_manager.servers_client,
                               name, networks, ports, security_groups,
                               flavor, keypair, volume_backed)
 
-        # fip is only supported on L3 v4, so in L2 or L3 pure v6 cases,
-        # another L3 domain with v4 subnet will be created to associate FIP.
-        if (make_reachable and
-                (l2_deployment or not first_network.get('v4_subnet'))):
-            server.networks = None
-            server.ports = self.prepare_fip_topology(
-                networks, ports, security_groups)
-            server.security_groups = None
-            data_interface = 'eth1'
+        server.boot(wait_until, cleanup, **kwargs)
+        server.force_dhcp = force_dhcp_config
+        server.prepare_for_connectivity = prepare_for_connectivity
 
-        if server.boot(wait_until, cleanup, True, **kwargs):
+        # Check need for provisioning interfaces statically ...
+        if provisioning_needed:
+            LOG.info('[{}] {} will need provisioning'.format(
+                self.test_name, name.capitalize()))
+            server.needs_provisioning = True
+        elif prepare_for_connectivity:
+            LOG.info('[{}] {} won\'t need provisioning'.format(
+                self.test_name, name.capitalize()))
+
+        # In both cases, the actual provisioning or the potential need for
+        # making the server reachable is postponed, such that parallel booting
+        # of servers is maximized (and test execution minimized)
+
+        LOG.info('[{}] {} deployed SUCCESSFULLY'.format(self.test_name,
+                                                        name.capitalize()))
+        return server
+
+    def make_fip_reachable(self, server, client=None):
+        if not server.has_console():
+            LOG.info('[{}] Making {} FIP reachable'.format(
+                self.test_name, server.name))
+
             networks = server.networks
-            ports = server.ports
-
-        assert server.did_deploy()
-
-        LOG.info("create_tenant_server %s: server is %s", name, wait_until)
-
-        if wait_until_initialized:
-            self.sleep(5, 'Give time for server to initialize')
-
-        if make_reachable:
-            LOG.info("create_tenant_server %s: make reachable", name)
 
             # make reachable over the 1st port
-            first_port = (self.osc_get_server_port_in_network(
-                server, networks[0]) if networks else ports[0])
+            first_port = server.get_first_port()
 
             if networks and networks[0].get('vsd_l3_subnet'):
                 # vsd managed l3
@@ -1220,38 +1307,19 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                     vsd_domain=networks[0].get('vsd_l3_domain'),
                     vsd_subnet=networks[0].get('vsd_l3_subnet'),
                     client=client)
+            elif networks and networks[0].get('vsd_l2_domain'):
+                # vsd managed l2
+                raise NotImplementedError
             else:
-                # os mgd or vsd managed l2
+                # server was created based on ports, or networks are OS managed
                 self.create_fip_to_server(server, first_port)
 
-        if configure_dualstack_itf:
-            LOG.info("create_tenant_server %s: configure dualstack", name)
-
-            configured_dualstack = False
-
-            if not networks:
-                networks = []
-                for port in ports:
-                    if port.get('parent_network'):
-                        networks.append(port['parent_network'])
-
-            for network in networks:
-                server_ipv6 = server.get_server_ip_in_network(
-                    network['name'], ip_type=6)
-
-                if network.get('v6_subnet'):
-                    server.configure_dualstack_interface(
-                        server_ipv6, subnet=network['v6_subnet'],
-                        device=data_interface)
-                    configured_dualstack = True
-
-            assert configured_dualstack  # assert we did the job
-
-        LOG.info("create_tenant_server %s: DONE!", name)
-        return server
-
     def prepare_fip_topology(
-            self, networks, ports, security_groups=None, client=None):
+            self, server_name, networks, ports, security_groups=None,
+            client=None):
+
+        LOG.info('[{}] Preparing FIP topology for {}'.format(
+            self.test_name, server_name))
 
         # Current network (L2 or L3 pure v6)
         if networks:
@@ -1264,9 +1332,17 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 for sg in security_groups:
                     test_sgs.append(sg['id'])
                 test_port = self.create_port(test_network, client,
-                                             security_groups=test_sgs)
+                                             security_groups=test_sgs,
+                                             # make sure this port does not
+                                             # become the default port
+                                             extra_dhcp_opts=[
+                                                 {'opt_name': 'router',
+                                                  'opt_value': '0'}])
             else:
-                test_port = self.create_port(test_network, client)
+                test_port = self.create_port(test_network, client,
+                                             extra_dhcp_opts=[
+                                                 {'opt_name': 'router',
+                                                  'opt_value': '0'}])
         else:
             self.assertEqual(1, len(ports),
                              'Only one port is allowed for fip topology.')
@@ -1283,25 +1359,26 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         open_ssh_sg = self.create_open_ssh_security_group()
         fip_port = self.create_port(fip_network, client,
                                     security_groups=[open_ssh_sg['id']])
+
+        LOG.info('[{}] FIP topology for {} set up'.format(
+            self.test_name, server_name))
         return [fip_port, test_port]
 
-    def create_fip_to_server(self, server, port=None, validate_access=False,
+    def create_fip_to_server(self, server, port=None,
                              vsd_domain=None, vsd_subnet=None, client=None):
         """Create a fip and connect it to the given server
 
-        :param server:
-        :param port:
-        :param validate_access:
+        :param server: the tenant server
+        :param port: its first port
         :param vsd_domain: L3Domain VSPK object
         :param vsd_subnet: L3Subnet VSPK object
         :param client: os client
-        :return:
+        :return: the associated FIP
         """
-        LOG.info("create_fip_to_server: vsd_domain=%s, vsd_subnet=%s",
-                 str(vsd_domain), str(vsd_subnet))
-
         if not server.associated_fip:
             if vsd_domain:
+                LOG.info('[{}] Creating FIP for {} using VSD domain'.format(
+                    self.test_name, server.name))
                 ip = self.osc_create_floatingip(
                     client=client).get('floating_ip_address')
                 fip = self.create_associate_vsd_managed_floating_ip(
@@ -1312,17 +1389,17 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                     ip_address=ip
                 ).address
             else:
+                LOG.info('[{}] Creating FIP for {}'.format(
+                    self.test_name, server.name))
                 fip = self.create_floating_ip(
                     server.get_server_details(),
                     port_id=port['id'] if port else None, client=client
                 )['floating_ip_address']
 
             server.associate_fip(fip)
-            LOG.info("create_fip_to_server: fip associated: %s", str(fip))
 
-            if validate_access:
-                assert server.check_connectivity(3)
-                LOG.info("create_fip_to_server: server connectivity verified")
+            LOG.info('[{}] {} obtained FIP = {}'.format(
+                self.test_name, server.name.capitalize(), str(fip)))
 
         return server.associated_fip
 
@@ -1333,9 +1410,9 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 waiters.wait_for_server_status(
                     self.servers_client, server.openstack_data['id'],
                     wait_until)
-            except Exception:
-                LOG.exception('Starting server %s failed',
-                              server.openstack_data['id'])
+            except Exception as e:
+                LOG.exception('Starting server {} failed ({})'.format(
+                    server.openstack_data['id'], e))
 
     def stop_tenant_server(self, server_id, wait_until='SHUTOFF'):
         self.servers_client.stop_server(server_id)  # changed for dev ci
@@ -1343,97 +1420,103 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             try:
                 waiters.wait_for_server_status(
                     self.servers_client, server_id, wait_until)
-            except Exception:
-                LOG.exception('Stopping server %s failed', server_id)
-
-    def _log_console_output(self, servers=None):
-        if not CONF.compute_feature_enabled.console_output:
-            LOG.debug('Console output not supported, cannot log')
-            return
-        if not servers:
-            servers = self.os_primary.servers_client.list_servers()
-            servers = servers['servers']
-        for server in servers:
-            try:
-                console_output = (
-                    self.os_primary.servers_client.get_console_output(
-                        server['id'])['output'])
-                LOG.debug('Console output for %s\nbody=\n%s',
-                          server['id'], console_output)
-            except lib_exc.NotFound:
-                LOG.debug("Server %s disappeared(deleted) while looking "
-                          "for the console log", server['id'])
-
-    def _assert_ping(self, server, dest, should_pass=True,
-                     interface=None, ping_count=None,
-                     ping_size=None, ping_timeout=None):
-        timeout = ping_timeout or CONF.validation.ping_timeout
-
-        """Execute ping to specified destination
-        :returns: data read from standard output of the command.
-        :raises: SSHExecCommandFailed if command returns nonzero
-                 status. The exception contains command status stderr content.
-        """
-        def ping(source, dest, ping_count, ping_size, nic=None):
-            count = ping_count or CONF.validation.ping_count
-            size = ping_size or CONF.validation.ping_size
-
-            # Use 'ping6' for IPv6 addresses, 'ping' for IPv4 and hostnames
-            ip_version = (
-                6 if valid_ipv6(dest) else 4)
-            cmd = (
-                'ping6' if ip_version == 6 else 'ping')
-            if nic:
-                cmd = 'sudo {cmd} -I {nic}'.format(cmd=cmd, nic=interface)
-
-            cmd += ' -c{0} -w{0} -s{1} {2}'.format(count, size, dest)
-            return source.console().exec_command(cmd)
-
-        def ping_address():
-            try:
-                result = ping(server, dest, ping_count,
-                              ping_size, nic=interface)
-
-            except lib_exc.SSHExecCommandFailed:
-                LOG.warning('Failed to ping IP: %s via a ssh connection '
-                            'from: %s.', dest,
-                            server.associated_fip)
-                if should_pass:
-                    LOG.debug('will clear arp cache for : %s', dest)
-                    cmd = 'sudo arp -d {dest}'.format(dest=dest)
-                    # following may fail
-                    try:
-                        server.console().exec_command(cmd)
-                    except lib_exc.SSHExecCommandFailed:
-                        LOG.debug('Failed to execute command on %s.',
-                                  server.id())
-                return not should_pass
-            LOG.debug('ping result: %s', result)
-
-            return should_pass
-
-        return test_utils.call_until_true(
-            ping_address, timeout, 1)
+            except Exception as e:
+                LOG.exception('Stopping server {} failed ({})'.format(
+                    server_id, e))
 
     def assert_ping(self, server1, server2=None, network=None, ip_type=4,
                     should_pass=True, interface=None, address=None,
-                    ping_count=3, servers=None, timeout=None):
-        if not server1.console():
-            self.skipTest('This test cannot complete assert_ping request '
-                          'as it has no console access.')
+                    ping_count=3, ping_size=None, ping_timeout=10):
+        LOG.info('[{}] Pinging {} > {}'.format(
+            self.test_name,
+            server1.name, server2.name if server2 else address))
 
-        dest = address or server2.get_server_ip_in_network(
-            network['name'], ip_type)
+        if server2:
+            server2.complete_prepare_for_connectivity()
+            if address:
+                dest = address
+            else:
+                assert network
+                dest = server2.get_server_ip_in_network(
+                    network['name'], ip_type)
+        else:
+            assert address
+            dest = address
+        ip_version = 6 if valid_ipv6(dest) else 4
+
+        server1.complete_prepare_for_connectivity()
+
+        def ping():
+
+            timeout = ping_timeout or CONF.validation.ping_timeout
+            count = ping_count or CONF.validation.ping_count
+            size = ping_size or CONF.validation.ping_size
+
+            def ping_cmd(source, nic=None):
+                # Use 'ping6' for IPv6 addresses, 'ping' for IPv4 and hostnames
+
+                cmd = 'ping6' if ip_version == 6 else 'ping'
+                if nic:
+                    cmd = '{cmd} -I {nic}'.format(cmd=cmd, nic=interface)
+                cmd += ' -c{0} -w{0} -s{1} {2}'.format(count, size, dest)
+                return source.send(cmd, as_sudo=False, one_off_attempt=True,
+                                   assert_success=False) is not None
+
+            def ping_address():
+                LOG.info('[{}] Pinging {} from {}'.format(
+                    self.test_name, dest, server1.associated_fip))
+
+                if ping_cmd(server1, interface):
+                    success = True
+                else:
+                    msg = '[{}] Failed to ping IP {} from {} ({})'.format(
+                        self.test_name, dest, server1.name,
+                        server1.associated_fip)
+                    if should_pass:
+                        LOG.warning(msg)
+                    else:
+                        LOG.info(msg)
+                    if ip_version == 4:
+                        LOG.info('[{}] Clearing ARP cache for {}'.format(
+                            self.test_name, dest))
+                        cmd = 'arp -d {}'.format(dest)
+                        if server1.send(cmd, one_off_attempt=True,
+                                        assert_success=False) is None:
+                            LOG.debug('[{}] Failed to execute command on'
+                                      ' {}'.format(self.test_name, server1.id))
+                    else:
+                        if should_pass:
+                            # TODO(OPENSTACK-2664) : CI test robustness:
+                            #      include ip neigh in our cirros-ipv6 image
+                            LOG.warn('[{}] Would need to clear IPv6 neighbors '
+                                     'cache but need CI image support '
+                                     '({})'.format(self.test_name, dest))
+                    success = False
+
+                LOG.info('[{}] Ping {} {}'.format(
+                    self.test_name,
+                    'expected' if success == should_pass else 'unexpected',
+                    'SUCCESS' if success else 'FAIL'))
+                return success
+
+            return test_utils.call_until_true(ping_address, timeout, 1)
+
         try:
-            self.assertTrue(self._assert_ping(
-                server1, dest, should_pass, interface=interface,
-                ping_count=ping_count, ping_timeout=timeout))
+            self.assertEqual(should_pass, ping())
+
         except lib_exc.SSHTimeout as ssh_e:
-            LOG.debug(ssh_e)
-            self._log_console_output(servers)
+            LOG.error('[{}] SSH Timeout! ({})'.format(self.test_name, ssh_e))
             raise
+
         except AssertionError:
-            self._log_console_output(servers)
+            LOG.error('[{}] Ping {} > {} unexpectedly {}!'.format(
+                self.test_name,
+                server1.name, server2.name if server2 else address,
+                'FAILED' if should_pass else 'PASSED'))
+
+            # DEFINE ACTIONS HERE...
+            # self.sleep(300, 'Pausing for giving means to debug...',
+            #            tag=self.test_name)
             raise
 
     def assertDictEqual(self, d1, d2, ignore, msg):
@@ -1443,7 +1526,8 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             self.assertIn(k, d2, "{} for key {}".format(msg, k))
             self.assertEqual(d1[k], d2[k], "{} for key {}".format(msg, k))
 
-    def start_webserver(self, server, port):
+    @staticmethod
+    def start_web_server(server, port):
         cmd = ("screen -d -m sh -c '"
                "while true; do echo -e \"HTTP/1.0 200 Ok\\nHELLO\\n\" "
                "| nc -l -p {port}; done;'".format(port=port))
@@ -1460,7 +1544,6 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         """Common wrapper utility delete a Network."""
         if not client:
             client = self.manager
-
         client.networks_client.delete_network(network['id'])
 
     def delete_router_interface(self, router, subnet, client=None):

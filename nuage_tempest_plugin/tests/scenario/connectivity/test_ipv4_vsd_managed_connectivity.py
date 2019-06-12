@@ -29,12 +29,9 @@ class Ipv4VsdManagedConnectivityTest(NuageBaseTest):
         self.create_l2_vsd_managed_subnet(network, l2domain)
 
         # Launch tenant servers in OpenStack network
-        server2 = self.create_tenant_server(
-            networks=[network])
-
-        server1 = self.create_tenant_server(
-            networks=[network],
-            make_reachable=True)
+        server2 = self.create_tenant_server([network])
+        server1 = self.create_tenant_server([network],
+                                            prepare_for_connectivity=True)
 
         # Test IPv4 connectivity between peer servers
         self.assert_ping(server1, server2, network)
@@ -48,8 +45,7 @@ class Ipv4VsdManagedConnectivityTest(NuageBaseTest):
         vsd_zone = self.vsd_create_zone(domain=vsd_l3domain)
         vsd_subnet = self.create_vsd_subnet(
             zone=vsd_zone,
-            cidr4=self.cidr4,
-            gateway4=self.gateway4)
+            cidr4=self.cidr4, gateway4=self.gateway4)
 
         self.vsd.define_any_to_any_acl(vsd_l3domain)
 
@@ -58,9 +54,10 @@ class Ipv4VsdManagedConnectivityTest(NuageBaseTest):
         self.create_l3_vsd_managed_subnet(network, vsd_l3domain, vsd_subnet)
 
         # Launch tenant servers in OpenStack network
-        server2 = self.create_tenant_server(networks=[network])
-        server1 = self.create_tenant_server(networks=[network],
-                                            make_reachable=True)
+        server2 = self.create_tenant_server([network],
+                                            prepare_for_connectivity=True)
+        server1 = self.create_tenant_server([network],
+                                            prepare_for_connectivity=True)
 
         # Test IPv4 connectivity between peer servers
         self.assert_ping(server1, server2, network)
@@ -80,14 +77,12 @@ class Ipv4VsdManagedConnectivityTest(NuageBaseTest):
         vsd_shared_subnet1 = self.create_vsd_subnet(
             ip_type='IPV4',
             zone=vsd_zone,
-            cidr4=subnet1_cidr,
-            gateway4=subnet1_gateway,
+            cidr4=subnet1_cidr, gateway4=subnet1_gateway,
             resource_type='PUBLIC')
         vsd_shared_subnet2 = self.create_vsd_subnet(
             ip_type='IPV4',
             zone=vsd_zone,
-            cidr4=subnet2_cidr,
-            gateway4=subnet2_gateway,
+            cidr4=subnet2_cidr, gateway4=subnet2_gateway,
             resource_type='PUBLIC')
         self.vsd.define_any_to_any_acl(shared_vsd_l3domain)
 
@@ -116,16 +111,12 @@ class Ipv4VsdManagedConnectivityTest(NuageBaseTest):
         network2 = self.create_network()
         self.create_subnet(
             network1,
-            cidr=subnet1_cidr,
-            mask_bits=24,
-            nuagenet=vsd_subnet1.id,
-            gateway=subnet1_gateway)
+            cidr=subnet1_cidr, mask_bits=24, gateway=subnet1_gateway,
+            nuagenet=vsd_subnet1.id)
         self.create_subnet(
             network2,
-            cidr=subnet2_cidr,
-            mask_bits=24,
-            nuagenet=vsd_subnet2.id,
-            gateway=subnet2_gateway)
+            cidr=subnet2_cidr, mask_bits=24, gateway=subnet2_gateway,
+            nuagenet=vsd_subnet2.id)
 
         network1['vsd_l3_domain'] = vsd_l3domain1
         network1['vsd_l3_subnet'] = vsd_subnet1
@@ -133,9 +124,10 @@ class Ipv4VsdManagedConnectivityTest(NuageBaseTest):
         network2['vsd_l3_subnet'] = vsd_subnet2
 
         # Launch tenant servers in OpenStack network
-        server1 = self.create_tenant_server(networks=[network1],
-                                            make_reachable=True)
-        server2 = self.create_tenant_server(networks=[network2])
+        server2 = self.create_tenant_server([network2],
+                                            prepare_for_connectivity=True)
+        server1 = self.create_tenant_server([network1],
+                                            prepare_for_connectivity=True)
 
         # Test IPv4 connectivity between peer servers
         self.assert_ping(server1, server2, network2)

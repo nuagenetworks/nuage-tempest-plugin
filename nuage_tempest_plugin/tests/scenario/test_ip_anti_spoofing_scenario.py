@@ -16,10 +16,6 @@ class IpAntiSpoofingTestScenario(antispoof.IpAntiSpoofingTestBase,
         raise cls.skipException('Skipping as needs VRS whitebox tests, '
                                 'which is work in progress - TODO(Kris)')
 
-    @classmethod
-    def resource_setup(cls):
-        super(IpAntiSpoofingTestScenario, cls).resource_setup()
-
     def test_vm_in_sec_disabled_port_l2domain(self):
         """test_vm_in_sec_disabled_port_l2domain
 
@@ -101,6 +97,6 @@ class IpAntiSpoofingTestScenario(antispoof.IpAntiSpoofingTestBase,
             vm['addresses'][network['name']][0]['OS-EXT-IPS-MAC:mac_addr'])
         self.assertEqual(vm['status'], 'ACTIVE')
         time.sleep(30)
-        # tag_name = 'verify_vm_vip_and_anit_spoof_l3domain'
+        # tag_name = 'verify_vm_vip_and_anti_spoof_l3domain'
         # nuage_ext.nuage_extension.nuage_components(
         #     nuage_ext._generate_tag(tag_name, self.__class__.__name__), self)

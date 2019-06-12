@@ -27,6 +27,7 @@ class DNSScenarioTest(nuage_test.NuageBaseTest):
                4: '1.1.1.1'}
 
         network = self.create_network()
+        subnet = None
         for ip_version in ip_versions:
             subnet = self.create_subnet(network, ip_version=ip_version,
                                         dns_nameservers=[dns.get(ip_version)])
@@ -38,15 +39,10 @@ class DNSScenarioTest(nuage_test.NuageBaseTest):
         # create open-ssh security group
         ssh_security_group = self.create_open_ssh_security_group()
 
-        configure_dualstack_itf = False
-        if len(ip_versions) == 2:
-            configure_dualstack_itf = True
-
         server = self.create_tenant_server(
-            networks=[network],
+            [network],
             security_groups=[ssh_security_group],
-            make_reachable=True,
-            configure_dualstack_itf=configure_dualstack_itf)
+            prepare_for_connectivity=True)
 
         # makes sure that all the DNSs configured.
         server.send(cmd="[ `cat /etc/resolv.conf | grep nameserver | "

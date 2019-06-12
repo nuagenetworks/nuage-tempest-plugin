@@ -90,10 +90,10 @@ class OsManagedDualStackOrchestrationTest(NuageBaseOrchestrationTest):
         server2_ipv6 = server2.get_server_ip_in_network(
             network['name'], ip_type=6)
 
-        server1.configure_dualstack_interface(
-            server1_ipv6, subnet=ipv6_subnet, device="eth0", )
-        server2.configure_dualstack_interface(
-            server2_ipv6, subnet=ipv6_subnet, device="eth0", )
+        server1.configure_static_interface(
+            server1_ipv6, subnet=ipv6_subnet, ip_version=6)
+        server2.configure_static_interface(
+            server2_ipv6, subnet=ipv6_subnet, ip_version=6)
 
         # Test IPv6 connectivity between peer servers
         self.assert_ping(server1, server2, network, server2_ipv6)

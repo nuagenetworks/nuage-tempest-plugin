@@ -32,14 +32,12 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
 
         # Launch tenant servers in OpenStack network
         server2 = self.create_tenant_server(
-            networks=[network],
-            make_reachable=True,
-            configure_dualstack_itf=True)
+            [network],
+            prepare_for_connectivity=True)
 
         server1 = self.create_tenant_server(
-            networks=[network],
-            make_reachable=True,
-            configure_dualstack_itf=True)
+            [network],
+            prepare_for_connectivity=True)
 
         # Test IPv4 connectivity between peer servers
         self.assert_ping(server1, server2, network)
@@ -101,9 +99,9 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
             self.assertEqual(pool6, subnet_pool6[0])
 
         # Launch tenant server in OpenStack network
-        server1 = self.create_tenant_server(networks=[network],
-                                            make_reachable=True,
-                                            configure_dualstack_itf=True)
+        server1 = self.create_tenant_server(
+            [network],
+            prepare_for_connectivity=True)
 
         if skip_server2_and_ping_tests:
             return vsd_domain, vsd_subnet, server1
@@ -114,9 +112,8 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
         else:
             # Launch tenant server in OpenStack network
             server2 = self.create_tenant_server(
-                networks=[network],
-                make_reachable=True,
-                configure_dualstack_itf=True)
+                [network],
+                prepare_for_connectivity=True)
             network2 = network
 
         self.assert_ping(server1, server2, network2)
@@ -186,11 +183,12 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
 
         # Launch tenant servers in OpenStack network
         server2 = self.create_tenant_server(
-            networks=[network])
+            [network],
+            prepare_for_connectivity=True)
 
         server1 = self.create_tenant_server(
-            networks=[network],
-            make_reachable=True)
+            [network],
+            prepare_for_connectivity=True)
 
         # Test IPv6 connectivity between peer servers
         self.assert_ping(server1, server2, network, ip_type=6)
@@ -204,7 +202,7 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
 
         subnet_ipv6_1_cidr = IPNetwork("2000:5f74:c4a5:b82e::/64")
         subnet_ipv6_1_gateway = str(IPAddress(subnet_ipv6_1_cidr) + 1)
-        vsd_l3domain_subnetv6_1 = self.create_vsd_subnet(
+        vsd_l3domain_subnet6_1 = self.create_vsd_subnet(
             zone=vsd_zone,
             ip_type="IPV6",
             cidr6=subnet_ipv6_1_cidr,
@@ -213,7 +211,7 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
 
         subnet_ipv6_2_cidr = IPNetwork("2001:5f74:c4a5:b82e::/64")
         subnet_ipv6_2_gateway = str(IPAddress(subnet_ipv6_2_cidr) + 1)
-        vsd_l3domain_subnetv6_2 = self.create_vsd_subnet(
+        vsd_l3domain_subnet6_2 = self.create_vsd_subnet(
             zone=vsd_zone,
             ip_type="IPV6",
             cidr6=subnet_ipv6_2_cidr,
@@ -222,7 +220,7 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
 
         subnet_ipv4_cidr = IPNetwork("10.10.10.0/24")
         subnet_ipv4_gateway = str(IPAddress(subnet_ipv4_cidr) + 1)
-        vsd_l3domain_subnetv4 = self.create_vsd_subnet(
+        vsd_l3domain_subnet4 = self.create_vsd_subnet(
             zone=vsd_zone,
             ip_type="IPV4",
             cidr4=subnet_ipv4_cidr,
@@ -231,43 +229,44 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
         self.vsd.define_any_to_any_acl(vsd_l3domain, allow_ipv6=True)
 
         # Provision OpenStack network linked to VSD network resources
-        networkv6_1 = self.create_network()
+        network6_1 = self.create_network()
         self.create_l3_vsd_managed_subnet(
-            networkv6_1, vsd_l3domain, vsd_l3domain_subnetv6_1, ip_version=6)
-        networkv6_2 = self.create_network()
+            network6_1, vsd_l3domain, vsd_l3domain_subnet6_1, ip_version=6)
+        network6_2 = self.create_network()
         self.create_l3_vsd_managed_subnet(
-            networkv6_2, vsd_l3domain, vsd_l3domain_subnetv6_2, ip_version=6)
-        networkv4 = self.create_network()
+            network6_2, vsd_l3domain, vsd_l3domain_subnet6_2, ip_version=6)
+        network4 = self.create_network()
         self.create_l3_vsd_managed_subnet(
-            networkv4, vsd_l3domain, vsd_l3domain_subnetv4, ip_version=4)
+            network4, vsd_l3domain, vsd_l3domain_subnet4, ip_version=4)
 
         # create open-ssh security group
         ssh_security_group = self.create_open_ssh_security_group()
 
         # provision ports
-        portv6_1 = self.create_port(networkv6_1,
+        portv6_1 = self.create_port(network6_1,
                                     security_groups=[ssh_security_group['id']])
-        portv6_2 = self.create_port(networkv6_2,
+        portv6_2 = self.create_port(network6_2,
                                     security_groups=[ssh_security_group['id']])
-        portv4 = self.create_port(networkv4,
+        portv4 = self.create_port(network4,
                                   security_groups=[ssh_security_group['id']])
 
         # Launch tenant servers in OpenStack network
         server2 = self.create_tenant_server(
-            ports=[portv6_2])
+            ports=[portv6_2],
+            prepare_for_connectivity=False)
 
         server1 = self.create_tenant_server(
-            ports=[portv4, portv6_1])
+            ports=[portv4, portv6_1],
+            prepare_for_connectivity=False)
 
-        # create_tenant_server doesn't allow us to use ports parameter and set
-        # make_reachable to true, so I had to create FIP explicitly
+        # as VSD managed, simulate a FIP to be present
         self.create_fip_to_server(
             server1, portv4,
-            vsd_domain=networkv4.get('vsd_l3_domain'),
-            vsd_subnet=networkv4.get('vsd_l3_subnet'))
+            vsd_domain=network4.get('vsd_l3_domain'),
+            vsd_subnet=network4.get('vsd_l3_subnet'))
 
         # Test IPv6 connectivity between peer servers
-        self.assert_ping(server1, server2, networkv6_2, ip_type=6)
+        self.assert_ping(server1, server2, network6_2, ip_type=6)
 
     def test_icmp_connectivity_l3_vsd_managed_dualstack_link_shared_subnet(
             self):
@@ -368,9 +367,10 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
         network2['vsd_l3_subnet'] = vsd_subnet2
 
         # Launch tenant servers in OpenStack network
-        server1 = self.create_tenant_server(networks=[network1],
-                                            make_reachable=True)
-        server2 = self.create_tenant_server(networks=[network2])
+        server2 = self.create_tenant_server([network2],
+                                            prepare_for_connectivity=True)
+        server1 = self.create_tenant_server([network1],
+                                            prepare_for_connectivity=True)
 
         # Test dualstack connectivity between peer servers
         self.assert_ping(server1, server2, network2)
