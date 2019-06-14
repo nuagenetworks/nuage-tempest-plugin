@@ -329,6 +329,62 @@ class NetworksTestJSONNuage(test_networks.NetworksTest):
         self._create_verify_delete_subnet(
             **self.subnet_dict(['dns_nameservers']))
 
+    @decorators.attr(type='smoke')
+    def test_single_stack_dhcp_option_deleted_l2(self):
+        self._test_single_stack_dhcp_option_deleted(with_router=False)
+
+    @decorators.attr(type='smoke')
+    def test_single_stack_dhcp_option_deleted_l3(self):
+        self._test_single_stack_dhcp_option_deleted(with_router=True)
+
+    def _test_single_stack_dhcp_option_deleted(self, with_router):
+        network = self.create_network()
+        subnet1 = self.create_subnet(
+            network, **self.subnet_dict(['gateway', 'host_routes',
+                                         'dns_nameservers',
+                                         'allocation_pools']))
+        # Reverse ip version for second subnet
+        self._ip_version = 4 if self._ip_version == 6 else 6
+        subnet2 = self.create_subnet(
+            network, ip_version=self._ip_version,
+            **self.subnet_dict(['gateway', 'host_routes',
+                                'dns_nameservers',
+                                'allocation_pools']))
+        # Reverse ip version again for normal flow
+        self._ip_version = 4 if self._ip_version == 6 else 6
+        if with_router:
+            router = self.create_router()
+            self.create_router_interface(router['id'], subnet1['id'])
+            self.addCleanup(self.delete_router_interface, router['id'],
+                            subnet1['id'])
+        # Delete subnet and check that there are no dhcp options left
+        self.subnets_client.delete_subnet(subnet2['id'])
+
+        if with_router:
+            nuage_dom_sub = self.nuage_client.get_domain_subnet(
+                None, None, filters=['externalID', self._vsd_address],
+                filter_value=[subnet1['network_id'],
+                              subnet1['cidr']])
+        else:
+            nuage_dom_sub = self.nuage_client.get_l2domain(
+                filters=['externalID', self._vsd_address],
+                filter_value=[subnet1['network_id'],
+                              subnet1['cidr']])
+        # Deleted subnet version should not have any options left:
+        vsd_resource = (n_constants.SUBNETWORK if
+                        with_router else n_constants.L2_DOMAIN)
+        nuage_dhcpopt = self.nuage_client.get_dhcpoption(
+            vsd_resource, nuage_dom_sub[0]['ID'], subnet2['ip_version'])
+        self.assertEmpty(nuage_dhcpopt,
+                         "No DHCP options of version {} should "
+                         "be found on l2domain but found "
+                         "{}.".format(subnet2['ip_version'], nuage_dhcpopt))
+        # Not deleted ip_version subnet should have all options intact
+        nuage_dhcpopt = self.nuage_client.get_dhcpoption(
+            vsd_resource, nuage_dom_sub[0]['ID'], subnet1['ip_version'])
+        self._verify_vsd_dhcp_options(nuage_dhcpopt, subnet1,
+                                      l2=not with_router)
+
 
 class NetworkNuageAdminTest(base.BaseAdminNetworkTest):
     _vsd_address = 'address'
