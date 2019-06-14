@@ -28,6 +28,7 @@ from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test.nuage_test import NuageAdminNetworksTest
+from nuage_tempest_plugin.lib.test.nuage_test import skip_because
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.lib.utils import data_utils as nuage_data_utils
@@ -458,6 +459,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
                           **rtr_template)
 
     @decorators.attr(type='smoke')
+    @skip_because(bug='VSD-35089')
     def test_router_create_with_rt_rd(self):
         # Create a router with specific rt/rd values
         rtrd = {
