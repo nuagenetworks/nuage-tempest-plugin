@@ -520,13 +520,13 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
         port_args = {
             'fixed_ips': [
                 {'subnet_id': subnet['id'],
-                 'ip_address': str(IPAddress(cidr4.first) + 3)},
-                {'subnet_id': subnet['id'],
                  'ip_address': str(IPAddress(cidr4.first) + 4)},
                 {'subnet_id': subnet['id'],
                  'ip_address': str(IPAddress(cidr4.first) + 5)},
                 {'subnet_id': subnet['id'],
-                 'ip_address': str(IPAddress(cidr4.first) + 6)}],
+                 'ip_address': str(IPAddress(cidr4.first) + 6)},
+                {'subnet_id': subnet['id'],
+                 'ip_address': str(IPAddress(cidr4.first) + 7)}],
         }
         port = self.create_port(network=network, **port_args)
         floating_ip = self.create_floatingip(
@@ -551,9 +551,9 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
         port_args = {
             'fixed_ips': [
                 {'subnet_id': subnet['id'],
-                 'ip_address': str(IPAddress(cidr4.first) + 7)},
+                 'ip_address': str(IPAddress(cidr4.first) + 8)},
                 {'subnet_id': subnet['id'],
-                 'ip_address': str(IPAddress(cidr4.first) + 8)}]}
+                 'ip_address': str(IPAddress(cidr4.first) + 9)}]}
         msg = ("It is not possible to add multiple ipv4 or multiple ipv6"
                " addresses on port {} since it has fip {} associated"
                "to it.").format(port['id'], floating_ip['id'])

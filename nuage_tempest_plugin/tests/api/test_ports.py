@@ -122,11 +122,11 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
 
         fixed_ips = [
             {
-                "ip_address": "10.0.0.3",
+                "ip_address": "10.0.0.4",
                 "subnet_id": subnet["id"]
             },
             {
-                "ip_address": "20.0.0.3",
+                "ip_address": "20.0.0.4",
                 "subnet_id": subnet2["id"]
             }
         ]
@@ -208,7 +208,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         # Create port
         fixed_ips = [
             {
-                "ip_address": "10.0.0.3",
+                "ip_address": "10.0.0.4",
                 "subnet_id": subnet["id"]
             }
         ]
@@ -218,20 +218,20 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         # update within subnet should succeed
         fixed_ips = [
             {
-                "ip_address": "10.0.0.4",
+                "ip_address": "10.0.0.5",
                 "subnet_id": subnet["id"]
             }
 
         ]
         port = self.update_port(port=port, fixed_ips=fixed_ips)
         self.assertIsNotNone(port, "Unable to update port")
-        self.assertEqual(port["fixed_ips"][0]["ip_address"], "10.0.0.4",
+        self.assertEqual(port["fixed_ips"][0]["ip_address"], "10.0.0.5",
                          message="The port did not update properly.")
 
         # Update to subnet2 should fail
         fixed_ips = [
             {
-                "ip_address": "20.0.0.3",
+                "ip_address": "20.0.0.4",
                 "subnet_id": subnet2["id"]
             }
         ]
@@ -261,11 +261,11 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
 
         fixed_ips = [
             {
-                "ip_address": "10.0.0.3",
+                "ip_address": "10.0.0.4",
                 "subnet_id": subnet["id"]
             },
             {
-                "ip_address": "10.0.0.4",
+                "ip_address": "10.0.0.5",
                 "subnet_id": subnet["id"]
             }
 
@@ -297,7 +297,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         self.assertIsNotNone(subnet, "Unable to create subnet")
         fixed_ips = [
             {
-                "ip_address": "10.0.0.3",
+                "ip_address": "10.0.0.4",
                 "subnet_id": subnet["id"]
             }
         ]
@@ -318,11 +318,11 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         # update within subnet should succeed
         fixed_ips = [
             {
-                "ip_address": "10.0.0.3",
+                "ip_address": "10.0.0.4",
                 "subnet_id": subnet["id"]
             },
             {
-                "ip_address": "10.0.0.4",
+                "ip_address": "10.0.0.5",
                 "subnet_id": subnet["id"]
             }
 
@@ -356,11 +356,11 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                                      subnet_id=subnet["id"])
         fixed_ips = [
             {
-                "ip_address": "10.0.0.3",
+                "ip_address": "10.0.0.4",
                 "subnet_id": subnet["id"]
             },
             {
-                "ip_address": "10.0.0.4",
+                "ip_address": "10.0.0.5",
                 "subnet_id": subnet["id"]
             }
 
@@ -381,7 +381,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
             nuage_vport[0]['ID'])
-        valid_vips = ['10.0.0.3']
+        valid_vips = ['10.0.0.4']
         vip_mismatch = False
         mac_mismatch = False
         if valid_vips and not nuage_vport_vips:
@@ -413,11 +413,11 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                                      subnet_id=subnet["id"])
         fixed_ips = [
             {
-                "ip_address": "10.0.0.3",
+                "ip_address": "10.0.0.4",
                 "subnet_id": subnet["id"]
             },
             {
-                "ip_address": "10.0.0.4",
+                "ip_address": "10.0.0.5",
                 "subnet_id": subnet["id"]
             }
 
@@ -439,7 +439,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
             nuage_vport[0]['ID'])
-        valid_vips = ['10.0.0.3']
+        valid_vips = ['10.0.0.4']
         vip_mismatch = False
         mac_mismatch = False
         if valid_vips and not nuage_vport_vips:
@@ -471,7 +471,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                                      subnet_id=subnet["id"])
         fixed_ips = [
             {
-                "ip_address": "10.0.0.3",
+                "ip_address": "10.0.0.4",
                 "subnet_id": subnet["id"]
             }
         ]
@@ -496,11 +496,11 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         # update within subnet should succeed
         fixed_ips = [
             {
-                "ip_address": "10.0.0.3",
+                "ip_address": "10.0.0.4",
                 "subnet_id": subnet["id"]
             },
             {
-                "ip_address": "10.0.0.4",
+                "ip_address": "10.0.0.5",
                 "subnet_id": subnet["id"]
             }
         ]
@@ -519,7 +519,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
             nuage_vport[0]['ID'])
-        valid_vips = ['10.0.0.3']
+        valid_vips = ['10.0.0.4']
         vip_mismatch = False
         mac_mismatch = False
         if valid_vips and not nuage_vport_vips:
@@ -551,7 +551,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                                      subnet_id=subnet["id"])
         fixed_ips = [
             {
-                "ip_address": "10.0.0.3",
+                "ip_address": "10.0.0.4",
                 "subnet_id": subnet["id"]
             }
         ]
@@ -572,11 +572,11 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         # update within subnet should succeed
         fixed_ips = [
             {
-                "ip_address": "10.0.0.3",
+                "ip_address": "10.0.0.4",
                 "subnet_id": subnet["id"]
             },
             {
-                "ip_address": "10.0.0.4",
+                "ip_address": "10.0.0.5",
                 "subnet_id": subnet["id"]
             }
 
@@ -593,7 +593,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
             nuage_vport[0]['ID'])
-        valid_vips = ['10.0.0.3']
+        valid_vips = ['10.0.0.4']
         vip_mismatch = False
         mac_mismatch = False
         if valid_vips and not nuage_vport_vips:
@@ -619,11 +619,11 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
 
         fixed_ips = [
             {
-                "ip_address": "10.0.0.3",
+                "ip_address": "10.0.0.4",
                 "subnet_id": subnet["id"]
             },
             {
-                "ip_address": "10.0.0.4",
+                "ip_address": "10.0.0.5",
                 "subnet_id": subnet["id"]
             }
 
@@ -657,7 +657,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         self.assertIsNotNone(subnet, "Unable to create subnet")
         fixed_ips = [
             {
-                "ip_address": "10.0.0.3",
+                "ip_address": "10.0.0.4",
                 "subnet_id": subnet["id"]
             }
         ]
@@ -678,11 +678,11 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         # update within subnet should succeed
         fixed_ips = [
             {
-                "ip_address": "10.0.0.3",
+                "ip_address": "10.0.0.4",
                 "subnet_id": subnet["id"]
             },
             {
-                "ip_address": "10.0.0.4",
+                "ip_address": "10.0.0.5",
                 "subnet_id": subnet["id"]
             }
 
@@ -720,16 +720,16 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                                      subnet_id=subnet["id"])
         fixed_ips = [
             {
-                "ip_address": "10.0.0.3",
+                "ip_address": "10.0.0.4",
                 "subnet_id": subnet["id"]
             },
             {
-                "ip_address": "10.0.0.4",
+                "ip_address": "10.0.0.5",
                 "subnet_id": subnet["id"]
             }
 
         ]
-        allowed_address_pairs = [{'ip_address': '10.0.0.5',
+        allowed_address_pairs = [{'ip_address': '10.0.0.6',
                                   'mac_address': 'fe:a0:36:4b:c8:70'}]
         port = self.create_port(network=network, fixed_ips=fixed_ips,
                                 allowed_address_pairs=allowed_address_pairs)
@@ -748,7 +748,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
             nuage_vport[0]['ID'])
-        valid_vips = ['10.0.0.3', allowed_address_pairs[0]['ip_address']]
+        valid_vips = ['10.0.0.4', allowed_address_pairs[0]['ip_address']]
         vip_mismatch = False
         if valid_vips and not nuage_vport_vips:
             vip_mismatch = True
@@ -777,11 +777,11 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                                      subnet_id=subnet["id"])
         fixed_ips = [
             {
-                "ip_address": "10.0.0.3",
+                "ip_address": "10.0.0.4",
                 "subnet_id": subnet["id"]
             },
             {
-                "ip_address": "10.0.0.4",
+                "ip_address": "10.0.0.5",
                 "subnet_id": subnet["id"]
             }
         ]
@@ -804,7 +804,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
             nuage_vport[0]['ID'])
-        valid_vips = ['10.0.0.3']
+        valid_vips = ['10.0.0.4']
         vip_mismatch = False
         if valid_vips and not nuage_vport_vips:
             vip_mismatch = True
@@ -832,7 +832,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                                      subnet_id=subnet["id"])
         fixed_ips = [
             {
-                "ip_address": "10.0.0.3",
+                "ip_address": "10.0.0.4",
                 "subnet_id": subnet["id"]
             }
         ]
@@ -853,16 +853,16 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         # update within subnet should succeed
         fixed_ips = [
             {
-                "ip_address": "10.0.0.3",
+                "ip_address": "10.0.0.4",
                 "subnet_id": subnet["id"]
             },
             {
-                "ip_address": "10.0.0.4",
+                "ip_address": "10.0.0.5",
                 "subnet_id": subnet["id"]
             }
 
         ]
-        allowed_address_pairs = [{'ip_address': '10.0.0.5',
+        allowed_address_pairs = [{'ip_address': '10.0.0.6',
                                   'mac_address': 'fe:a0:36:4b:c8:70'}]
         port = self.update_port(port=port, fixed_ips=fixed_ips,
                                 allowed_address_pairs=allowed_address_pairs)
@@ -877,7 +877,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
             nuage_vport[0]['ID'])
-        valid_vips = ['10.0.0.3', allowed_address_pairs[0]['ip_address']]
+        valid_vips = ['10.0.0.4', allowed_address_pairs[0]['ip_address']]
         vip_mismatch = False
         if valid_vips and not nuage_vport_vips:
             vip_mismatch = True
@@ -905,11 +905,11 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                                      subnet_id=subnet["id"])
         fixed_ips = [
             {
-                "ip_address": "10.0.0.3",
+                "ip_address": "10.0.0.4",
                 "subnet_id": subnet["id"]
             },
             {
-                "ip_address": "10.0.0.4",
+                "ip_address": "10.0.0.5",
                 "subnet_id": subnet["id"]
             }
         ]
@@ -948,15 +948,15 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         # update within subnet should succeed
         fixed_ips = [
             {
-                "ip_address": "10.0.0.4",
+                "ip_address": "10.0.0.5",
                 "subnet_id": subnet["id"]
             },
             {
-                "ip_address": "10.0.0.5",
+                "ip_address": "10.0.0.6",
                 "subnet_id": subnet["id"]
             }
         ]
-        allowed_address_pairs = [{'ip_address': '10.0.0.6',
+        allowed_address_pairs = [{'ip_address': '10.0.0.7',
                                   'mac_address': 'fe:a0:36:4b:c8:70'},
                                  {'ip_address': '10.0.0.10',
                                   'mac_address': 'fe:a0:36:4b:c8:70'}]
@@ -1003,15 +1003,15 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                                      subnet_id=subnet["id"])
         fixed_ips = [
             {
-                "ip_address": "10.0.0.3",
+                "ip_address": "10.0.0.4",
                 "subnet_id": subnet["id"]
             },
             {
-                "ip_address": "10.0.0.4",
+                "ip_address": "10.0.0.5",
                 "subnet_id": subnet["id"]
             }
         ]
-        allowed_address_pairs = [{'ip_address': '10.0.0.5',
+        allowed_address_pairs = [{'ip_address': '10.0.0.6',
                                   'mac_address': 'fe:a0:36:4b:c8:70'}]
         port = self.create_port(network=network, fixed_ips=fixed_ips,
                                 allowed_address_pairs=allowed_address_pairs)
@@ -1046,15 +1046,15 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         # update within subnet should succeed
         fixed_ips = [
             {
-                "ip_address": "10.0.0.4",
+                "ip_address": "10.0.0.5",
                 "subnet_id": subnet["id"]
             },
             {
-                "ip_address": "10.0.0.5",
+                "ip_address": "10.0.0.6",
                 "subnet_id": subnet["id"]
             }
         ]
-        allowed_address_pairs = [{'ip_address': '10.0.0.6',
+        allowed_address_pairs = [{'ip_address': '10.0.0.7',
                                   'mac_address': 'fe:a0:36:4b:c8:70'},
                                  {'ip_address': '10.0.0.10',
                                   'mac_address': 'fe:a0:36:4b:c8:70'}]
@@ -1102,11 +1102,11 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                                      subnet_id=subnet["id"])
         fixed_ips = [
             {
-                "ip_address": "10.0.0.3",
+                "ip_address": "10.0.0.4",
                 "subnet_id": subnet["id"]
             },
             {
-                "ip_address": "10.0.0.4",
+                "ip_address": "10.0.0.5",
                 "subnet_id": subnet["id"]
             }
         ]
@@ -1147,7 +1147,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                 "subnet_id": subnet["id"]
             }
         ]
-        allowed_address_pairs = [{'ip_address': '10.0.0.5',
+        allowed_address_pairs = [{'ip_address': '10.0.0.6',
                                   'mac_address': 'fe:a0:36:4b:c8:70'}]
         self.create_port(network=network, fixed_ips=fixed_ips,
                          allowed_address_pairs=allowed_address_pairs)
@@ -1155,11 +1155,11 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         # update within subnet should succeed
         fixed_ips = [
             {
-                "ip_address": "10.0.0.4",
+                "ip_address": "10.0.0.5",
                 "subnet_id": subnet["id"]
             },
             {
-                "ip_address": "10.0.0.5",
+                "ip_address": "10.0.0.6",
                 "subnet_id": subnet["id"]
             }
         ]
@@ -1169,7 +1169,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             self.fail("Exception expected when updating to"
                       " a different subnet!")
         except exceptions.BadRequest as e:
-            if ('Bad request: The IP Address 10.0.0.5 is'
+            if ('Bad request: The IP Address 10.0.0.6 is'
                     ' currently in use by subnet' in e._error_string):
                 vsd_vport_parent = self.vsd_client.get_global_resource(
                     constants.SUBNETWORK,
@@ -1218,15 +1218,15 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                                      subnet_id=subnet["id"])
         fixed_ips = [
             {
-                "ip_address": "10.0.0.4",
+                "ip_address": "10.0.0.5",
                 "subnet_id": subnet["id"]
             },
             {
-                "ip_address": "10.0.0.5",
+                "ip_address": "10.0.0.6",
                 "subnet_id": subnet["id"]
             }
         ]
-        allowed_address_pairs = [{'ip_address': '10.0.0.5',
+        allowed_address_pairs = [{'ip_address': '10.0.0.6',
                                   'mac_address': 'fe:a0:36:4b:c8:70'}]
         port = self.create_port(network=network, fixed_ips=fixed_ips,
                                 allowed_address_pairs=allowed_address_pairs)
@@ -1278,15 +1278,15 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                                      subnet_id=subnet["id"])
         fixed_ips = [
             {
-                "ip_address": "10.0.0.3",
+                "ip_address": "10.0.0.4",
                 "subnet_id": subnet["id"]
             },
             {
-                "ip_address": "10.0.0.4",
+                "ip_address": "10.0.0.5",
                 "subnet_id": subnet["id"]
             }
         ]
-        allowed_address_pairs = [{'ip_address': '10.0.0.5',
+        allowed_address_pairs = [{'ip_address': '10.0.0.6',
                                   'mac_address': 'fe:a0:36:4b:c8:70'}]
         port = self.create_port(network=network, fixed_ips=fixed_ips,
                                 allowed_address_pairs=allowed_address_pairs)
@@ -1317,11 +1317,11 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
 
         fixed_ips = [
             {
-                "ip_address": "10.0.0.4",
+                "ip_address": "10.0.0.5",
                 "subnet_id": subnet["id"]
             },
             {
-                "ip_address": "10.0.0.5",
+                "ip_address": "10.0.0.6",
                 "subnet_id": subnet["id"]
             }
         ]
@@ -1370,16 +1370,16 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
 
         fixed_ips = [
             {
-                "ip_address": "10.0.0.3",
+                "ip_address": "10.0.0.4",
                 "subnet_id": subnet["id"]
             },
             {
-                "ip_address": "10.0.0.4",
+                "ip_address": "10.0.0.5",
                 "subnet_id": subnet["id"]
             }
 
         ]
-        allowed_address_pairs = [{'ip_address': '10.0.0.5',
+        allowed_address_pairs = [{'ip_address': '10.0.0.6',
                                   'mac_address': 'fe:a0:36:4b:c8:70'}]
         port = self.create_port(network=network, fixed_ips=fixed_ips,
                                 allowed_address_pairs=allowed_address_pairs)
@@ -1407,7 +1407,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
             nuage_vport[0]['ID'])
-        valid_vips = ['10.0.0.3', allowed_address_pairs[0]['ip_address']]
+        valid_vips = ['10.0.0.4', allowed_address_pairs[0]['ip_address']]
         vip_mismatch = False
         if valid_vips and not nuage_vport_vips:
             vip_mismatch = True
@@ -1443,7 +1443,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                                      subnet_id=subnet["id"], cleanup=False)
         fixed_ips = [
             {
-                "ip_address": "10.0.0.3",
+                "ip_address": "10.0.0.4",
                 "subnet_id": subnet["id"]
             }
         ]
@@ -1464,16 +1464,16 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         # update within subnet should succeed
         fixed_ips = [
             {
-                "ip_address": "10.0.0.3",
+                "ip_address": "10.0.0.4",
                 "subnet_id": subnet["id"]
             },
             {
-                "ip_address": "10.0.0.4",
+                "ip_address": "10.0.0.5",
                 "subnet_id": subnet["id"]
             }
 
         ]
-        allowed_address_pairs = [{'ip_address': '10.0.0.5',
+        allowed_address_pairs = [{'ip_address': '10.0.0.6',
                                   'mac_address': 'fe:a0:36:4b:c8:70'}]
         port = self.update_port(port=port, fixed_ips=fixed_ips,
                                 allowed_address_pairs=allowed_address_pairs)
@@ -1485,7 +1485,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             filter_value=port['id'])
         self.assertEqual(constants.INHERITED,
                          nuage_vport[0]['addressSpoofing'])
-        valid_vips = ['10.0.0.3', allowed_address_pairs[0]['ip_address']]
+        valid_vips = ['10.0.0.4', allowed_address_pairs[0]['ip_address']]
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
             nuage_vport[0]['ID'])
