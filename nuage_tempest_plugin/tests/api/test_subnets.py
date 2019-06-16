@@ -34,8 +34,8 @@ class SubnetsTest(NuageAdminNetworksTest):
         if self.is_dhcp_agent_present():
             self.assertRaisesRegex(
                 exceptions.BadRequest,
-                "A network with multiple ipv4 subnets is not "
-                "allowed when neutron-dhcp-agent is enabled",
+                "A network with multiple ipv4 or ipv6 subnets is not allowed "
+                "when neutron-dhcp-agent is enabled",
                 self.create_subnet,
                 network, cidr=IPNetwork("20.0.0.0/24"),
                 mask_bits=28)
@@ -69,46 +69,64 @@ class SubnetsTest(NuageAdminNetworksTest):
     def test_subnet_delete_in_network_with_nuage_dhcp_ports(self):
         network = self.create_network()
         subnet1 = self.create_subnet(network)
-        subnet2 = self.create_subnet(network)
+        if self.is_dhcp_agent_present():
+            self.assertRaisesRegex(
+                exceptions.BadRequest,
+                "A network with multiple ipv4 or ipv6 subnets is not allowed "
+                "when neutron-dhcp-agent is enabled",
+                self.create_subnet,
+                network, cidr=IPNetwork("20.0.0.0/24"),
+                mask_bits=28)
+        else:
+            subnet2 = self.create_subnet(network)
 
-        filters = {
-            'device_owner': 'network:dhcp:nuage',
-            'network_id': network['id']
-        }
-        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+            filters = {
+                'device_owner': 'network:dhcp:nuage',
+                'network_id': network['id']
+            }
+            dhcp_ports = self.ports_client.list_ports(**filters)['ports']
 
-        # check dhcp port number
-        self.assertEqual(2, len(dhcp_ports))
+            # check dhcp port number
+            self.assertEqual(2, len(dhcp_ports))
 
-        self.subnets_client.delete_subnet(subnet1['id'])
-        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+            self.subnets_client.delete_subnet(subnet1['id'])
+            dhcp_ports = self.ports_client.list_ports(**filters)['ports']
 
-        # check one dhcp port is deleted
-        self.assertEqual(1, len(dhcp_ports))
-        self.assertEqual(dhcp_ports[0]['fixed_ips'][0]['subnet_id'],
-                         subnet2['id'])
+            # check one dhcp port is deleted
+            self.assertEqual(1, len(dhcp_ports))
+            self.assertEqual(dhcp_ports[0]['fixed_ips'][0]['subnet_id'],
+                             subnet2['id'])
 
     @decorators.attr(type='smoke')
     def test_subnet_update_dhcp_disabled_in_network_with_nuage_dhcp_ports(
             self):
         network = self.create_network()
         subnet1 = self.create_subnet(network)
-        subnet2 = self.create_subnet(network)
+        if self.is_dhcp_agent_present():
+            self.assertRaisesRegex(
+                exceptions.BadRequest,
+                "A network with multiple ipv4 or ipv6 subnets is not allowed "
+                "when neutron-dhcp-agent is enabled",
+                self.create_subnet,
+                network, cidr=IPNetwork("20.0.0.0/24"),
+                mask_bits=28)
+        else:
+            subnet2 = self.create_subnet(network)
 
-        filters = {
-            'device_owner': 'network:dhcp:nuage',
-            'network_id': network['id']
-        }
-        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+            filters = {
+                'device_owner': 'network:dhcp:nuage',
+                'network_id': network['id']
+            }
+            dhcp_ports = self.ports_client.list_ports(**filters)['ports']
 
-        # check dhcp port number
-        self.assertEqual(2, len(dhcp_ports))
+            # check dhcp port number
+            self.assertEqual(2, len(dhcp_ports))
 
-        kwargs = {'enable_dhcp': False}
-        self.subnets_client.update_subnet(subnet1['id'], **kwargs)
-        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+            kwargs = {'enable_dhcp': False}
+            self.subnets_client.update_subnet(subnet1['id'], **kwargs)
+            dhcp_ports = self.ports_client.list_ports(**filters)['ports']
 
-        # check dhcp port is deleted
-        self.assertEqual(1, len(dhcp_ports))
-        self.assertEqual(dhcp_ports[0]['fixed_ips'][0]['subnet_id'],
-                         subnet2['id'])
+            # check dhcp port is deleted
+            self.assertEqual(1, len(dhcp_ports))
+            self.assertEqual(dhcp_ports[0]['fixed_ips'][0]['subnet_id'],
+                             subnet2['id'])
