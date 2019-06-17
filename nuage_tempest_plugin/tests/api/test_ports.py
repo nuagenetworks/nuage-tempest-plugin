@@ -248,6 +248,154 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                 self.fail("A different NuageBadRequest exception"
                           " was expected for this operation.")
 
+    def _nuage_port_update_fixed_ips_dual_subnets_with_vm(self, is_l2):
+        network = self.create_network()
+        subnetv4 = self.create_subnet(network, cidr=IPNetwork(
+            "10.0.0.0/24"), cleanup=False)
+        subnetv6 = self.create_subnet(network,
+                                      cidr=IPNetwork("cafe:babe::/64"),
+                                      ip_version=6, cleanup=False)
+        if is_l2:
+            resource = constants.L2_DOMAIN
+        else:
+            router = self.create_router(
+                admin_state_up=True,
+                external_network_id=CONF.network.public_network_id)
+            self.assertIsNotNone(router, "Unable to create router")
+            # Attach subnet
+            self.create_router_interface(router_id=router["id"],
+                                         subnet_id=subnetv6["id"],
+                                         cleanup=False)
+            resource = constants.SUBNETWORK
+        vsd_vport_parent = self.vsd_client.get_global_resource(
+            resource,
+            filters='externalID',
+            filter_value=network['id'])[0]
+        fixed_ips = [
+            {
+                "ip_address": "10.0.0.4",
+                "subnet_id": subnetv4["id"]
+            },
+            {
+                "ip_address": "10.0.0.5",
+                "subnet_id": subnetv4["id"]
+            }
+        ]
+        port = self.create_port(network=network, fixed_ips=fixed_ips,
+                                cleanup=False)
+        self.assertIsNotNone(port, "Unable to create port on network")
+        self._create_server(name='vm-' + network['name'],
+                            network=network, port_id=port['id'])
+        vm_interface = self.vsd_client.get_vm_iface(
+            resource, vsd_vport_parent['ID'],
+            filters='externalID', filter_value=port['id'])[0]
+        self.assertEqual(vm_interface['IPAddress'], "10.0.0.5")
+        self.assertIsNone(vm_interface.get('IPv6Address'))
+        # Fixed ips from pure ipv4 ips to dual ips
+        fixed_ips = [
+            {
+                "ip_address": "10.0.0.6",
+                "subnet_id": subnetv4["id"]
+            },
+            {
+                "ip_address": "10.0.0.7",
+                "subnet_id": subnetv4["id"]
+            },
+            {
+                "ip_address": "cafe:babe::4",
+                "subnet_id": subnetv6["id"]
+            },
+            {
+                "ip_address": "cafe:babe::5",
+                "subnet_id": subnetv6["id"]
+            }
+        ]
+        port = self.update_port(port=port, fixed_ips=fixed_ips)
+        self.assertIsNotNone(port, "Unable to update port")
+        self.assertEqual(port["fixed_ips"], fixed_ips,
+                         message="The port did not update properly.")
+        vm_interface = self.vsd_client.get_vm_iface(
+            resource, vsd_vport_parent['ID'],
+            filters='externalID', filter_value=port['id'])[0]
+        self.assertEqual(vm_interface['IPAddress'], "10.0.0.7")
+        self.assertEqual(vm_interface['IPv6Address'], "cafe:babe::5/64")
+        # Fixed ips from dual ips to pure ipv6 ips
+        fixed_ips = [
+            {
+                "ip_address": "cafe:babe::6",
+                "subnet_id": subnetv6["id"]
+            },
+            {
+                "ip_address": "cafe:babe::7",
+                "subnet_id": subnetv6["id"]
+            }
+        ]
+        port = self.update_port(port=port, fixed_ips=fixed_ips)
+        self.assertIsNotNone(port, "Unable to update port")
+        self.assertEqual(port["fixed_ips"], fixed_ips,
+                         message="The port did not update properly.")
+        vm_interface = self.vsd_client.get_vm_iface(
+            resource, vsd_vport_parent['ID'],
+            filters='externalID', filter_value=port['id'])[0]
+        self.assertEqual(vm_interface['IPv6Address'], "cafe:babe::7/64")
+        self.assertIsNone(vm_interface.get('IPAddress'))
+
+        # Delete ipv4 subnet to changing dualstack to pure ipv6 stack with vm
+        self.delete_subnet(subnetv4)
+        vsd_vport_parent = self.vsd_client.get_global_resource(
+            resource,
+            filters='externalID',
+            filter_value=network['id'])[0]
+        self.assertEqual(vsd_vport_parent['IPType'], 'IPV6')
+        # Create ipv6 subnet to changing pure ipv6 stack to dualstack with vm
+        subnetv4 = self.create_subnet(network, cidr=IPNetwork("10.0.0.0/24"))
+
+        # Fixed ips from pure ipv6 ips to pure ipv4 ips
+        fixed_ips = [
+            {
+                "ip_address": "10.0.0.8",
+                "subnet_id": subnetv4["id"]
+            },
+            {
+                "ip_address": "10.0.0.9",
+                "subnet_id": subnetv4["id"]
+            }
+        ]
+        port = self.update_port(port=port, fixed_ips=fixed_ips)
+        self.assertIsNotNone(port, "Unable to update port")
+        self.assertEqual(port["fixed_ips"], fixed_ips,
+                         message="The port did not update properly.")
+        vm_interface = self.vsd_client.get_vm_iface(
+            resource, vsd_vport_parent['ID'],
+            filters='externalID', filter_value=port['id'])[0]
+        self.assertEqual(vm_interface['IPAddress'], "10.0.0.9")
+        self.assertIsNone(vm_interface.get('IPv6Address'))
+
+        if not is_l2:
+            self.remove_router_interface(router_id=router["id"],
+                                         subnet_id=subnetv6["id"])
+            self.create_router_interface(router_id=router["id"],
+                                         subnet_id=subnetv4["id"])
+        # Delete ipv6 subnet to changing dualstack to pure ipv4 stack with vm
+        self.delete_subnet(subnetv6)
+        vsd_vport_parent = self.vsd_client.get_global_resource(
+            resource,
+            filters='externalID',
+            filter_value=network['id'])[0]
+        self.assertEqual(vsd_vport_parent['IPType'], 'IPV4')
+        # Create ipv6 subnet to changing pure ipv4 stack to dualstack with vm
+        self.create_subnet(network, cidr=IPNetwork("cafe:babe::/64"),
+                           ip_version=6)
+        self.delete_port(port)
+
+    @decorators.attr(type='smoke')
+    def test_nuage_port_update_fixed_ips_dual_subnets_with_vm_l2(self):
+        self._nuage_port_update_fixed_ips_dual_subnets_with_vm(is_l2=True)
+
+    @decorators.attr(type='smoke')
+    def test_nuage_port_update_fixed_ips_dual_subnets_with_vm_l3(self):
+        self._nuage_port_update_fixed_ips_dual_subnets_with_vm(is_l2=False)
+
     @decorators.attr(type='smoke')
     def test_nuage_port_create_fixed_ips_same_subnet_l2(self):
         # Set up resources
