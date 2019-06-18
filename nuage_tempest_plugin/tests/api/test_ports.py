@@ -4,7 +4,6 @@ from netaddr import IPNetwork
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageAdminNetworksTest
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
-from nuage_tempest_plugin.lib.test.nuage_test import skip_because
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
@@ -887,7 +886,6 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                 vip_mismatch = True
             self.assertEqual(vip_mismatch, False)
 
-    @skip_because(bug='VSD-33476')
     @decorators.attr(type='smoke')
     def test_nuage_port_update_fixed_ips_same_subnet_l3_with_aap_with_vm(self):
         # Set up resources
@@ -986,7 +984,6 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                 vip_mismatch = True
             self.assertEqual(vip_mismatch, False)
 
-    @skip_because(bug='VSD-33476')
     @decorators.attr(type='smoke')
     def test_nuage_port_update_app_to_fixed_ips_l3_with_vm(self):
         # Set up resources
@@ -1085,7 +1082,6 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                 vip_mismatch = True
             self.assertEqual(vip_mismatch, False)
 
-    @skip_because(bug='VSD-33476')
     @decorators.attr(type='smoke')
     def test_nuage_port_update_fixed_ip_with_vm_and_conflict_with_aap_neg(
             self):
@@ -1173,35 +1169,30 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             self.fail("Exception expected when updating to"
                       " a different subnet!")
         except exceptions.BadRequest as e:
-            if ('Bad request: The IP Address 10.0.0.5 is'
-                    ' currently in use by subnet' in e._error_string):
-                vsd_vport_parent = self.vsd_client.get_global_resource(
-                    constants.SUBNETWORK,
-                    filters='externalID',
-                    filter_value=subnet['network_id'])[0]
-                nuage_vport = self.vsd_client.get_vport(
-                    constants.SUBNETWORK,
-                    vsd_vport_parent['ID'],
-                    filters='externalID',
-                    filter_value=port['id'])
-                self.assertEqual(constants.INHERITED,
-                                 nuage_vport[0]['addressSpoofing'])
-                nuage_vport_vips = self.vsd_client.get_virtual_ip(
-                    constants.VPORT,
-                    nuage_vport[0]['ID'])
-                vip_mismatch = False
-                if valid_vips and not nuage_vport_vips:
+            self.assertIn('Bad request: Error in REST call to VSD: '
+                          'The IP Address 10.0.0.5 is currently in use '
+                          'by subnet', str(e))
+            vsd_vport_parent = self.vsd_client.get_global_resource(
+                constants.SUBNETWORK,
+                filters='externalID',
+                filter_value=subnet['network_id'])[0]
+            nuage_vport = self.vsd_client.get_vport(
+                constants.SUBNETWORK,
+                vsd_vport_parent['ID'],
+                filters='externalID',
+                filter_value=port['id'])
+            self.assertEqual(constants.INHERITED,
+                             nuage_vport[0]['addressSpoofing'])
+            nuage_vport_vips = self.vsd_client.get_virtual_ip(
+                constants.VPORT,
+                nuage_vport[0]['ID'])
+            vip_mismatch = False
+            if valid_vips and not nuage_vport_vips:
+                vip_mismatch = True
+            for nuage_vport_vip in nuage_vport_vips:
+                if nuage_vport_vip['virtualIP'] not in valid_vips:
                     vip_mismatch = True
-                for nuage_vport_vip in nuage_vport_vips:
-                    if nuage_vport_vip['virtualIP'] not in valid_vips:
-                        vip_mismatch = True
-                    self.assertEqual(vip_mismatch, False)
-                pass
-            else:
-                # Differentiate between VSD failure and update failure
-                LOG.debug(e._error_string)
-                self.fail("A different NuageBadRequest exception"
-                          " was expected for this operation.")
+                self.assertEqual(vip_mismatch, False)
 
     @decorators.attr(type='smoke')
     def test_nuage_port_create_fixed_ip_same_as_aap(self):
