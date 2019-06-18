@@ -134,7 +134,7 @@ class VSDManagedDualStackCommonBase(BaseVSDManagedNetworksIPv6Test):
                     'enable_dhcp': (vsd_l2domain_template.enable_dhcpv6
                                     if self.vsd_dhcp_managed else False),
                     'nuagenet': vsd_l2domain.id,
-                    'net_partition': self.net_partition[0]['name']
+                    'net_partition': self.net_partition
                 }
 
                 if use_allocation_pool:
@@ -169,7 +169,7 @@ class VSDManagedDualStackCommonBase(BaseVSDManagedNetworksIPv6Test):
                     'gateway': None,
                     # gateway is not set (which ~ to option 3 not set)
                     'nuagenet': vsd_l2domain.id,
-                    'net_partition': self.net_partition[0]['name']
+                    'net_partition': self.net_partition
                 }
                 if use_allocation_pool:
                     start4 = self.cidr4[10]
