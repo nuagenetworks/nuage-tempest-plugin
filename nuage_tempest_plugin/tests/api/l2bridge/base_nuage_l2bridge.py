@@ -112,13 +112,22 @@ class BaseNuageL2Bridge(NuageBaseTest):
                     break
             self.assertEqual(True, found_matching_phys_net)
 
-    def validate_l2domain_on_vsd(self, bridge, l2domain, ip_type):
-        self.assertEqual(bridge['id'], l2domain.name)
-        self.assertEqual(bridge['name'], l2domain.description)
+    def validate_l2domain_on_vsd(self, l2domain, ip_type, bridge=None,
+                                 subnet=None):
         dhcp_options = self.vsd.get_l2domain_dhcp_options(l2domain)
-        for dhcp_option in dhcp_options:
-            self.assertEqual(self.ext_id(bridge['id']),
-                             dhcp_option.external_id)
+        if subnet:
+            self.assertEqual(subnet['network_id'] + '_' + subnet['id'],
+                             l2domain.name)
+            self.assertEqual(subnet['name'], l2domain.description)
+            for dhcp_option in dhcp_options:
+                self.assertEqual(self.ext_id(subnet['id']),
+                                 dhcp_option.external_id)
+        else:
+            self.assertEqual(bridge['id'], l2domain.name)
+            self.assertEqual(bridge['name'], l2domain.description)
+            for dhcp_option in dhcp_options:
+                self.assertEqual(self.ext_id(bridge['id']),
+                                 dhcp_option.external_id)
         self.assertEqual(l2domain.ip_type, ip_type)
 
     @staticmethod

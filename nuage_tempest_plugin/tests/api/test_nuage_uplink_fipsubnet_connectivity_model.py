@@ -143,7 +143,8 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
             filters=['externalID', 'address'],
             filter_value=[fipsub1['network_id'],
                           fipsub1['cidr']])
-        self.assertEqual(fipsub1['id'], nuage_fipsubnet1[0]['name'])
+        self.assertEqual(fipsub1['network_id'] + '_' + fipsub1['id'],
+                         nuage_fipsubnet1[0]['name'])
 
         # Create uplink subnet on VSD
         self.create_gateway_port_vlan()
@@ -163,7 +164,8 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
             filters=['externalID', 'address'],
             filter_value=[fipsub2['network_id'],
                           fipsub2['cidr']])
-        self.assertEqual(fipsub2['id'], nuage_fipsubnet2[0]['name'])
+        self.assertEqual(fipsub2['network_id'] + '_' + fipsub2['id'],
+                         nuage_fipsubnet2[0]['name'])
         self.assertEqual(nuage_fipsubnet1[0]['parentID'],
                          nuage_fipsubnet2[0]['parentID'])
         # self.delete_gateway_port_vlan()
@@ -181,7 +183,8 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
             filters=['externalID', 'address'],
             filter_value=[fipsub['network_id'],
                           fipsub['cidr']])
-        self.assertEqual(fipsub_show['id'], nuage_fipsubnet[0]['name'])
+        self.assertEqual(fipsub_show['network_id'] + '_' + fipsub_show['id'],
+                         nuage_fipsubnet[0]['name'])
         self.assertEqual(fipsub_show['nuage_uplink'],
                          nuage_fipsubnet[0]['parentID'])
 

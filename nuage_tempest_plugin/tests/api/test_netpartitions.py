@@ -145,7 +145,8 @@ class NetpartitionsTest(NuageAdminNetworksTest):
         l3domain = self.vsd.get_l3_domain_by_network_id_and_cidr(
             ext_subnet['network_id'],
             ext_subnet['cidr'])
-        self.assertEqual(ext_subnet['id'], nuage_subnet.name)
+        self.assertEqual(ext_network['id'] + '_' + ext_subnet['id'],
+                         nuage_subnet.name)
         shared_netpart_id = self.nuage_client.get_net_partition(
             self.shared_infrastructure)[0]['ID']
         self.assertEqual(shared_netpart_id, l3domain.parent_id)
@@ -172,7 +173,8 @@ class NetpartitionsTest(NuageAdminNetworksTest):
             enterprise=netpart['name'],
             by_network_id=int_subnet['network_id'],
             cidr=int_subnet['cidr'])
-        self.assertEqual(int_subnet['id'], nuage_l2dom.name)
+        self.assertEqual(int_network['id'] + '_' + int_subnet['id'],
+                         nuage_l2dom.name)
         self.assertEqual(netpart['id'], nuage_l2dom.parent_id)
 
     @decorators.attr(type='smoke')

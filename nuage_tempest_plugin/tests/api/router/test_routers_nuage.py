@@ -218,7 +218,8 @@ class NuageRoutersTest(base.BaseNetworkTest):
         nuage_l2dom = self.nuage_client.get_l2domain(
             filters=['externalID', 'address'],
             filter_value=[subnet['network_id'], subnet['cidr']])
-        self.assertEqual(nuage_l2dom[0]['name'], subnet['id'])
+        self.assertEqual(nuage_l2dom[0]['name'],
+                         network['id'] + '_' + subnet['id'])
 
         router = self._create_router(data_utils.rand_name('router-'))
         nuage_domain = self.nuage_client.get_l3domain(
@@ -244,7 +245,8 @@ class NuageRoutersTest(base.BaseNetworkTest):
         nuage_domain_subnet = self.nuage_client.get_domain_subnet(
             parent=n_constants.DOMAIN, parent_id=nuage_domain[0]['ID'])
 
-        self.assertEqual(nuage_domain_subnet[0]['name'], subnet['id'])
+        self.assertEqual(nuage_domain_subnet[0]['name'],
+                         network['id'] + '_' + subnet['id'])
 
     @decorators.attr(type='smoke')
     def test_add_remove_router_interface_with_port_id(self):
@@ -254,7 +256,8 @@ class NuageRoutersTest(base.BaseNetworkTest):
         nuage_l2dom = self.nuage_client.get_l2domain(
             filters=['externalID', 'address'],
             filter_value=[subnet['network_id'], subnet['cidr']])
-        self.assertEqual(nuage_l2dom[0]['name'], subnet['id'])
+        self.assertEqual(nuage_l2dom[0]['name'],
+                         network['id'] + '_' + subnet['id'])
 
         router = self._create_router(data_utils.rand_name('router-'))
         nuage_domain = self.nuage_client.get_l3domain(
@@ -287,7 +290,8 @@ class NuageRoutersTest(base.BaseNetworkTest):
             nuage_l2dom, '', "L2 domain is not deleted in VSD")
         nuage_domain_subnet = self.nuage_client.get_domain_subnet(
             n_constants.DOMAIN, nuage_domain[0]['ID'])
-        self.assertEqual(nuage_domain_subnet[0]['name'], subnet['id'])
+        self.assertEqual(nuage_domain_subnet[0]['name'],
+                         network['id'] + '_' + subnet['id'])
 
     @utils.requires_ext(extension='extraroute', service='network')
     @decorators.attr(type='smoke')
@@ -345,7 +349,8 @@ class NuageRoutersTest(base.BaseNetworkTest):
         nuage_l2dom = self.nuage_client.get_l2domain(
             filters=['externalID', 'address'],
             filter_value=[subnet['network_id'], subnet['cidr']])
-        self.assertEqual(nuage_l2dom[0]['name'], subnet['id'])
+        self.assertEqual(nuage_l2dom[0]['name'],
+                         network['id'] + '_' + subnet['id'])
 
         # Create net-partition
         netpart_name = data_utils.rand_name('netpart')

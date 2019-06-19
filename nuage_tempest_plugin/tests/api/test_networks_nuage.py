@@ -214,7 +214,8 @@ class NetworksTestJSONNuage(test_networks.NetworksTest):
             filter_value=[subnet['network_id'],
                           subnet['cidr']])
 
-        self.assertEqual(nuage_l2dom[0]['name'], subnet['id'])
+        self.assertEqual(nuage_l2dom[0]['name'],
+                         network['id'] + '_' + subnet['id'])
         self.assertEqual(nuage_l2dom[0]['description'], subnet['name'])
 
         # Delete network while the subnet still exists

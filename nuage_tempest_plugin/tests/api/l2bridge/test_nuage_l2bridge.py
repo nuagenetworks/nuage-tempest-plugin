@@ -322,8 +322,8 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             bridge = self.get_l2bridge(bridge['id'])
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            self.validate_l2domain_on_vsd(bridge, l2domain,
-                                          ip_type='DUALSTACK')
+            self.validate_l2domain_on_vsd(l2domain, ip_type='DUALSTACK',
+                                          bridge=bridge)
             self.assertEqual(self.ext_id(bridge['id']),
                              l2domain.external_id)
             self.assertEqual(s16['nuage_l2bridge'], bridge['id'])
@@ -434,8 +434,8 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             bridge = self.get_l2bridge(bridge['id'])
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            self.validate_l2domain_on_vsd(bridge, l2domain,
-                                          ip_type='DUALSTACK')
+            self.validate_l2domain_on_vsd(l2domain, ip_type='DUALSTACK',
+                                          bridge=bridge)
             self.assertEqual(self.ext_id(bridge['id']),
                              l2domain.external_id)
 
@@ -544,15 +544,15 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
 
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            self.validate_l2domain_on_vsd(bridge, l2domain,
-                                          ip_type='DUALSTACK')
+            self.validate_l2domain_on_vsd(l2domain, ip_type='DUALSTACK',
+                                          bridge=bridge)
             self.assertEqual(self.ext_id(bridge['id']),
                              l2domain.external_id)
 
             l2domain2 = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge2['nuage_subnet_id']))
-            self.validate_l2domain_on_vsd(bridge2, l2domain2,
-                                          ip_type='DUALSTACK')
+            self.validate_l2domain_on_vsd(l2domain2, ip_type='DUALSTACK',
+                                          bridge=bridge2)
             self.assertEqual(self.ext_id(bridge2['id']),
                              l2domain2.external_id)
 
@@ -579,15 +579,15 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
 
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            self.validate_l2domain_on_vsd(bridge, l2domain,
-                                          ip_type='DUALSTACK')
+            self.validate_l2domain_on_vsd(l2domain, ip_type='DUALSTACK',
+                                          bridge=bridge)
             self.assertEqual(self.ext_id(bridge['id']),
                              l2domain.external_id)
 
             l2domain2 = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge2['nuage_subnet_id']))
-            self.validate_l2domain_on_vsd(bridge2, l2domain2,
-                                          ip_type='DUALSTACK')
+            self.validate_l2domain_on_vsd(l2domain2, ip_type='DUALSTACK',
+                                          bridge=bridge2)
             self.assertEqual(self.ext_id(bridge2['id']),
                              l2domain2.external_id)
 
@@ -598,8 +598,8 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             bridge = self.get_l2bridge(bridge['id'])
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            self.validate_l2domain_on_vsd(bridge, l2domain,
-                                          ip_type='DUALSTACK')
+            self.validate_l2domain_on_vsd(l2domain, ip_type='DUALSTACK',
+                                          bridge=bridge)
             self.assertEqual(self.ext_id(bridge['id']),
                              l2domain.external_id)
 
@@ -791,8 +791,8 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
 
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            self.validate_l2domain_on_vsd(bridge, l2domain,
-                                          ip_type='DUALSTACK')
+            self.validate_l2domain_on_vsd(l2domain, ip_type='DUALSTACK',
+                                          bridge=bridge)
             self.assertEqual(self.ext_id(bridge['id']),
                              l2domain.external_id)
 
@@ -916,8 +916,8 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
 
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            self.validate_l2domain_on_vsd(bridge, l2domain,
-                                          ip_type='DUALSTACK')
+            self.validate_l2domain_on_vsd(l2domain, ip_type='DUALSTACK',
+                                          bridge=bridge)
             self.assertEqual(self.ext_id(bridge['id']),
                              l2domain.external_id)
 
@@ -934,8 +934,8 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
 
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            self.validate_l2domain_on_vsd(bridge, l2domain,
-                                          ip_type='DUALSTACK')
+            self.validate_l2domain_on_vsd(l2domain, ip_type='DUALSTACK',
+                                          bridge=bridge)
             self.assertEqual(self.ext_id(bridge['id']),
                              l2domain.external_id)
 
@@ -1001,7 +1001,8 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             bridge = self.get_l2bridge(bridge['id'])
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            self.validate_l2domain_on_vsd(bridge, l2domain, ip_type='IPV4')
+            self.validate_l2domain_on_vsd(l2domain, ip_type='IPV4',
+                                          bridge=bridge)
 
             s26 = self.create_subnet(n2, subnet_name=name2 + '-subnet-26',
                                      client=self.admin_manager,
@@ -1011,14 +1012,14 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                      cleanup=False)
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            self.validate_l2domain_on_vsd(bridge, l2domain,
-                                          ip_type='DUALSTACK')
+            self.validate_l2domain_on_vsd(l2domain, ip_type='DUALSTACK',
+                                          bridge=bridge)
 
             self.delete_subnet(s26, client=self.admin_manager)
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            self.validate_l2domain_on_vsd(bridge, l2domain,
-                                          ip_type='IPV4')
+            self.validate_l2domain_on_vsd(l2domain, ip_type='IPV4',
+                                          bridge=bridge)
 
             s16 = self.create_subnet(n1, subnet_name=name + '-subnet-16',
                                      client=self.admin_manager,
@@ -1028,8 +1029,8 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                      cleanup=False)
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            self.validate_l2domain_on_vsd(bridge, l2domain,
-                                          ip_type='DUALSTACK')
+            self.validate_l2domain_on_vsd(l2domain, ip_type='DUALSTACK',
+                                          bridge=bridge)
 
             s24 = self.create_subnet(n2, subnet_name=name2 + '-subnet-24',
                                      client=self.admin_manager,
@@ -1038,8 +1039,8 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                      cleanup=False)
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            self.validate_l2domain_on_vsd(bridge, l2domain,
-                                          ip_type='DUALSTACK')
+            self.validate_l2domain_on_vsd(l2domain, ip_type='DUALSTACK',
+                                          bridge=bridge)
 
             self.create_subnet(n2, subnet_name=name2 + '-subnet-26',
                                client=self.admin_manager,
@@ -1048,26 +1049,26 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                mask_bits=64)
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            self.validate_l2domain_on_vsd(bridge, l2domain,
-                                          ip_type='DUALSTACK')
+            self.validate_l2domain_on_vsd(l2domain, ip_type='DUALSTACK',
+                                          bridge=bridge)
 
             self.delete_subnet(s16, client=self.admin_manager)
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            self.validate_l2domain_on_vsd(bridge, l2domain,
-                                          ip_type='DUALSTACK')
+            self.validate_l2domain_on_vsd(l2domain, ip_type='DUALSTACK',
+                                          bridge=bridge)
 
             self.delete_subnet(s24, client=self.admin_manager)
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            self.validate_l2domain_on_vsd(bridge, l2domain,
-                                          ip_type='DUALSTACK')
+            self.validate_l2domain_on_vsd(l2domain, ip_type='DUALSTACK',
+                                          bridge=bridge)
 
             self.delete_subnet(s14, client=self.admin_manager)
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            self.validate_l2domain_on_vsd(bridge, l2domain,
-                                          ip_type='IPV6')
+            self.validate_l2domain_on_vsd(l2domain, ip_type='IPV6',
+                                          bridge=bridge)
 
     @decorators.attr(type='smoke')
     def test_nuage_l2bridge_router_external_network_negative(self):
@@ -1366,7 +1367,8 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
             self.validate_l2domain_on_vsd(
-                bridge, l2domain, ip_type='IPV{}'.format(self._ip_version))
+                l2domain, ip_type='IPV{}'.format(self._ip_version),
+                bridge=bridge)
             self.assertEqual(self.ext_id(bridge['id']),
                              l2domain.external_id)
             self.assertEqual(s1['nuage_l2bridge'], bridge['id'])
@@ -1440,7 +1442,8 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
             self.validate_l2domain_on_vsd(
-                bridge, l2domain, ip_type='IPV{}'.format(self._ip_version))
+                l2domain, ip_type='IPV{}'.format(self._ip_version),
+                bridge=bridge)
             self.assertEqual(self.ext_id(bridge['id']),
                              l2domain.external_id)
 
@@ -1605,7 +1608,8 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
             self.validate_l2domain_on_vsd(
-                bridge, l2domain, ip_type='IPV{}'.format(self._ip_version))
+                l2domain, ip_type='IPV{}'.format(self._ip_version),
+                bridge=bridge)
             self.assertEqual(self.ext_id(bridge['id']),
                              l2domain.external_id)
             self.assertEqual(s1['nuage_l2bridge'], bridge['id'])
@@ -1657,7 +1661,8 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
 
             self.validate_l2domain_on_vsd(
-                bridge, l2domain, ip_type='IPV{}'.format(self._ip_version))
+                l2domain, ip_type='IPV{}'.format(self._ip_version),
+                bridge=bridge)
             self.assertEqual(self.ext_id(bridge['id']),
                              l2domain.external_id)
 
@@ -1734,8 +1739,8 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
             bridge = self.get_l2bridge(bridge['id'])
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            self.validate_l2domain_on_vsd(bridge, l2domain,
-                                          ip_type='DUALSTACK')
+            self.validate_l2domain_on_vsd(l2domain, ip_type='DUALSTACK',
+                                          bridge=bridge)
             self.assertEqual(self.ext_id(bridge['id']),
                              l2domain.external_id)
             kwargs = {
@@ -1858,14 +1863,16 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
             self.validate_l2domain_on_vsd(
-                bridge, l2domain, ip_type='IPV{}'.format(self._ip_version))
+                l2domain, ip_type='IPV{}'.format(self._ip_version),
+                bridge=bridge)
             self.assertEqual(self.ext_id(bridge['id']),
                              l2domain.external_id)
 
             l2domain2 = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge2['nuage_subnet_id']))
             self.validate_l2domain_on_vsd(
-                bridge2, l2domain2, ip_type='IPV{}'.format(self._ip_version))
+                l2domain2, ip_type='IPV{}'.format(self._ip_version),
+                bridge=bridge2)
             self.assertEqual(self.ext_id(bridge2['id']),
                              l2domain2.external_id)
             kwargs = {
@@ -1903,14 +1910,16 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
             self.validate_l2domain_on_vsd(
-                bridge, l2domain, ip_type='IPV{}'.format(self._ip_version))
+                l2domain, ip_type='IPV{}'.format(self._ip_version),
+                bridge=bridge)
             self.assertEqual(self.ext_id(bridge['id']),
                              l2domain.external_id)
 
             l2domain2 = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge2['nuage_subnet_id']))
             self.validate_l2domain_on_vsd(
-                bridge2, l2domain2, ip_type='IPV{}'.format(self._ip_version))
+                l2domain2, ip_type='IPV{}'.format(self._ip_version),
+                bridge=bridge2)
             self.assertEqual(self.ext_id(bridge2['id']),
                              l2domain2.external_id)
 
@@ -1922,7 +1931,8 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
             self.validate_l2domain_on_vsd(
-                bridge, l2domain, ip_type='IPV{}'.format(self._ip_version))
+                l2domain, ip_type='IPV{}'.format(self._ip_version),
+                bridge=bridge)
             self.assertEqual(self.ext_id(bridge['id']), l2domain.external_id)
 
     @decorators.attr(type='smoke')
@@ -1984,14 +1994,15 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
             self.assertNotEqual(bridge['nuage_subnet_id'],
                                 l2domain2.id)
             self.validate_l2domain_on_vsd(
-                s2, l2domain2, ip_type='IPV{}'.format(self._ip_version))
+                l2domain2, ip_type='IPV{}'.format(self._ip_version), subnet=s2)
             self.assertEqual(self.ext_id(s2['network_id']),
                              l2domain2.external_id)
 
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
             self.validate_l2domain_on_vsd(
-                bridge, l2domain, ip_type='IPV{}'.format(self._ip_version))
+                l2domain, ip_type='IPV{}'.format(self._ip_version),
+                bridge=bridge)
             self.assertEqual(self.ext_id(bridge['id']),
                              l2domain.external_id)
 
@@ -2028,14 +2039,15 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
                                dns_nameservers=self._dns_nameservers)
 
             self.validate_l2domain_on_vsd(
-                s2, l2domain2, ip_type='IPV{}'.format(self._ip_version))
+                l2domain2, ip_type='IPV{}'.format(self._ip_version), subnet=s2)
             self.assertEqual(self.ext_id(s2['network_id']),
                              l2domain2.external_id)
 
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
             self.validate_l2domain_on_vsd(
-                bridge, l2domain, ip_type='IPV{}'.format(self._ip_version))
+                l2domain, ip_type='IPV{}'.format(self._ip_version),
+                bridge=bridge)
             self.assertEqual(self.ext_id(bridge['id']),
                              l2domain.external_id)
 
@@ -2229,4 +2241,5 @@ class NuageL2BridgeV6Test(NuageL2BridgeV4Test):
             bridge = self.get_l2bridge(bridge['id'])
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            self.validate_l2domain_on_vsd(bridge, l2domain, ip_type='IPV6')
+            self.validate_l2domain_on_vsd(l2domain, ip_type='IPV6',
+                                          bridge=bridge)
