@@ -102,8 +102,11 @@ class BaseVSDManagedNetwork(NuageBaseTest):
             'address': str(kwargs['cidr'].ip),
             'netmask': str(kwargs['cidr'].netmask),
             'gateway': kwargs.get('gateway'),
+            'IPv6Address': str(kwargs.get('cidrv6')),
+            'IPv6Gateway': kwargs.get('gatewayv6'),
             'enableDHCPv4': kwargs.get('enableDHCPv4', True),
-            'enableDHCPv6': kwargs.get('enableDHCPv6', False)
+            'enableDHCPv6': kwargs.get('enableDHCPv6', False),
+            'IPType': kwargs.get('IPType')
         }
         vsd_l2dom_tmplt = cls.nuage_client.create_l2domaintemplate(
             name + '-template', params, kwargs.get('netpart_name'))
@@ -294,13 +297,17 @@ class BaseVSDManagedNetwork(NuageBaseTest):
         cls.vsd_policy_groups.append(policy_group)
         return policy_group
 
-    def get_server_ip_from_vsd(self, vm_id):
+    def get_server_ip_from_vsd(self, vm_id, type='IPV4'):
         vm_details = self.nuage_client.get_resource(
             constants.VM,
             filters='externalID',
             filter_value=self.nuage_client.get_vsd_external_id(vm_id),
             flat_rest_path=True)[0]
-        return vm_details.get('interfaces')[0]['IPAddress']
+        if type == 'DUALSTACK':
+            return (vm_details.get('interfaces')[0]['IPAddress'],
+                    vm_details.get('interfaces')[0]['IPv6Address'])
+        else:
+            return vm_details.get('interfaces')[0]['IPAddress']
 
     @staticmethod
     def _configure_smart_nic_attributes(kwargs):

@@ -9,6 +9,7 @@ from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
     import BaseVSDManagedNetworksIPv6Test
 
 from tempest.lib.common.utils import data_utils
+from tempest.lib import decorators
 from tempest.lib import exceptions as tempest_exceptions
 
 MSG_INVALID_GATEWAY = "Invalid IPv6 network gateway"
@@ -229,6 +230,21 @@ class VSDManagedL2DualStackDhcpDisabledTest(VSDManagedDualStackCommonBase):
                 cidr4=self.cidr4, cidr6=self.cidr6,
                 return_template=True)
 
+    def _check_interface_ip(self, server, ipv4_ip, ipv6_ip):
+        vm_details = self.nuage_client.get_resource(
+            'vms',
+            filters='externalID',
+            filter_value=self.nuage_client.get_vsd_external_id(server.id()),
+            flat_rest_path=True)[0]
+        if self.vsd_dhcp_managed:
+            self.assertEqual(vm_details.get('interfaces')[0]['IPAddress'],
+                             ipv4_ip)
+            self.assertEqual(vm_details.get('interfaces')[0]['IPv6Address'],
+                             ipv6_ip)
+        else:
+            self.assertIsNone(vm_details.get('interfaces')[0]['IPAddress'])
+            self.assertIsNone(vm_details.get('interfaces')[0]['IPv6Address'])
+
     #################################################################
     # TODO(Kris) This test is duplicate with what is in base class? #
     #################################################################
@@ -345,6 +361,69 @@ class VSDManagedL2DualStackDhcpDisabledTest(VSDManagedDualStackCommonBase):
                           nuage_redirect_targets=[],
                           nuage_floatingip=None)
         self._verify_vport_in_l2_domain(port_ipv4_only, vsd_l2_domain)
+
+    @decorators.attr(type='smoke')
+    def test_update_port_dhcp_disable_subnet_linked_to_vsd_l2domain_with_vm(
+            self):
+        _, vsd_l2_domain = self._given_vsd_l2_dhcp_disabled_domain()
+        # create Openstack IPv4 subnet on Openstack based on VSD l2domain
+        net_name = data_utils.rand_name('network-')
+        network = self.create_network(network_name=net_name)
+        ipv4_subnet = self.create_subnet(
+            network,
+            cidr=self.cidr4, gateway=None,
+            mask_bits=self.mask_bits4_unsliced, enable_dhcp=False,
+            nuagenet=vsd_l2_domain.id, net_partition=Topology.def_netpartition)
+        ipv6_subnet = self.create_subnet(
+            network,
+            cidr=self.cidr6, gateway=None, enable_dhcp=False, ip_version=6,
+            nuagenet=vsd_l2_domain.id, net_partition=Topology.def_netpartition)
+        fixed_ips = [
+            {
+                "ip_address": str(self.cidr4.ip + 3),
+                "subnet_id": ipv4_subnet["id"]
+            },
+            {
+                "ip_address": str(self.cidr4.ip + 4),
+                "subnet_id": ipv4_subnet["id"]
+            },
+            {
+                "ip_address": str(self.cidr6.ip + 3),
+                "subnet_id": ipv6_subnet["id"]
+            },
+            {
+                "ip_address": str(self.cidr6.ip + 4),
+                "subnet_id": ipv6_subnet["id"]
+            }
+        ]
+        port = self.create_port(network=network, fixed_ips=fixed_ips)
+        server = self.create_tenant_server(ports=[port])
+        self._check_interface_ip(server, str(self.cidr4.ip + 4),
+                                 str(self.cidr6.ip + 4) + '/64')
+        fixed_ips = [
+            {
+                "ip_address": str(self.cidr4.ip + 5),
+                "subnet_id": ipv4_subnet["id"]
+            },
+            {
+                "ip_address": str(self.cidr4.ip + 6),
+                "subnet_id": ipv4_subnet["id"]
+            },
+            {
+                "ip_address": str(self.cidr6.ip + 5),
+                "subnet_id": ipv6_subnet["id"]
+            },
+            {
+                "ip_address": str(self.cidr6.ip + 6),
+                "subnet_id": ipv6_subnet["id"]
+            }
+        ]
+        port = self.update_port(port=port, fixed_ips=fixed_ips)
+        self.assertIsNotNone(port, "Unable to update port")
+        self.assertEqual(port["fixed_ips"], fixed_ips,
+                         message="The port did not update properly.")
+        self._check_interface_ip(server, str(self.cidr4.ip + 6),
+                                 str(self.cidr6.ip + 6) + '/64')
 
     ###########################################################################
     # Negative cases

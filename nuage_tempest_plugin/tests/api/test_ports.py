@@ -607,6 +607,75 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         self.assertEqual(mac_mismatch, False)
 
     @decorators.attr(type='smoke')
+    def test_nuage_port_fixed_ips_update_dhcp_disabled_subnet_with_vm(self):
+        network = self.create_network()
+        self.assertIsNotNone(network, "Unable to create network")
+
+        subnetv4 = self.create_subnet(network, cidr=IPNetwork("10.0.0.0/24"),
+                                      mask_bits=28, enable_dhcp=False)
+        subnetv6 = self.create_subnet(network,
+                                      cidr=IPNetwork("cafe:babe::/64"),
+                                      ip_version=6, enable_dhcp=False)
+        vsd_vport_parent = self.vsd_client.get_global_resource(
+            constants.L2_DOMAIN,
+            filters='externalID',
+            filter_value=network['id'])[0]
+        fixed_ips = [
+            {
+                "ip_address": "10.0.0.3",
+                "subnet_id": subnetv4["id"]
+            },
+            {
+                "ip_address": "10.0.0.4",
+                "subnet_id": subnetv4["id"]
+            },
+            {
+                "ip_address": "cafe:babe::3",
+                "subnet_id": subnetv6["id"]
+            },
+            {
+                "ip_address": "cafe:babe::4",
+                "subnet_id": subnetv6["id"]
+            }
+        ]
+        port = self.create_port(network=network, fixed_ips=fixed_ips)
+        self.assertIsNotNone(port, "Unable to create port on network")
+        self._create_server(name='vm-' + network['name'],
+                            network=network, port_id=port['id'])
+        vm_interface = self.vsd_client.get_vm_iface(
+            constants.L2_DOMAIN, vsd_vport_parent['ID'],
+            filters='externalID', filter_value=port['id'])[0]
+        self.assertEqual(vm_interface['IPAddress'], "10.0.0.4")
+        self.assertEqual(vm_interface['IPv6Address'], "cafe:babe::4/64")
+        fixed_ips = [
+            {
+                "ip_address": "10.0.0.5",
+                "subnet_id": subnetv4["id"]
+            },
+            {
+                "ip_address": "10.0.0.6",
+                "subnet_id": subnetv4["id"]
+            },
+            {
+                "ip_address": "cafe:babe::5",
+                "subnet_id": subnetv6["id"]
+            },
+            {
+                "ip_address": "cafe:babe::6",
+                "subnet_id": subnetv6["id"]
+            }
+        ]
+        port = self.update_port(port=port, fixed_ips=fixed_ips)
+        self.assertIsNotNone(port, "Unable to update port")
+        self.assertEqual(port["fixed_ips"], fixed_ips,
+                         message="The port did not update properly.")
+        vm_interface = self.vsd_client.get_vm_iface(
+            constants.L2_DOMAIN, vsd_vport_parent['ID'],
+            filters='externalID', filter_value=port['id'])[0]
+        self.assertEqual(vm_interface['IPAddress'], "10.0.0.6")
+        self.assertEqual(vm_interface['IPv6Address'], "cafe:babe::6/64")
+
+    @decorators.attr(type='smoke')
     def test_nuage_port_create_fixed_ips_same_subnet_l2_with_aap(self):
         # Set up resources
         # Base resources

@@ -72,6 +72,65 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
         ip_addr_on_vsd = self.get_server_ip_from_vsd(server.id())
         return ip_addr_on_openstack == ip_addr_on_vsd
 
+    def _create_unmgd_link_unmanaged_shared_subnet_l2(self):
+        vsd_unmanaged_shared_l2dom_tmplt = \
+            self.create_vsd_dhcpunmanaged_l2dom_template(
+                netpart_name=self.shared_infrastructure)[0]
+        vsd_unmanaged_shared_l2dom = self.create_vsd_l2domain(
+            tid=vsd_unmanaged_shared_l2dom_tmplt['ID'],
+            netpart_name=self.shared_infrastructure)[0]
+
+        name = data_utils.rand_name('l2domain-with-shared')
+        vsd_l2dom_tmplt = self.create_vsd_dhcpunmanaged_l2dom_template(
+            name=name)[0]
+        extra_params = {
+            'associatedSharedNetwork'
+            'ResourceID': vsd_unmanaged_shared_l2dom['ID']
+        }
+        vsd_l2dom_with_shared_unmanaged = self.create_vsd_l2domain(
+            name=name,
+            tid=vsd_l2dom_tmplt['ID'],
+            extra_params=extra_params)[0]
+        self.assertEqual(vsd_l2dom_with_shared_unmanaged['name'], name)
+        self.assertEqual(
+            (vsd_l2dom_with_shared_unmanaged[
+                'associatedSharedNetworkResourceID']),
+            vsd_unmanaged_shared_l2dom['ID'])
+        return vsd_unmanaged_shared_l2dom, vsd_l2dom_with_shared_unmanaged
+
+    def _create_link_managed_no_dhcp_shared_subnet_l2(self):
+        vsd_managed_shared_l2dom_tmplt = \
+            self.create_vsd_dhcpmanaged_l2dom_template(
+                netpart_name=self.shared_infrastructure,
+                cidr=IPNetwork('10.0.0.0/24'),
+                gateway=None,
+                cidrv6=IPNetwork('cafe:babe::/64'),
+                IPv6Gateway=None,
+                enableDHCPv4=False,
+                enableDHCPv6=False,
+                IPType='DUALSTACK')[0]
+        vsd_managed_shared_l2dom = self.create_vsd_l2domain(
+            tid=vsd_managed_shared_l2dom_tmplt['ID'],
+            netpart_name=self.shared_infrastructure)[0]
+
+        name = data_utils.rand_name('l2domain-with-shared')
+        vsd_l2dom_tmplt = self.create_vsd_dhcpunmanaged_l2dom_template(
+            name=name)[0]
+        extra_params = {
+            'associatedSharedNetwork'
+            'ResourceID': vsd_managed_shared_l2dom['ID']
+        }
+        vsd_l2dom_with_shared_unmanaged = self.create_vsd_l2domain(
+            name=name,
+            tid=vsd_l2dom_tmplt['ID'],
+            extra_params=extra_params)[0]
+        self.assertEqual(vsd_l2dom_with_shared_unmanaged['name'], name)
+        self.assertEqual(
+            (vsd_l2dom_with_shared_unmanaged[
+                'associatedSharedNetworkResourceID']),
+            vsd_managed_shared_l2dom['ID'])
+        return vsd_managed_shared_l2dom, vsd_l2dom_with_shared_unmanaged
+
     def create_netpartition(self, np_name=None):
         """Wrapper utility that returns a test network."""
         np_name = np_name or data_utils.rand_name('tempest-np-')
@@ -357,31 +416,8 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
     @nuage_test.skip_because(bug='OPENSTACK-2548')
     @nuage_test.header(tags=['smoke'])
     def test_link_vsd_unmanaged_shared_subnet_l2(self):
-        vsd_unmanaged_shared_l2dom_tmplt = \
-            self.create_vsd_dhcpunmanaged_l2dom_template(
-                netpart_name=self.shared_infrastructure)[0]
-        vsd_unmanaged_shared_l2dom = self.create_vsd_l2domain(
-            tid=vsd_unmanaged_shared_l2dom_tmplt['ID'],
-            netpart_name=self.shared_infrastructure)[0]
-
-        name = data_utils.rand_name('l2domain-with-shared')
-        vsd_l2dom_tmplt = self.create_vsd_dhcpunmanaged_l2dom_template(
-            name=name)[0]
-        extra_params = {
-            'associatedSharedNetwork'
-            'ResourceID': vsd_unmanaged_shared_l2dom['ID']
-        }
-        vsd_l2dom_with_shared_unmanaged = self.create_vsd_l2domain(
-            name=name,
-            tid=vsd_l2dom_tmplt['ID'],
-            extra_params=extra_params)[0]
-
-        self.assertEqual(vsd_l2dom_with_shared_unmanaged['name'], name)
-        self.assertEqual(
-            (vsd_l2dom_with_shared_unmanaged
-             ['associatedSharedNetworkResourceID']),
-            vsd_unmanaged_shared_l2dom['ID'])
-
+        vsd_unmanaged_shared_l2dom, vsd_l2dom_with_shared_unmanaged =\
+            self._create_unmgd_link_unmanaged_shared_subnet_l2()
         net_name = data_utils.rand_name('unmnaged-shared-l2-network-')
         network = self.create_network(network_name=net_name)
         cidr = IPNetwork('10.20.30.0/16')  # whatever
@@ -396,6 +432,159 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
         self.assertEqual(
             subnet['enable_dhcp'],
             vsd_unmanaged_shared_l2dom['DHCPManaged'])
+
+    @decorators.attr(type='smoke')
+    def test_port_update_link_vsd_unmanaged_shared_subnet_l2_with_vm(self):
+        vsd_unmanaged_shared_l2dom, vsd_l2dom_with_shared_unmanaged = \
+            self._create_unmgd_link_unmanaged_shared_subnet_l2()
+        net_name = data_utils.rand_name('unmnaged-shared-l2-network-')
+        network = self.create_network(network_name=net_name)
+        subnetv4 = self.create_subnet(
+            network,
+            gateway=None,
+            cidr=IPNetwork('10.0.0.0/24'),
+            nuagenet=vsd_l2dom_with_shared_unmanaged['ID'],
+            net_partition=Topology.def_netpartition,
+            enable_dhcp=False)
+        subnetv6 = self.create_subnet(
+            network,
+            gateway=None,
+            cidr=IPNetwork('cafe:babe::/64'),
+            ip_version=6,
+            nuagenet=vsd_l2dom_with_shared_unmanaged['ID'],
+            net_partition=Topology.def_netpartition,
+            enable_dhcp=False)
+        self.assertIsNone(subnetv4['gateway_ip'])
+        self.assertFalse(subnetv4['enable_dhcp'])
+        self.assertFalse(subnetv6['enable_dhcp'])
+        fixed_ips = [
+            {
+                "ip_address": "10.0.0.3",
+                "subnet_id": subnetv4["id"]
+            },
+            {
+                "ip_address": "10.0.0.4",
+                "subnet_id": subnetv4["id"]
+            },
+            {
+                "ip_address": "cafe:babe::3",
+                "subnet_id": subnetv6["id"]
+            },
+            {
+                "ip_address": "cafe:babe::4",
+                "subnet_id": subnetv6["id"]
+            }
+        ]
+        port = self.create_port(network=network, fixed_ips=fixed_ips)
+        self.assertIsNotNone(port, "Unable to create port on network")
+        server = self.create_tenant_server(ports=[port])
+        ipv4_ip, ipv6_ip = self.get_server_ip_from_vsd(server.id(),
+                                                       type='DUALSTACK')
+        self.assertIsNone(ipv4_ip)
+        self.assertIsNone(ipv6_ip)
+        fixed_ips = [
+            {
+                "ip_address": "10.0.0.5",
+                "subnet_id": subnetv4["id"]
+            },
+            {
+                "ip_address": "10.0.0.6",
+                "subnet_id": subnetv4["id"]
+            },
+            {
+                "ip_address": "cafe:babe::5",
+                "subnet_id": subnetv6["id"]
+            },
+            {
+                "ip_address": "cafe:babe::6",
+                "subnet_id": subnetv6["id"]
+            }
+        ]
+        port = self.update_port(port=port, fixed_ips=fixed_ips)
+        self.assertIsNotNone(port, "Unable to update port")
+        self.assertEqual(port["fixed_ips"], fixed_ips,
+                         message="The port did not update properly.")
+        ipv4_ip, ipv6_ip = self.get_server_ip_from_vsd(server.id(),
+                                                       type='DUALSTACK')
+        self.assertIsNone(ipv4_ip)
+        self.assertIsNone(ipv6_ip)
+
+    @decorators.attr(type='smoke')
+    def test_port_update_link_vsd_managed_shared_subnet_l2_with_vm(self):
+        vsd_managed_shared_l2dom, vsd_l2dom_with_shared_unmanaged = \
+            self._create_link_managed_no_dhcp_shared_subnet_l2()
+        net_name = data_utils.rand_name('unmnaged-shared-l2-network-')
+        network = self.create_network(network_name=net_name)
+        subnetv4 = self.create_subnet(
+            network,
+            gateway=None,
+            cidr=IPNetwork('10.0.0.0/24'),
+            mask_bits=24,
+            nuagenet=vsd_l2dom_with_shared_unmanaged['ID'],
+            net_partition=Topology.def_netpartition,
+            enable_dhcp=False)
+        subnetv6 = self.create_subnet(
+            network,
+            gateway=None,
+            cidr=IPNetwork('cafe:babe::/64'),
+            ip_version=6,
+            nuagenet=vsd_l2dom_with_shared_unmanaged['ID'],
+            net_partition=Topology.def_netpartition,
+            enable_dhcp=False)
+        self.assertIsNone(subnetv4['gateway_ip'])
+        self.assertFalse(subnetv4['enable_dhcp'])
+        self.assertFalse(subnetv6['enable_dhcp'])
+        fixed_ips = [
+            {
+                "ip_address": "10.0.0.3",
+                "subnet_id": subnetv4["id"]
+            },
+            {
+                "ip_address": "10.0.0.4",
+                "subnet_id": subnetv4["id"]
+            },
+            {
+                "ip_address": "cafe:babe::3",
+                "subnet_id": subnetv6["id"]
+            },
+            {
+                "ip_address": "cafe:babe::4",
+                "subnet_id": subnetv6["id"]
+            }
+        ]
+        port = self.create_port(network=network, fixed_ips=fixed_ips)
+        self.assertIsNotNone(port, "Unable to create port on network")
+        server = self.create_tenant_server(ports=[port])
+        ipv4_ip, ipv6_ip = self.get_server_ip_from_vsd(server.id(),
+                                                       type='DUALSTACK')
+        self.assertEqual("10.0.0.4", ipv4_ip)
+        self.assertEqual("cafe:babe::4/64", ipv6_ip)
+        fixed_ips = [
+            {
+                "ip_address": "10.0.0.5",
+                "subnet_id": subnetv4["id"]
+            },
+            {
+                "ip_address": "10.0.0.6",
+                "subnet_id": subnetv4["id"]
+            },
+            {
+                "ip_address": "cafe:babe::5",
+                "subnet_id": subnetv6["id"]
+            },
+            {
+                "ip_address": "cafe:babe::6",
+                "subnet_id": subnetv6["id"]
+            }
+        ]
+        port = self.update_port(port=port, fixed_ips=fixed_ips)
+        self.assertIsNotNone(port, "Unable to update port")
+        self.assertEqual(port["fixed_ips"], fixed_ips,
+                         message="The port did not update properly.")
+        ipv4_ip, ipv6_ip = self.get_server_ip_from_vsd(server.id(),
+                                                       type='DUALSTACK')
+        self.assertEqual("10.0.0.6", ipv4_ip)
+        self.assertEqual("cafe:babe::6/64", ipv6_ip)
 
     @decorators.attr(type='smoke')
     def test_link_subnet_with_diff_netpartition_l2(self):
