@@ -48,7 +48,7 @@ class VSDManagedIPv6SubnetL3Test(BaseVSDManagedNetworksIPv6Test):
             'cidr': self.cidr4,
             'enable_dhcp': self.dhcp_managed,
             'nuagenet': vsd_l3domain_subnet.id,
-            'net_partition': self.net_partition[0]['name']
+            'net_partition': self.net_partition
         }
         self.assertRaisesRegex(exceptions.BadRequest,
                                msg,

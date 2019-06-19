@@ -37,7 +37,7 @@ class VSDManagedIPv6L2DomainDHCPManagedTest(BaseVSDManagedNetworksIPv6Test):
             'cidr': self.cidr4,
             'enable_dhcp': self.dhcp_managed,
             'nuagenet': vsd_l2domain.id,
-            'net_partition': self.net_partition[0]['name']
+            'net_partition': self.net_partition
         }
         self.assertRaisesRegex(exceptions.BadRequest,
                                msg,

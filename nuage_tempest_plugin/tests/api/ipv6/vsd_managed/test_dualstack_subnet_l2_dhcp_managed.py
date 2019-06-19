@@ -38,11 +38,6 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
     os_dhcp_managed = True
     vsd_dhcp_managed = True
 
-    @classmethod
-    def resource_setup(cls):
-        super(VSDManagedDualStackL2DHCPManagedTest, cls).resource_setup()
-        cls.net_partition = cls.net_partition[0]['name']
-
     def link_dualstack_net_l2(
             self,
             cidr4=None, mask_bits4=None, dhcp4_port=None, gateway4=None,

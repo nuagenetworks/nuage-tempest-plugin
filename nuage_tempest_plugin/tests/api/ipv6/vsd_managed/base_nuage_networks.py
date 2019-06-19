@@ -60,16 +60,10 @@ class BaseNuageNetworksIpv6TestCase(NuageBaseTest):
         return port
 
     def _given_network_linked_to_vsd_subnet(self, vsd_subnet, cidr4=None,
-                                            cidr6=None, enable_dhcp=True,
-                                            net_partition=None):
+                                            cidr6=None, enable_dhcp=True):
         # create OpenStack IPv4 subnet on OpenStack based on VSD l3dom subnet
         net_name = data_utils.rand_name('network-')
         network = self.create_network(network_name=net_name)
-
-        if net_partition:
-            actual_net_partition = net_partition[0]['name']
-        else:
-            actual_net_partition = self.net_partition[0]['name']
 
         if vsd_subnet.parent_type == 'zone':
             subnet4 = self.create_subnet(
@@ -78,7 +72,7 @@ class BaseNuageNetworksIpv6TestCase(NuageBaseTest):
                 enable_dhcp=enable_dhcp,
                 mask_bits=cidr4.prefixlen,
                 nuagenet=vsd_subnet.id,
-                net_partition=actual_net_partition)
+                net_partition=self.net_partition)
         else:
             subnet4 = self.create_subnet(
                 network,
@@ -87,7 +81,7 @@ class BaseNuageNetworksIpv6TestCase(NuageBaseTest):
                 enable_dhcp=enable_dhcp,
                 mask_bits=cidr4.prefixlen,
                 nuagenet=vsd_subnet.id,
-                net_partition=actual_net_partition)
+                net_partition=self.net_partition)
 
         # create OpenStack IPv6 subnet on OpenStack based on VSD l3dom subnet
         subnet6 = None
@@ -99,7 +93,7 @@ class BaseNuageNetworksIpv6TestCase(NuageBaseTest):
                 mask_bits=IPNetwork(cidr6).prefixlen,
                 enable_dhcp=vsd_subnet.enable_dhcpv6,
                 nuagenet=vsd_subnet.id,
-                net_partition=actual_net_partition)
+                net_partition=self.net_partition)
 
         return network, subnet4, subnet6
 
@@ -128,25 +122,6 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
     def setup_clients(cls):
         super(BaseVSDManagedNetworksIPv6Test, cls).setup_clients()
         cls.nuage_client = NuageRestClient()
-
-    @classmethod
-    def resource_setup(cls):
-        super(BaseVSDManagedNetworksIPv6Test, cls).resource_setup()
-
-        if Topology.is_ml2:
-            # create default net_partition if it is not there
-            net_partition_name = cls.nuage_client.def_netpart_name
-            cls.net_partition = cls.nuage_client.get_net_partition(
-                net_partition_name)
-            if not cls.net_partition:
-                cls.net_partition = cls.nuage_client.create_net_partition(
-                    net_partition_name,
-                    fip_quota=100,
-                    extra_params=None)
-
-    @classmethod
-    def resource_cleanup(cls):
-        super(BaseVSDManagedNetworksIPv6Test, cls).resource_cleanup()
 
     @classmethod
     def link_l2domain_to_shared_domain(cls, domain_id, shared_domain_id):
