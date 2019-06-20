@@ -215,13 +215,14 @@ class VSDManagedL2DualStackDhcpDisabledTest(VSDManagedDualStackCommonBase):
     vsd_dhcp_managed = True   # new 6.x style, DHCP managed
     #                                          with DHCP flags cleared
 
-    def _given_vsd_l2_dhcp_disabled_domain(self):
+    def _given_vsd_l2_dhcp_disabled_domain(self, gateway=None,
+                                           IPv6Gateway=None):
         if self.vsd_dhcp_managed:
             return self._given_vsd_l2domain(
                 dhcp_managed=True,
                 cidr4=self.cidr4, enable_dhcpv4=False,
                 cidr6=self.cidr6, enable_dhcpv6=False,
-                return_template=True)
+                return_template=True, gateway=gateway, IPv6Gateway=IPv6Gateway)
         else:
             return self._given_vsd_l2domain(
                 dhcp_managed=False,
@@ -516,6 +517,36 @@ class VSDManagedL2DualStackDhcpDisabledTest(VSDManagedDualStackCommonBase):
             self.assertRaisesRegex(
                 tempest_exceptions.BadRequest,
                 msg % ipv6, self.create_port, network, **port_args)
+
+    def test_create_vsd_managed_l2domain_dhcp_unmanaged_with_dhcp_ip(self):
+        if self.vsd_dhcp_managed:
+            # Given I have a VSD-L2-Unmanaged subnet
+            _, vsd_l2_domain = self._given_vsd_l2_dhcp_disabled_domain(
+                gateway=str(IPAddress(self.cidr4.first + 1)),
+                IPv6Gateway=str(IPAddress(self.cidr6.first + 1)))
+            # create Openstack IPv4 subnet on Openstack based on VSD l2domain
+            net_name = data_utils.rand_name('network-')
+            network = self.create_network(network_name=net_name)
+            msg = ("DHCP disabled subnet can't be linked to vsd L2Domain "
+                   "with DHCP server IP")
+            self.assertRaisesRegex(
+                tempest_exceptions.BadRequest,
+                msg,
+                self.create_subnet,
+                network,
+                cidr=self.cidr4, mask_bits=self.mask_bits4_unsliced,
+                gateway=None, enable_dhcp=False,
+                nuagenet=vsd_l2_domain.id,
+                net_partition=Topology.def_netpartition)
+            self.assertRaisesRegex(
+                tempest_exceptions.BadRequest,
+                msg,
+                self.create_subnet,
+                network,
+                ip_version=6, cidr=self.cidr6, mask_bits=self.mask_bits6,
+                enable_dhcp=False,
+                nuagenet=vsd_l2_domain.id,
+                net_partition=Topology.def_netpartition)
 
 
 class LegacyVSDManagedL2DualStackDhcpDisabledTest(

@@ -51,7 +51,6 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
 
         cidr6 = cidr6 or IPNetwork('cafe:babe::/64')
         mask_bits6 = mask_bits6 or cidr6.prefixlen
-        dhcp6_port = dhcp6_port or str(cidr6[1])
 
         if vsd_l2dom is None:
             vsd_l2domain_template = self.vsd_create_l2domain_template(
@@ -59,8 +58,7 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
                 dhcp_managed=True,
                 cidr4=cidr4,
                 cidr6=cidr6,
-                gateway=dhcp4_port,
-                gateway6=dhcp6_port)
+                gateway=dhcp4_port)
 
             vsd_l2dom = self.vsd_create_l2domain(
                 template=vsd_l2domain_template)
@@ -184,15 +182,13 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
             dhcp_managed=True,
             cidr4=self.cidr4,
             cidr6=self.cidr6,
-            gateway=self.gateway4,
-            gateway6=self.gateway6)
+            gateway=self.gateway4)
 
         self._verify_vsd_l2domain_template(vsd_l2domain_template,
                                            ip_type="DUALSTACK",
                                            dhcp_managed=True,
                                            cidr4=self.cidr4,
                                            cidr6=self.cidr6,
-                                           ipv6_gateway=self.gateway6,
                                            gateway=self.gateway4)
 
         vsd_l2domain = self.vsd_create_l2domain(template=vsd_l2domain_template)
@@ -305,15 +301,13 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
             dhcp_managed=True,
             cidr4=self.cidr4,
             cidr6=self.cidr6,
-            gateway=self.gateway4,
-            gateway6=self.gateway6)
+            gateway=self.gateway4)
 
         self._verify_vsd_l2domain_template(vsd_l2domain_template,
                                            ip_type="DUALSTACK",
                                            dhcp_managed=True,
                                            cidr4=self.cidr4,
                                            cidr6=self.cidr6,
-                                           ipv6_gateway=self.gateway6,
                                            gateway=self.gateway4)
 
         vsd_l2domain = self.vsd_create_l2domain(template=vsd_l2domain_template)
@@ -631,15 +625,13 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
             dhcp_managed=True,
             cidr4=self.cidr4,
             cidr6=self.cidr6,
-            gateway=self.gateway4,
-            gateway6=self.gateway6)
+            gateway=self.gateway4)
 
         self._verify_vsd_l2domain_template(vsd_l2domain_template,
                                            ip_type="DUALSTACK",
                                            dhcp_managed=True,
                                            cidr4=self.cidr4,
                                            cidr6=self.cidr6,
-                                           ipv6_gateway=self.gateway6,
                                            gateway=self.gateway4)
 
         vsd_l2domain = self.vsd_create_l2domain(template=vsd_l2domain_template)
@@ -867,6 +859,32 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
                                         'ip_address': ipv6}]}
             self.assertRaisesRegex(exceptions.BadRequest, msg % ipv6,
                                    self.create_port, network, **port_args)
+
+    # This test should be removed after fixing bug 'VSD-35558'
+    @decorators.attr(type='smoke')
+    def test_create_vsd_managed_l2domain_v6_dhcp_managed_without_dhcp_ip(self):
+        # create l2domain on VSD
+        vsd_l2domain_template = self.vsd_create_l2domain_template(
+            ip_type="IPV6",
+            dhcp_managed=True,
+            enable_dhcpv6=True,
+            cidr6=self.cidr6,
+            no_gateway=True)
+        vsd_l2domain = self.vsd_create_l2domain(template=vsd_l2domain_template)
+
+        # create OpenStack IPv4 subnet on OpenStack based on VSD l2domain
+        net_name = data_utils.rand_name('network-')
+        network = self.create_network(network_name=net_name)
+        msg = ("IP address {} is not a valid IP for the specified "
+               "subnet.").format(self.cidr6.ip)
+        self.assertRaisesRegex(
+            exceptions.BadRequest,
+            msg,
+            self.create_subnet,
+            network,
+            ip_version=6, cidr=self.cidr6, mask_bits=self.mask_bits6,
+            nuagenet=vsd_l2domain.id,
+            net_partition=Topology.def_netpartition)
 
     # Telenor scenario with multiple vsd managed subnets in a network
     @decorators.attr(type='smoke')

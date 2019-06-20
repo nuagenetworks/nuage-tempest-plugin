@@ -215,6 +215,8 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
             ip_type=ip_type, dhcp_managed=dhcp_managed,
             cidr4=cidr4,
             cidr6=cidr6,
+            gateway4=kwargs.get('gateway'),
+            gateway6=kwargs.get('IPv6Gateway'),
             **kwargs)
 
         vsd_l2domain = self.vsd_create_l2domain(template=vsd_l2domain_template)

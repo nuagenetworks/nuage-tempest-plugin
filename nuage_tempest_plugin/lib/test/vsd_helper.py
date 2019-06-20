@@ -182,6 +182,11 @@ class VsdHelper(object):
         for key, value in iteritems(kwargs):
             params.update({key: value})
 
+        if kwargs.get('no_gateway'):
+            params.update({
+                'gateway': None,
+                'ipv6_gateway': None})
+
         template = self.vspk.NUL2DomainTemplate(
             name=template_name,
             **params)
