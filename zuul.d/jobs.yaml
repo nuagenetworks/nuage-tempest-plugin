@@ -95,6 +95,7 @@
       - opendev.org/openstack/neutron
       - OpenStack/nuage-openstack-neutron
       - OpenStack/nuage-openstack-neutronclient
+      - OpenStack/nuage-tempest-plugin
     pre-run: playbooks/devstack-py3.yaml
     irrelevant-files:
       - ^(test-|)requirements.txt$
