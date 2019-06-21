@@ -13,13 +13,10 @@
 #    under the License.
 
 import abc
-import json
 import six
-try:
-    from urllib.parse import urlencode  # py35
-except ImportError:
-    from urllib import urlencode  # py27
+from six.moves.urllib import parse as urllib
 
+from oslo_serialization import jsonutils as json
 from tempest.lib.common import rest_client
 from tempest.lib import exceptions as lib_exc
 
@@ -74,7 +71,7 @@ class BaseNeutronResourceClient(rest_client.RestClient):
         else:
             uri = self.resource_url
         if filters:
-            uri += '?' + urlencode(filters, doseq=1)
+            uri += '?' + urllib.urlencode(filters, doseq=1)
         resp, body = self.get(uri)
         body = json.loads(body)
         self.expected_success(200, resp.status)
@@ -86,7 +83,7 @@ class BaseNeutronResourceClient(rest_client.RestClient):
         else:
             uri = self.single_resource_url % id
         if fields:
-            uri += '?' + urlencode(fields, doseq=1)
+            uri += '?' + urllib.urlencode(fields, doseq=1)
         resp, body = self.get(uri)
         body = json.loads(body)
         self.expected_success(200, resp.status)

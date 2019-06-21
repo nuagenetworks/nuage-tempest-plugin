@@ -4,3 +4,4 @@
     - role: fetch-subunit-output
       zuul_work_dir: '{{ devstack_base_dir }}/tempest'
     - role: process-stackviz
+  environment: '{{ proxy_env }}'

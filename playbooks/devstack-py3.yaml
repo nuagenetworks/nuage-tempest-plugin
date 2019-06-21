@@ -1,0 +1,10 @@
+# xenial version of python-openssl is too low
+# once moved bionic this should go
+- hosts: all
+  tasks:
+    - name: Install pyOpenSSL
+      become: yes
+      pip:
+        name: pyOpenSSL
+  environment: '{{ proxy_env }}'
+

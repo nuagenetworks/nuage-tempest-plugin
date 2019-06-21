@@ -1,0 +1,315 @@
+- job:
+    name: devstack-tempest
+    parent: devstack
+    # This currently works from stable/pike on.
+    branches: ^(?!stable/(newton|ocata)).*$
+    description: |
+      Base Tempest job.
+
+      This Tempest job provides the base for both the single and multi-node
+      test setup. To run a multi-node test inherit from devstack-tempest and
+      set the nodeset to a multi-node one.
+    required-projects:
+      - opendev.org/openstack/tempest
+    timeout: 7200
+    roles:
+      - zuul: opendev.org/openstack/openstack-zuul-jobs
+      - zuul: opendev.org/openstack/devstack
+      - zuul: opendev.org/openstack/tempest
+    vars:
+      devstack_services:
+        tempest: true
+      devstack_local_conf:
+        test-config:
+          $TEMPEST_CONFIG:
+            compute:
+              min_compute_nodes: "{{ groups['compute'] | default(['controller']) | length }}"
+      test_results_stage_name: test_results
+      zuul_copy_output:
+        '{{ devstack_base_dir }}/tempest/etc/tempest.conf': logs
+        '{{ devstack_base_dir }}/tempest/etc/accounts.yaml': logs
+        '{{ devstack_base_dir }}/tempest/tempest.log': logs
+        '{{ stage_dir }}/{{ test_results_stage_name }}.subunit': logs
+        '{{ stage_dir }}/{{ test_results_stage_name }}.html': logs
+        '{{ stage_dir }}/stackviz': logs
+      extensions_to_txt:
+        conf: true
+        log: true
+        yaml: true
+        yml: true
+    run: playbooks/devstack-tempest.yaml
+    post-run: playbooks/post-tempest.yaml
+
+- job:
+    name: tempest-full
+    parent: networking-nuage-base
+    # This currently works from stable/pike on.
+    # Before stable/pike, legacy version of tempest-full
+    # 'legacy-tempest-dsvm-neutron-full' run.
+    branches: ^(?!stable/(newton|ocata)).*$
+    description: |
+      Base integration test with Neutron networking and py27.
+      Former names for this job where:
+        * legacy-tempest-dsvm-neutron-full
+        * gate-tempest-dsvm-neutron-full-ubuntu-xenial
+    timeout: 14400
+    vars:
+      tempest_test_regex: '^(tempest|neutron_tempest_plugin)\.(api|scenario)'
+      tempest_test_blacklist: "{{devstack_base_dir}}/nuage-tempest-plugin/tempest-blacklist.txt"
+
+
+- job:
+    name: tempest-full-py3
+    parent: networking-nuage-base-py3
+    # This currently works from stable/pike on.
+    # Before stable/pike, legacy version of tempest-full
+    # 'legacy-tempest-dsvm-neutron-full' run.
+    branches: ^(?!stable/(newton|ocata)).*$
+    description: |
+      Base integration test with Neutron networking and py3.
+      Former names for this job where:
+        * legacy-tempest-dsvm-py35
+        * gate-tempest-dsvm-py35
+    vars:
+      devstack_services:
+        s-account: false
+        s-container: false
+        s-object: false
+        s-proxy: false
+        # without Swift, c-bak cannot run (in the Gate at least)
+        c-bak: false
+      tempest_test_regex: '^(tempest|neutron_tempest_plugin)\.(api|scenario)'
+      tempest_test_blacklist: "{{devstack_base_dir}}/nuage-tempest-plugin/tempest-blacklist.txt"
+
+- job:
+    name: networking-nuage-base
+    parent: devstack-tempest
+    # This currently works from stable/pike on
+    branches: ^(?!stable/(newton|ocata)).*$
+    description: Base job for devstack/tempest based nuage jobs and python2.7.
+    nodeset: openstack-single-node-xenial
+    timeout: 10800
+    required-projects:
+      - opendev.org/openstack/devstack-gate
+      - opendev.org/openstack/neutron-tempest-plugin
+      - opendev.org/openstack/neutron
+      - OpenStack/nuage-openstack-neutron
+      - OpenStack/nuage-openstack-neutronclient
+    pre-run: playbooks/devstack-py3.yaml
+    irrelevant-files:
+      - ^(test-|)requirements.txt$
+      - ^.*\.rst$
+      - ^doc/.*$
+      - ^releasenotes/.*$
+      - ^setup.cfg$
+      - ^tools/.*$
+      - ^tox.ini$
+      - ^vagrant/.*$
+      - ^migration/.*$
+    vars:
+      nuage_fip_range: "172.{{ 255 | random }}.{{ 255 | random }}"
+      vsp_release: "{{ nuage_vsp_release }}"
+      tox_envlist: all
+      tempest_concurrency: 2
+      devstack_localrc:
+        LIBVIRT_TYPE: kvm
+        TEMPEST_PLUGINS: "/opt/stack/nuage-tempest-plugin /opt/stack/neutron-tempest-plugin"
+        IMAGE_URLS: "http://{{ mirror_fqdn }}/devstack/cirros-ipv6.qcow2,"
+        DOWNLOAD_DEFAULT_IMAGES: False
+        FLOATING_RANGE: "{{ nuage_fip_range }}.0/24"
+        PUBLIC_NETWORK_GATEWAY: "{{ nuage_fip_range }}.1"
+        Q_PLUGIN: ml2
+        Q_USE_PROVIDERNET_FOR_PUBLIC: False
+        Q_ML2_PLUGIN_EXT_DRIVERS: nuage_subnet,nuage_port,port_security,nuage_network
+        Q_ML2_PLUGIN_TYPE_DRIVERS: vxlan,vlan,flat
+        Q_ML2_PLUGIN_MECHANISM_DRIVERS: nuage,nuage_baremetal
+        PHYSICAL_NETWORK: physnet1,physnet2
+        NUAGE_VSD_DEF_NETPART_NAME: "NuageCi-{{ 1000000 | random }}"
+        NUAGE_FIP_UNDERLAY: True
+        NUAGE_USE_METADATA: True
+        NUAGE_METADATA_SHARED_SECRET: sharedsecret
+        NUAGE_PAT: legacy_disabled
+        OVS_BRIDGE: alubr0
+      devstack_plugins:
+        nuage-openstack-neutron: https://github.com/nuagenetworks/nuage-openstack-neutron.git
+        nuage-openstack-neutronclient: https://github.com/nuagenetworks/nuage-openstack-neutronclient.git
+        neutron-tempest-plugin: https://opendev.org/openstack/neutron-tempest-plugin
+        nuage-tempest-plugin: https://github.com/nuagenetworks/nuage-tempest-plugin.git
+      devstack_services:
+        c-api: true
+        c-sch: true
+        c-vol: true
+        dstat: true
+        g-api: true
+        g-reg: true
+        keystone: true
+        n-api-meta: true
+        n-api: true
+        n-cauth: true
+        n-cond-cell1: true
+        n-cpu: true
+        n-novnc-cell1: true
+        n-sch: true
+        n-super-cond: true
+        nuage-metadata-agent: true
+        ovs-vswitchd: true
+        ovsdb-server: true
+        placement-api: true
+        q-svc: true
+        c-bak: false
+        etcd: false
+        peakmem_tracker: true
+        q-agt: false
+        q-dhcp: false
+        q-l3: false
+        q-meta: false
+        q-metering: false
+        s-account: false
+        s-container-sync: false
+        s-container: false
+        s-object: false
+        s-proxy: false
+        horizon: false
+      devstack_local_conf:
+        post-config:
+          $NEUTRON_CONF:
+            DEFAULT:
+              vlan_transparent: true
+            quotas:
+              # A negative value means unlimited. (integer value)
+              quota_network: -1
+              quota_subnet: -1
+              quota_port: -1
+              quota_router: -1
+              quota_floatingip: -1
+              quota_security_group: -1
+              quota_security_group_rule: -1
+        test-config:
+          $TEMPEST_CONFIG:
+            scenario:
+              dhcp_client: dhclient
+            nuage_sut:
+              image_is_advanced: true
+              release: "{{ vsp_release }}"
+              openstack_version: "{{ zuul.branch | basename }}"
+            neutron_plugin_options:
+              available_type_drivers: flat,vlan,local,vxlan
+              image_is_advanced: true
+
+- job:
+    name: networking-nuage-base-py3
+    parent: networking-nuage-base
+    description: Base job for devstack/tempest based nuage jobs and python3.
+    # This currently works from stable/pike on
+    branches: ^(?!stable/(newton|ocata)).*$
+    # xenial version of python-openssl is too low
+    # once moved bionic this should go
+    pre-run: playbooks/devstack-py3.yaml
+    vars:
+      devstack_localrc:
+        USE_PYTHON3: True
+        # INF-7814 nuage-metadata-agent runs under py2 and
+        # misses dependencie to pyhton-keystoneclient
+        FORCE_CONFIG_DRIVE: True
+
+- job:
+    name: networking-nuage-tempest-smoke
+    parent: networking-nuage-base
+    description: job used in gate testing smoke annotated tests
+    # This currently works from stable/pike on
+    branches: ^(?!stable/(newton|ocata)).*$
+    vars:
+      tempest_test_regex: '^(nuage_tempest_plugin|tempest\.api\.network|neutron_tempest_plugin\.(api|scenario))\..*\[(?=.*smoke)'
+      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|neutron_tempest_plugin\.api\.admin\.test_tag.*|nuage_tempest_plugin.*orchestration.*))'
+
+- job:
+    name: networking-nuage-tempest-smoke-py3
+    parent: networking-nuage-base-py3
+    description: job used in gate testing smoke annotated tests
+    # This currently works from stable/pike on
+    branches: ^(?!stable/(newton|ocata)).*$
+    vars:
+      tempest_test_regex: '^(nuage_tempest_plugin|tempest\.api\.network|neutron_tempest_plugin\.(api|scenario))\..*\[(?=.*smoke)'
+      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|neutron_tempest_plugin\.api\.admin\.test_tag.*|nuage_tempest_plugin.*orchestration.*))'
+
+- job:
+    name: networking-nuage-tempest-qdhcp
+    parent: networking-nuage-tempest-smoke-py3
+    description: job running smoke annotated tests agains q-dhcp enabled deployment
+    # This currently works from stable/pike on
+    branches: ^(?!stable/(newton|ocata)).*$
+    vars:
+      devstack_localrc:
+        NEUTRON_AGENT: nuagevrs
+      devstack_services:
+        q-dhcp: true
+
+- job:
+    name: networking-nuage-tempest-full
+    parent: networking-nuage-base
+    description: job running all available nuage tests
+    # This currently works from stable/pike on
+    branches: ^(?!stable/(newton|ocata)).*$
+    timeout: 18000
+    vars:
+      tempest_test_regex: '^nuage_tempest_plugin\..*'
+      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin.*orchestration.*))'
+
+- job:
+    name: networking-nuage-tempest-full-py3
+    parent: networking-nuage-base-py3
+    description: job running all available nuage tests
+    # This currently works from stable/pike on
+    branches: ^(?!stable/(newton|ocata)).*$
+    timeout: 18000
+    vars:
+      tempest_test_regex: '^nuage_tempest_plugin\..*'
+      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin.*orchestration.*))'
+
+- job:
+    name: networking-nuage-tempest-sriov
+    parent: networking-nuage-base-py3
+    description: job running api tests against nuage sriov mech driver
+    # This currently works from stable/pike on
+    branches: ^(?!stable/(newton|ocata)).*$
+    timeout: 9000
+    required-projects:
+      - OpenStack/networking-testsriov
+    vars:
+      tempest_test_regex: '^(nuage_tempest_plugin\.tests\.api\.(test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov)).*'
+      devstack_localrc:
+        Q_ML2_PLUGIN_MECHANISM_DRIVERS: nuage,nuage_sriov,testsriov
+      devstack_plugins:
+        networking-testsriov: https://github.com/nuagenetworks/networking-testsriov.git
+      devstack_local_conf:
+        test-config:
+          $TEMPEST_CONFIG:
+            network:
+              port_vnic_type: direct
+- job:
+    name: networking-nuage-tempest-sriov-flat-vlan
+    parent: networking-nuage-tempest-sriov
+    # This currently works from stable/pike on
+    branches: ^(?!stable/(newton|ocata)).*$
+    description: job running api tests against nuage sriov mech driver with allow_existing_flat_vlan
+    vars:
+      devstack_localrc:
+        NUAGE_SRIOV_ALLOW_EXISTING_FLAT_VLAN: true
+
+- job:
+    name: networking-nuage-tempest-sriov-switchdev
+    parent: networking-nuage-tempest-sriov
+    description: job running api tests against nuage sriov mech driver with switchdev capability
+    # This currently works from stable/pike on
+    branches: ^(?!stable/(newton|ocata)).*$
+    vars:
+      devstack_localrc:
+        NUAGE_USE_SWITCHDEV: true
+      devstack_local_conf:
+        test-config:
+          $TEMPEST_CONFIG:
+            network:
+              port_profile: capabilities:[switchdev]
+      tempest_test_regex: '^nuage_tempest_plugin\..*'
+      tempest_black_regex: '^(?:.*(nuage_tempest_plugin\.tests\.(scenario|api\.(upgrade|baremetal|vsd_managed)))).*'
+
