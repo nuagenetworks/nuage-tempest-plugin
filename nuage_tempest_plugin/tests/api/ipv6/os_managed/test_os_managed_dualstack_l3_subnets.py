@@ -28,8 +28,9 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
         super(OsManagedDualStackL3SubnetsTest, cls).setup_clients()
         cls.nuage_client = NuageRestClient()
 
-    def create_v6_subnet(self, network, cleanup=True):
-        return self.create_subnet(network, ip_version=6, enable_dhcp=False,
+    def create_v6_subnet(self, network, cleanup=True, enable_dhcp=False):
+        return self.create_subnet(network, ip_version=6,
+                                  enable_dhcp=enable_dhcp,
                                   cleanup=cleanup)
 
     def _verify_ipv6_subnet_with_vsd_l2_domain(self, subnet, external_id,
@@ -192,11 +193,14 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
         router = self.create_router()
 
         ipv4_subnet = self.create_subnet(network)
-        ipv6_subnet = self.create_v6_subnet(network, cleanup=False)
+        ipv6_subnet = self.create_v6_subnet(network, cleanup=False,
+                                            enable_dhcp=True)
 
         self.router_attach(router, ipv4_subnet)
+        self.check_dhcp_port(network['id'], [4, 6])
 
         self.delete_subnet(ipv6_subnet)
+        self.check_dhcp_port(network['id'], [4])
 
     @decorators.attr(type='smoke')
     @nuage_test.header()
@@ -247,11 +251,13 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
         router = self.create_router()
 
         ipv4_subnet = self.create_subnet(network, cleanup=False)
-        ipv6_subnet = self.create_v6_subnet(network)
+        ipv6_subnet = self.create_v6_subnet(network, enable_dhcp=True)
 
         self.router_attach(router, ipv6_subnet)
+        self.check_dhcp_port(network['id'], [4, 6])
 
         self.delete_subnet(ipv4_subnet)
+        self.check_dhcp_port(network['id'], [6])
 
     @decorators.attr(type='smoke')
     @nuage_test.header()

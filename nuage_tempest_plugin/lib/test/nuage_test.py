@@ -1615,6 +1615,34 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         LOG.debug("Local IP: {}".format(ip))
         return ip
 
+    def check_dhcp_port(self, network_id, ip_types):
+        if self.is_dhcp_agent_present():
+            filters = {
+                'device_owner': 'network:dhcp',
+                'network_id': network_id
+            }
+            dhcp_port = self.ports_client.list_ports(**filters)['ports'][0]
+            vm_interface = self.nuage_client.get_resource(
+                'vms',
+                filters='externalID',
+                filter_value=self.nuage_client.get_vsd_external_id(
+                    dhcp_port['id']),
+                flat_rest_path=True)[0]['interfaces'][0]
+            for idx, ip_type in enumerate(ip_types):
+                if ip_type == 4:
+                    self.assertEqual(
+                        dhcp_port['fixed_ips'][idx]['ip_address'],
+                        vm_interface['IPAddress'])
+                else:
+                    self.assertEqual(
+                        dhcp_port['fixed_ips'][idx]['ip_address'] + '/64',
+                        vm_interface['IPv6Address'])
+            if len(ip_types) == 1:
+                if ip_types[0] == 4:
+                    self.assertIsNone(vm_interface['IPv6Address'])
+                else:
+                    self.assertIsNone(vm_interface['IPAddress'])
+
 
 class NuageBaseOrchestrationTest(NuageBaseTest):
     """Base test case class for all Nuage Orchestration API tests."""

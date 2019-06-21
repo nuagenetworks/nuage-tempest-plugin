@@ -43,11 +43,11 @@ MSG_INVALID_GATEWAY_FOR_IP_TYPE = "Invalid input for operation: gateway_ip " \
 
 
 def _is_v4_ip(ip):
-    return (IPAddress(ip['ip_address']).version == 4)
+    return IPAddress(ip['ip_address']).version == 4
 
 
 def _is_v6_ip(ip):
-    return (IPAddress(ip['ip_address']).version == 6)
+    return IPAddress(ip['ip_address']).version == 6
 
 
 @nuage_test.class_header(tags=[tags.ML2])
@@ -436,14 +436,16 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
         network = self.create_network()
         ipv4_subnet = self.create_subnet(network, cleanup=False)
         self.assertIsNotNone(ipv4_subnet)
-        self.create_subnet(
+        ipv6_subnet = self.create_subnet(
             network,
             ip_version=6,
-            gateway=None,
-            enable_dhcp=False)
+            gateway=None)
+        self.assertIsNotNone(ipv6_subnet)
+        self.check_dhcp_port(network['id'], [4, 6])
 
         # delete IPv4 subnet
         self.manager.subnets_client.delete_subnet(ipv4_subnet['id'])
+        self.check_dhcp_port(network['id'], [6])
 
         # create again
         self.create_subnet(network)
@@ -459,19 +461,19 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
             network,
             ip_version=6,
             gateway=None,
-            enable_dhcp=False,
             cleanup=False)
         self.assertIsNotNone(ipv6_subnet)
+        self.check_dhcp_port(network['id'], [4, 6])
 
         # delete
         self.manager.subnets_client.delete_subnet(ipv6_subnet['id'])
+        self.check_dhcp_port(network['id'], [4])
 
         # create again
         ipv6_subnet = self.create_subnet(
             network,
             ip_version=6,
-            gateway=None,
-            enable_dhcp=False)
+            gateway=None)
         self.assertIsNotNone(ipv6_subnet)
 
     @decorators.attr(type='smoke')
