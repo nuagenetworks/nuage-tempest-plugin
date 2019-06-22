@@ -114,7 +114,6 @@
       tempest_concurrency: 2
       devstack_localrc:
         LIBVIRT_TYPE: kvm
-        TEMPEST_PLUGINS: "/opt/stack/nuage-tempest-plugin /opt/stack/neutron-tempest-plugin"
         IMAGE_URLS: "http://{{ mirror_fqdn }}/devstack/cirros-ipv6.qcow2,"
         DOWNLOAD_DEFAULT_IMAGES: False
         FLOATING_RANGE: "{{ nuage_fip_range }}.0/24"
@@ -171,6 +170,9 @@
         s-object: false
         s-proxy: false
         horizon: false
+      tempest_plugins:
+        - nuage-tempest-plugin
+        - neutron-tempest-plugin
       devstack_local_conf:
         post-config:
           $NEUTRON_CONF:
