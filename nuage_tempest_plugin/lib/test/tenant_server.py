@@ -29,7 +29,8 @@ class FipAccessConsole(RemoteClient):
             servers_client=tenant_server.admin_client)
         self.tenant_server = tenant_server
 
-    def send(self, cmd, timeout=CONF.validation.ssh_timeout):
+    def send(self, cmd, timeout=CONF.validation.ssh_timeout,
+             should_succeed=True):
         output = {'output': None}
 
         def send_cmd():
@@ -45,8 +46,11 @@ class FipAccessConsole(RemoteClient):
                 return False
             return True
 
-        assert test_utils.call_until_true(send_cmd, timeout, 1)
-        return output['output']
+        succes = test_utils.call_until_true(send_cmd, timeout, 1)
+        if should_succeed:
+            assert succes
+
+        return output['output'] if succes else False
 
     def ping(self, destination, cnt, interface=None, ip_type=4):
         try:
@@ -158,9 +162,9 @@ class TenantServer(object):
                 break
         return ip_address
 
-    def send(self, cmd):
+    def send(self, cmd, timeout=CONF.validation.ssh_timeout, **kwargs):
         assert self.console()
-        return self.console().send('sudo ' + cmd)
+        return self.console().send('sudo ' + cmd, timeout=timeout, **kwargs)
 
     def configure_dualstack_interface(self, ip, subnet, device='eth0'):
         LOG.info('VM configure_dualstack_interface:\n'
@@ -314,9 +318,45 @@ class TenantServer(object):
 
         return str(expected_packet_cnt) + ' packets received' in ping_out
 
+    def curl(self, destination_ip, destination_port=80,
+             source_port=None, max_time_to_wait_for_response=2,
+             max_time_to_retry=10):
+        """Curl from this server to destination
+
+        :param destination_ip: netaddr.IPAddress
+        :param destination_port: tcp port (optional)
+        :param source_port: tcp port (optional)
+        :param max_time_to_wait_for_response: curl will give up after this time
+        :param max_time_to_retry: retry until this timer expires
+        :return: Output or False on failure
+        """
+        command = ('curl {ipv6} -g --max-time {max_wait} {source_port} '
+                   'http://{destination_ip}:{destination_port}'
+                   .format(ipv6='-6' if destination_ip.version == 6 else '',
+                           max_wait=max_time_to_wait_for_response,
+                           source_port=('--local-port {}'.format(source_port)
+                                        if source_port else ''),
+                           destination_ip=('[{}]'.format(destination_ip)
+                                           if destination_ip.version == 6
+                                           else destination_ip),
+                           destination_port=destination_port))
+        return self.send(command,
+                         timeout=max_time_to_retry,
+                         should_succeed=False)
+
     def echo_debug_info(self):
         self.send("echo; "
                   "echo '----- ip route -----'; ip route; "
                   "echo '----- ip a     -----'; ip a; "
                   "echo '----- arp -a   -----'; arp -a; "
                   "echo")
+
+    def get_ip_addresses(self):
+        ips = self.get_server_details()['addresses'].values()[0]
+        fixed_ip4 = fixed_ip6 = None
+        for ip in ips:
+            if ip['version'] == 4:
+                fixed_ip4 = ip['addr']
+            else:
+                fixed_ip6 = ip['addr']
+        return IPAddress(fixed_ip4), IPAddress(fixed_ip6)

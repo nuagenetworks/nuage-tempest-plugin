@@ -146,8 +146,14 @@ class FWaaSExtensionTestJSON(BaseFWaaSTest):
                          firewall_rule_vsd['sourcePort'])
         self.assertEqual(firewall_rule_os['destination_port'],
                          firewall_rule_vsd['destinationPort'])
+
+        ip_version = firewall_rule_os.get('ip_version')
+        self.assertIn(needle=ip_version, haystack=[4, 6])
+        vsd_source_ip_field_name = ('addressOverride' if ip_version == 4
+                                    else 'IPv6AddressOverride')
         self.assertEqual(firewall_rule_os['source_ip_address'],
-                         firewall_rule_vsd['addressOverride'])
+                         firewall_rule_vsd[vsd_source_ip_field_name])
+
         self.assertEqual(firewall_rule_os['destination_ip_address'],
                          firewall_rule_vsd['networkID'])
         self.assertEqual(VSD_TO_OS_ACTION.get(firewall_rule_os['action']),

@@ -15,14 +15,12 @@
 
 import time
 
-from tempest import exceptions
+from neutron_lib import constants as nl_constants
 from tempest.lib.common.utils import data_utils
 from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions as lib_exc
 
 from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants as p_const
-
 from nuage_tempest_plugin.services.fwaas import fwaas_client as client
 
 CONF = Topology.get_conf()
@@ -110,13 +108,13 @@ class FWaaSClientMixin(object):
 
     def delete_firewall_and_wait(self, firewall_id):
         self.firewalls_client.delete_firewall(firewall_id)
-        self._wait_firewall_while(firewall_id, [p_const.PENDING_DELETE],
+        self._wait_firewall_while(firewall_id, [nl_constants.PENDING_DELETE],
                                   not_found_ok=True)
 
     def _wait_firewall_ready(self, firewall_id):
         self._wait_firewall_while(firewall_id,
-                                  [p_const.PENDING_CREATE,
-                                   p_const.PENDING_UPDATE])
+                                  [nl_constants.PENDING_CREATE,
+                                   nl_constants.PENDING_UPDATE])
 
     def _wait_firewall_while(self, firewall_id, statuses, not_found_ok=False):
         start = int(time.time())
@@ -138,5 +136,5 @@ class FWaaSClientMixin(object):
                     "firewall": firewall_id,
                     "status": status,
                 }
-                raise exceptions.TimeoutException(msg)
+                raise lib_exc.TimeoutException(msg)
             time.sleep(1)

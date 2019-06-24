@@ -1516,53 +1516,11 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             self.assertIn(k, d2, "{} for key {}".format(msg, k))
             self.assertEqual(d1[k], d2[k], "{} for key {}".format(msg, k))
 
-    def start_webserver(self, vm_handle, port_number):
-        # pkill not present on cirros
-        output = vm_handle._send(cmd='killall nc', timeout=50)
-        LOG.info("output of pkill command is %s", output)
-        output = vm_handle._send(cmd='netstat -an | grep ' + port_number,
-                                 timeout=50)
-        LOG.info("output of netstat command is %s", output)
-        output = vm_handle._send(
-            cmd='echo -e \"got connected working fine 200 OKnn $(ifconfig)\" '
-                '| nc -lp ' + port_number + ' &', timeout=50)
-        LOG.info("output of start webserver is %s", output)
-        complete_output = str(output).strip('[]')
-        if "Address already in use" in complete_output:
-            LOG.info("some process is running on this port " +
-                     complete_output)
-            self.fail("Fail to start webserver on port " + port_number)
-        else:
-            LOG.info("Webserver is successfully started on portnumber " +
-                     port_number)
-
-    def stop_webserver(self, vm_handle):
-        output = vm_handle._send(cmd='killall nc', timeout=50)
-        LOG.info("output of pkill command is %s", output)
-
-    def verify_tcp_curl(self, vm_handle, completeurl, tcppass=True,
-                        verify_ip_address=None):
-        output = vm_handle._send(cmd='curl -m 2 ' + completeurl, timeout=50)
-        LOG.info("output of curl command is %s", output)
-        complete_output = str(output).strip('[]')
-        if tcppass:
-            expected_result = "got connected working fine"
-        else:
-            expected_result = "couldn't connect to host"
-        if expected_result in complete_output:
-            LOG.info("traffic is received as expected: " +
-                     expected_result)
-            if tcppass and verify_ip_address:
-                if verify_ip_address in complete_output:
-                    LOG.info("found the expected ipaddress " +
-                             verify_ip_address)
-                else:
-                    LOG.info("ip address not coming as expected " +
-                             verify_ip_address)
-                    self.fail("ip address is not found in the curl " +
-                              complete_output)
-        else:
-            self.fail("traffic is not received as expected " + complete_output)
+    def start_webserver(self, server, port):
+        cmd = ("screen -d -m sh -c '"
+               "while true; do echo -e \"HTTP/1.0 200 Ok\\nHELLO\\n\" "
+               "| nc -l -p {port}; done;'".format(port=port))
+        server.send(cmd)
 
     def osc_delete_test_server(self, vm_id, client=None):
         """Common wrapper utility delete a test server."""
