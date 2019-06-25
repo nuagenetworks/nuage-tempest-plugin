@@ -75,7 +75,8 @@ class ExternalIdForL3domainTest(base.BaseAdminNetworkTest):
 
             found = False
             for l3_subnet in self.vsd_subnets:
-                if l3_subnet['name'] == subnet['id']:
+                if (l3_subnet['name'] ==
+                        subnet['network_id'] + '_' + subnet['id']):
                     self.test.assertEqual(
                         shared, self.is_parent_public_zone(l3_subnet))
                     found = True

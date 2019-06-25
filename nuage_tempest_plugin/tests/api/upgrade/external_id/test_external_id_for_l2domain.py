@@ -53,14 +53,18 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
             self.vsd_l2domain = vsd_l2domains[0]
 
             self.test.assertNotEmpty(self.vsd_l2domain)
-            self.test.assertEqual(self.vsd_l2domain['name'], self.subnet['id'])
+            self.test.assertEqual(
+                self.vsd_l2domain['name'],
+                self.subnet['network_id'] + '_' + self.subnet['id'])
             return self
 
         def has_l2domain_template(self, with_external_id=None):
             # vsd l2domain template object has external ID
             vsd_l2domain_templates = \
                 self.test.nuage_client.get_l2domaintemplate(
-                    filters='name', filter_value=self.subnet['id'])
+                    filters='name',
+                    filter_value=(self.subnet['network_id'] + '_' +
+                                  self.subnet['id']))
             self.test.assertEqual(
                 len(vsd_l2domain_templates), 1,
                 "vsd_l2domain_template not found by parent ID")

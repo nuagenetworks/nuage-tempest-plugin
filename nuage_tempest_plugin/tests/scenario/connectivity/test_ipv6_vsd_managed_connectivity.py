@@ -17,8 +17,7 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
             ip_type="DUALSTACK",
             cidr4=self.cidr4,
             gateway4=self.gateway4,
-            cidr6=self.cidr6,
-            gateway6=self.gateway6)
+            cidr6=self.cidr6)
         vsd_l2domain = self.vsd_create_l2domain(template=l2domain_template)
 
         self.vsd.define_any_to_any_acl(vsd_l2domain, allow_ipv6=True)
