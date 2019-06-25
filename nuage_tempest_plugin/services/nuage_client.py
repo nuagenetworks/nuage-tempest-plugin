@@ -96,20 +96,19 @@ class NuageRestClient(object):
         if resp.status >= 400:
             raise n_exceptions.UnexpectedResponseCode(str(resp.status))
 
-    def _log_request_start(self, method, req_url, req_headers=None,
-                           req_body=None):
-        if req_headers is None:
-            req_headers = {}
+    @classmethod
+    def _log_request_start(cls, method, req_url):
         caller_name = misc_utils.find_test_caller()
         trace_regex = CONF.debug.trace_requests
         if trace_regex and re.search(trace_regex, caller_name):
             LOG.debug('Starting Request (%s): %s %s',
                       caller_name, method, req_url)
 
-    def _log_request_full(self, method, req_url, resp,
-                          secs="", req_headers=None,
+    @classmethod
+    def _log_request_full(cls, method, req_url, resp,
+                          secs=None, req_headers=None,
                           req_body=None, resp_body=None,
-                          caller_name=None, extra=None):
+                          caller_name=None):
         if 'X-Auth-Token' in req_headers:
             req_headers['X-Auth-Token'] = '<omitted>'
         log_fmt = """Request (%s):
@@ -120,20 +119,15 @@ class NuageRestClient(object):
                 Body: %s"""
 
         LOG.debug(
-            log_fmt, caller_name, resp.status, method, req_url, secs,
-            str(req_headers), safe_body(req_body),
-            resp.headers,
-            safe_body(resp_body), extra=extra)
+            log_fmt, caller_name, resp.status, method, req_url,
+            secs or '', str(req_headers), safe_body(req_body),
+            resp.headers, safe_body(resp_body))
 
     def _log_request(self, method, req_url, resp,
-                     secs="", req_headers=None,
+                     secs=None, req_headers=None,
                      req_body=None, resp_body=None):
         if req_headers is None:
             req_headers = {}
-
-        # if we have the request id, put it in the right part of the log
-        # extra = dict(request_id=self._get_request_id(resp))
-        extra = {}
 
         # NOTE(sdague): while we still have 6 callers to this function
         # we're going to just provide work around on who is actually
@@ -144,12 +138,12 @@ class NuageRestClient(object):
             secs = " %.3fs" % secs
         LOG.info(
             'Request (%s): %s %s %s%s', caller_name, resp.status, method,
-            req_url, secs, extra=extra)
+            req_url, secs)
 
-        # Also look everything at DEBUG if you want to filter this
-        # out, don't run at debug.
+        # Also log everything at DEBUG;
+        # if you want to filter this out, don't run at debug.
         self._log_request_full(method, req_url, resp, secs, req_headers,
-                               req_body, resp_body, caller_name, extra)
+                               req_body, resp_body, caller_name)
 
     def request(self, method, url, body=None, extra_headers=None):
         self._log_request_start(method, url)
@@ -170,7 +164,7 @@ class NuageRestClient(object):
     def delete(self, url, body=None, extra_headers=None):
         return self.request('DELETE', url, body, extra_headers)
 
-    def get(self, url, extra_headers=None, body=None):
+    def get(self, url, extra_headers=None):
         resp = self.request('GET', url, extra_headers=extra_headers)
         if not resp.data:
             return ''

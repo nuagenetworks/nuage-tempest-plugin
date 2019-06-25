@@ -3,6 +3,7 @@ from oslo_log import log as logging
 from tempest import config
 
 from nuage_tempest_plugin.lib.release import Release
+from nuage_tempest_plugin.lib.utils.console_logging import ConsoleLogging
 from nuage_tempest_plugin.lib.utils.data_utils import Singleton
 
 CONF = config.CONF
@@ -16,6 +17,7 @@ class Topology(Singleton):
     openstack_version = Release(openstack_version_qualifier)
     is_ml2 = True
     api_workers = int(CONF.nuage_sut.api_workers)
+    console_logging = CONF.nuage_sut.console_logging
     nuage_baremetal_driver = CONF.nuage_sut.nuage_baremetal_driver
 
     vsd_server = CONF.nuage.nuage_vsd_server
@@ -30,8 +32,11 @@ class Topology(Singleton):
     # - - - - - -
 
     @staticmethod
-    def get_logger(name):
-        return logging.getLogger(name)
+    def get_logger(name, console_logging=None):
+        if console_logging is None:
+            console_logging = Topology.console_logging
+        return (ConsoleLogging(name) if console_logging
+                else logging.getLogger(name))
 
     @staticmethod
     def get_conf():
