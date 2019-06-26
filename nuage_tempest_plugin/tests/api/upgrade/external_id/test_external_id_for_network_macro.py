@@ -96,7 +96,7 @@ class ExternalIdForNetworkMacroTest(base.BaseAdminNetworkTest):
         name = data_utils.rand_name('netpartition')
         body = self.nuage_network_client.create_netpartition(name)
         netpartition = body['net_partition']
-        self.addCleanup(
+        self.addClassResourceCleanup(
             test_utils.call_and_ignore_notfound_exc,
             self.nuage_network_client.delete_netpartition,
             netpartition['id'])
