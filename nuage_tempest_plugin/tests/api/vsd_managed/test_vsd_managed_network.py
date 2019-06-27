@@ -1313,7 +1313,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
         l2domain_template = self.vsd_create_l2domain_template(
             ip_type="IPV6",
             cidr6=self.cidr6,
-            gateway6=self.gateway6,
+            gateway6=None,
             enable_dhcpv6=False)
         vsd_l2domain = self.vsd_create_l2domain(template=l2domain_template)
 

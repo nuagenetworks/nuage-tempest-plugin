@@ -2070,7 +2070,7 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
         else:
             vsd_l2dom_tmplt = self.vsd_create_l2domain_template(
                 name=name, cidr6=self._cidr, gateway6=str(self._cidr.ip + 1),
-                ip_type='IPV6')
+                ip_type='IPV6', enable_dhcpv6=True)
         vsd_l2dom = self.vsd_create_l2domain(
             name=name,
             template=vsd_l2dom_tmplt)
