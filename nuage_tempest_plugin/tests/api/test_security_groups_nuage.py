@@ -203,17 +203,17 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
                                              "VSD".format(sec_group_rule))
         self.assertEqual(ExternalId(sec_group_rule['id']).at_cms_id(),
                          nuage_acl_entry[0]['externalID'])
-        # self.assertEqual(expected_stateful, nuage_acl_entry[0]['stateful'],
-        #                  'Unexpected stateful value {} for protocol/ethtype '
-        #                  '= {}/{} [{}-{}], expected {}'.format(
-        #                      nuage_acl_entry[0]['stateful'],
-        #                      sec_group_rule['protocol'],
-        #                      sec_group_rule['ethertype'],
-        #                      sec_group_rule['port_range_min'],
-        #                      sec_group_rule['port_range_max'],
-        #                      expected_stateful))
-        # self._verify_reverse_acl_entry_template(
-        #     sec_group_rule, expected_stateful, nuage_domain)
+        self.assertEqual(expected_stateful, nuage_acl_entry[0]['stateful'],
+                         'Unexpected stateful value {} for protocol/ethertype '
+                         '= {}/{} [{}-{}], expected {}'.format(
+                             nuage_acl_entry[0]['stateful'],
+                             sec_group_rule['protocol'],
+                             sec_group_rule['ethertype'],
+                             sec_group_rule['port_range_min'],
+                             sec_group_rule['port_range_max'],
+                             expected_stateful))
+        self._verify_reverse_acl_entry_template(
+            sec_group_rule, expected_stateful, nuage_domain)
 
         to_verify = ['etherType', 'protocol', 'sourcePort', 'destinationPort']
         expected = {}
@@ -621,6 +621,7 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
     def test_create_security_group_rule_with_additional_args(self):
         self._test_create_security_group_rule_with_additional_args()
 
+    @decorators.attr(type='smoke')
     def test_create_security_group_rule_with_icmp_type_code(self):
         self._test_create_security_group_rule_with_icmp_type_code(
             'icmp', icmp_type_codes=self._icmp_type_codes)
@@ -869,6 +870,7 @@ class TestSecGroupTestNuageL3Domain(SecGroupTestNuageBase):
     def test_create_security_group_rule_with_additional_args(self):
         self._test_create_security_group_rule_with_additional_args()
 
+    @decorators.attr(type='smoke')
     def test_create_security_group_rule_with_icmp_type_code(self):
         self._test_create_security_group_rule_with_icmp_type_code(
             'icmp', icmp_type_codes=self._icmp_type_codes)
@@ -945,6 +947,7 @@ class SecGroupTestNuageL2DomainIPv6Test(SecGroupTestNuageBaseV6):
         self._test_create_security_group_rule_with_icmp_type_code(
             'icmpv6', icmp_type_codes=self._icmp_type_codes)
 
+    @decorators.attr(type='smoke')
     def test_create_security_group_rule_with_icmp_type_code(self):
         self._test_create_security_group_rule_with_icmp_type_code(
             'ipv6-icmp', icmp_type_codes=self._icmp_type_codes)
@@ -980,6 +983,7 @@ class SecGroupTestNuageL2DomainDualstackTest(SecGroupTestNuageBaseV6):
         self._test_create_security_group_rule_with_icmp_type_code(
             'icmpv6', icmp_type_codes=self._icmp_type_codes)
 
+    @decorators.attr(type='smoke')
     def test_create_security_group_rule_with_icmp_type_code(self):
         self._test_create_security_group_rule_with_icmp_type_code(
             'ipv6-icmp', icmp_type_codes=self._icmp_type_codes)
@@ -1036,6 +1040,7 @@ class SecGroupTestNuageL3DomainIPv6Test(SecGroupTestNuageBaseV6):
         self._test_create_security_group_rule_with_icmp_type_code(
             'icmpv6', icmp_type_codes=self._icmp_type_codes)
 
+    @decorators.attr(type='smoke')
     def test_create_security_group_rule_with_icmp_type_code(self):
         self._test_create_security_group_rule_with_icmp_type_code(
             'ipv6-icmp', icmp_type_codes=self._icmp_type_codes)
@@ -1093,6 +1098,7 @@ class SecGroupTestNuageL3DomainDualstackTest(SecGroupTestNuageBaseV6):
         self._test_create_security_group_rule_with_icmp_type_code(
             'icmpv6', icmp_type_codes=self._icmp_type_codes)
 
+    @decorators.attr(type='smoke')
     def test_create_security_group_rule_with_icmp_type_code(self):
         self._test_create_security_group_rule_with_icmp_type_code(
             'ipv6-icmp', icmp_type_codes=self._icmp_type_codes)
