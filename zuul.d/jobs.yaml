@@ -70,6 +70,7 @@
       Former names for this job where:
         * legacy-tempest-dsvm-py35
         * gate-tempest-dsvm-py35
+    timeout: 14400
     vars:
       devstack_services:
         s-account: false
