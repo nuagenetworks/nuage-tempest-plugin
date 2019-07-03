@@ -62,7 +62,7 @@ resources:
     properties:
       network_id: { get_resource: dualstack_net }
       cidr: { get_param: cidr6 }
-      enable_dhcp: false
+      enable_dhcp: { get_param: dhcp_managed }
       ip_version: 6
       value_specs: { net_partition: { get_param: netpartition_name }, nuagenet: {get_param: vsd_subnet_id} }
 

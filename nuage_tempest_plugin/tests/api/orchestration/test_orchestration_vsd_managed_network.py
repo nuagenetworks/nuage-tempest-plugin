@@ -41,6 +41,7 @@ class OrchestrationVsdManagedNetworkTest(
         # Create the VSD l2 domain from a template
         name = data_utils.rand_name('l2domain-')
         cidr = IPNetwork('10.10.100.0/24')
+        gateway = '10.10.100.1'
 
         vsd_l2domain_template = self.create_vsd_dhcp_managed_l2domain_template(
             name=name,
@@ -52,6 +53,9 @@ class OrchestrationVsdManagedNetworkTest(
 
         self.assertIsInstance(vsd_l2domain, list)
         self.assertEqual(vsd_l2domain[0]['name'], name)
+
+        self.vsd_client.create_dhcpoption_on_l2dom(
+            vsd_l2domain[0]['ID'], 3, [gateway])
 
         # launch a heat stack
         stack_file_name = 'nuage_vsd_managed_network_minimal'
@@ -97,6 +101,7 @@ class OrchestrationVsdManagedNetworkTest(
         # Create the VSD l2 domain from a template
         name = data_utils.rand_name('l2domain-')
         cidr = IPNetwork('10.10.100.0/24')
+        gateway = '10.10.100.1'
 
         vsd_l2domain_template = self.create_vsd_dhcp_managed_l2domain_template(
             name=name, cidr=cidr,
@@ -107,6 +112,9 @@ class OrchestrationVsdManagedNetworkTest(
 
         self.assertIsInstance(vsd_l2domain, list)
         self.assertEqual(vsd_l2domain[0]['name'], name)
+
+        self.vsd_client.create_dhcpoption_on_l2dom(
+            vsd_l2domain[0]['ID'], 3, [gateway])
 
         # launch a heat stack
         stack_file_name = 'nuage_vsd_managed_network'
@@ -154,6 +162,7 @@ class OrchestrationVsdManagedNetworkTest(
         # Create the VSD l2 domain from a template
         name = data_utils.rand_name('l2domain-')
         cidr = IPNetwork('10.10.100.0/24')
+        gateway = '10.10.100.1'
 
         vsd_l2domain_template = \
             self.create_vsd_dhcp_unmanaged_l2domain_template(
@@ -165,6 +174,9 @@ class OrchestrationVsdManagedNetworkTest(
 
         self.assertIsInstance(vsd_l2domain, list)
         self.assertEqual(vsd_l2domain[0]['name'], name)
+
+        self.vsd_client.create_dhcpoption_on_l2dom(
+            vsd_l2domain[0]['ID'], 3, [gateway])
 
         # launch a heat stack
         stack_file_name = 'nuage_vsd_managed_network'

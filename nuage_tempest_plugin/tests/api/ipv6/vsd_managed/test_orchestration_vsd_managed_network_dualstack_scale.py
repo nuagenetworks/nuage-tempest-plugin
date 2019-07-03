@@ -32,6 +32,7 @@ class OrchestrationDualStackScaleTest(
         vsd_l2domain_template = self.vsd_create_l2domain_template(
             ip_type="DUALSTACK",
             dhcp_managed=True,
+            enable_dhcpv6=True,
             cidr4=self.cidr4,
             cidr6=self.cidr6,
             gateway=self.gateway4,
@@ -48,6 +49,9 @@ class OrchestrationDualStackScaleTest(
         vsd_l2domain = self.vsd_create_l2domain(template=vsd_l2domain_template)
         self._verify_vsd_l2domain_with_template(
             vsd_l2domain, vsd_l2domain_template)
+
+        self.nuage_client.create_dhcpoption_on_l2dom(
+            vsd_l2domain.id, 3, [str(IPAddress(self.cidr4) + 1)])
 
         # launch a heat stack
         stack_file_name = 'nuage_vsd_managed_network_dualstack_vm_in_net'
@@ -135,7 +139,8 @@ class OrchestrationDualStackScaleTest(
             cidr4=subnet_cidr,
             gateway4=subnet_gateway,
             cidr6=subnet_ipv6_cidr,
-            gateway6=subnet_ipv6_gateway)
+            gateway6=subnet_ipv6_gateway,
+            enable_dhcpv6=True)
 
         # launch a heat stack
         stack_file_name = 'nuage_vsd_managed_network_dualstack_vm_on_port'
@@ -216,7 +221,8 @@ class OrchestrationDualStackScaleTest(
             cidr4=subnet_cidr,
             gateway4=subnet_gateway,
             cidr6=subnet_ipv6_cidr,
-            gateway6=subnet_ipv6_gateway)
+            gateway6=subnet_ipv6_gateway,
+            enable_dhcpv6=True)
 
         # launch a heat stack
         stack_file_name = 'nuage_vsd_managed_network_dualstack_vm_in_net'
