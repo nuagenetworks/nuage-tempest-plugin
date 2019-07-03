@@ -69,7 +69,7 @@ resources:
       network_id: { get_resource: dualstack_net }
       cidr: { get_param: cidr6 }
       gateway_ip: { get_param: gateway6 }
-      enable_dhcp: false
+      enable_dhcp: { get_param: dhcp_managed }
       ip_version: 6
       allocation_pools:
         - start: { get_param: pool_start6 }

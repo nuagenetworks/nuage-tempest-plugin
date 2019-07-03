@@ -10,6 +10,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from nuage_tempest_plugin.lib.test.nuage_test import skip_because
 from nuage_tempest_plugin.tests.api.orchestration import nuage_base
 
 from tempest.lib.common.utils import data_utils
@@ -88,6 +89,7 @@ class NuageOSManagedDuplexHeatTest(nuage_base.NuageBaseOrchestrationTest,
             self.assertEqual('CREATE_COMPLETE', resource['resource_status'])
         self._clear_stacks()
 
+    @skip_because(bug='OPENSTACK-2592')
     @decorators.attr(type='smoke')
     def test_nuage_l2bridge_orchestration_advanced(self):
         """Verifies created neutron resources."""

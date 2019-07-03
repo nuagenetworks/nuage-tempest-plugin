@@ -79,6 +79,7 @@ resources:
       network_id: { get_resource: l2_net }
       cidr: { get_param: l2_net_cidr }
       name: { get_param: l2_subnet_name }
+      gateway_ip: null
       value_specs: { net_partition: { get_param: netpartition_name }, nuagenet: {get_param: vsd_l2_subnet_id} }
 
   rt_l2:

@@ -43,8 +43,6 @@ resources:
     properties:
       network_id: { get_resource: private_net }
       cidr: { get_param: private_net_cidr }
-      # waelj: should not provide gateway_ip in case dhcp is true
-      #gateway_ip: { get_param: private_net_gateway }
       enable_dhcp: { get_param: private_net_dhcp }
       allocation_pools:
         - start: { get_param: private_net_pool_start }

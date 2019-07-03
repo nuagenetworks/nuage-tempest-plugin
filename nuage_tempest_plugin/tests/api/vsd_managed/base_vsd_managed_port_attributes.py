@@ -322,6 +322,7 @@ class BaseVSDManagedPortAttributes(
         }
         l2dom_template = self.create_vsd_dhcpmanaged_l2dom_template(**kwargs)
         vsd_l2_subnet = self.create_vsd_l2domain(tid=l2dom_template[0]['ID'])
+
         # self.iacl_template = self._create_ingress_acl_template(
         #     name=data_utils.rand_name("iacl_tmpl"),
         #     template_id=l2dom_template[0]['ID'])
