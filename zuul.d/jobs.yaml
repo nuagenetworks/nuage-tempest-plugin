@@ -116,6 +116,7 @@
       devstack_localrc:
         LIBVIRT_TYPE: kvm
         IMAGE_URLS: "http://{{ mirror_fqdn }}/devstack/cirros-ipv6.qcow2,"
+        DEFAULT_IMAGE_FILE_NAME: cirros-ipv6.qcow2
         DOWNLOAD_DEFAULT_IMAGES: False
         FLOATING_RANGE: "{{ nuage_fip_range }}.0/24"
         PUBLIC_NETWORK_GATEWAY: "{{ nuage_fip_range }}.1"
