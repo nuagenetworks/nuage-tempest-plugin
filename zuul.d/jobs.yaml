@@ -88,7 +88,7 @@
     # This currently works from stable/pike on
     branches: ^(?!stable/(newton|ocata)).*$
     description: Base job for devstack/tempest based nuage jobs and python2.7.
-    nodeset: openstack-single-node-xenial
+    nodeset: openstack-single-node-rhel7
     timeout: 10800
     required-projects:
       - opendev.org/openstack/devstack-gate
