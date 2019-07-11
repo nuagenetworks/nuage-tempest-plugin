@@ -28,7 +28,6 @@ from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test.nuage_test import NuageAdminNetworksTest
-from nuage_tempest_plugin.lib.test.nuage_test import skip_because
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.lib.utils import data_utils as nuage_data_utils
@@ -464,25 +463,29 @@ class NuageRoutersTest(base.BaseNetworkTest):
                           **rtr_template)
 
     @decorators.attr(type='smoke')
-    @skip_because(bug='VSD-35089')
     def test_router_create_with_rt_rd(self):
         # Create a router with specific rt/rd values
         rtrd = {
             'rt': '64435:' + str(randint(0, 1000)),
             'rd': '64435:' + str(randint(0, 1000)),
         }
-        create_body = self.routers_client.create_router(
-            name=data_utils.rand_name('router'), admin_state_up=True, **rtrd)
-        self.addCleanup(self.routers_client.delete_router,
-                        create_body['router']['id'])
 
-        # Verify router is created in VSD with correct rt/rd values
-        nuage_domain = self.nuage_client.get_l3domain(
-            filters='externalID', filter_value=create_body['router']['id'])
-        self.assertEqual(create_body['router']['name'], nuage_domain[0][
-            'description'])
-        self.assertEqual(rtrd['rd'], nuage_domain[0]['routeDistinguisher'])
-        self.assertEqual(rtrd['rt'], nuage_domain[0]['routeTarget'])
+        # repeat twice to make sure that we can re-use the rt/rd values after
+        # deleting the router (VSD-35089)
+        for _ in range(2):
+            create_body = self.routers_client.create_router(
+                name=data_utils.rand_name('router'),
+                admin_state_up=True, **rtrd)
+
+            # Verify router is created in VSD with correct rt/rd values
+            nuage_domain = self.nuage_client.get_l3domain(
+                filters='externalID', filter_value=create_body['router']['id'])
+            self.assertEqual(create_body['router']['name'], nuage_domain[0][
+                'description'])
+            self.assertEqual(rtrd['rd'], nuage_domain[0]['routeDistinguisher'])
+            self.assertEqual(rtrd['rt'], nuage_domain[0]['routeTarget'])
+
+            self.routers_client.delete_router(create_body['router']['id'])
 
     @decorators.attr(type='smoke')
     def test_router_update_rt_rd(self):
