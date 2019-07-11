@@ -4,6 +4,7 @@ from netaddr import IPNetwork
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageAdminNetworksTest
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.test.nuage_test import skip_because
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
@@ -388,6 +389,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                            ip_version=6)
         self.delete_port(port)
 
+    @skip_because(bug='VSD-36197')
     @decorators.attr(type='smoke')
     def test_nuage_port_update_fixed_ips_dual_subnets_with_vm_l2(self):
         self._nuage_port_update_fixed_ips_dual_subnets_with_vm(is_l2=True)
