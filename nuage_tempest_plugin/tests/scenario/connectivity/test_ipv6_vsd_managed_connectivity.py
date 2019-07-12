@@ -17,7 +17,9 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
             ip_type="DUALSTACK",
             cidr4=self.cidr4,
             gateway4=self.gateway4,
-            cidr6=self.cidr6)
+            cidr6=self.cidr6,
+            gateway6=self.gateway6,
+            enable_dhcpv6=True)
         vsd_l2domain = self.vsd_create_l2domain(template=l2domain_template)
 
         self.vsd.define_any_to_any_acl(vsd_l2domain, allow_ipv6=True)
@@ -26,7 +28,7 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
         network = self.create_network()
         self.create_l2_vsd_managed_subnet(network, vsd_l2domain)
         self.create_l2_vsd_managed_subnet(
-            network, vsd_l2domain, ip_version=6, dhcp_managed=False)
+            network, vsd_l2domain, ip_version=6)
 
         # Launch tenant servers in OpenStack network
         server2 = self.create_tenant_server(
