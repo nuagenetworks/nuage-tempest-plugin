@@ -185,12 +185,12 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
             network, vsd_l2domain, ip_version=6, dhcp_managed=True)
 
         # Launch tenant servers in OpenStack network
+        server2 = self.create_tenant_server(
+            networks=[network])
+
         server1 = self.create_tenant_server(
             networks=[network],
             make_reachable=True)
-
-        server2 = self.create_tenant_server(
-            networks=[network])
 
         # Test IPv6 connectivity between peer servers
         self.assert_ping(server1, server2, network, ip_type=6)
@@ -253,6 +253,9 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
                                   security_groups=[ssh_security_group['id']])
 
         # Launch tenant servers in OpenStack network
+        server2 = self.create_tenant_server(
+            ports=[portv6_2])
+
         server1 = self.create_tenant_server(
             ports=[portv4, portv6_1])
 
@@ -262,9 +265,6 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
             server1, portv4,
             vsd_domain=networkv4.get('vsd_l3_domain'),
             vsd_subnet=networkv4.get('vsd_l3_subnet'))
-
-        server2 = self.create_tenant_server(
-            ports=[portv6_2])
 
         # Test IPv6 connectivity between peer servers
         self.assert_ping(server1, server2, networkv6_2, ip_type=6)
