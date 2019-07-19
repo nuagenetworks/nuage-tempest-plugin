@@ -25,6 +25,7 @@ from nuage_tempest_plugin.lib.mixins import net_topology as topology_mixin
 from nuage_tempest_plugin.lib.mixins import network as network_mixin
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
+from nuage_tempest_plugin.lib.utils import data_utils as lib_utils
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
 CONF = Topology.get_conf()
@@ -241,6 +242,18 @@ class PortsDirectTest(network_mixin.NetworkMixin,
         for vsd_l2dom_template in cls.vsd_l2dom_template:
             cls.vsd_client.delete_l2domaintemplate(
                 vsd_l2dom_template['ID'])
+
+    def _is_port_down(self, port_id):
+        p = self.show_port(port_id)
+        return p['status'] == 'DOWN'
+
+    def _is_port_active(self, port_id):
+        p = self.show_port(port_id)
+        return p['status'] == 'ACTIVE'
+
+    def _is_trunk_active(self, trunk_id):
+        t = self.show_trunk(trunk_id)
+        return t['status'] == 'ACTIVE'
 
     def setUp(self):
         super(PortsDirectTest, self).setUp()
@@ -823,6 +836,17 @@ class PortsDirectTest(network_mixin.NetworkMixin,
                         direct_port['id'],
                         as_admin=True,
                         **self.binding_data)
+            if is_trunk:
+                # ensure trunk transitions to ACTIVE
+                lib_utils.wait_until_true(
+                    lambda: self._is_trunk_active(trunk['id']),
+                    exception=RuntimeError(
+                        "Timed out waiting for trunk %s to "
+                        "transition to ACTIVE." % trunk['id']))
+                # ensure all underlying subports transitioned to ACTIVE
+                for s in trunk.get('sub_ports'):
+                    lib_utils.wait_until_true(
+                        lambda: self._is_port_active(s['port_id']))
 
             self._validate_os(topology, is_trunk=is_trunk)
             if topology.is_flat_vlan_in_use:
