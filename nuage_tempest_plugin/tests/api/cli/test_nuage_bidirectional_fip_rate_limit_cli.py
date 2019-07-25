@@ -5,7 +5,6 @@ import json
 
 from tempest.test import decorators
 
-from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 
@@ -168,7 +167,6 @@ class TestNuageBidiFRLCliWODefault(BaseNuageFipRateLimit):
         self._verify_fip_vsd(subnet, port, updated_floating_ip,
                              ingress_rate_limit, egress_rate_limit)
 
-    @nuage_test.header()
     def test_create_fip_without_rate_limit(self):
         self._as_admin()
 
@@ -197,7 +195,6 @@ class TestNuageBidiFRLCliWODefault(BaseNuageFipRateLimit):
             subnet, port, created_floating_ip,
             self.expected_default_fip_rate, self.expected_default_fip_rate)
 
-    @nuage_test.header()
     def test_create_update_fip_with_rate_limit_normal_value_ingress(self):
         #     """
         #     neutron net-create net1
@@ -245,7 +242,6 @@ class TestNuageBidiFRLCliWODefault(BaseNuageFipRateLimit):
                                     ingress_rate_limit=updated_rate_limit,
                                     egress_rate_limit=updated_rate_limit)
 
-    @nuage_test.header()
     def test_create_update_fip_with_rate_limit_normal_value_egress(self):
         #     """
         #     neutron net-create net1
@@ -303,7 +299,6 @@ class TestNuageBidiFRLCliWDef(TestNuageBidiFRLCliWODefault):
     configured_default_fip_rate = 321
     expected_default_fip_rate = configured_default_fip_rate
 
-    @nuage_test.header()
     def test_create_fip_with_default_rate_limit_max_value(self):
         network = self.create_network()
         subnet = self.create_subnet_with_args(network['name'], '10.3.0.0/24')
@@ -330,7 +325,6 @@ class TestNuageBidiFRLCliWDef(TestNuageBidiFRLCliWODefault):
         self._verify_fip_vsd(subnet, port, created_floating_ip,
                              rate_limit, rate_limit)
 
-    @nuage_test.header()
     def test_create_fip_with_default_rate_limit_unlimited(self):
         network = self.create_network()
         subnet = self.create_subnet_with_args(network['name'], '10.4.0.0/24')
@@ -358,7 +352,6 @@ class TestNuageBidiFRLCliWDef(TestNuageBidiFRLCliWODefault):
         self._verify_fip_vsd(
             subnet, port, created_floating_ip, rate_limit, rate_limit)
 
-    @nuage_test.header()
     def test_create_update_fip_rate_limit_with_keyword_default(self):
         network = self.create_network()
         subnet = self.create_subnet_with_args(network['name'], '10.5.0.0/24')
@@ -418,7 +411,6 @@ class TestNuageBidiFRLCliWDef(TestNuageBidiFRLCliWODefault):
             subnet, port, updated_floating_ip,
             self.expected_default_fip_rate, self.expected_default_fip_rate)
 
-    @nuage_test.header()
     @decorators.attr(type=['negative'])
     def test_create_fip_without_a_value(self):
         network = self.create_network()

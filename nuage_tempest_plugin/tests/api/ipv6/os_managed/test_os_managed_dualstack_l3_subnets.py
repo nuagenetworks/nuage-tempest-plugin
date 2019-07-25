@@ -2,16 +2,13 @@
 # All Rights Reserved.
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
-from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
-from nuage_tempest_plugin.lib.test import tags
 from nuage_tempest_plugin.lib.utils import constants as nuage_constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
 from tempest.lib import decorators
 
 
-@nuage_test.class_header(tags=[tags.ML2])
 class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
     _vsd_ipv4_address = 'address'
     _vsd_ipv6_address = 'IPv6Address'
@@ -65,7 +62,6 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
     # Typical
     ###########################################################################
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_os_managed_dual_stack_l3_subnet(self):
         # Provision OpenStack network
         network = self.create_network()
@@ -111,7 +107,6 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
         self.assertIsNotNone(server1)
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_os_managed_dual_stack_l3_subnet_with_dns_server(self):
         # Provision OpenStack network
         network = self.create_network()
@@ -176,7 +171,6 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
 
     # eventually delete this - this is obviously elsewhere tested
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_dualstack_attach_ipv4_and_cleanup(self):
         network = self.create_network()
         router = self.create_router()
@@ -187,7 +181,6 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
         self.router_attach(router, ipv4_subnet)
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_dualstack_attach_ipv4_delete_ipv6_and_cleanup(self):
         network = self.create_network()
         router = self.create_router()
@@ -203,7 +196,6 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
         self.check_dhcp_port(network['id'], [4])
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_dualstack_attach_ipv4_delete_ipv6_and_recreate(self):
         network = self.create_network()
         router = self.create_router()
@@ -224,7 +216,6 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
     # -------------------------------------------------------------------------
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_pure_ipv6_attach_and_cleanup(self):
         network = self.create_network()
         router = self.create_router()
@@ -234,7 +225,6 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
         self.router_attach(router, ipv6_subnet)
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_dualstack_attach_ipv6_and_cleanup(self):
         network = self.create_network()
         router = self.create_router()
@@ -245,7 +235,6 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
         self.router_attach(router, ipv6_subnet)
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_dualstack_attach_ipv6_delete_ipv4_and_cleanup(self):
         network = self.create_network()
         router = self.create_router()
@@ -260,7 +249,6 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
         self.check_dhcp_port(network['id'], [6])
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     # This is the scenario described in OPENSTACK-1990
     def test_dualstack_attach_ipv6_delete_ipv4_and_recreate(self):
         network = self.create_network()
@@ -282,7 +270,6 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
     # -------------------------------------------------------------------------
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_dualstack_attach_in_v4_then_v6_order_and_cleanup(self):
         network = self.create_network()
         router = self.create_router()
@@ -294,7 +281,6 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
         self.router_attach(router, ipv6_subnet)
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_dualstack_attach_in_v4_then_v6_order_and_cleanup_reversely(self):
         network = self.create_network()
         router = self.create_router()
@@ -320,7 +306,6 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
         self.assertEqual(0, len(dhcp_ports))
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_dualstack_attach_in_v6_then_v4_order_and_cleanup(self):
         network = self.create_network()
         router = self.create_router()
@@ -332,7 +317,6 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
         self.router_attach(router, ipv4_subnet)
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_dualstack_attach_in_v6_then_v4_order_and_cleanup_reversely(self):
         network = self.create_network()
         router = self.create_router()
@@ -358,7 +342,6 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
         self.assertEqual(0, len(dhcp_ports))
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_dualstack_attach_detach_check_nuage_dhcp_port(self):
         network = self.create_network()
         router = self.create_router()
@@ -391,7 +374,6 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
     # -------------------------------------------------------------------------
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_router_attach_ipv4_and_add_ipv6(self):
         network = self.create_network()
         router = self.create_router()
@@ -407,7 +389,6 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
         self.router_detach(router, ipv4_subnet)
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     # This is the scenario described in OPENSTACK-2004
     def test_router_attach_ipv6_and_add_ipv4(self):
         network = self.create_network()

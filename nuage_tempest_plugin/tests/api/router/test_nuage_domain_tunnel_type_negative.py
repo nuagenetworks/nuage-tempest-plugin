@@ -4,7 +4,6 @@
 from tempest.lib import exceptions
 from tempest.test import decorators
 
-from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 
 from . import base_nuage_domain_tunnel_type
@@ -38,22 +37,18 @@ class NuageDomainTunnelTypeNegativeTest(
                 invalid_value)
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_create_with_invalid_value(self):
         self._do_test_invalid_value("BAD CHOICE")
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_create_with_no_value(self):
         self._do_test_invalid_value("")
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_create_with_leading_or_trailing_spaces(self):
         self._do_test_invalid_value(" GRE ")
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_create_with_invalid_attribute(self):
         self.assertRaisesRegex(exceptions.BadRequest,
                                "Unrecognized attribute",
@@ -61,7 +56,6 @@ class NuageDomainTunnelTypeNegativeTest(
                                tunnnnnel_type="GRE")
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_create_with_camel_cased_attribute(self):
         self.assertRaisesRegex(exceptions.BadRequest,
                                "Unrecognized attribute",
@@ -69,7 +63,6 @@ class NuageDomainTunnelTypeNegativeTest(
                                tunnelType="GRE")
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_create_with_mixed_case_attribute(self):
         self.assertRaisesRegex(exceptions.BadRequest,
                                "Unrecognized attribute",

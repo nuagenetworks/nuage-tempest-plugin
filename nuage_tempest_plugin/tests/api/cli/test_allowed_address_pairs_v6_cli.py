@@ -6,7 +6,6 @@ from netaddr import IPNetwork
 
 from .base_nuage_networks_cli import BaseNuageNetworksCliTestCase
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
-from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services.nuage_network_client \
@@ -70,7 +69,6 @@ class OSManagedAllowedAddresPairsCliTest(
             cls.os_primary.auth_provider,
             **cls.os_primary.default_params)
 
-    @nuage_test.header()
     def test_cli_create_address_pair_l2domain_no_mac(self):
         # Given I have a dual stack network
         cli_network, cli_subnet4, cli_subnet6 = \

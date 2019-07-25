@@ -268,7 +268,6 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
 
     @testtools.skipUnless(Topology.within_ext_id_release(),
                           'No upgrade testing on vport')
-    @nuage_test.header()
     def test_port_dhcp_options_matches_to_port(self):
         # Create a network
         name = data_utils.rand_name('network-')
@@ -327,7 +326,6 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
     # see OPENSTACK-1451
     # after updating the port security enabled,
     # ultiple default rules are created
-    @nuage_test.header()
     def test_port_security_fix_openstack_1451_false(self):
         # Create a network
         name = data_utils.rand_name('network-')
@@ -364,7 +362,6 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
     # see OPENSTACK-1451
     # after updating the port security enabled, multiple default rules are
     # created
-    @nuage_test.header()
     def test_port_security_fix_openstack_1451_true(self):
         # Create a network
         name = data_utils.rand_name('network-')

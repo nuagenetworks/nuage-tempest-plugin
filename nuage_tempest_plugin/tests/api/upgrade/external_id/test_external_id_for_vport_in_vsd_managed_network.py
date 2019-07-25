@@ -22,7 +22,6 @@ import testtools
 
 from .external_id import ExternalId
 
-from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.lib.utils import exceptions as n_exceptions
@@ -256,7 +255,6 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
 
     @testtools.skipUnless(Topology.within_ext_id_release(),
                           'No upgrade testing on vport')
-    @nuage_test.header()
     def test_port_dhcp_options_matches_to_port(self):
         net_name = data_utils.rand_name()
         cidr = IPNetwork('10.10.100.0/24')

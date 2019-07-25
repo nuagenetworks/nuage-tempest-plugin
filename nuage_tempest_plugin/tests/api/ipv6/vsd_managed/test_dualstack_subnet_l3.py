@@ -4,8 +4,6 @@
 from netaddr import IPAddress
 from netaddr import IPNetwork
 
-from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.test import tags
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
     import BaseVSDManagedNetworksIPv6Test
@@ -20,7 +18,6 @@ MSG_IP_ADDRESS_INVALID_OR_RESERVED = "IP Address is not valid or cannot be " \
                                      "in reserved address space"
 
 
-@nuage_test.class_header(tags=[tags.ML2])
 class VSDManagedDualStackSubnetL3Test(BaseVSDManagedNetworksIPv6Test):
 
     ###########################################################################
@@ -278,7 +275,6 @@ class VSDManagedDualStackSubnetL3Test(BaseVSDManagedNetworksIPv6Test):
             net_partition=Topology.def_netpartition)
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_os_managed_v6_conversions_l2_l3_v6_dualstack(self):
         # Provision OpenStack network/subnet/router
         network = self.create_network()

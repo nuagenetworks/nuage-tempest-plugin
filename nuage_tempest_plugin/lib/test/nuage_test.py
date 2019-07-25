@@ -1,9 +1,7 @@
 # Copyright 2017 Alcatel-Lucent
 # All Rights Reserved.
 
-import copy
 import functools
-import inspect
 import os.path
 from six import iteritems
 import socket
@@ -28,7 +26,6 @@ from tempest.services import orchestration
 from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
 
-from nuage_tempest_plugin.lib.test import tags as test_tags
 from nuage_tempest_plugin.lib.test.tenant_server import TenantServer
 from nuage_tempest_plugin.lib.test import vsd_helper
 from nuage_tempest_plugin.lib.topology import Topology
@@ -67,85 +64,6 @@ def skip_because(*args, **kwargs):
 
             return f(self, *func_args, **func_kwargs)
         return wrapper
-    return decorator
-
-
-def header(tags=None, since=None, until=None):
-    """A decorator to log info on the test, add tags and release filtering.
-
-    :param tags: A set of tags to tag the test with. header(tags=['smoke'])
-    behaves the same as test.attr(type='smoke'). It exists for convenience.
-    :param since: Optional. Mark a test with a 'since' release version to
-    indicate this test should only run on setups with release >= since
-    :param until: Optional. Mark a test with a 'until' release version to
-    indicate this test should only run on setups with release < until
-    """
-    def decorator(f):
-        @functools.wraps(f)
-        def wrapper(self, *func_args, **func_kwargs):
-
-            if f.__code__.co_name != 'wrapper':
-                LOG.info('TEST CASE STARTED: {}'.format(f.__code__.co_name))
-
-                # Dump the message + the name of this function to the log.
-                LOG.info("in {}:{}".format(
-                    f.__code__.co_filename,
-                    f.__code__.co_firstlineno
-                ))
-
-            result = f(self, *func_args, **func_kwargs)
-
-            if f.__code__.co_name != 'wrapper':
-                LOG.info('TEST CASE COMPLETED: {}'.format(f.__code__.co_name))
-            return result
-
-        _add_tags_to_method(tags, wrapper)
-        if since:
-            wrapper._since = since
-        if until:
-            wrapper._until = until
-        return wrapper
-    return decorator
-
-
-def _add_tags_to_method(tags, wrapper):
-    if tags:
-        if isinstance(tags, str):
-            tags = {tags}
-        else:
-            tags = tags
-        try:
-            existing = copy.deepcopy(wrapper.__testtools_attrs)
-            # deepcopy the original one, otherwise it will affect other
-            # classes which extend this class.
-            if test_tags.ML2 in tags and test_tags.MONOLITHIC in existing:
-                existing.remove(test_tags.MONOLITHIC)
-            if test_tags.MONOLITHIC in tags and test_tags.ML2 in existing:
-                existing.remove(test_tags.ML2)
-            existing.update(tags)
-            wrapper.__testtools_attrs = existing
-        except AttributeError:
-            wrapper.__testtools_attrs = set(tags)
-
-
-def class_header(tags=None, since=None, until=None):
-    """Applies the header decorator to all test_ methods of this class.
-
-    :param tags: Optional. A set of tags to tag the test with.
-    header(tags=['smoke']) behaves the same as test.attr(type='smoke'). It
-    exists for convenience.
-    :param since: Optional. Mark a test with a 'since' release version to
-    indicate this test should only run on setups with release >= since
-    :param until: Optional. Mark a test with a 'until' release version to
-    indicate this test should only run on setups with release < until
-    """
-    method_wrapper = header(tags=tags, since=since, until=until)
-
-    def decorator(cls):
-        for name, method in inspect.getmembers(cls, inspect.ismethod):
-            if name.startswith('test_'):
-                setattr(cls, name, method_wrapper(method))
-        return cls
     return decorator
 
 

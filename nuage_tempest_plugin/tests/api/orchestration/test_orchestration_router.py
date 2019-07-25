@@ -5,7 +5,6 @@ from tempest.common import utils
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 
-from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 
 from . import nuage_base
@@ -65,7 +64,6 @@ class OrchestrationRouterTest(nuage_base.NuageBaseOrchestrationTest):
         #     nuage_constants.NUAGE_PAT_VSD_DISABLED)
 
     @decorators.attr(type=['smoke'])
-    @nuage_test.header()
     def test_router_extended_attributes(self):
         default_tunnel_type = self.system_configuration['domainTunnelType']
 

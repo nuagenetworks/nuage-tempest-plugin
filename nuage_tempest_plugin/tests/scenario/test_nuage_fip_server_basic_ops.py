@@ -459,7 +459,7 @@ class TestNetworkBasicOps(
         floating_ip, this_server = self.floating_ip_tuple
         self._check_extra_dhcp_opts_on_server(
             this_server, floating_ip['floating_ip_address'])
-        # Check dissassociate / associate of the FIP on the same port
+        # Check disassociate / associate of the FIP on the same port
         # a number of times
         loop_range = 4
         LOG.info("Starting FIP-2-underlay dis/associate loop on " +

@@ -14,16 +14,16 @@
 
 import random
 
-from nuage_tempest_plugin.lib.test.nuage_test import skip_because
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.services.nuage_network_client \
-    import NuageNetworkClientJSON
-
 from tempest.api.network import base
 from tempest.common import utils
 from tempest.lib.common.utils import test_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions as lib_exc
+
+from nuage_tempest_plugin.lib.test.nuage_test import skip_because
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.services.nuage_network_client \
+    import NuageNetworkClientJSON
 
 CONF = Topology.get_conf()
 

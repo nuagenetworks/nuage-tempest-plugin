@@ -1,5 +1,6 @@
 # Copyright 2017 NOKIA
 # All Rights Reserved.
+
 from netaddr import IPNetwork
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageAdminNetworksTest

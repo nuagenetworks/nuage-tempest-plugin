@@ -1,9 +1,9 @@
-from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
-    import BaseVSDManagedNetworksIPv6Test
-
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions
+
+from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
+    import BaseVSDManagedNetworksIPv6Test
 
 
 class VSDManagedIPv6L2DomainDHCPManagedTest(BaseVSDManagedNetworksIPv6Test):

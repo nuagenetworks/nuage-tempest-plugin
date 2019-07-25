@@ -17,7 +17,6 @@ from netaddr import IPNetwork
 
 from tempest.lib.common.utils import data_utils
 
-from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.lib.utils import exceptions as n_exceptions
@@ -122,7 +121,6 @@ class ExternalIdForVmTest(
             wait_until='ACTIVE')
         return server
 
-    @nuage_test.header()
     def test_server_on_neutron_port_matching_vsd_vm(self):
         # Create a network
         network = self._create_network(namestart='network-')
@@ -140,7 +138,6 @@ class ExternalIdForVmTest(
         # Delete
         vsd_vm.verify_cannot_delete()
 
-    @nuage_test.header()
     def test_server_on_neutron_network_matching_vsd_vm(self):
         # Create a network
         network = self._create_network(namestart='network-')
@@ -176,7 +173,6 @@ class ExternalIdForVmTest(
                         vsd_l2dom_tmplt[0]['ID'])
         return vsd_l2dom_tmplt
 
-    @nuage_test.header()
     def test_server_on_vsd_managed_network_matching_vsd_vm(self):
         net_name = data_utils.rand_name()
         cidr = IPNetwork('10.10.100.0/24')
@@ -225,7 +221,6 @@ class ExternalIdForVmTest(
         # Delete
         vsd_vm.verify_cannot_delete()
 
-    @nuage_test.header()
     def test_server_on_neutron_port_in_vsd_managed_network_matching_vsd_vm(
             self):
         net_name = data_utils.rand_name()

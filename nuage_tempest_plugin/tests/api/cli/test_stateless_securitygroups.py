@@ -18,7 +18,6 @@ from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
-from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.tests.api.cli import base_nuage_networks_cli as base
 
 
@@ -43,7 +42,6 @@ class TestStatelessSGCli(base.BaseNuageNetworksCliTestCase):
         sg = self.show_security_group(sg_id)
         self.assertEqual(expected, sg['stateful'])
 
-    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_cli_load_extension(self):
         response = self.cli.neutron('security-group-create',
@@ -52,7 +50,6 @@ class TestStatelessSGCli(base.BaseNuageNetworksCliTestCase):
                       message='Expected attribute --stateless not found'
                               ' in output')
 
-    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_cli_create_show_security_group_default(self):
         sg_name = data_utils.rand_name('sg')
@@ -62,7 +59,6 @@ class TestStatelessSGCli(base.BaseNuageNetworksCliTestCase):
         self.assertEqual(created_sg['stateful'], 'True')
         self._verify_created_sg(created_sg['id'], 'True')
 
-    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_cli_create_show_security_group_stateless(self):
         sg_name = data_utils.rand_name('sg')
@@ -74,7 +70,6 @@ class TestStatelessSGCli(base.BaseNuageNetworksCliTestCase):
         self.assertEqual(created_sg['stateful'], 'False')
         self._verify_created_sg(created_sg['id'], 'False')
 
-    @nuage_test.header()
     @decorators.attr(type=['negative', 'smoke'])
     def test_cli_update_security_group_stateless_fail_in_use(self):
         sg_name = data_utils.rand_name('sg')

@@ -22,7 +22,6 @@ import testtools
 from .external_id import ExternalId
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
-from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.lib.utils import exceptions as n_exceptions
@@ -104,7 +103,6 @@ class ExternalIdForNetworkMacroTest(base.BaseAdminNetworkTest):
 
     @testtools.skipUnless(Topology.from_nuage('4.0R5'),
                           'No upgrade testing on network macro')
-    @nuage_test.header()
     def test_network_macro_matches_to_enterprise(self):
         # Create a dedicated netpartition
         netpartition_b = self._create_netpartition()

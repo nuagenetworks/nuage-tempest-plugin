@@ -3,7 +3,6 @@
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.test import tags
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as nuage_constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
@@ -13,7 +12,6 @@ from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
 net_partition_name = Topology.def_netpartition
 
 
-@nuage_test.class_header(tags=[tags.ML2])
 class VSDUserGroup(nuage_test.NuageBaseTest):
 
     @classmethod
@@ -103,7 +101,6 @@ class VSDUserGroup(nuage_test.NuageBaseTest):
                                                       vsd_group)
 
     @nuage_test.skip_because(bug='OPENSTACK-2321')
-    @nuage_test.header()
     def test_os_managed_subnet_create_with_new_session_then_old_session(self):
         self._create_and_validate_os_managed_subnet(reload_session=False,
                                                     validate_equals=True)
@@ -117,7 +114,6 @@ class VSDUserGroup(nuage_test.NuageBaseTest):
                                                     validate_equals=False)
 
     @nuage_test.skip_because(bug='OPENSTACK-2321')
-    @nuage_test.header()
     def test_os_managed_router_create_with_new_session_then_old_session(self):
         self._create_and_validate_on_router_create(reload_session=False,
                                                    validate_equals=True)

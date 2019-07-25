@@ -396,7 +396,6 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
 
 
 class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
-    @nuage_test.header()
     def test_create_delete_sec_disabled_ntw_port_l2domain(self):
         # L2domain testcase to test network and port creation with
         # port-security-enabled set to False explicitly for both
@@ -411,7 +410,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         self.assertEqual(vsd_port.name, port['id'])
         self._check_pg_for_less_security_set(vsd_l2domain, vsd_port)
 
-    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_create_delete_sec_ntw_port_l2domain(self):
         # L2domain testcase to test network and port creation without
@@ -425,7 +423,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         self.assertEqual(vsd_port.address_spoofing, 'INHERITED')
         self.assertEqual(vsd_port.name, port['id'])
 
-    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_create_delete_sec_ntw_port_l3domain(self):
         # L3domain testcase to test network and port creation without
@@ -441,7 +438,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         self.assertEqual(vsd_port.address_spoofing, 'INHERITED')
         self.assertEqual(vsd_port.name, port['id'])
 
-    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_create_delete_sec_disabled_ntw_l2domain(self):
         # L2domain testcase to test network and port creation with
@@ -457,7 +453,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         self.assertEqual(vsd_port.name, port['id'])
         self._check_pg_for_less_security_set(vsd_l2domain, vsd_port)
 
-    @nuage_test.header()
     def test_create_delete_sec_disabled_port_l2domain(self):
         # L2domain testcase to test network and port creation with
         # port-security-enabled set to False at port level only
@@ -472,7 +467,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         self.assertEqual(vsd_port.name, port['id'])
         self._check_pg_for_less_security_set(vsd_l2domain, vsd_port)
 
-    @nuage_test.header()
     def test_create_delete_sec_disabled_ntw_port_l3domain(self):
         # L3domain testcase to test the network and port creation with
         # port-security-enabled set to False explicitly for both
@@ -490,7 +484,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         self.assertEqual(vsd_port.name, port['id'])
         self._check_pg_for_less_security_set(vsd_l3dom, vsd_port)
 
-    @nuage_test.header()
     def test_create_delete_sec_disabled_ntw_l3domain(self):
         # L3domain testcase to test the network and port creation with
         # port-security-enabled set to False explicitly for both
@@ -508,7 +501,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         self.assertEqual(vsd_port.name, port['id'])
         self._check_pg_for_less_security_set(vsd_l3dom, vsd_port)
 
-    @nuage_test.header()
     def test_create_delete_sec_disabled_port_l3domain(self):
         # L3domain testcase to test the network and port creation with
         # port-security-enabled set to False explicitly for both
@@ -526,7 +518,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         self.assertEqual(vsd_port.name, port['id'])
         self._check_pg_for_less_security_set(vsd_l3dom, vsd_port)
 
-    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_update_ntw_from_sec_disabled_to_enabled_l2domain(self):
         # L2domain testcase for updating the port-security-enabled flag
@@ -552,7 +543,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         port_2 = body['port']
         self.addCleanup(self.ports_client.delete_port, port_2['id'])
 
-    @nuage_test.header()
     def test_update_ntw_from_sec_enabled_to_disabled_l2domain(self):
         # L2domain testcase for updating the port-security-enabled flag
         # from True to False. Ports are created at both the states to check
@@ -586,7 +576,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         port_2_pg = vsd_port_2.policy_groups.get_first()
         self.assertEqual(port_2_pg.name[:21], 'PG_FOR_LESS_SECURITY_')
 
-    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_update_port_from_sec_disabled_to_enabled_l2domain(self):
         # L2domain testcase for updating the port-security-enabled flag
@@ -615,7 +604,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         port_pg = vsd_port.policy_groups.get_first()
         self.assertIsNone(port_pg)
 
-    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_update_port_from_sec_enabled_to_disabled_l2domain(self):
         # L2domain testcase for updating the port-security-enabled flag
@@ -641,7 +629,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         self.assertEqual(vsd_port.name, port['id'])
         self._check_pg_for_less_security_set(vsd_l2domain, vsd_port)
 
-    @nuage_test.header()
     def test_update_ntw_from_sec_disabled_to_enabled_l3domain(self):
         # L3domain testcase for updating the port-security-enabled flag
         # from False to True. Ports are created at both the states to check
@@ -681,7 +668,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         self.assertEqual(port_1_pg.name[:21], 'PG_FOR_LESS_SECURITY_')
         self.assertNotEqual(port_2_pg.name[:21], 'PG_FOR_LESS_SECURITY_')
 
-    @nuage_test.header()
     def test_update_ntw_from_sec_enabled_to_disabled_l3domain(self):
         # L3domain testcase for updating the port-security-enabled flag
         # from True to False. Ports are created at both the states to check
@@ -720,7 +706,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         port_2_pg = vsd_port_2.policy_groups.get_first()
         self.assertEqual(port_2_pg.name[:21], 'PG_FOR_LESS_SECURITY_')
 
-    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_update_port_from_sec_disabled_to_enabled_l3domain(self):
         # L3domain testcase for updating the port-security-enabled flag
@@ -752,7 +737,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         port_pg = vsd_port.policy_groups.get_first()
         self.assertIsNone(port_pg)
 
-    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_update_port_from_sec_enabled_to_disabled_l3domain(self):
         # L3domain testcase for updating the port-security-enabled flag
@@ -782,15 +766,12 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         self.assertEqual(vsd_port.name, port['id'])
         self._check_pg_for_less_security_set(vsd_l3dom, vsd_port)
 
-    @nuage_test.header()
     def test_show_sec_disabled_ntw(self):
         pass
 
-    @nuage_test.header()
     def test_show_sec_disabled_port(self):
         pass
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_0_0_0_0_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, different ip, different subnet in
@@ -809,7 +790,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vip_params = ('0', '0', '0', '0')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_0_0_0_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, different ip, same subnet in
@@ -828,7 +808,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vip_params = ('0', '0', '0', '1')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_0_0_1_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, same ip, same subnet in
@@ -847,7 +826,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vip_params = ('0', '0', '1', '1')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_0_1_0_0_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # different mac, different ip, different subnet in
@@ -870,7 +848,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vip_params = ('0', '1', '0', '0')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_0_1_0_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # different mac, different ip, same subnet in
@@ -893,7 +870,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vip_params = ('0', '1', '0', '1')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_0_1_1_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # different mac, same ip, same subnet in
@@ -916,7 +892,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vip_params = ('0', '1', '1', '1')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_1_0_0_0_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # same mac, different ip, different subnet in
@@ -935,7 +910,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vip_params = ('1', '0', '0', '0')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_1_0_0_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # same mac, same ip, different subnet in
@@ -954,7 +928,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
         self.assertEqual(vsd_port.name, port['id'])
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_1_0_1_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, same ip, same subnet in
@@ -978,7 +951,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vip_params = ('1', '0', '1', '1')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_1_1_0_0_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # same mac, different ip, different subnet in
@@ -1001,7 +973,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vip_params = ('1', '1', '0', '0')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_1_1_0_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # different ip, different ip,  different subnet in
@@ -1024,7 +995,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
         self.assertEqual(vsd_port.name, port['id'])
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_1_1_1_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # different mac, same ip, same subnet in
@@ -1048,7 +1018,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vip_params = ('1', '1', '1', '1')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_0_0_0_0_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, different ip, different subnet in
@@ -1070,7 +1039,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vip_params = ('0', '0', '0', '0')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_0_0_0_1_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, different ip, same subnet in
@@ -1092,7 +1060,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vip_params = ('0', '0', '0', '1')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_0_0_1_1_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, same ip, same subnet in
@@ -1114,7 +1081,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vip_params = ('0', '0', '1', '1')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_0_1_0_0_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # different mac, different ip, different subnet in
@@ -1140,7 +1106,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vip_params = ('0', '1', '0', '0')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_0_1_0_1_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # different mac, different ip, same subnet in
@@ -1166,7 +1131,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vip_params = ('0', '1', '0', '1')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_0_1_1_1_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # different mac, same ip, same subnet in
@@ -1192,7 +1156,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vip_params = ('0', '1', '1', '1')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_1_0_0_0_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # same mac, different ip, different subnet in
@@ -1214,7 +1177,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vip_params = ('1', '0', '0', '0')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_1_0_0_1_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # same mac, same ip, different subnet in
@@ -1236,7 +1198,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vip_params = ('1', '0', '0', '1')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_1_0_1_1_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, same ip, same subnet in
@@ -1263,7 +1224,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vip_params = ('1', '0', '1', '1')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_1_1_0_0_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # same mac, different ip, different subnet in
@@ -1289,7 +1249,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vip_params = ('1', '1', '0', '0')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_1_1_0_1_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # different ip, different ip,  different subnet in
@@ -1315,7 +1274,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vip_params = ('1', '1', '0', '1')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_1_1_1_1_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # different mac, same ip, same subnet in
@@ -1342,7 +1300,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vip_params = ('1', '1', '1', '1')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_1_1_1_1_vsd_managed_l2domain(self):
         # IP Anti Spoofing tests for vsd managed port having vip parameters:
         # full cidr(/32 IP), different mac, same ip, same subnet in
@@ -1368,7 +1325,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vip_params = ('1', '1', '1', '1')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_1_1_1_1_vsd_managed_l3domain(self):
         # IP Anti Spoofing tests for vsd managed port having vip parameters:
         # full cidr(/32 IP), different mac, same ip, same subnet in
@@ -1396,7 +1352,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vip_params = ('1', '1', '1', '1')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_1_0_0_1_vsd_managed_l3domain(self):
         # IP Anti Spoofing tests for vsd managed subnet port with
         # vip parameters having full cidr(/32 IP), same mac, same ip,
@@ -1420,7 +1375,6 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vip_params = ('1', '0', '0', '1')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_1_0_0_0_vsd_managed_l3domain(self):
         # IP Anti Spoofing tests for vsd managed subnet port with
         # vip parameters having full cidr(/32 IP),
@@ -1521,7 +1475,6 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
             port = self.create_port(network, **kwargs)
         return router, subnet, port
 
-    @nuage_test.header()
     def test_create_show_update_delete_ntw_with_sec_disabled(self):
         ntw_name = data_utils.rand_name('network-')
         kwargs = {'port_security_enabled': 'False'}
@@ -1539,7 +1492,6 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         ntw_show = self.networks_client.show_network(network['id'])
         self.assertEqual(ntw_show['port_security_enabled'], 'True')
 
-    @nuage_test.header()
     def test_create_show_update_delete_port_with_sec_disabled(self):
         ntw_name = data_utils.rand_name('network-')
         port_name = data_utils.rand_name('port-')
@@ -1558,7 +1510,6 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         port_show = self.ports_client.show_port(port['id'])
         self.assertEqual(port_show['port_security_enabled'], 'True')
 
-    @nuage_test.header()
     def test_create_port_in_sec_disabled_ntw(self):
         ntw_name = data_utils.rand_name('network-')
         port_name = data_utils.rand_name('port-')
@@ -1567,7 +1518,6 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
             ntw_security=False)
         self.assertIsNotNone(port)
 
-    @nuage_test.header()
     def test_create_sec_disabled_port_in_sec_disabled_ntw(self):
         ntw_name = data_utils.rand_name('network-')
         port_name = data_utils.rand_name('port-')
@@ -1577,7 +1527,6 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
             port_security=False)
         self.assertIsNotNone(port)
 
-    @nuage_test.header()
     def test_create_sec_enabled_port_in_sec_disabled_ntw(self):
         ntw_name = data_utils.rand_name('network-')
         port_name = data_utils.rand_name('port-')
@@ -1587,7 +1536,6 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
             port_security=True)
         self.assertIsNotNone(port)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_0_0_0_0_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, different ip, different subnet in
@@ -1602,7 +1550,6 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         vip_params = ('0', '0', '0', '0')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_0_0_0_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, different ip, same subnet in
@@ -1617,7 +1564,6 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         vip_params = ('0', '0', '0', '1')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_0_0_1_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, same ip, same subnet in
@@ -1633,7 +1579,6 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         vip_params = ('0', '0', '1', '1')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_0_1_0_0_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # different mac, different ip, different subnet in
@@ -1651,7 +1596,6 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         vip_params = ('0', '1', '0', '0')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_0_1_0_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # different mac, different ip, same subnet in
@@ -1669,7 +1613,6 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         vip_params = ('0', '1', '0', '1')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_0_1_1_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # different mac, same ip, same subnet in
@@ -1687,7 +1630,6 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         vip_params = ('0', '1', '1', '1')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_1_0_0_0_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # same mac, different ip, different subnet in
@@ -1703,7 +1645,6 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         vip_params = ('1', '0', '0', '0')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_1_0_0_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # same mac, same ip, different subnet in
@@ -1719,7 +1660,6 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
         self.assertEqual(vsd_port.name, port['id'])
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_1_0_1_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, same ip, same subnet in
@@ -1741,7 +1681,6 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         vip_params = ('1', '0', '1', '1')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_1_1_0_0_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # same mac, different ip, different subnet in
@@ -1759,7 +1698,6 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         vip_params = ('1', '1', '0', '0')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_1_1_0_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # different ip, different ip,  different subnet in
@@ -1777,7 +1715,6 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
         self.assertEqual(vsd_port.name, port['id'])
 
-    @nuage_test.header()
     # KRIS OK
     def test_anti_spoofing_for_params_1_1_1_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
@@ -1798,7 +1735,6 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         vip_params = ('1', '1', '1', '1')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_0_0_0_0_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, different ip, different subnet in
@@ -1817,7 +1753,6 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         vip_params = ('0', '0', '0', '0')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_0_0_0_1_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, different ip, same subnet in
@@ -1836,7 +1771,6 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         vip_params = ('0', '0', '0', '1')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_0_0_1_1_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, same ip, same subnet in
@@ -1855,7 +1789,6 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         vip_params = ('0', '0', '1', '1')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_0_1_0_0_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # different mac, different ip, different subnet in
@@ -1876,7 +1809,6 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         vip_params = ('0', '1', '0', '0')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_0_1_0_1_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # different mac, different ip, same subnet in
@@ -1917,7 +1849,6 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         vip_params = ('0', '1', '1', '1')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_1_0_0_0_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # same mac, different ip, different subnet in
@@ -1954,7 +1885,6 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         vip_params = ('1', '0', '0', '1')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_1_0_1_1_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
         # same mac, same ip, same subnet in
@@ -1977,7 +1907,6 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         vip_params = ('1', '0', '1', '1')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_1_1_0_0_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # same mac, different ip, different subnet in
@@ -2018,7 +1947,6 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         vip_params = ('1', '1', '0', '1')
         self._verify_vip_and_anti_spoofing(port, vsd_port, vip_params)
 
-    @nuage_test.header()
     def test_anti_spoofing_for_params_1_1_1_1_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
         # different mac, same ip, same subnet in

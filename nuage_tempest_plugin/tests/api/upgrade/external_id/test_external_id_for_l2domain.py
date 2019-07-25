@@ -17,7 +17,6 @@ from tempest.api.network import base
 from tempest.lib.common.utils import data_utils
 from tempest.lib.common.utils import test_utils
 
-from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.lib.utils import exceptions as n_exceptions
@@ -314,7 +313,6 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
             cls.os_primary.auth_provider,
             **cls.os_primary.default_params)
 
-    @nuage_test.header()
     def test_neutron_isolated_subnet_matches_to_l2domain(self):
         # Create a network
         name = data_utils.rand_name('network-')
@@ -362,7 +360,6 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
             netpartition['id'])
         return netpartition
 
-    @nuage_test.header()
     def test_neutron_isolated_subnet_in_netpartition(self):
         # Create a dedicated netpartition
         netpartition_a = self._create_netpartition()
@@ -417,8 +414,7 @@ class ExternalIdForL2domainAdminTest(ExternalIdForL2domainTest):
         cls.admin_routers_client = cls.os_admin.routers_client
         cls.admin_subnets_client = cls.os_admin.subnets_client
 
-    # @nuage_test.header()
-    # TODO(mickey mouse) something is wrong with this test
+    # TODO(team) something is wrong with this test
     def fixme_test_neutron_isolated_shared_subnet_matches_to_l2domain(self):
         # Create a network
         name = data_utils.rand_name('network-')

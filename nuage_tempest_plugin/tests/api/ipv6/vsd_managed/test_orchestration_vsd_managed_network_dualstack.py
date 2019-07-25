@@ -3,7 +3,6 @@
 
 from netaddr import IPAddress
 
-from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.tests.api.ipv6.base_nuage_orchestration \
     import NuageBaseOrchestrationTest
@@ -17,7 +16,6 @@ LOG = Topology.get_logger(__name__)
 
 class OrchestrationVsdManagedNetworkDualStackTest(
         NuageBaseOrchestrationTest, BaseVSDManagedNetworksIPv6Test):
-    @nuage_test.header()
     def test_link_subnet_to_vsd_l2domain_dhcp_managed_vm_on_port(self):
         """test_link_subnet_to_vsd_l2domain_dhcp_managed_vm_on_port
 
@@ -81,7 +79,6 @@ class OrchestrationVsdManagedNetworkDualStackTest(
         self.verify_created_subnet('subnet4', network)
         self.verify_created_subnet('subnet6', network)
 
-    @nuage_test.header()
     def test_link_subnet_to_vsd_l2domain_dhcp_managed_vm_in_net(self):
         """test_link_subnet_to_vsd_l2domain_dhcp_managed_vm_in_net
 
@@ -141,7 +138,6 @@ class OrchestrationVsdManagedNetworkDualStackTest(
         self.verify_created_subnet('subnet4', network)
         self.verify_created_subnet('subnet6', network)
 
-    @nuage_test.header()
     def test_link_subnet_to_vsd_l3domain_dhcp_managed_vm_on_port(self):
         """test_link_subnet_to_vsd_l3domain_dhcp_managed_vm_on_port
 

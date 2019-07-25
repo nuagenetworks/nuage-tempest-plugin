@@ -20,8 +20,6 @@ from tempest.lib import exceptions
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
-from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.test import tags
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 
@@ -50,7 +48,6 @@ SEVERAL_VSD_CLAIMED_FIPS = 3
 VALID_MAC_ADDRESS = 'fa:fa:3e:e8:e8:c0'
 
 
-@nuage_test.class_header(tags=tags.VSD_MANAGED)
 class VSDManagedRedirectTargetTest(
         base_vsd_managed_port_attributes.BaseVSDManagedPortAttributes):
 
@@ -66,7 +63,6 @@ class VSDManagedRedirectTargetTest(
     ###########################################################################
     ###########################################################################
 
-    @nuage_test.header()
     def test_create_delete_os_redirection_target_l2_mgd_subnet(self):
         # Given I have a VSD-L2-Managed-Subnet in openstack
         vsd_l2_subnet, l2dom_template = self._create_vsd_l2_managed_subnet()
@@ -124,7 +120,6 @@ class VSDManagedRedirectTargetTest(
             filter_value=os_redirect_target['nuage_redirect_target']['id'])
         self.assertEqual(vsd_redirect_target, '')
 
-    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_create_delete_vsd_redirection_target_l2_mgd_subnet(self):
         # Given I have a VSD-L2-Managed-Subnet in openstack
@@ -179,7 +174,6 @@ class VSDManagedRedirectTargetTest(
             filter_value=vsd_redirect_target[0]['ID'])
         self.assertEqual(vsd_redirect_target, '')
 
-    @nuage_test.header()
     def test_create_delete_several_redirection_targets_l2_mgd_subnet(self):
         os_redirect_targets = []
         vsd_redirect_targets = []
@@ -260,7 +254,6 @@ class VSDManagedRedirectTargetTest(
                     'nuage_redirect_target']['id'])
             self.assertEqual(vsd_redirect_target, '')
 
-    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_create_delete_os_redirection_target_l3_mgd_subnet(self):
         # Given I have a VSD-L3-Managed-Subnet in openstack        #
@@ -313,7 +306,6 @@ class VSDManagedRedirectTargetTest(
             filter_value=os_redirect_target['nuage_redirect_target']['id'])
         self.assertEqual(vsd_redirect_target, '')
 
-    @nuage_test.header()
     def test_create_delete_vsd_redirection_target_l3_mgd_subnet(self):
         # Given I have a VSD-L2-Managed-Subnet in openstack
         vsd_l3_subnet, vsd_l3_domain = self._create_vsd_l3_managed_subnet()
@@ -364,7 +356,6 @@ class VSDManagedRedirectTargetTest(
             filter_value=vsd_redirect_target[0]['ID'])
         self.assertEqual(vsd_redirect_target, '')
 
-    @nuage_test.header()
     def test_create_delete_several_redirection_targets_l3_mgd_subnet(self):
         os_redirect_targets = []
         vsd_redirect_targets = []
@@ -446,7 +437,6 @@ class VSDManagedRedirectTargetTest(
                     'nuage_redirect_target']['id'])
             self.assertEqual(vsd_redirect_target, '')
 
-    @nuage_test.header()
     def test_create_os_redirection_target_same_name_diff_l2_mgd_subnet(self):
         # Given I have a VSD-L2-Managed-Subnet-x in openstack
         vsd_l2_subnet_x, l2dom_template_x = \
@@ -486,7 +476,6 @@ class VSDManagedRedirectTargetTest(
         pass
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_create_os_redirection_target_same_name_same_l2_mgd_subnet_neg(
             self):
         # Given I have a VSD-L2-Managed-Subnet in openstack
@@ -511,7 +500,6 @@ class VSDManagedRedirectTargetTest(
             name)
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_associate_two_port_same_l2_os_redirection_target_neg(self):
         # Given I have a VSD-L2-Managed-Subnet in openstack
         vsd_l2_subnet, l2dom_template = self._create_vsd_l2_managed_subnet()
@@ -590,7 +578,6 @@ class VSDManagedRedirectTargetTest(
         )
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_create_os_l2_redirection_target_insertion_mode_l3_neg(self):
         # Given I have a VSD-L2-Managed-Subnet in openstack
         vsd_l2_subnet, l2dom_template = self._create_vsd_l2_managed_subnet()
@@ -623,7 +610,6 @@ class VSDManagedRedirectTargetTest(
         )
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_os_redirection_targets_bad_insertion_mode_neg(self):
         # Given I have a VSD-L2-Managed-Subnet in openstack
         vsd_l2_subnet, l2dom_template = self._create_vsd_l2_managed_subnet()
@@ -655,7 +641,6 @@ class VSDManagedRedirectTargetTest(
         )
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_multiple_l2_vsd_redirection_targets_per_port_neg(self):
         vsd_redirect_targets = []
         # Given I have a VSD-L2-Managed-Subnet in openstack
@@ -698,7 +683,6 @@ class VSDManagedRedirectTargetTest(
 ###############################################################################
 
 
-@nuage_test.class_header(tags=tags.VSD_MANAGED)
 class VSDManagedPolicyGroupsTest(
         base_vsd_managed_port_attributes.BaseVSDManagedPortAttributes):
 
@@ -708,7 +692,6 @@ class VSDManagedPolicyGroupsTest(
         cls.iacl_template = ''
         cls.eacl_templace = ''
 
-    @nuage_test.header()
     def test_l2_create_update_associate_port_to_policygroup(self):
         # Given I have a VSD-L2-Managed-Subnet in openstack with a
         # VSD created policy group
@@ -762,7 +745,6 @@ class VSDManagedPolicyGroupsTest(
                                        "policy group (%s) is still present" %
                          (port['id'], policy_group[0]['ID']))
 
-    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_l2_associate_port_to_policygroup(self):
         # Given I have a VSD-L2-Managed-Subnet in openstack with a
@@ -816,7 +798,6 @@ class VSDManagedPolicyGroupsTest(
                                        "policy group (%s) is still present" %
                          (port['id'], policy_group[0]['ID']))
 
-    @nuage_test.header()
     def test_l2_associate_port_to_policygroups(self):
         policy_groups = []
         # Given I have a VSD-L2-Managed-Subnet
@@ -881,7 +862,6 @@ class VSDManagedPolicyGroupsTest(
             self.assertEmpty(show_port['port']['nuage_policy_groups'],
                              "Port-show list disassociated ports")
 
-    @nuage_test.header()
     def test_l2_associate_multiple_ports_to_policygroups(self):
         policy_groups = []
         ports = []
@@ -950,7 +930,6 @@ class VSDManagedPolicyGroupsTest(
                                  'policy group(%s)' %
                                  (ports[i]['id'], policy_groups[j][0]['ID']))
 
-    @nuage_test.header()
     def test_vsd_multiple_l2_policygroup(self):
         policy_groups = []
         # Given I have a VSD-L2-Managed-Subnet
@@ -992,7 +971,6 @@ class VSDManagedPolicyGroupsTest(
                          "user policy group list" %
                          policy_groups[0][0]['ID'])
 
-    @nuage_test.header()
     def test_list_l2_policy_groups_subnet_only(self):
         # Given I have a VSD-L2-Managed-Subnet in openstack with a
         # VSD created policy group
@@ -1051,7 +1029,6 @@ class VSDManagedPolicyGroupsTest(
                          (policy_group_x[0]['ID'],
                           subnet_x['id'], subnet_y['id']))
 
-    @nuage_test.header()
     def test_l3_associate_port_to_policygroup(self):
         # Given I have a VSD-L3-Managed-Subnet in openstack with a
         # VSD created policy group
@@ -1108,7 +1085,6 @@ class VSDManagedPolicyGroupsTest(
                          "is still present" %
                          (port['id'], policy_group[0]['ID']))
 
-    @nuage_test.header()
     def test_list_l3_policy_groups_subnet_only(self):
         # Given I have a VSD-L2-Managed-Subnet in openstack with a
         # VSD created policy group
@@ -1171,7 +1147,6 @@ class VSDManagedPolicyGroupsTest(
                          (policy_group_x[0]['ID'],
                           subnet_x['id'], subnet_y['id']))
 
-    @nuage_test.header()
     def test_l3_associate_multiple_ports_to_policygroups(self):
         policy_groups = []
         ports = []
@@ -1251,7 +1226,6 @@ class VSDManagedPolicyGroupsTest(
             responseChoice=True)
         # self.nuage_client.apply_l2_policy_changes(l2domain_id)
 
-    @nuage_test.header()
     def test_l2_list_policy_group_no_security_group_neg(self):
         # Given I have a VSD-L2-Managed-Subnet in openstack with a
         # VSD created policy group
@@ -1318,7 +1292,6 @@ class VSDManagedPolicyGroupsTest(
 ###############################################################################
 
 
-@nuage_test.class_header(tags=tags.VSD_MANAGED)
 class VSDManagedAllowedAddresPairssTest(
         base_vsd_managed_port_attributes.BaseVSDManagedPortAttributes):
 
@@ -1328,7 +1301,6 @@ class VSDManagedAllowedAddresPairssTest(
         # cls.iacl_template = ''
         # cls.eacl_templace = ''
 
-    @nuage_test.header()
     def test_create_address_pair_l2domain_no_mac(self):
         # Given I have a VSD-L2-Managed subnet
         vsd_l2_subnet, l2_domtmpl = self._create_vsd_l2_managed_subnet()
@@ -1378,7 +1350,6 @@ class VSDManagedAllowedAddresPairssTest(
                          "port (%s)" % addrpair_port['id'])
         pass
 
-    @nuage_test.header()
     def test_create_address_pair_l2domain_with_mac(self):
         # Given I have a VSD-L2-Managed subnet
         vsd_l2_subnet, l2_domtmpl = self._create_vsd_l2_managed_subnet()
@@ -1429,7 +1400,6 @@ class VSDManagedAllowedAddresPairssTest(
                          "port (%s)" % addrpair_port['id'])
         pass
 
-    @nuage_test.header()
     def test_create_address_pair_l3_subnet_no_mac(self):
         # Given I have a VSD-L3-Managed subnet
         vsd_l3_subnet, l3_domain = self._create_vsd_l3_managed_subnet()
@@ -1480,7 +1450,6 @@ class VSDManagedAllowedAddresPairssTest(
         pass
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_create_address_pair_l3domain_with_mac(self):
         # Given I have a VSD-L2-Managed subnet
         vsd_l3_subnet, l3_domain = self._create_vsd_l3_managed_subnet()
@@ -1539,7 +1508,6 @@ class VSDManagedAllowedAddresPairssTest(
     ###########################################################################
 
 
-@nuage_test.class_header(tags=tags.VSD_MANAGED)
 class VSDManagedAssociateFIPTest(
         base_vsd_managed_port_attributes.BaseVSDManagedPortAttributes):
 
@@ -1548,7 +1516,6 @@ class VSDManagedAssociateFIPTest(
         super(VSDManagedAssociateFIPTest, cls).resource_setup()
         cls.vsd_fip_pool = cls._create_vsd_floatingip_pool()
 
-    @nuage_test.header()
     def test_create_port_with_vsd_floatingip(self):
         # Given I have a VSD-FloatingIP-pool
         vsd_fip_pool = self.vsd_fip_pool
@@ -1594,7 +1561,6 @@ class VSDManagedAssociateFIPTest(
                                  "still found in port (%s)" %
                                  (claimed_fip[0]['ID'], port['id']))
 
-    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_create_list_associate_vsd_floatingip(self):
         # Given I have a VSD-FloatingIP-pool
@@ -1639,7 +1605,6 @@ class VSDManagedAssociateFIPTest(
                                  "found in port (%s)" %
                                  (claimed_fip[0]['ID'], port['id']))
 
-    @nuage_test.header()
     def test_create_list_associate_several_vsd_floatingip(self):
         ports = []
         claimed_fips = []
@@ -1695,7 +1660,6 @@ class VSDManagedAssociateFIPTest(
                                      (claimed_fips[i][0]['ID'],
                                       ports[i]['id']))
 
-    @nuage_test.header()
     def test_subnets_same_domain_associate_vsd_floatingip(self):
         # Given I have a VSD-FloatingIP-pool
         vsd_fip_pool = self.vsd_fip_pool
@@ -1826,7 +1790,6 @@ class VSDManagedAssociateFIPTest(
                         msg="nuage floatingip not present in list, "
                             "while expected to be")
 
-    @nuage_test.header()
     def test_subnets_other_domain_associate_vsd_floatingip(self):
         # Given I have a VSD-FloatingIP-pool
         vsd_fip_pool = self.vsd_fip_pool
@@ -1894,7 +1857,6 @@ class VSDManagedAssociateFIPTest(
             msg="nuage floatingip not present in list, while expected to be")
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_create_associate_vsd_floatingip_twice_neg(self):
         # Given I have a VSD-FloatingIP-pool
         vsd_fip_pool = self.vsd_fip_pool

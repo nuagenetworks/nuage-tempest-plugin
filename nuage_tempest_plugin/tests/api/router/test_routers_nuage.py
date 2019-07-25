@@ -802,7 +802,6 @@ class NuageRoutersAdminTest(NuageAdminNetworksTest):
         self.assertIsNotNone(nuage_perm[0])
         self.assertEqual(nuage_perm[0]['permittedEntityName'], 'Everybody')
 
-    # @decorators.attr(type='smoke')
     def test_add_router_interface_to_external_subnet(self):
         network = {
             'name': data_utils.rand_name('external-network'),

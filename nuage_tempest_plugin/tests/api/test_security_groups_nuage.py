@@ -706,7 +706,6 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
         for sg_rule in sg_rule_list:
             self._verify_nuage_acl(sg_rule['security_group_rule'])
 
-    # @decorators.attr(type='smoke')
     def test_create_security_group_rule_invalid_nw_macro_negative(self):
         sg1_body, _ = self._create_security_group()
         sg_id = sg1_body['security_group']['id']

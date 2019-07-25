@@ -4,7 +4,6 @@
 from tempest.common import utils
 from tempest.lib import decorators
 
-from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 
 from . import nuage_base
@@ -40,7 +39,6 @@ class OrchestrationServerTest(nuage_base.NuageBaseOrchestrationTest):
         return nuage_domain[0]
 
     @decorators.attr(type=['smoke'])
-    @nuage_test.header()
     def test_servers_in_new_neutron_net_nokey(self):
         # ext_net_id = self.public_net['id']
         ext_net_id = CONF.network.public_network_id

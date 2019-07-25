@@ -4,7 +4,6 @@
 from tempest.lib import decorators
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
-
 from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
     import ExternalId
 

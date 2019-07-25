@@ -27,7 +27,6 @@ from testtools.matchers import Not
 from nuage_tempest_plugin.lib.mixins.bgpvpn import BGPVPNMixin
 from nuage_tempest_plugin.lib.mixins.l3 import L3Mixin
 from nuage_tempest_plugin.lib.mixins.network import NetworkMixin
-from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 
 CONF = Topology.get_conf()
@@ -417,12 +416,10 @@ class BgpvpnCliTests(BGPVPNMixin, base.BaseNetworkTest):
         return bgpvpn
 
     @decorators.attr(type='smoke')
-    @nuage_test.header()
     def test_create_delete_bgpvpn(self):
         name = data_utils.rand_name('bgpvpn')
         self._create_verifybgpvpn(name, '343:343', '343:343')
 
-    @nuage_test.header()
     def test_create_list_show_delete_multiple_bgpvpn(self):
         name1 = data_utils.rand_name('bgpvpn')
         bgpvpn1 = self._create_verifybgpvpn(name1, '345:345', '345:345')

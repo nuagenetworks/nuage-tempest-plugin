@@ -813,7 +813,7 @@ class BaseVSDManagedPortAttributes(
         #     client=self.floating_ips_client,
         #     **result['floatingip'])
 
-        # noew create the VM with 2 vnics
+        # now create the VM with 2 vnics
         server = self._create_2nic_server(name=data_utils.rand_name('IC-VM'),
                                           network_id_1=network['id'],
                                           port_1=port,
@@ -859,7 +859,7 @@ class BaseVSDManagedPortAttributes(
         #     client=self.os.network_client,
         #     **result['floatingip'])
 
-        # noew create the VM with 2 vnics
+        # now create the VM with 2 vnics
         server = self._create_2nic_server(name=data_utils.rand_name('IC-VM'),
                                           network_id_1=os_l3_network['id'],
                                           port_1=os_l3_port,

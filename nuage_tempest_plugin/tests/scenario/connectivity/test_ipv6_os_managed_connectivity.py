@@ -1,11 +1,11 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
 
-import nuage_tempest_plugin.lib.test.nuage_test as nuage_test
-from nuage_tempest_plugin.lib.test.nuage_test import skip_because
-
 from netaddr import IPNetwork
 from tempest.test import decorators
+
+import nuage_tempest_plugin.lib.test.nuage_test as nuage_test
+from nuage_tempest_plugin.lib.test.nuage_test import skip_because
 
 LOG = nuage_test.Topology.get_logger(__name__)
 
@@ -74,7 +74,6 @@ class Ipv6OsManagedConnectivityTest(nuage_test.NuageBaseTest):
         # Test IPv6 connectivity between peer servers
         self.assert_ping(server1, server2, network, ip_type=6)
 
-    # @decorators.attr(type='smoke')
     def test_icmp_connectivity_l2_os_managed_pure_v6(self):
         # Provision OpenStack network
         networkv6 = self.create_network()
@@ -97,7 +96,6 @@ class Ipv6OsManagedConnectivityTest(nuage_test.NuageBaseTest):
         # Test IPv6 connectivity between peer servers
         self.assert_ping(server1, server2, networkv6, ip_type=6)
 
-    # @decorators.attr(type='smoke')
     def test_icmp_connectivity_l3_os_managed_pure_v6(self):
         # Provision OpenStack network
         networkv6_1 = self.create_network()

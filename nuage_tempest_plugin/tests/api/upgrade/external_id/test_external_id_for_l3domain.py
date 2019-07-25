@@ -16,7 +16,6 @@
 from tempest.api.network import base
 from tempest.lib.common.utils import data_utils
 
-from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.lib.utils import exceptions as n_exceptions
@@ -317,7 +316,6 @@ class ExternalIdForL3domainTest(base.BaseAdminNetworkTest):
         super(ExternalIdForL3domainTest, cls).setup_clients()
         cls.nuage_client = NuageRestClient()
 
-    @nuage_test.header()
     def test_router_matches_to_l3domain(self):
         # Create a router
         name = data_utils.rand_name('router-')
@@ -346,7 +344,6 @@ class ExternalIdForL3domainTest(base.BaseAdminNetworkTest):
         # Delete
         vsd_l3domain.verify_cannot_delete()
 
-    @nuage_test.header()
     def test_subnet_attached_to_router_matches_to_l3domain(self):
         # Create a network
         name = data_utils.rand_name('network-')

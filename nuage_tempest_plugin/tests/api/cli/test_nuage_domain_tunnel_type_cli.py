@@ -7,7 +7,6 @@ from tempest.lib.common.utils import data_utils
 from nuage_tempest_plugin.lib.cli.client_testcase \
     import CLIClientTestCase
 from nuage_tempest_plugin.lib.cli.client_testcase import Role
-from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services import nuage_client
@@ -79,7 +78,6 @@ class TestNuageDomainTunnelTypeCli(CLIClientTestCase):
         # Then the router has the default tunnel type
         self.assertEqual(show_router['tunnel_type'], domain_tunnel_type)
 
-    @nuage_test.header()
     def test_create_router_with_default_domain_tunnel_type(self):
         get_data_center_default_domain_tunnel_type = \
             self.get_data_center_default_domain_tunnel_type()
@@ -99,7 +97,6 @@ class TestNuageDomainTunnelTypeCli(CLIClientTestCase):
             show_router['tunnel_type'],
             get_data_center_default_domain_tunnel_type)
 
-    @nuage_test.header()
     def test_create_update_router_with_tunnel_type_gre(self):
         domain_tunnel_type = constants.DOMAIN_TUNNEL_TYPE_GRE
 
@@ -136,7 +133,6 @@ class TestNuageDomainTunnelTypeCli(CLIClientTestCase):
             updated_router,
             get_data_center_default_domain_tunnel_type)
 
-    @nuage_test.header()
     def test_create_update_router_with_tunnel_type_vxlan(self):
         domain_tunnel_type = constants.DOMAIN_TUNNEL_TYPE_VXLAN
 
@@ -203,7 +199,6 @@ class TestNuageDomainTunnelTypeAsTenantCli(CLIClientTestCase):
         cls.system_configuration = system_configurations[0]
         return cls.system_configuration['domainTunnelType']
 
-    @nuage_test.header()
     def test_tenant_shall_not_see_the_router_with_domain_tunnel_type(self):
         def get_attr(a_dict, key):
             return a_dict[key]
@@ -238,7 +233,6 @@ class TestNuageDomainTunnelTypeAsTenantCli(CLIClientTestCase):
                                  "--tunnel-type",
                                  new_domain_tunnel_type)
 
-    @nuage_test.header()
     def test_tenant_shall_not_create_router_with_domain_tunnel_type(self):
         router_name = data_utils.rand_name('test-router')
         domain_tunnel_type = constants.DOMAIN_TUNNEL_TYPE_VXLAN

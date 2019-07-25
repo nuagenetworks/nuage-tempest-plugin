@@ -5,7 +5,6 @@ from netaddr import IPNetwork
 
 from .base_nuage_networks_cli import BaseNuageNetworksCliTestCase
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
-from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
@@ -37,7 +36,6 @@ class OSManagedDualStackCliTest(
             cls.os_primary.auth_provider,
             **cls.os_primary.default_params)
 
-    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_create_update_delete_dualstack(self):
         network_name = data_utils.rand_name('cli_network')
@@ -91,7 +89,6 @@ class OSManagedDualStackCliTest(
                                  self.show_network,
                                  network['id'])
 
-    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_delete_network_deletes_all_subnets(self):
         network_name = data_utils.rand_name('cli_network')
@@ -139,7 +136,6 @@ class OSManagedDualStackCliTest(
                                  self.show_subnet,
                                  subnet6['id'])
 
-    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_dualstack_with_reserved_ipv6_address_ipv4_first_neg(self):
         network_name = data_utils.rand_name('cli_network')
@@ -170,7 +166,6 @@ class OSManagedDualStackCliTest(
                                  "--ip-version 6",
                                  "--disable-dhcp ")
 
-    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_dualstack_with_reserved_ipv6_address_neg(self):
         network_name = data_utils.rand_name('cli_network')

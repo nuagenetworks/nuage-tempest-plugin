@@ -20,8 +20,6 @@ from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.test import decorators
 
-from nuage_tempest_plugin.lib.test import nuage_test
-from nuage_tempest_plugin.lib.test import tags
 from nuage_tempest_plugin.lib.utils import constants
 
 from nuage_tempest_plugin.tests.api.vsd_managed \
@@ -31,7 +29,6 @@ CONF = config.CONF
 LOG = logging.getLogger(__name__)
 
 
-@nuage_test.class_header(tags=tags.VSD_MANAGED)
 class VSDManagedPortSecurity(
         base_vsd_managed_networks.BaseVSDManagedNetwork):
 

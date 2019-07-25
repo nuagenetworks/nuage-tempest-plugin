@@ -9,7 +9,6 @@ from tempest.lib.common.utils import data_utils
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
-from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseOrchestrationTest
 from nuage_tempest_plugin.lib.test.nuage_test import TenantServer
 from nuage_tempest_plugin.lib.topology import Topology
@@ -53,7 +52,6 @@ class OsManagedDualStackOrchestrationTest(NuageBaseOrchestrationTest):
         return server
 
     @decorators.attr(type='slow')
-    @nuage_test.header()
     def test_dualstack_openstack_managed_subnets(self):
         # launch a heat stack
         stack_file_name = 'nuage_os_managed_network_dualstack_vm_on_port'
@@ -104,7 +102,6 @@ class OsManagedDualStackOrchestrationTest(NuageBaseOrchestrationTest):
 
     @decorators.attr(type='slow')
     @decorators.attr(type='scale')
-    @nuage_test.header()
     def test_dualstack_openstack_managed_ports_scale(self):
         # launch a heat stack
         stack_file_name = 'nuage_os_managed_network_dualstack_vm_on_port'
@@ -154,7 +151,6 @@ class OsManagedDualStackOrchestrationTest(NuageBaseOrchestrationTest):
         pass
 
     @decorators.attr(type='slow')
-    @nuage_test.header()
     def test_dualstack_openstack_managed_l3_subnets(self):
         # launch a heat stack
         stack_file_name = 'nuage_os_managed_network_l3_dualstack_vm_on_port'

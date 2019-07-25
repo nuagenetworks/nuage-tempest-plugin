@@ -6,9 +6,6 @@ from tempest.test import decorators
 
 from . import base_nuage_bidirectional_fip_rate_limit
 
-from nuage_tempest_plugin.lib.test import nuage_test
-
-
 MSG_INVALID_INPUT_IN = "'nuage_ingress_fip_rate_kbps' should be a " \
                        "number higher than 0, -1 for unlimited or " \
                        "'default' for the configured default value."
@@ -45,7 +42,6 @@ class TestNuageBidiFipRateLimitBaseCreateNegative(
             resource_setup()
         cls.port = cls.ports[0]
 
-    @nuage_test.header()
     @decorators.attr(type=['negative'])
     def test_create_fip_with_default_rate_limit_below_min_value_ingress(self):
         self.assertRaisesRegex(lib_exc.BadRequest,
@@ -53,7 +49,6 @@ class TestNuageBidiFipRateLimitBaseCreateNegative(
                                self._create_fip_with_fip_rate_limit,
                                self.port, ingress_rate_limit=-2)
 
-    @nuage_test.header()
     @decorators.attr(type=['negative'])
     def test_create_fip_with_default_rate_limit_invalid_value_ingress(self):
         self.assertRaisesRegex(lib_exc.BadRequest,
@@ -61,7 +56,6 @@ class TestNuageBidiFipRateLimitBaseCreateNegative(
                                self._create_fip_with_fip_rate_limit,
                                self.port, ingress_rate_limit='NaN')
 
-    @nuage_test.header()
     @decorators.attr(type=['negative'])
     def test_create_fip_with_default_rate_limit_no_value_ingress(self):
         self.assertRaisesRegex(lib_exc.BadRequest,
@@ -69,7 +63,6 @@ class TestNuageBidiFipRateLimitBaseCreateNegative(
                                self._create_fip_with_fip_rate_limit,
                                self.port, ingress_rate_limit='')
 
-    @nuage_test.header()
     @decorators.attr(type=['negative'])
     def test_create_fip_with_default_rate_limit_below_min_value_egress(self):
         self.assertRaisesRegex(lib_exc.BadRequest,
@@ -77,7 +70,6 @@ class TestNuageBidiFipRateLimitBaseCreateNegative(
                                self._create_fip_with_fip_rate_limit,
                                self.port, egress_rate_limit=-2)
 
-    @nuage_test.header()
     @decorators.attr(type=['negative'])
     def test_create_fip_with_default_rate_limit_invalid_value_egress(self):
         self.assertRaisesRegex(lib_exc.BadRequest,
@@ -85,7 +77,6 @@ class TestNuageBidiFipRateLimitBaseCreateNegative(
                                self._create_fip_with_fip_rate_limit,
                                self.port, egress_rate_limit='NaN')
 
-    @nuage_test.header()
     @decorators.attr(type=['negative'])
     def test_create_fip_with_default_rate_limit_no_value_egress(self):
         self.assertRaisesRegex(lib_exc.BadRequest,
@@ -114,7 +105,6 @@ class TestNuageBidiFipRateLimitBaseUpdateNegative(
         cls.fip = cls._create_fip_for_port_with_rate_limit(
             cls.port['id'], ingress_rate_limit=456, egress_rate_limit=456)
 
-    @nuage_test.header()
     @decorators.attr(type=['negative'])
     def test_update_fip_with_default_rate_limit_below_min_value_ingress(self):
         self.assertRaisesRegex(lib_exc.BadRequest,
@@ -122,7 +112,6 @@ class TestNuageBidiFipRateLimitBaseUpdateNegative(
                                self._update_fip_with_fip_rate_limit,
                                self.port, self.fip, ingress_rate_limit=-2)
 
-    @nuage_test.header()
     @decorators.attr(type=['negative'])
     def test_update_fip_with_default_rate_limit_invalid_value_ingress(self):
         self.assertRaisesRegex(lib_exc.BadRequest,
@@ -130,7 +119,6 @@ class TestNuageBidiFipRateLimitBaseUpdateNegative(
                                self._update_fip_with_fip_rate_limit,
                                self.port, self.fip, ingress_rate_limit='NaN')
 
-    @nuage_test.header()
     @decorators.attr(type=['negative'])
     def test_update_fip_with_default_rate_limit_no_value_ingress(self):
         self.assertRaisesRegex(lib_exc.BadRequest,
@@ -138,7 +126,6 @@ class TestNuageBidiFipRateLimitBaseUpdateNegative(
                                self._update_fip_with_fip_rate_limit,
                                self.port, self.fip, ingress_rate_limit='')
 
-    @nuage_test.header()
     @decorators.attr(type=['negative'])
     def test_update_fip_with_default_rate_limit_below_min_value_egress(self):
         self.assertRaisesRegex(lib_exc.BadRequest,
@@ -146,7 +133,6 @@ class TestNuageBidiFipRateLimitBaseUpdateNegative(
                                self._update_fip_with_fip_rate_limit,
                                self.port, self.fip, egress_rate_limit=-2)
 
-    @nuage_test.header()
     @decorators.attr(type=['negative'])
     def test_update_fip_with_default_rate_limit_invalid_value_egress(self):
         self.assertRaisesRegex(lib_exc.BadRequest,
@@ -154,7 +140,6 @@ class TestNuageBidiFipRateLimitBaseUpdateNegative(
                                self._update_fip_with_fip_rate_limit,
                                self.port, self.fip, egress_rate_limit='NaN')
 
-    @nuage_test.header()
     @decorators.attr(type=['negative'])
     def test_update_fip_with_default_rate_limit_no_value_egress(self):
         self.assertRaisesRegex(lib_exc.BadRequest,
@@ -176,7 +161,6 @@ class TestNuageBidiFRLBaseAssociationNegative(
     """
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_fail_to_create_fip_with_rate_limit_wo_port_assoc(self):
         self.assertRaisesRegex(lib_exc.BadRequest,
                                "Rate limiting requires the floating ip to be "
@@ -186,7 +170,6 @@ class TestNuageBidiFRLBaseAssociationNegative(
                                nuage_ingress_fip_rate_kbps=321)
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_fail_to_update_fip_with_rate_limit_without_port_assoc(self):
         fip2 = self._do_create_fip_for_port_with_rate_limit(
             self.ports[1]['id'], 456)
@@ -202,7 +185,6 @@ class TestNuageBidiFRLBaseAssociationNegative(
                                nuage_ingress_fip_rate_kbps=321)
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_fail_to_update_fip_with_rate_limit_and_port_disassoc(self):
         fip2 = self._do_create_fip_for_port_with_rate_limit(
             self.ports[1]['id'], 456)

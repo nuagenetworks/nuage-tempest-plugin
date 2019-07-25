@@ -5,7 +5,6 @@ import json
 
 from tempest.test import decorators
 
-from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 
@@ -138,7 +137,6 @@ class TestNuageFipRateLimitCliWithoutDefault(BaseNuageFipRateLimit):
         # Then I got a valid VSD FIP with the default rate limit
         self._verify_fip_vsd(subnet, port, updated_floating_ip, new_fip_rate)
 
-    @nuage_test.header()
     def test_create_fip_without_rate_limit(self):
         self._as_admin()
 
@@ -178,7 +176,6 @@ class TestNuageFipRateLimitCliWithDefault(
     configured_default_fip_rate = 321
     expected_default_fip_rate = configured_default_fip_rate
 
-    @nuage_test.header()
     def test_create_fip_with_default_rate_limit_max_value(self):
         network = self.create_network()
         subnet = self.create_subnet_with_args(network['name'], '10.3.0.0/24')
@@ -202,7 +199,6 @@ class TestNuageFipRateLimitCliWithDefault(
         # Then I got a valid VSD FIP with the default rate limit
         self._verify_fip_vsd(subnet, port, created_floating_ip, rate_limit)
 
-    @nuage_test.header()
     def test_create_fip_with_default_rate_limit_unlimited(self):
         network = self.create_network()
         subnet = self.create_subnet_with_args(network['name'], '10.4.0.0/24')
@@ -226,7 +222,6 @@ class TestNuageFipRateLimitCliWithDefault(
         # Then I got a valid VSD FIP with the default rate limit
         self._verify_fip_vsd(subnet, port, created_floating_ip, "INFINITY")
 
-    @nuage_test.header()
     def test_create_update_fip_rate_limit_with_keyword_default(self):
         network = self.create_network()
         subnet = self.create_subnet_with_args(network['name'], '10.5.0.0/24')
@@ -251,19 +246,19 @@ class TestNuageFipRateLimitCliWithDefault(
         self._verify_fip_vsd(subnet, port, created_floating_ip,
                              self.expected_default_fip_rate)
 
-        # # Update to non-default value
+        # Update to non-default value
         # ################################
         rate_limit = -1
         self._update_fip_rate_limit(subnet, port, created_floating_ip['id'],
                                     rate_limit)
 
-        # # Update to non-default value
+        # Update to non-default value
         # ################################
         rate_limit = 568
         self._update_fip_rate_limit(subnet, port, created_floating_ip['id'],
                                     rate_limit)
 
-        # # Update using keyword 'default'
+        # Update using keyword 'default'
         # ################################
         rate_limit = 'default'
         self.update_floating_ip_with_args(
@@ -278,7 +273,6 @@ class TestNuageFipRateLimitCliWithDefault(
         self._verify_fip_vsd(subnet, port, updated_floating_ip,
                              self.expected_default_fip_rate)
 
-    @nuage_test.header()
     @decorators.attr(type=['negative'])
     def test_create_fip_without_a_value(self):
         network = self.create_network()

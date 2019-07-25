@@ -23,7 +23,6 @@ LOG = Topology.get_logger(__name__)
 class VSDManagedAllowedAddressPairsTest(BaseAllowedAddressPair,
                                         BaseVSDManagedNetworksIPv6Test):
 
-    # @decorators.attr(type='smoke')
     def test_provision_ports_without_address_pairs_in_l2_subnet_vsd_unmanaged(
             self):
         vsd_l2_subnet = self._given_vsd_l2domain(dhcp_managed=False)

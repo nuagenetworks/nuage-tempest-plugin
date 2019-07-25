@@ -9,7 +9,6 @@ from tempest.test import decorators
 
 from . import nuage_base
 
-from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 
 LOG = Topology.get_logger(__name__)
@@ -17,7 +16,6 @@ LOG = Topology.get_logger(__name__)
 
 class VsdManagedNetworkTest(nuage_base.NuageBaseOrchestrationTest):
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_link_subnet_to_vsd_l2domain_with_empty_net_partition(self):
         """test_link_subnet_to_vsd_l2domain_without_net_partition
 
@@ -91,7 +89,6 @@ class VsdManagedNetworkTest(nuage_base.NuageBaseOrchestrationTest):
                                stack_parameters)
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_link_subnet_to_vsd_l2domain_without_valid_vsd_l2domain(self):
         """test_link_subnet_to_vsd_l2domain_without_valid_vsd_l2domain
 
@@ -120,7 +117,6 @@ class VsdManagedNetworkTest(nuage_base.NuageBaseOrchestrationTest):
                                stack_parameters)
 
     @decorators.attr(type=['negative'])
-    @nuage_test.header()
     def test_link_subnet_to_vsd_l2domain_without_existing_vsd_l2domain(self):
         """test_link_subnet_to_vsd_l2domain_without_existing_vsd_l2domain
 

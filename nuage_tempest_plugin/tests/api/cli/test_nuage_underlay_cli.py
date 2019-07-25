@@ -8,7 +8,6 @@ from nuage_tempest_plugin.lib.cli.client_testcase \
     import CLIClientTestCase
 from nuage_tempest_plugin.lib.cli.client_testcase import Role
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
-from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 
 CONF = Topology.get_conf()
@@ -50,7 +49,6 @@ class TestNuageUnderlayCli(CLIClientTestCase):
         # Then the router has the mentioned nuage underlay
         self.assertEqual(show_subnet['nuage_underlay'], nuage_underlay)
 
-    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_cli_create_router_with_nuage_underlay_off(self):
         router_name = data_utils.rand_name('test-router')
@@ -61,7 +59,6 @@ class TestNuageUnderlayCli(CLIClientTestCase):
         self.assertEqual(created_router['nuage_underlay'], 'off')
         self._verify_router_nuage_underlay(created_router['id'], 'off')
 
-    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_cli_update_router_with_nuage_underlay_off(self):
         router_name = data_utils.rand_name('test-router')
@@ -73,7 +70,6 @@ class TestNuageUnderlayCli(CLIClientTestCase):
         self.update_router_with_args(router_name, '--nuage-underlay', 'off')
         self._verify_router_nuage_underlay(created_router['id'], 'off')
 
-    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_cli_update_router_with_nuage_underlay_snat(self):
         router_name = data_utils.rand_name('test-router')
@@ -83,7 +79,6 @@ class TestNuageUnderlayCli(CLIClientTestCase):
         self.update_router_with_args(router_name, '--nuage-underlay', 'snat')
         self._verify_router_nuage_underlay(created_router['id'], 'snat')
 
-    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_cli_update_router_with_nuage_underlay_route(self):
         router_name = data_utils.rand_name('test-router')
@@ -93,7 +88,6 @@ class TestNuageUnderlayCli(CLIClientTestCase):
         self.update_router_with_args(router_name, '--nuage-underlay', 'route')
         self._verify_router_nuage_underlay(created_router['id'], 'route')
 
-    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_cli_update_subnet_nuage_underlay_route(self):
         network_name = data_utils.rand_name('nuage-underlay-network')
@@ -113,7 +107,6 @@ class TestNuageUnderlayCli(CLIClientTestCase):
         self.update_subnet_with_args(subnet_name, '--nuage-underlay', 'route')
         self._verify_subnet_nuage_underlay(created_subnet['id'], 'route')
 
-    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_cli_update_subnet_nuage_underlay_snat(self):
         network_name = data_utils.rand_name('nuage-underlay-network')
@@ -133,7 +126,6 @@ class TestNuageUnderlayCli(CLIClientTestCase):
         self.update_subnet_with_args(subnet_name, '--nuage-underlay', 'snat')
         self._verify_subnet_nuage_underlay(created_subnet['id'], 'snat')
 
-    @nuage_test.header()
     @decorators.attr(type='smoke')
     def test_cli_update_subnet_nuage_underlay_off(self):
         network_name = data_utils.rand_name('nuage-underlay-network')

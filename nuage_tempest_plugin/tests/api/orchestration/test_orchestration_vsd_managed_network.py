@@ -7,7 +7,6 @@ from tempest.lib.common.utils import data_utils
 
 from . import nuage_base
 
-from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 
 LOG = Topology.get_logger(__name__)
@@ -29,7 +28,6 @@ class OrchestrationVsdManagedNetworkTest(
                     extra_params=None)
         super(OrchestrationVsdManagedNetworkTest, cls).resource_setup()
 
-    @nuage_test.header()
     def test_link_subnet_to_vsd_l2domain_dhcp_managed_minimal(self):
         """test_link_subnet_to_vsd_l2domain_dhcp_managed_minimal
 
@@ -88,7 +86,6 @@ class OrchestrationVsdManagedNetworkTest(
             str(cidr[-2]), subnet['allocation_pools'][0]['end'],
             "Shall end allocation pool at last address in l2 domain")
 
-    @nuage_test.header()
     def test_link_subnet_to_vsd_l2domain_dhcp_managed(self):
         """test_link_subnet_to_vsd_l2domain_dhcp_managed
 
@@ -152,7 +149,6 @@ class OrchestrationVsdManagedNetworkTest(
                          "Shall end allocation pool at last address in "
                          "l2 domain")
 
-    @nuage_test.header()
     def test_link_subnet_to_vsd_l2domain_dhcp_unmanaged(self):
         """test_link_subnet_to_vsd_l2domain_dhcp_unmanaged
 
@@ -214,7 +210,6 @@ class OrchestrationVsdManagedNetworkTest(
                          "Shall end allocation pool at last address in "
                          "l2 domain")
 
-    @nuage_test.header()
     def test_link_subnet_to_vsd_l3domain(self):
         """test_link_subnet_to_vsd_l3domain
 

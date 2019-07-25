@@ -111,11 +111,11 @@ class NuageFipToVip(NuageBaseTest):
             nuage_vport_for_fake_vip.associated_floating_ip_id,
             "Floating ip not correctly attached to fake nuage_vip port.")
 
-        # dissassociate fip
+        # disassociate fip
         self.update_floatingip(floatingip=floating_ip,
                                port_id=None)
 
-        # Assert FIP dissassociated
+        # Assert FIP disassociated
         nuage_vip = self.vsd.get_vport_vip(vport_id=AAP_port['id'],
                                            router_id=router['id'])
         self.assertIsNotNone(nuage_vip, "Not able to find VIP on VSD.")
@@ -310,7 +310,7 @@ class NuageFipToVip(NuageBaseTest):
         # Delete nuage:fip port
         self.delete_port(vip_port)
 
-        # Assert FIP dissassociated
+        # Assert FIP disassociated
         nuage_vip = self.vsd.get_vport_vip(vport_id=AAP_port['id'],
                                            router_id=router['id'])
         self.assertIsNotNone(nuage_vip, "Not able to find VIP on VSD.")

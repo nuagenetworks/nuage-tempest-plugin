@@ -19,7 +19,6 @@ from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
-from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.utils import data_utils as nuage_data_utils
 
 from . import base_nuage_fip_underlay
@@ -34,7 +33,6 @@ class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
     def resource_setup(cls):
         super(FIPtoUnderlayTestNuage, cls).resource_setup()
 
-    @nuage_test.header()
     def test_create_external_subnet_without_underlay(self):
         """test_create_external_subnet_without_underlay
 
@@ -45,7 +43,6 @@ class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
         """
         self._verify_create_delete_external_subnet_without_underlay()
 
-    @nuage_test.header()
     def test_create_external_subnet_with_underlay_default_none(self):
         """test_create_external_subnet_with_underlay_default_none
 
@@ -56,7 +53,6 @@ class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
         """
         self._verify_create_external_fip_subnet_with_underlay()
 
-    @nuage_test.header()
     def test_show_external_subnet_without_underlay(self):
         """test_show_external_subnet_without_underlay
 
@@ -67,7 +63,6 @@ class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
         """
         self._verify_show_external_subnet_without_underlay()
 
-    @nuage_test.header()
     def test_show_external_subnet_with_underlay(self):
         """test_show_external_subnet_with_underlay
 
@@ -78,7 +73,6 @@ class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
         """
         self._verify_show_external_subnet_with_underlay()
 
-    @nuage_test.header()
     def test_list_external_subnets_underlay(self):
         """test_list_external_subnets_underlay
 
@@ -91,7 +85,6 @@ class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
         """
         self._verify_list_external_subnets_underlay()
 
-    @nuage_test.header()
     def test_multiple_subnets_with_underlay(self):
         """test_multiple_subnets_with_underlay
 
@@ -116,7 +109,6 @@ class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
         self.admin_subnets_client.delete_subnet(sub2['id'])
         self.admin_subnets_client.delete_subnet(sub1['id'])
 
-    @nuage_test.header()
     def test_multiple_subnets_with_underlay_disabled(self):
         """test_multiple_subnets_with_underlay_disabled
 
@@ -139,7 +131,6 @@ class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
         self.admin_subnets_client.delete_subnet(sub2['id'])
         self.admin_subnets_client.delete_subnet(sub1['id'])
 
-    @nuage_test.header()
     def test_update_external_subnet_with_gateway(self):
         underlay_states = [False, True]
         for underlay in underlay_states:
@@ -163,7 +154,6 @@ class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
             self.assertEqual(new_gateway, curr_gateway)
             self.admin_subnets_client.delete_subnet(sub['id'])
 
-    @nuage_test.header()
     def test_update_external_subnet_with_wrong_gateway(self):
         underlay_states = [False, True]
         for underlay in underlay_states:
@@ -191,7 +181,6 @@ class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
     #  Negative test cases
     #
     #
-    @nuage_test.header()
     @decorators.attr(type=['negative'])
     def test_create_external_subnet_with_underlay_invalid_values_neg(self):
         """test_create_external_subnet_with_underlay_invalid_values_neg
@@ -220,7 +209,6 @@ class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
                               **kwargs)
         pass
 
-    @nuage_test.header()
     @decorators.attr(type=['negative'])
     def test_create_internal_subnet_with_underlay_neg(self):
         """test_create_internal_subnet_with_underlay_neg
@@ -246,7 +234,6 @@ class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
                               **kwargs)
         pass
 
-    @nuage_test.header()
     @decorators.attr(type=['negative'])
     def test_update_internal_subnet_with_underlay_neg(self):
         """test_update_internal_subnet_with_underlay_neg
@@ -276,7 +263,6 @@ class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
         self.admin_subnets_client.delete_subnet(subnet['id'])
         pass
 
-    @nuage_test.header()
     @decorators.attr(type=['negative'])
     def test_create_external_subnet_with_underlay_invalid_syntax_neg(self):
         """test_create_external_subnet_with_underlay_invalid_syntax_neg
@@ -303,7 +289,6 @@ class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
                               self.admin_subnets_client.create_subnet,
                               **kwargs)
 
-    @nuage_test.header()
     @decorators.attr(type=['negative'])
     def test_update_external_subnet_with_snat_neg(self):
         self._verify_update_external_subnet_with_underlay_neg()
@@ -313,7 +298,6 @@ class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
     # #  Scaling tests
     # #
     # #
-    # @nuage_test.header()
     # def test_scale_create_external_subnet_with_underlay_gre(self):
     #     self._verify_create_external_subnet_with_underlay_scale('GRE', 32)
     #     # def test_scale_create_external_subnet_with_underlay_VXLAN(self):
