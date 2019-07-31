@@ -181,7 +181,7 @@ class VSDManagedPortSecurity(
             vsd_subnet[0]['ID'],
             filters='externalID',
             filter_value=port['id'])
-        self.assertEqual(constants.INHERITED,
+        self.assertEqual(constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         update_body = {'security_groups': [],
                        'port_security_enabled': 'False'}
@@ -234,7 +234,7 @@ class VSDManagedPortSecurity(
             vsd_l2dom[0]['ID'],
             filters='externalID',
             filter_value=port['id'])
-        self.assertEqual(constants.INHERITED,
+        self.assertEqual(constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         update_body = {'security_groups': [],
                        'port_security_enabled': 'False'}
@@ -289,7 +289,7 @@ class VSDManagedPortSecurity(
             vsd_l2dom[0]['ID'],
             filters='externalID',
             filter_value=port['id'])
-        self.assertEqual(constants.INHERITED,
+        self.assertEqual(constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         update_body = {'security_groups': [],
                        'port_security_enabled': 'False'}

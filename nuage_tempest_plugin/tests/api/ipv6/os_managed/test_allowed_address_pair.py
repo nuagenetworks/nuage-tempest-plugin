@@ -115,7 +115,7 @@ class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
 
         self.router_attach(router, subnet4, cleanup=False)
 
-        self._verify_l3_vport_by_id(router, port, constants.INHERITED,
+        self._verify_l3_vport_by_id(router, port, constants.DISABLED,
                                     subnet4=subnet4)
 
         self.router_detach(router, subnet4)
@@ -123,7 +123,7 @@ class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
                                     subnet4=subnet4)
 
         self.router_attach(router, subnet4)
-        self._verify_l3_vport_by_id(router, port, constants.INHERITED,
+        self._verify_l3_vport_by_id(router, port, constants.DISABLED,
                                     subnet4=subnet4)
         self.assertRaisesRegex(
             tempest_exceptions.Conflict,

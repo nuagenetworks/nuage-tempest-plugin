@@ -1490,7 +1490,7 @@ class VSDManagedAllowedAddresPairssTest(
         self.assertIsNone(nuage_vport[0]['multiNICVPortID'],
                           "multiNICVPortID is not empty while it should be")
         # And address address spoofing is disabled on vport in VSD
-        self.assertEqual(constants.INHERITED,
+        self.assertEqual(constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         # When I delete the allowed address  pair from the port
         self._remove_allowed_address_pair_from_port(addrpair_port)
