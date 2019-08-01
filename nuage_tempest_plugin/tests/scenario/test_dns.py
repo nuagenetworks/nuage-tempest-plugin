@@ -12,7 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from tempest.test import decorators
 
@@ -20,7 +20,7 @@ LOG = Topology.get_logger(__name__)
 CONF = Topology.get_conf()
 
 
-class DNSScenarioTest(NuageBaseTest):
+class DNSScenarioTest(nuage_test.NuageBaseTest):
 
     def _test_dns_up_to_vm(self, ip_versions=None, is_l3=None):
         dns = {6: 'cafe:babe:cafe:babe:cafe:babe:cafe:babe',
@@ -63,11 +63,9 @@ class DNSScenarioTest(NuageBaseTest):
     def test_dns_up_to_vm_l2_v4(self):
         self._test_dns_up_to_vm(ip_versions=[4], is_l3=False)
 
-    @decorators.attr(type='smoke')
     def test_dns_up_to_vm_l2_v6(self):
         self._test_dns_up_to_vm(ip_versions=[6], is_l3=False)
 
-    @decorators.attr(type='smoke')
     def test_dns_up_to_vm_l3_v4(self):
         self._test_dns_up_to_vm(ip_versions=[4], is_l3=True)
 
@@ -75,10 +73,9 @@ class DNSScenarioTest(NuageBaseTest):
     def test_dns_up_to_vm_l3_v6(self):
         self._test_dns_up_to_vm(ip_versions=[6], is_l3=True)
 
-    @decorators.attr(type='smoke')
     def test_dns_up_to_vm_l2_dualstack(self):
         self._test_dns_up_to_vm(ip_versions=[6, 4], is_l3=False)
 
-    @decorators.attr(type='smoke')
+    @nuage_test.skip_because(bug='OPENSTACK-2654')
     def test_dns_up_to_vm_l3_dualstack(self):
         self._test_dns_up_to_vm(ip_versions=[6, 4], is_l3=True)
