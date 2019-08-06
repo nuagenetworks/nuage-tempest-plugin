@@ -214,7 +214,7 @@ class Ipv4OsManagedConnectivityTest(NuageBaseTest):
         self.assert_ping(server1, server2, ext_network,
                          address=fl2['floating_ip_address'])
 
-    @decorators.attr(type='smoke')
+    # @decorators.attr(type='smoke')
     def test_icmp_connectivity_l2_os_managed_no_dhcp_v4(self):
         # Provision OpenStack network resources
         network = self.create_network()

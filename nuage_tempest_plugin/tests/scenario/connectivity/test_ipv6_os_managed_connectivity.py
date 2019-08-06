@@ -305,7 +305,7 @@ class Ipv6OsManagedConnectivityTest(nuage_test.NuageBaseTest):
             server=server1, dest=port_1['fixed_ips'][0]['ip_address'],
             interface='eth1'))
 
-    @decorators.attr(type='smoke')
+    # @decorators.attr(type='smoke')
     def test_icmp_connectivity_l3_os_managed_no_dhcp_v6(self):
         # Provision OpenStack network resources
         network = self.create_network()
