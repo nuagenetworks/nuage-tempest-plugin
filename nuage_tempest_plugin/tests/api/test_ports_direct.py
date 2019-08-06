@@ -611,6 +611,38 @@ class PortsDirectTest(network_mixin.NetworkMixin,
 
     # other
 
+    def test_dynamic_segment_allocation(self):
+        network = self.create_network()
+        subnet = self.create_subnet('10.20.30.0/24', network['id'])
+        assert subnet
+        create_data = {
+            'binding:vnic_type': 'direct',
+            'security_groups': [],
+            'binding:host_id': 'host-hierarchical', 'binding:profile': {
+                "pci_slot": "0000:03:10.6",
+                "physical_network": "physnet1",
+                "pci_vendor_info": "8086:10ed"
+            }}
+        mapping = {'switch_id': self.gateway['systemID'],
+                   'port_id': self.gw_port['physicalName'],
+                   'host_id': 'host-hierarchical',
+                   'pci_slot': '0000:03:10.6'}
+        with self.switchport_mapping(**mapping):
+            with self.port(network['id'],
+                           **create_data) as direct_port:
+                lib_utils.wait_until_true(
+                    lambda: self._is_port_active(direct_port.get('id')))
+
+                profile = direct_port.get('binding:profile')
+                vif_type = direct_port.get('binding:vif_type')
+                self.assertThat(
+                    profile, matchers.Equals(self.binding_data.get(
+                        'binding:profile')),
+                    message="Port binding profiles doesn't match expected")
+                self.assertThat(
+                    vif_type, matchers.Equals('hw_veb'),
+                    message="Port has unexpected vif_type")
+
     def test_bind_dead_agent(self):
         topology = self._create_topology(with_router=False)
         create_data = {
@@ -621,6 +653,7 @@ class PortsDirectTest(network_mixin.NetworkMixin,
                 "physical_network": "physnet1",
                 "pci_vendor_info": "8086:10ed"
             }}
+
         mapping = {'switch_id': self.gateway['systemID'],
                    'port_id': self.gw_port['physicalName'],
                    'host_id': 'host-dead-agent',
