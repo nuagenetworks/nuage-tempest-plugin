@@ -1254,16 +1254,23 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             self, networks, ports, security_groups=None, client=None):
 
         # Current network (L2 or L3 pure v6)
-        test_network = (networks[0] if networks
-                        else ports[0]['parent_network'])
-        if security_groups:
-            test_sgs = []
-            for sg in security_groups:
-                test_sgs.append(sg['id'])
-            test_port = self.create_port(test_network, client,
-                                         security_groups=test_sgs)
+        if networks:
+            test_network = networks[0]
+            self.assertEqual(1, len(networks),
+                             'Only one network is allowed for fip topology.')
+
+            if security_groups:
+                test_sgs = []
+                for sg in security_groups:
+                    test_sgs.append(sg['id'])
+                test_port = self.create_port(test_network, client,
+                                             security_groups=test_sgs)
+            else:
+                test_port = self.create_port(test_network, client)
         else:
-            test_port = self.create_port(test_network, client)
+            self.assertEqual(1, len(ports),
+                             'Only one port is allowed for fip topology.')
+            test_port = ports[0]
 
         # New network (L3)
         fip_network = self.create_network(client=client)
