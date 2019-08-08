@@ -336,3 +336,103 @@ class Ipv6OsManagedConnectivityTest(nuage_test.NuageBaseTest):
         # Test IPv6 connectivity between peer servers
         self.assert_ping(server1, server2, network, ip_type=6,
                          should_pass=False)
+
+    def _test_icmp_connectivity_stateful_acl_os_managed_v6(self, is_l3=None,
+                                                           stateful=True):
+        # Provision OpenStack network resources
+        network = self.create_network()
+        subnet = self.create_subnet(network, cidr=IPNetwork('cafe:babe::/64'),
+                                    ip_version=6)
+        ports_actor = []
+        ports_hollywood = []
+
+        if is_l3:
+            network_fip = self.create_network()
+            subnet_fip = self.create_subnet(network_fip,
+                                            cidr=IPNetwork('10.10.2.0/24'))
+            router = self.create_router(
+                external_network_id=CONF.network.public_network_id)
+            self.router_attach(router, subnet)
+            self.router_attach(router, subnet_fip)
+            ssh_sg = self.create_open_ssh_security_group()
+
+            # we don't want to use existing ports for fip so we create new ones
+            fip_port_actor = self.create_port(
+                network_fip, security_groups=[ssh_sg['id']])
+            ports_actor.append(fip_port_actor)
+
+            fip_port_hollywood = self.create_port(
+                network_fip, security_groups=[ssh_sg['id']])
+            ports_hollywood.append(fip_port_hollywood)
+
+        # create two security groups and clean the default rules
+        sg_hollywood = self.create_security_group(stateful=stateful)
+        for sg_rule in sg_hollywood['security_group_rules']:
+            self.security_group_rules_client.delete_security_group_rule(
+                sg_rule['id'])
+        # add an egress rule
+        kwargs = {
+            'direction': 'egress',
+            'protocol': 'ipv6-icmp',
+            'port_range_min': 128,
+            'ethertype': 'IPv6'
+        }
+        self.create_security_group_rule(sg_hollywood, **kwargs)
+
+        sg_actor = self.create_security_group()
+        for sg_rule in sg_actor['security_group_rules']:
+            self.security_group_rules_client.delete_security_group_rule(
+                sg_rule['id'])
+        # add an ingress rule
+        kwargs = {
+            'direction': 'ingress',
+            'protocol': 'ipv6-icmp',
+            'ethertype': 'IPv6'
+        }
+        self.create_security_group_rule(sg_actor, **kwargs)
+
+        port_hollywood = self.create_port(
+            network=network,
+            security_groups=[sg_hollywood['id']]
+        )
+        ports_hollywood.append(port_hollywood)
+
+        port_actor = self.create_port(
+            network=network,
+            security_groups=[sg_actor['id']]
+        )
+        ports_actor.append(port_actor)
+
+        # Launch 2 tenant servers in OpenStack network
+        vm_hollywood = self.create_tenant_server(
+            ports=ports_hollywood,
+            prepare_for_connectivity=True)
+
+        vm_actor = self.create_tenant_server(
+            ports=ports_actor,
+            prepare_for_connectivity=True)
+
+        # vm_hollywood can ping vm_actor if the acl is stateful
+        self.assert_ping(vm_hollywood, vm_actor, network, ip_type=6,
+                         should_pass=stateful)
+        # vm_actor is not supposed to ping vm_hollywood in any case
+        self.assert_ping(vm_actor, vm_hollywood, network, ip_type=6,
+                         should_pass=False)
+
+    @decorators.attr(type='smoke')
+    def test_icmp_connectivity_stateful_acl_os_managed_l2_v6(self):
+        self._test_icmp_connectivity_stateful_acl_os_managed_v6(is_l3=False)
+
+    @decorators.attr(type='smoke')
+    def test_icmp_connectivity_stateless_acl_os_managed_l2_v6_neg(self):
+        self._test_icmp_connectivity_stateful_acl_os_managed_v6(
+            is_l3=False, stateful=False)
+
+    @decorators.attr(type='smoke')
+    def test_icmp_connectivity_stateful_acl_os_managed_l3_v6(self):
+        self._test_icmp_connectivity_stateful_acl_os_managed_v6(is_l3=True)
+
+    @decorators.attr(type='smoke')
+    def test_icmp_connectivity_stateless_acl_os_managed_l3_v6_neg(self):
+        self._test_icmp_connectivity_stateful_acl_os_managed_v6(
+            is_l3=True, stateful=False)
