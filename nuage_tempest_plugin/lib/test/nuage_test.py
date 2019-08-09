@@ -29,6 +29,7 @@ from testtools.matchers import Equals
 from nuage_tempest_plugin.lib.test.tenant_server import TenantServer
 from nuage_tempest_plugin.lib.test import vsd_helper
 from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.lib.utils import data_utils as utils
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
@@ -83,6 +84,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
     shared_infrastructure = 'Shared Infrastructure'
     image_name_to_id_cache = {}
     dhcp_agent_present = None
+    enable_aggregate_flows_on_vsd_managed = False
 
     ssh_security_group = None
     ssh_keypair = None
@@ -285,8 +287,15 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
     def vsd_create_l3domain(
             self, name=None, enterprise=None, template_id=None, cleanup=True):
+        kwargs = {}
+        if self.enable_aggregate_flows_on_vsd_managed:
+            kwargs = {
+                'aggregate_flows_enabled': True,
+                'aggregation_flow_type':
+                    constants.AGGREGATE_FLOW_TYPE_ROUTE_BASED
+            }
         vsd_domain = self.vsd.create_l3domain(
-            name, enterprise, template_id)
+            name, enterprise, template_id, **kwargs)
         self.assertIsNotNone(vsd_domain)
         if cleanup:
             self.addCleanup(vsd_domain.delete)
@@ -356,13 +365,18 @@ class NuageBaseTest(manager.NetworkScenarioTest):
     def set_network_as_l2_isolated(network):
         network['is_l3'] = False
 
-    @staticmethod
-    def is_l3_network(network):
-        return network.get('is_l3') or network.get('vsd_l3_subnet')
+    def is_l3_network(self, network):
+        if self.enable_aggregate_flows_on_vsd_managed:
+            # There is a limitation today of FIP 2 UL not working with
+            # aggregate flows; therefore, treat L3 vsd managed as L2, such
+            # that a new network will be created at which the FIP will be
+            # applied; and as such overcome the limitation
+            return network.get('is_l3')
+        else:
+            return network.get('is_l3') or network.get('vsd_l3_subnet')
 
-    @staticmethod
-    def is_l2_network(network):
-        return not NuageBaseTest.is_l3_network(network)
+    def is_l2_network(self, network):
+        return not self.is_l3_network(network)
 
     def get_network(self, network_id, client=None, **kwargs):
         """Wrapper utility that gets a test network."""
@@ -1322,33 +1336,23 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             self.test_name, server_name))
 
         # Current network (L2 or L3 pure v6)
+        ports = []
         if networks:
-            test_network = networks[0]
-            self.assertEqual(1, len(networks),
-                             'Only one network is allowed for fip topology.')
-
+            sgs = []
             if security_groups:
-                test_sgs = []
                 for sg in security_groups:
-                    test_sgs.append(sg['id'])
-                test_port = self.create_port(test_network, client,
-                                             security_groups=test_sgs,
-                                             # make sure this port does not
-                                             # become the default port
-                                             extra_dhcp_opts=[
-                                                 {'opt_name': 'router',
-                                                  'opt_value': '0'}])
-            else:
-                test_port = self.create_port(test_network, client,
-                                             extra_dhcp_opts=[
-                                                 {'opt_name': 'router',
-                                                  'opt_value': '0'}])
-        else:
-            self.assertEqual(1, len(ports),
-                             'Only one port is allowed for fip topology.')
-            test_port = ports[0]
+                    sgs.append(sg['id'])
+            for network in networks:
+                port = self.create_port(network, client,
+                                        security_groups=sgs,
+                                        # make sure this port does not
+                                        # become the default port
+                                        extra_dhcp_opts=[
+                                            {'opt_name': 'router',
+                                             'opt_value': '0'}])
+                ports.append(port)
 
-        # New network (L3)
+        # Create a jump (FIP) network (L3)
         fip_network = self.create_network(client=client)
         subnet = self.create_subnet(
             fip_network, cidr=IPNetwork("192.168.0.0/24"),
@@ -1362,7 +1366,8 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
         LOG.info('[{}] FIP topology for {} set up'.format(
             self.test_name, server_name))
-        return [fip_port, test_port]
+
+        return [fip_port] + ports
 
     def create_fip_to_server(self, server, port=None,
                              vsd_domain=None, vsd_subnet=None, client=None):

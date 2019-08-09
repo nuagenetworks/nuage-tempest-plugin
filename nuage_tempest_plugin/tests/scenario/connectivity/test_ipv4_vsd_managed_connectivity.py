@@ -12,7 +12,7 @@ from tempest.lib import decorators
 LOG = Topology.get_logger(__name__)
 
 
-class Ipv4VsdManagedConnectivityTest(NuageBaseTest):
+class Ipv4L2VsdManagedConnectivityTest(NuageBaseTest):
 
     def test_icmp_connectivity_l2_vsd_managed(self):
         # Provision VSD managed network resources
@@ -35,6 +35,14 @@ class Ipv4VsdManagedConnectivityTest(NuageBaseTest):
 
         # Test IPv4 connectivity between peer servers
         self.assert_ping(server1, server2, network)
+
+
+class Ipv4L3VsdManagedConnectivityTest(NuageBaseTest):
+
+    @staticmethod
+    def get_static_route_data(remote_cidr, local_gw, nic):
+        # no static route needed if l3domain has aggregateflows disabled on vsd
+        return ''
 
     @decorators.attr(type='smoke')
     def test_icmp_connectivity_l3_vsd_managed(self):
@@ -123,11 +131,29 @@ class Ipv4VsdManagedConnectivityTest(NuageBaseTest):
         network2['vsd_l3_domain'] = vsd_l3domain2
         network2['vsd_l3_subnet'] = vsd_subnet2
 
+        user_data1 = self.get_static_route_data(
+            subnet2_cidr, subnet1_gateway, 'eth1')
+        user_data2 = self.get_static_route_data(
+            subnet1_cidr, subnet2_gateway, 'eth1')
+
         # Launch tenant servers in OpenStack network
         server2 = self.create_tenant_server([network2],
-                                            prepare_for_connectivity=True)
+                                            prepare_for_connectivity=True,
+                                            user_data=user_data2)
         server1 = self.create_tenant_server([network1],
-                                            prepare_for_connectivity=True)
+                                            prepare_for_connectivity=True,
+                                            user_data=user_data1)
 
         # Test IPv4 connectivity between peer servers
         self.assert_ping(server1, server2, network2)
+
+
+class Ipv4L3VsdManagedConnectivityWithAggrFlowsTest(
+        Ipv4L3VsdManagedConnectivityTest):
+
+    enable_aggregate_flows_on_vsd_managed = True
+
+    @staticmethod
+    def get_static_route_data(remote_cidr, local_gw, nic):
+        return 'route add -net {} gw {} {}\n'.format(remote_cidr,
+                                                     local_gw, nic)

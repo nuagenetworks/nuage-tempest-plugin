@@ -288,7 +288,7 @@ class Ipv6OsManagedConnectivityTest(nuage_test.NuageBaseTest):
         # attach subnets to router
         router = self.create_router(
             external_network_id=CONF.network.public_network_id)
-        self.create_router_interface(router['id'], subnet['id'])
+        self.router_attach(router, subnet)
 
         # create open-ssh security group
         ssh_security_group = self.create_open_ssh_security_group()
@@ -315,7 +315,7 @@ class Ipv6OsManagedConnectivityTest(nuage_test.NuageBaseTest):
         # attach subnets to router
         router = self.create_router(
             external_network_id=CONF.network.public_network_id)
-        self.create_router_interface(router['id'], subnet['id'])
+        self.router_attach(router, subnet)
 
         # create open-ssh security group
         ssh_security_group = self.create_open_ssh_security_group()

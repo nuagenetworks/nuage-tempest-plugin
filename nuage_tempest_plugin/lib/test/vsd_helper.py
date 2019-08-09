@@ -291,7 +291,8 @@ class VsdHelper(object):
     def create_domain(self, name=None, enterprise=None, template_id=None):
         return self.create_l3domain(name, enterprise, template_id)
 
-    def create_l3domain(self, name=None, enterprise=None, template_id=None):
+    def create_l3domain(self, name=None, enterprise=None, template_id=None,
+                        **kwargs):
         if enterprise and not isinstance(enterprise,
                                          self.vspk.NUEnterprise):
             # get enterprise by _name_
@@ -306,7 +307,8 @@ class VsdHelper(object):
 
         l3domain_data = self.vspk.NUDomain(
             name=name,
-            template_id=template_id)
+            template_id=template_id,
+            **kwargs)
 
         return enterprise.create_child(l3domain_data)[0]
 
@@ -413,23 +415,28 @@ class VsdHelper(object):
         subnet_name = name or data_utils.rand_name('test-subnet')
 
         params = {}
-        params.update({'enable_dhcpv4': enable_dhcpv4})
-        params.update({'enable_dhcpv6': enable_dhcpv6})
+
+        if not enable_dhcpv4:
+            params.update({'enable_dhcpv4': False})
+        if not enable_dhcpv6:
+            params.update({'enable_dhcpv6': False})
 
         for key, value in iteritems(kwargs):
             params.update({key: value})
 
         if cidr4:
             params.update({'address': str(cidr4.ip)})
+            if enable_dhcpv4:
+                params.update({'enable_dhcpv4': True})
             if "netmask" not in kwargs:
                 params.update({'netmask': str(cidr4.netmask)})
-
             if gateway4:
                 params.update({'gateway': gateway4})
 
         if cidr6:
             params.update({'ipv6_address': str(cidr6)})
-
+            if enable_dhcpv6:
+                params.update({'enable_dhcpv6': True})
             if gateway6:
                 params.update({'ipv6_gateway': gateway6})
 

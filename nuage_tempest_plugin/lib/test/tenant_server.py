@@ -177,13 +177,14 @@ class TenantServer(object):
         if extra_nic_user_data:
             # concat both scripts
             if kwargs.get('user_data'):
-                kwargs['user_data'] = '{}\n{}'.format(
-                    extra_nic_user_data, kwargs['user_data'])
+                kwargs['user_data'] = extra_nic_user_data + kwargs['user_data']
             else:
                 kwargs['user_data'] = extra_nic_user_data
 
         # cleans and logs the user_data script
         if kwargs.get('user_data'):
+            if not kwargs['user_data'].startswith('#!'):
+                kwargs['user_data'] = '#!/bin/sh\n' + kwargs['user_data']
             LOG.debug('[user-data]\n'
                       '{}'
                       '[EOF]'.format(kwargs['user_data']))

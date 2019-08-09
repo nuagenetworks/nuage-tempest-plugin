@@ -28,21 +28,20 @@ class NuagePatToUnderlayScenarioTest(NuageBaseTest):
         router = self.create_router(
             nuage_underlay=nuage_underlay,
             external_network_id=CONF.network.public_network_id)
-        self.create_router_interface(router['id'],
-                                     subnet_id=subnet['id'])
+        self.router_attach(router, subnet)
         security_group = self.create_open_ssh_security_group()
         port = self.create_port(network,
                                 security_groups=[security_group['id']])
 
         # Launch tenant servers in OpenStack network with cloud-init script
         output_path = '/tmp/ping_result'
-        ping_script = ('#!/bin/sh\n'
-                       'ping {} -c 1 -w 3\n'
-                       'echo $? > {}'.format(self.get_local_ip(), output_path))
+        ping_script = ('ping {} -c 1 -w 3\n'
+                       'echo $? > {}\n'.format(self.get_local_ip(),
+                                               output_path))
         server = self.create_tenant_server(
             ports=[port],
             user_data=ping_script)
-        self.sleep(seconds=120,
+        self.sleep(120,
                    msg='waiting for cloud-init script to finish.')
 
         self.create_fip_to_server(server, port)

@@ -408,7 +408,7 @@
             network:
               port_profile: capabilities:[switchdev]
       tempest_test_regex: '^nuage_tempest_plugin\..*'
-      tempest_black_regex: '^(?:.*(nuage_tempest_plugin\.tests\.(scenario|api\.(upgrade|baremetal|vsd_managed)))).*'
+      tempest_black_regex: '^(?:.*(nuage_tempest_plugin\.tests\.(scenario|api\.(cli|upgrade|baremetal|vsd_managed)))).*'
 
 - job:
     name: networking-nuage-tempest-baremetal
@@ -417,7 +417,7 @@
     # This currently works from stable/pike on
     branches: ^(?!stable/(newton|ocata)).*$
     vars:
-      tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.baremetal.*'
+      tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.baremetal\..*'
 
 - job:
     name: networking-nuage-tempest-baremetal-5.4
@@ -426,7 +426,7 @@
     # This currently works from pike on
     branches: ^(5.4/(pike|queens|rocky)).*$
     vars:
-      tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.baremetal.*'
+      tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.baremetal\..*'
 
 - job:
     name: networking-nuage-tempest-scenario
@@ -435,7 +435,8 @@
     # This currently works from stable/pike on
     branches: ^(?!stable/(newton|ocata)).*$
     vars:
-      tempest_test_regex: '^nuage_tempest_plugin\.tests\.scenario.*'
+      tempest_test_regex: '^nuage_tempest_plugin\.tests\.scenario\..*'
+      tempest_black_regex: '^nuage_tempest_plugin\.tests\.scenario\.connectivity\..*\..*AggrFlowsTest\..*'
 
 - job:
     name: networking-nuage-tempest-scenario-5.4
@@ -444,7 +445,7 @@
     # This currently works from pike on
     branches: ^(5.4/(pike|queens|rocky)).*$
     vars:
-      tempest_test_regex: '^nuage_tempest_plugin\.tests\.scenario.*'
+      tempest_test_regex: '^nuage_tempest_plugin\.tests\.scenario\..*'
 
 - job:
     name: networking-nuage-tempest-cli
@@ -453,7 +454,7 @@
     # This currently works from stable/pike on
     branches: ^(?!stable/(newton|ocata)).*$
     vars:
-      tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.cli.*'
+      tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.cli\..*'
 
 - job:
     name: networking-nuage-tempest-cli-5.4
@@ -462,7 +463,7 @@
     # This currently works from pike on
     branches: ^(5.4/(pike|queens|rocky)).*$
     vars:
-      tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.cli.*'
+      tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.cli\..*'
 
 - job:
     name: networking-nuage-tempest-aggregateflows
@@ -471,7 +472,7 @@
     # This currently works from stable/pike on
     branches: ^(?!stable/(newton|ocata)).*$
     vars:
-      tempest_test_regex: '^nuage_tempest_plugin\.tests\.scenario\.connectivity\.(test_ipv4_vsd_managed_connectivity.Ipv4L3VsdManagedConnectivityWithAggrFlowsTest|test_ipv6_vsd_managed_connectivity.Ipv6L3VsdManagedConnectivityWithAggrFlowsTest).*'
+      tempest_test_regex: '^nuage_tempest_plugin\.tests\.scenario\.connectivity\..*\..*AggrFlowsTest\..*'
 
 - job:
     name: networking-nuage-tempest-scale
@@ -480,7 +481,7 @@
     # This currently works from stable/pike on
     branches: ^(?!stable/(newton|ocata)).*$
     vars:
-      tempest_test_regex: '^nuage_tempest_plugin\.tests\.scale.*'
+      tempest_test_regex: '^nuage_tempest_plugin\.tests\.scale\..*'
 
 - job:
     name: networking-nuage-tempest-scale-5.4
@@ -489,4 +490,4 @@
     # This currently works from pike on
     branches: ^(5.4/(pike|queens|rocky)).*$
     vars:
-      tempest_test_regex: '^nuage_tempest_plugin\.tests\.scale.*'
+      tempest_test_regex: '^nuage_tempest_plugin\.tests\.scale\..*'

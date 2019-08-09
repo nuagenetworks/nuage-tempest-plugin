@@ -7,9 +7,12 @@ from netaddr import IPNetwork
 from tempest.lib import decorators
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.topology import Topology
+
+CONF = Topology.get_conf()
 
 
-class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
+class Ipv6L2VsdManagedConnectivityTest(NuageBaseTest):
 
     def test_icmp_connectivity_l2_vsd_managed_dualstack(self):
         # Provision VSD managed network resources
@@ -44,6 +47,42 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
 
         # Test IPv6 connectivity between peer servers
         self.assert_ping(server1, server2, network, ip_type=6)
+
+    def test_icmp_connectivity_l2_vsd_managed_pure_v6(self):
+        # Provision VSD managed network resources
+        l2domain_template = self.vsd_create_l2domain_template(
+            ip_type="IPV6",
+            cidr6=self.cidr6,
+            gateway6=self.gateway6,
+            enable_dhcpv6=True)
+        vsd_l2domain = self.vsd_create_l2domain(template=l2domain_template)
+
+        self.vsd.define_any_to_any_acl(vsd_l2domain, allow_ipv6=True)
+
+        # Provision OpenStack network linked to VSD network resources
+        network = self.create_network()
+        self.create_l2_vsd_managed_subnet(
+            network, vsd_l2domain, ip_version=6, dhcp_managed=True)
+
+        # Launch tenant servers in OpenStack network
+        server2 = self.create_tenant_server(
+            [network],
+            prepare_for_connectivity=True)
+
+        server1 = self.create_tenant_server(
+            [network],
+            prepare_for_connectivity=True)
+
+        # Test IPv6 connectivity between peer servers
+        self.assert_ping(server1, server2, network, ip_type=6)
+
+
+class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
+
+    @staticmethod
+    def get_static_route_data(remote_cidr, local_gw, nic):
+        # no static route needed if l3domain has aggregateflows disabled on vsd
+        return ''
 
     def icmp_connectivity_l3_vsd_managed(
             self, cidr4, cidr6,
@@ -165,34 +204,6 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
             vsd_domain=vsd_domain, vsd_subnet=vsd_subnet,
             server2_pre_set_up=server)
 
-    def test_icmp_connectivity_l2_vsd_managed_pure_v6(self):
-        # Provision VSD managed network resources
-        l2domain_template = self.vsd_create_l2domain_template(
-            ip_type="IPV6",
-            cidr6=self.cidr6,
-            gateway6=self.gateway6,
-            enable_dhcpv6=True)
-        vsd_l2domain = self.vsd_create_l2domain(template=l2domain_template)
-
-        self.vsd.define_any_to_any_acl(vsd_l2domain, allow_ipv6=True)
-
-        # Provision OpenStack network linked to VSD network resources
-        network = self.create_network()
-        self.create_l2_vsd_managed_subnet(
-            network, vsd_l2domain, ip_version=6, dhcp_managed=True)
-
-        # Launch tenant servers in OpenStack network
-        server2 = self.create_tenant_server(
-            [network],
-            prepare_for_connectivity=True)
-
-        server1 = self.create_tenant_server(
-            [network],
-            prepare_for_connectivity=True)
-
-        # Test IPv6 connectivity between peer servers
-        self.assert_ping(server1, server2, network, ip_type=6)
-
     def test_icmp_connectivity_l3_vsd_managed_pure_v6(self):
         # provision nuage resource
         vsd_l3domain_template = self.vsd_create_l3domain_template()
@@ -218,14 +229,6 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
             gateway6=subnet_ipv6_2_gateway,
             enable_dhcpv6=True)
 
-        subnet_ipv4_cidr = IPNetwork("10.10.10.0/24")
-        subnet_ipv4_gateway = str(IPAddress(subnet_ipv4_cidr) + 1)
-        vsd_l3domain_subnet4 = self.create_vsd_subnet(
-            zone=vsd_zone,
-            ip_type="IPV4",
-            cidr4=subnet_ipv4_cidr,
-            gateway4=subnet_ipv4_gateway)
-
         self.vsd.define_any_to_any_acl(vsd_l3domain, allow_ipv6=True)
 
         # Provision OpenStack network linked to VSD network resources
@@ -235,35 +238,34 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
         network6_2 = self.create_network()
         self.create_l3_vsd_managed_subnet(
             network6_2, vsd_l3domain, vsd_l3domain_subnet6_2, ip_version=6)
-        network4 = self.create_network()
-        self.create_l3_vsd_managed_subnet(
-            network4, vsd_l3domain, vsd_l3domain_subnet4, ip_version=4)
+
+        jump_network = self.create_network()
+        jump_subnet = self.create_subnet(jump_network)
+        jump_router = self.create_router(
+            external_network_id=CONF.network.public_network_id)
+        self.router_attach(jump_router, jump_subnet)
 
         # create open-ssh security group
         ssh_security_group = self.create_open_ssh_security_group()
 
         # provision ports
-        portv6_1 = self.create_port(network6_1,
+        port6_1 = self.create_port(network6_1,
+                                   security_groups=[ssh_security_group['id']])
+        port6_2 = self.create_port(network6_2,
+                                   security_groups=[ssh_security_group['id']])
+        j_port_1 = self.create_port(jump_network,
                                     security_groups=[ssh_security_group['id']])
-        portv6_2 = self.create_port(network6_2,
+        j_port_2 = self.create_port(jump_network,
                                     security_groups=[ssh_security_group['id']])
-        portv4 = self.create_port(network4,
-                                  security_groups=[ssh_security_group['id']])
 
         # Launch tenant servers in OpenStack network
         server2 = self.create_tenant_server(
-            ports=[portv6_2],
-            prepare_for_connectivity=False)
+            ports=[j_port_2, port6_2],
+            prepare_for_connectivity=True)
 
         server1 = self.create_tenant_server(
-            ports=[portv4, portv6_1],
-            prepare_for_connectivity=False)
-
-        # as VSD managed, simulate a FIP to be present
-        self.create_fip_to_server(
-            server1, portv4,
-            vsd_domain=network4.get('vsd_l3_domain'),
-            vsd_subnet=network4.get('vsd_l3_subnet'))
+            ports=[j_port_1, port6_1],
+            prepare_for_connectivity=True)
 
         # Test IPv6 connectivity between peer servers
         self.assert_ping(server1, server2, network6_2, ip_type=6)
@@ -366,11 +368,18 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
         network2['vsd_l3_domain'] = vsd_l3domain2
         network2['vsd_l3_subnet'] = vsd_subnet2
 
+        user_data1 = self.get_static_route_data(
+            subnet2_cidr, subnet1_gateway, 'eth1')
+        user_data2 = self.get_static_route_data(
+            subnet1_cidr, subnet2_gateway, 'eth1')
+
         # Launch tenant servers in OpenStack network
         server2 = self.create_tenant_server([network2],
-                                            prepare_for_connectivity=True)
+                                            prepare_for_connectivity=True,
+                                            user_data=user_data2)
         server1 = self.create_tenant_server([network1],
-                                            prepare_for_connectivity=True)
+                                            prepare_for_connectivity=True,
+                                            user_data=user_data1)
 
         # Test dualstack connectivity between peer servers
         self.assert_ping(server1, server2, network2)
@@ -446,3 +455,17 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
 
         # Test IPv6 connectivity between peer servers
         self.assert_ping(server1, server2, network2, ip_type=6)
+
+
+class Ipv6L3VsdManagedConnectivityWithAggrFlowsTest(
+        Ipv6L3VsdManagedConnectivityTest):
+
+    enable_aggregate_flows_on_vsd_managed = True
+
+    @staticmethod
+    def get_static_route_data(remote_cidr, local_gw, nic):
+        return 'route add -net {} gw {} {}\n'.format(remote_cidr,
+                                                     local_gw, nic)
+
+    def test_icmp_connectivity_l3_vsd_managed_dualstack_linked_networks(self):
+        self.skipTest('Skip for aggregate flows')   # not worth it, skip
