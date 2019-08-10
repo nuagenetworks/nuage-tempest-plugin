@@ -182,18 +182,24 @@ class TenantServer(object):
             else:
                 kwargs['user_data'] = extra_nic_user_data
 
-        # cleans and logs the user_data script
+        # mark the end of cloudinit
+        end_of_cloudinit = 'touch /tmp/cloudinit_completed\n'
         if kwargs.get('user_data'):
-            if not kwargs['user_data'].startswith('#!'):
-                kwargs['user_data'] = '#!/bin/sh\n' + kwargs['user_data']
-            LOG.debug('[user-data]\n'
-                      '{}'
-                      '[EOF]'.format(kwargs['user_data']))
-            kwargs['user_data'] = b64encode(textwrap.dedent(
-                kwargs['user_data']).lstrip().encode('utf8'))
+            kwargs['user_data'] += ('\n' + end_of_cloudinit)
+        else:
+            kwargs['user_data'] = end_of_cloudinit
 
+        if not kwargs['user_data'].startswith('#!'):
+            kwargs['user_data'] = '#!/bin/sh\n' + kwargs['user_data']
+        LOG.debug('[user-data]\n'
+                  '{}'
+                  '[EOF]'.format(kwargs['user_data']))
+
+        kwargs['user_data'] = b64encode(textwrap.dedent(
+            kwargs['user_data']).lstrip().encode('utf8'))
+
+        # and boot the server
         LOG.info('[{}] Booting {}'.format(self.tag, self.name))
-
         self.openstack_data = self.parent_test.osc_create_test_server(
             self.tag, self.client, self.networks, self.ports,
             self.security_groups, wait_until, self.volume_backed,
@@ -307,17 +313,11 @@ class TenantServer(object):
     def wait_for_cloudinit_to_complete(self):
         if not self.cloudinit_complete:
             LOG.info('[{}] Waiting for cloudinit to complete'.format(self.tag))
-
             count = 0
             backoff_time = 2
 
-            # TODO(OPENSTACK-2665)
-            #   wait_for_cloudinit_to_complete is not OS independent
-            while self.send('ps -ef | '
-                            'grep /*/datasource/data/user-data | '
-                            'grep -v grep '
-                            '|| true',
-                            assert_success=False, on_failure_return=True):
+            while not self.send('[ -f /tmp/cloudinit_completed ] && echo 1 '
+                                '|| true', as_sudo=False):
                 if backoff_time < 30:
                     backoff_time *= 2
                     if backoff_time > 30:
