@@ -30,7 +30,7 @@ class FipAccessConsole(RemoteClient):
         self.tenant_server = tenant_server
         self.tag = self.tenant_server.tag
 
-    def exec_command(self, cmd, ssh_shell_prologue=None, skip_log=False):
+    def exec_command(self, cmd, ssh_shell_prologue=None):
         # Shell options below add more clearness on failures,
         # path is extended for some non-cirros guest oses (centos7)
         if ssh_shell_prologue is None:
@@ -41,25 +41,13 @@ class FipAccessConsole(RemoteClient):
             full_cmd = cmd
 
         LOG.debug('[{}] > {}'.format(self.tag, cmd))
-
-        try:
-            cmd_out = self.ssh_client.exec_command(full_cmd)
-            if cmd_out:
-                LOG.debug('[{}] < \\\n'
-                          '{}'
-                          '[EOF]'.format(self.tag, cmd_out))
-            else:
-                LOG.debug('[{}] <'.format(self.tag))
-
-        except lib_exc.SSHExecCommandFailed as e:
-            LOG.debug('[{}] < FAIL: {}'.format(self.tag, e))
-            raise
-
-        except Exception as e:
-            LOG.debug('[{}] < FAIL: {} ({})'.format(self.tag, e,
-                                                    e.__class__.__name__))
-            raise
-
+        cmd_out = self.ssh_client.exec_command(full_cmd)
+        if cmd_out:
+            LOG.debug('[{}] < \\\n'
+                      '{}'
+                      '[EOF]'.format(self.tag, cmd_out))
+        else:
+            LOG.debug('[{}] <'.format(self.tag))
         return cmd_out
 
     def send(self, cmd, timeout=CONF.validation.ssh_timeout,
@@ -74,8 +62,7 @@ class FipAccessConsole(RemoteClient):
 
         def send_cmd():
             try:
-                cmd_out = self.exec_command(cmd, ssh_shell_prologue,
-                                            skip_log=True)
+                cmd_out = self.exec_command(cmd, ssh_shell_prologue)
                 output[0] = cmd_out
                 return True
             except lib_exc.SSHExecCommandFailed as e:
@@ -148,15 +135,6 @@ class TenantServer(object):
         self.dhcp_validated = False
         self.ips_validated = False
         self.prepare_for_connectivity_complete = False
-
-        if self.networks:
-            LOG.info('[{}] TenantServer created with networks={}'.format(
-                self.tag,
-                ','.join(network['id'] for network in self.networks)))
-        else:
-            LOG.info('[{}] TenantServer created with ports={}'.format(
-                self.tag,
-                ','.join(port['id'] for port in self.ports)))
 
     def get_display_name(self, shorten_to_x_chars=32,
                          pre_fill_with_spaces=True):
@@ -246,8 +224,6 @@ class TenantServer(object):
         if not self.server_details or force:
             self.server_details = \
                 self.admin_client.show_server(self.id)['server']
-            LOG.info('[{}] server details: {}'.format(
-                self.tag, self.server_details))
         return self.server_details
 
     def get_server_networks(self):
@@ -531,10 +507,10 @@ class TenantServer(object):
 
             attempt = 1
             while (attempt <= 2 and
-                    self.send('{} addr add {}/{} dev {}'.format(
-                        ip_v, ip, mask_bits, device),
-                    one_off_attempt=True) is None or
-                    # validate within the loop
+                    self.send(
+                        '{} addr add {}/{} dev {}'.format(
+                            ip_v, ip, mask_bits, device),
+                        one_off_attempt=True) is None or
                     not self.is_ip_configured(ip)):
                 self.send('{} addr del {}/{} dev {} || true'.format(
                     ip_v, ip, mask_bits, device))

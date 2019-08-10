@@ -447,7 +447,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         if (cls.is_dhcp_agent_present() and dhcp_enabled and
                 not network.get('router:external')):
             current_time = time.time()
-            LOG.info('[{}] waiting for dhcp port resolution'.format(
+            LOG.debug('[{}] Waiting for DHCP port resolution'.format(
                 cls.cls_name))
             dhcp_subnets = []
             while subnet['id'] not in dhcp_subnets:
@@ -464,7 +464,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                     continue
                 dhcp_port = dhcp_ports[0]
                 dhcp_subnets = [x['subnet_id'] for x in dhcp_port['fixed_ips']]
-            LOG.info('[{}] DHCP port resolved'.format(cls.cls_name))
+            LOG.debug('[{}] DHCP port resolved'.format(cls.cls_name))
 
         assert subnet
         if cleanup:
