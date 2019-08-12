@@ -374,3 +374,75 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
 
         # Test dualstack connectivity between peer servers
         self.assert_ping(server1, server2, network2)
+
+    def test_icmp_connectivity_l3_vsd_managed_link_shared_subnet_pure_v6(self):
+        # Provision shared v6 subnet in shared infrastructure
+        shared_vsd_l3domain_template = self.vsd_create_l3domain_template(
+            enterprise=self.shared_infrastructure)
+        shared_vsd_l3domain = self.vsd_create_l3domain(
+            enterprise=self.shared_infrastructure,
+            template_id=shared_vsd_l3domain_template.id)
+        vsd_zone = self.vsd_create_zone(domain=shared_vsd_l3domain)
+        subnet1_cidr = IPNetwork('cafe:babe::/64')
+        subnet1_gateway = str(IPAddress(subnet1_cidr) + 1)
+        subnet2_cidr = IPNetwork('cafe:baba::/64')
+        subnet2_gateway = str(IPAddress(subnet2_cidr) + 1)
+        vsd_shared_subnet1 = self.create_vsd_subnet(
+            ip_type='IPV6',
+            zone=vsd_zone,
+            cidr6=subnet1_cidr, gateway6=subnet1_gateway,
+            resource_type='PUBLIC',
+            enable_dhcpv6=True)
+        vsd_shared_subnet2 = self.create_vsd_subnet(
+            ip_type='IPV6',
+            zone=vsd_zone,
+            cidr6=subnet2_cidr, gateway6=subnet2_gateway,
+            resource_type='PUBLIC',
+            enable_dhcpv6=True)
+        self.vsd.define_any_to_any_acl(shared_vsd_l3domain, allow_ipv6=True)
+
+        # Provision vsd managed subnets linking to shared subnet
+        vsd_l3domain_template = self.vsd_create_l3domain_template()
+        vsd_l3domain1 = self.vsd_create_l3domain(
+            template_id=vsd_l3domain_template.id)
+        vsd_shared_zone1 = self.vsd_create_zone(domain=vsd_l3domain1,
+                                                public_zone=True)
+        vsd_subnet1 = self.create_vsd_subnet(
+            zone=vsd_shared_zone1,
+            associated_shared_network_resource_id=vsd_shared_subnet1.id)
+        vsd_l3domain2 = self.vsd_create_l3domain(
+            template_id=vsd_l3domain_template.id)
+        vsd_shared_zone2 = self.vsd_create_zone(domain=vsd_l3domain2,
+                                                public_zone=True)
+        vsd_subnet2 = self.create_vsd_subnet(
+            zone=vsd_shared_zone2,
+            associated_shared_network_resource_id=vsd_shared_subnet2.id)
+
+        self.vsd.define_any_to_any_acl(vsd_l3domain1, allow_ipv6=True)
+        self.vsd.define_any_to_any_acl(vsd_l3domain2, allow_ipv6=True)
+
+        # Provision OpenStack network linked to VSD network resources
+        network1 = self.create_network()
+        network2 = self.create_network()
+        self.create_subnet(
+            network1,
+            cidr=subnet1_cidr, mask_bits=64, gateway=subnet1_gateway,
+            nuagenet=vsd_subnet1.id, ip_version=6)
+        self.create_subnet(
+            network2,
+            cidr=subnet2_cidr, mask_bits=64, gateway=subnet2_gateway,
+            nuagenet=vsd_subnet2.id, ip_version=6)
+
+        network1['vsd_l3_domain'] = vsd_l3domain1
+        network1['vsd_l3_subnet'] = vsd_subnet1
+        network2['vsd_l3_domain'] = vsd_l3domain2
+        network2['vsd_l3_subnet'] = vsd_subnet2
+
+        # Launch tenant servers in OpenStack network
+        server2 = self.create_tenant_server([network2],
+                                            prepare_for_connectivity=True)
+        server1 = self.create_tenant_server([network1],
+                                            prepare_for_connectivity=True)
+
+        # Test IPv6 connectivity between peer servers
+        self.assert_ping(server1, server2, network2, ip_type=6)
