@@ -268,10 +268,12 @@ class TestNuageL2BridgeSRIOV(BaseNuageL2Bridge,
                                  "Port should be part of exactly 1 "
                                  "policygroup.")
                 ingress = vport_2.ingress_acl_entry_templates.get(
-                    filter=self.vsd.get_external_id_filter(bridge['id'])
+                    filter=self.vsd.get_external_id_filter(
+                        constants.NUAGE_PLCY_GRP_ALLOW_ALL)
                 )
                 egress = vport_2.egress_acl_entry_templates.get(
-                    filter=self.vsd.get_external_id_filter(bridge['id'])
+                    filter=self.vsd.get_external_id_filter(
+                        constants.NUAGE_PLCY_GRP_ALLOW_ALL)
                 )
                 self.assertEqual(2, len(ingress),
                                  "Port should use exactly 2 "

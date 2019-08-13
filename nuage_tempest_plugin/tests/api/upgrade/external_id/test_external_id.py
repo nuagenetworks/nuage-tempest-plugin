@@ -19,6 +19,7 @@ import testtools
 from .external_id import ExternalId
 
 from nuage_tempest_plugin.lib.release import Release
+from nuage_tempest_plugin.lib.utils import constants as n_constants
 
 
 class ExternalIdTest(tempest.test.BaseTestCase):
@@ -45,12 +46,11 @@ class ExternalIdTest(tempest.test.BaseTestCase):
         self.assertEqual(external_id.uuid, "")
 
     def test_external_id_format_default_security_policy_group(self):
-        external_id = ExternalId(
-            "PG_FOR_LESS_SECURITY_9705383f-3b49-4eb3-9c3e-994bdabbf48e_"
-            "VM@1b501982-2da1-48b9-931b-af49b6ee065f")
+        external_id = ExternalId(n_constants.NUAGE_PLCY_GRP_ALLOW_ALL
+                                 + '@1b501982-2da1-48b9-931b-af49b6ee065f')
         self.assertEqual(
             external_id.uuid,
-            "PG_FOR_LESS_SECURITY_9705383f-3b49-4eb3-9c3e-994bdabbf48e_VM")
+            n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
 
 
 class ReleaseTest(testtools.TestCase):

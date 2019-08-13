@@ -93,7 +93,7 @@ class L3Mixin(base.BaseMixin):
                 raise
 
     def add_router_interface(self, router_id, subnet_id=None, port_id=None,
-                             as_admin=False):
+                             as_admin=False, cleanup=True):
         if subnet_id and port_id:
             raise Exception("subnet_id and port_id are mutually exclusive.")
         if subnet_id is None and port_id is None:
@@ -105,9 +105,10 @@ class L3Mixin(base.BaseMixin):
         else:
             interface = client.add_router_interface(router_id,
                                                     port_id=port_id)
-        self.addCleanup(self.remove_router_interface,
-                        router_id, subnet_id=subnet_id, port_id=port_id,
-                        ignore_not_found=True, as_admin=as_admin)
+        if cleanup:
+            self.addCleanup(self.remove_router_interface,
+                            router_id, subnet_id=subnet_id, port_id=port_id,
+                            ignore_not_found=True, as_admin=as_admin)
         return interface
 
     def remove_router_interface(self, router_id, subnet_id=None, port_id=None,

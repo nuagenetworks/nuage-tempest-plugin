@@ -12,6 +12,9 @@ from tempest.test import decorators
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.test.vsd_helper import VsdHelper
 from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import constants as n_constants
+from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
+    import ExternalId
 
 CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
@@ -78,7 +81,8 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
                                          port_name='port-1',
                                          l2domain_name='l2domain-1',
                                          netpart=None,
-                                         allowed_address_pairs=None):
+                                         allowed_address_pairs=None,
+                                         cidr=None):
         # Method to create ntw, port and l2domain
         if netpart is None:
             netpart = self.def_net_partition
@@ -92,7 +96,7 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
         network = self.networks_client.create_network(**kwargs)['network']
         self.addCleanup(self.networks_client.delete_network, network['id'])
         l2domain = self._create_subnet(network, name=l2domain_name,
-                                       net_partition=netpart)
+                                       net_partition=netpart, cidr=cidr)
         self.addCleanup(self.subnets_client.delete_subnet, l2domain['id'])
         kwargs = {'name': port_name, 'network_id': network['id']}
         if allowed_address_pairs:
@@ -351,21 +355,20 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
         self.assertIsNotNone(vsd_port)
         return vsd_port
 
-    def _check_pg_for_less_security_set(self, vsd_domain, vsd_port):
+    def _check_pg_for_no_security_set(self, vsd_domain, vsd_port):
         vsd_port_pg = vsd_port.policy_groups.get_first()
-        vsd_l3dom_pgs = vsd_domain.policy_groups.get()
-        pg_cnt = len(vsd_l3dom_pgs)
-        if self.is_dhcp_agent_present():
-            self.assertTrue(1 <= pg_cnt <= 2)
-        else:
-            self.assertEqual(1, pg_cnt)
-        vsd_l3dom_pg = None
-        for l3dom_pg in vsd_l3dom_pgs:
-            self.assertEqual(l3dom_pg.name[:21], 'PG_FOR_LESS_SECURITY_')
-            if vsd_domain.id in l3dom_pg.external_id:
-                vsd_l3dom_pg = l3dom_pg
-        self.assertIsNotNone(vsd_l3dom_pg)
-        self.assertEqual(vsd_port_pg.name, vsd_l3dom_pg.name)
+        vsd_dom_pgs = vsd_domain.policy_groups.get()
+        pg_cnt = len(vsd_dom_pgs)
+        self.assertEqual(1, pg_cnt)
+        vsd_dom_pg = vsd_dom_pgs[0]
+        self.assertEqual(vsd_port_pg.id, vsd_dom_pg.id)
+        self.assertEqual(vsd_dom_pg.name,
+                         n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
+        self.assertEqual(vsd_dom_pg.description,
+                         n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
+        self.assertEqual(vsd_dom_pg.external_id,
+                         ExternalId(n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
+                         .at_cms_id())
         # Check the two ingress and egress rules
         self._verify_ingress_egress_rules(vsd_port_pg)
 
@@ -408,7 +411,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vsd_l2domain, vsd_port = self._get_vsd_l2dom_port(l2domain, port)
         self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
         self.assertEqual(vsd_port.name, port['id'])
-        self._check_pg_for_less_security_set(vsd_l2domain, vsd_port)
+        self._check_pg_for_no_security_set(vsd_l2domain, vsd_port)
 
     @decorators.attr(type='smoke')
     def test_create_delete_sec_ntw_port_l2domain(self):
@@ -438,7 +441,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         self.assertEqual(vsd_port.address_spoofing, 'INHERITED')
         self.assertEqual(vsd_port.name, port['id'])
 
-    @decorators.attr(type='smoke')
+    # @decorators.attr(type='smoke')
     def test_create_delete_sec_disabled_ntw_l2domain(self):
         # L2domain testcase to test network and port creation with
         # port-security-enabled set to False at network level only
@@ -451,7 +454,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vsd_l2domain, vsd_port = self._get_vsd_l2dom_port(l2domain, port)
         self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
         self.assertEqual(vsd_port.name, port['id'])
-        self._check_pg_for_less_security_set(vsd_l2domain, vsd_port)
+        self._check_pg_for_no_security_set(vsd_l2domain, vsd_port)
 
     def test_create_delete_sec_disabled_port_l2domain(self):
         # L2domain testcase to test network and port creation with
@@ -465,7 +468,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vsd_l2domain, vsd_port = self._get_vsd_l2dom_port(l2domain, port)
         self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
         self.assertEqual(vsd_port.name, port['id'])
-        self._check_pg_for_less_security_set(vsd_l2domain, vsd_port)
+        self._check_pg_for_no_security_set(vsd_l2domain, vsd_port)
 
     def test_create_delete_sec_disabled_ntw_port_l3domain(self):
         # L3domain testcase to test the network and port creation with
@@ -482,7 +485,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
             router, subnet, port)
         self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
         self.assertEqual(vsd_port.name, port['id'])
-        self._check_pg_for_less_security_set(vsd_l3dom, vsd_port)
+        self._check_pg_for_no_security_set(vsd_l3dom, vsd_port)
 
     def test_create_delete_sec_disabled_ntw_l3domain(self):
         # L3domain testcase to test the network and port creation with
@@ -499,7 +502,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
             router, subnet, port)
         self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
         self.assertEqual(vsd_port.name, port['id'])
-        self._check_pg_for_less_security_set(vsd_l3dom, vsd_port)
+        self._check_pg_for_no_security_set(vsd_l3dom, vsd_port)
 
     def test_create_delete_sec_disabled_port_l3domain(self):
         # L3domain testcase to test the network and port creation with
@@ -516,9 +519,9 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
             router, subnet, port)
         self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
         self.assertEqual(vsd_port.name, port['id'])
-        self._check_pg_for_less_security_set(vsd_l3dom, vsd_port)
+        self._check_pg_for_no_security_set(vsd_l3dom, vsd_port)
 
-    @decorators.attr(type='smoke')
+    # @decorators.attr(type='smoke')
     def test_update_ntw_from_sec_disabled_to_enabled_l2domain(self):
         # L2domain testcase for updating the port-security-enabled flag
         # from False to True. Ports are created at both the states to check
@@ -532,7 +535,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vsd_l2domain, vsd_port = self._get_vsd_l2dom_port(l2domain, port)
         self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
         self.assertEqual(vsd_port.name, port['id'])
-        self._check_pg_for_less_security_set(vsd_l2domain, vsd_port)
+        self._check_pg_for_no_security_set(vsd_l2domain, vsd_port)
 
         # Update the network and create a new port
         self.networks_client.update_network(network['id'],
@@ -558,7 +561,8 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         self.assertEqual(vsd_port_1.address_spoofing, 'INHERITED')
         self.assertEqual(vsd_port_1.name, port_1['id'])
         port_1_pg = vsd_port_1.policy_groups.get_first()
-        self.assertNotEqual(port_1_pg.name[:21], 'PG_FOR_LESS_SECURITY_')
+        self.assertNotEqual(port_1_pg.name,
+                            n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
 
         # Update the network and create a new port
         self.networks_client.update_network(
@@ -574,9 +578,9 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         self.assertEqual(vsd_port_1.name, port_1['id'])
         self.assertEqual(vsd_port_2.name, port_2['id'])
         port_2_pg = vsd_port_2.policy_groups.get_first()
-        self.assertEqual(port_2_pg.name[:21], 'PG_FOR_LESS_SECURITY_')
+        self.assertEqual(port_2_pg.name, n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
 
-    @decorators.attr(type='smoke')
+    # @decorators.attr(type='smoke')
     def test_update_port_from_sec_disabled_to_enabled_l2domain(self):
         # L2domain testcase for updating the port-security-enabled flag
         # from False to True at port level. Network level flag set to
@@ -591,7 +595,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vsd_l2domain, vsd_port = self._get_vsd_l2dom_port(l2domain, port)
         self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
         self.assertEqual(vsd_port.name, port['id'])
-        self._check_pg_for_less_security_set(vsd_l2domain, vsd_port)
+        self._check_pg_for_no_security_set(vsd_l2domain, vsd_port)
 
         # Update the port
         body = self.ports_client.update_port(port['id'],
@@ -604,7 +608,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         port_pg = vsd_port.policy_groups.get_first()
         self.assertIsNone(port_pg)
 
-    @decorators.attr(type='smoke')
+    # @decorators.attr(type='smoke')
     def test_update_port_from_sec_enabled_to_disabled_l2domain(self):
         # L2domain testcase for updating the port-security-enabled flag
         # from True to False at port level. Network level flag set to
@@ -627,7 +631,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         vsd_l2domain, vsd_port = self._get_vsd_l2dom_port(l2domain, port)
         self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
         self.assertEqual(vsd_port.name, port['id'])
-        self._check_pg_for_less_security_set(vsd_l2domain, vsd_port)
+        self._check_pg_for_no_security_set(vsd_l2domain, vsd_port)
 
     def test_update_ntw_from_sec_disabled_to_enabled_l3domain(self):
         # L3domain testcase for updating the port-security-enabled flag
@@ -646,7 +650,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
             router, subnet, port_1)
         self.assertEqual(vsd_port_1.address_spoofing, 'ENABLED')
         self.assertEqual(vsd_port_1.name, port_1['id'])
-        self._check_pg_for_less_security_set(vsd_l3dom, vsd_port_1)
+        self._check_pg_for_no_security_set(vsd_l3dom, vsd_port_1)
 
         # Update the network and create a new port
         self.networks_client.update_network(network['id'],
@@ -665,8 +669,9 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
 
         port_1_pg = vsd_port_1.policy_groups.get_first()
         port_2_pg = vsd_port_2.policy_groups.get_first()
-        self.assertEqual(port_1_pg.name[:21], 'PG_FOR_LESS_SECURITY_')
-        self.assertNotEqual(port_2_pg.name[:21], 'PG_FOR_LESS_SECURITY_')
+        self.assertEqual(port_1_pg.name, n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
+        self.assertNotEqual(port_2_pg.name,
+                            n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
 
     def test_update_ntw_from_sec_enabled_to_disabled_l3domain(self):
         # L3domain testcase for updating the port-security-enabled flag
@@ -686,7 +691,8 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         self.assertEqual(vsd_port_1.address_spoofing, 'INHERITED')
         self.assertEqual(vsd_port_1.name, port_1['id'])
         port_1_pg = vsd_port_1.policy_groups.get_first()
-        self.assertNotEqual(port_1_pg.name[:21], 'PG_FOR_LESS_SECURITY_')
+        self.assertNotEqual(port_1_pg.name,
+                            n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
 
         # Update the network and create a new port
         self.networks_client.update_network(network['id'],
@@ -704,9 +710,10 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         self.assertEqual(vsd_port_2.name, port_2['id'])
 
         port_2_pg = vsd_port_2.policy_groups.get_first()
-        self.assertEqual(port_2_pg.name[:21], 'PG_FOR_LESS_SECURITY_')
+        self.assertEqual(port_2_pg.name,
+                         n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
 
-    @decorators.attr(type='smoke')
+    # @decorators.attr(type='smoke')
     def test_update_port_from_sec_disabled_to_enabled_l3domain(self):
         # L3domain testcase for updating the port-security-enabled flag
         # from False to True at port level. Network level flag set to
@@ -723,7 +730,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
             router, subnet, port)
         self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
         self.assertEqual(vsd_port.name, port['id'])
-        self._check_pg_for_less_security_set(vsd_l3dom, vsd_port)
+        self._check_pg_for_no_security_set(vsd_l3dom, vsd_port)
 
         # Update the port
         body = self.ports_client.update_port(port['id'],
@@ -737,7 +744,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         port_pg = vsd_port.policy_groups.get_first()
         self.assertIsNone(port_pg)
 
-    @decorators.attr(type='smoke')
+    # @decorators.attr(type='smoke')
     def test_update_port_from_sec_enabled_to_disabled_l3domain(self):
         # L3domain testcase for updating the port-security-enabled flag
         # from True to False at port level. Network level flag set to
@@ -764,7 +771,42 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
             router, subnet, port)
         self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
         self.assertEqual(vsd_port.name, port['id'])
-        self._check_pg_for_less_security_set(vsd_l3dom, vsd_port)
+        self._check_pg_for_no_security_set(vsd_l3dom, vsd_port)
+
+    # @decorators.attr(type='smoke')
+    def test_port_only_one_pg_allow_all_in_one_domain(self):
+        network1, l2domain1, port1 = self._create_network_port_l2resources(
+            ntw_security=False, port_security=False,
+            l2domain_name='l2dom15-1',
+            port_name='port15-1', cidr='20.20.0.0/24')
+        vsd_l2domain1, vsd_port1 = self._get_vsd_l2dom_port(l2domain1, port1)
+        self.assertEqual(vsd_port1.name, port1['id'])
+        self._check_pg_for_no_security_set(vsd_l2domain1, vsd_port1)
+        router = self.create_router(net_partition=self.def_net_partition)
+        self.create_router_interface(router['id'], l2domain1['id'])
+        # Create the second port on L3
+        create_data = {
+            'network_id': network1['id'],
+            'port_security_enabled': False
+        }
+        port2 = self.ports_client.create_port(**create_data)['port']
+        self.addCleanup(self.ports_client.delete_port, port2['id'])
+        # Check the two ports have the same PG
+        vsd_l3dom, vsd_sub1, vsd_port1 = self._get_vsd_router_subnet_port(
+            router, l2domain1, port2)
+        self._check_pg_for_no_security_set(vsd_l3dom, vsd_port1)
+        vsd_l3dom, vsd_sub1, vsd_port2 = self._get_vsd_router_subnet_port(
+            router, l2domain1, port2)
+        self._check_pg_for_no_security_set(vsd_l3dom, vsd_port2)
+        # Router detach, check the two ports have the same PG
+        self.routers_client.remove_router_interface(router['id'],
+                                                    subnet_id=l2domain1['id'])
+        vsd_l2domain1, vsd_port1 = self._get_vsd_l2dom_port(
+            l2domain1, port1)
+        self._check_pg_for_no_security_set(vsd_l2domain1, vsd_port1)
+        vsd_l2domain1, vsd_port2 = self._get_vsd_l2dom_port(
+            l2domain1, port2)
+        self._check_pg_for_no_security_set(vsd_l2domain1, vsd_port2)
 
     def test_show_sec_disabled_ntw(self):
         pass
