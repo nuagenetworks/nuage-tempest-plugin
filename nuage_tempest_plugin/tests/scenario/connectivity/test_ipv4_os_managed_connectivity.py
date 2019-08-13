@@ -407,20 +407,16 @@ class Ipv4OsManagedConnectivityTest(NuageBaseTest):
         # vm_actor is not supposed to ping vm_hollywood in any case
         self.assert_ping(vm_actor, vm_hollywood, network, should_pass=False)
 
-    @decorators.attr(type='smoke')
     def test_icmp_connectivity_stateful_acl_os_managed_l2_v4(self):
         self._test_icmp_connectivity_stateful_acl_os_managed_v4(is_l3=False)
 
-    @decorators.attr(type='smoke')
     def test_icmp_connectivity_stateless_acl_os_managed_l2_v4_neg(self):
         self._test_icmp_connectivity_stateful_acl_os_managed_v4(
             is_l3=False, stateful=False)
 
-    @decorators.attr(type='smoke')
     def test_icmp_connectivity_stateful_acl_os_managed_l3_v4(self):
         self._test_icmp_connectivity_stateful_acl_os_managed_v4(is_l3=True)
 
-    @decorators.attr(type='smoke')
     def test_icmp_connectivity_stateless_acl_os_managed_l3_v4_neg(self):
         self._test_icmp_connectivity_stateful_acl_os_managed_v4(
             is_l3=True, stateful=False)

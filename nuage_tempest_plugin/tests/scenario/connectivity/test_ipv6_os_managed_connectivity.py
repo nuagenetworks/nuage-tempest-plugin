@@ -419,20 +419,16 @@ class Ipv6OsManagedConnectivityTest(nuage_test.NuageBaseTest):
         self.assert_ping(vm_actor, vm_hollywood, network, ip_type=6,
                          should_pass=False)
 
-    @decorators.attr(type='smoke')
     def test_icmp_connectivity_stateful_acl_os_managed_l2_v6(self):
         self._test_icmp_connectivity_stateful_acl_os_managed_v6(is_l3=False)
 
-    @decorators.attr(type='smoke')
     def test_icmp_connectivity_stateless_acl_os_managed_l2_v6_neg(self):
         self._test_icmp_connectivity_stateful_acl_os_managed_v6(
             is_l3=False, stateful=False)
 
-    @decorators.attr(type='smoke')
     def test_icmp_connectivity_stateful_acl_os_managed_l3_v6(self):
         self._test_icmp_connectivity_stateful_acl_os_managed_v6(is_l3=True)
 
-    @decorators.attr(type='smoke')
     def test_icmp_connectivity_stateless_acl_os_managed_l3_v6_neg(self):
         self._test_icmp_connectivity_stateful_acl_os_managed_v6(
             is_l3=True, stateful=False)
