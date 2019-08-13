@@ -1611,6 +1611,23 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 else:
                     self.assertIsNone(vm_interface['IPAddress'])
 
+    def create_security_group(self, cleanup=True, **kwargs):
+        client = self.security_groups_client
+        sg = {'name': data_utils.rand_name('security-group')}
+        sg.update(kwargs)
+        sg = client.create_security_group(**sg)['security_group']
+        if cleanup:
+            self.addCleanup(self.delete_security_group, sg['id'])
+        return sg
+
+    def delete_security_group(self, sg_id, ignore_not_found=True):
+        client = self.security_groups_client
+        try:
+            client.delete_security_group(sg_id)
+        except lib_exc.NotFound:
+            if not ignore_not_found:
+                raise
+
 
 class NuageBaseOrchestrationTest(NuageBaseTest):
     """Base test case class for all Nuage Orchestration API tests."""
