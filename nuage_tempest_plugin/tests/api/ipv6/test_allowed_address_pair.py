@@ -233,7 +233,7 @@ class BaseAllowedAddressPair(NuageBaseTest):
             if port_config[attr]:
                 expected_address_spoofing = constants.ENABLED
             else:
-                expected_address_spoofing = constants.INHERITED
+                expected_address_spoofing = constants.DISABLED
             self.assertThat(
                 nuage_vport,
                 ContainsDict({'addressSpoofing': Equals(

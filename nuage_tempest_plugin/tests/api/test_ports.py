@@ -433,7 +433,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             vsd_vport_parent['ID'],
             filters='externalID',
             filter_value=port['id'])
-        self.assertEqual(constants.INHERITED,
+        self.assertEqual(constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
 
     @decorators.attr(type='smoke')
@@ -463,7 +463,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             vsd_vport_parent['ID'],
             filters='externalID',
             filter_value=port['id'])
-        self.assertEqual(constants.INHERITED,
+        self.assertEqual(constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
 
         # update within subnet should succeed
@@ -485,7 +485,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             vsd_vport_parent['ID'],
             filters='externalID',
             filter_value=port['id'])
-        self.assertEqual(constants.INHERITED,
+        self.assertEqual(constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
 
     @decorators.attr(type='smoke')
@@ -527,7 +527,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             vsd_vport_parent['ID'],
             filters='externalID',
             filter_value=port['id'])
-        self.assertEqual(constants.INHERITED,
+        self.assertEqual(constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
@@ -641,7 +641,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             vsd_vport_parent['ID'],
             filters='externalID',
             filter_value=port['id'])
-        self.assertEqual(constants.INHERITED,
+        self.assertEqual(constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
 
         # update within subnet should succeed
@@ -717,7 +717,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             vsd_vport_parent['ID'],
             filters='externalID',
             filter_value=port['id'])
-        self.assertEqual(constants.INHERITED,
+        self.assertEqual(constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
 
         # update within subnet should succeed
@@ -739,7 +739,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             vsd_vport_parent['ID'],
             filters='externalID',
             filter_value=port['id'])
-        self.assertEqual(constants.INHERITED,
+        self.assertEqual(constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
@@ -892,7 +892,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             vsd_vport_parent['ID'],
             filters='externalID',
             filter_value=port['id'])
-        self.assertEqual(constants.INHERITED,
+        self.assertEqual(constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
 
         # update within subnet should succeed
@@ -963,7 +963,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             vsd_vport_parent['ID'],
             filters='externalID',
             filter_value=port['id'])
-        self.assertEqual(constants.INHERITED,
+        self.assertEqual(constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
@@ -1067,7 +1067,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             vsd_vport_parent['ID'],
             filters='externalID',
             filter_value=port['id'])
-        self.assertEqual(constants.INHERITED,
+        self.assertEqual(constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
 
         # update within subnet should succeed
@@ -1092,7 +1092,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             vsd_vport_parent['ID'],
             filters='externalID',
             filter_value=port['id'])
-        self.assertEqual(constants.INHERITED,
+        self.assertEqual(constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
@@ -1147,7 +1147,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             vsd_vport_parent['ID'],
             filters='externalID',
             filter_value=port['id'])
-        self.assertEqual(constants.INHERITED,
+        self.assertEqual(constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
@@ -1188,7 +1188,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             vsd_vport_parent['ID'],
             filters='externalID',
             filter_value=port['id'])
-        self.assertEqual(constants.INHERITED,
+        self.assertEqual(constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
@@ -1245,7 +1245,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             vsd_vport_parent['ID'],
             filters='externalID',
             filter_value=port['id'])
-        self.assertEqual(constants.INHERITED,
+        self.assertEqual(constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
@@ -1286,7 +1286,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             vsd_vport_parent['ID'],
             filters='externalID',
             filter_value=port['id'])
-        self.assertEqual(constants.INHERITED,
+        self.assertEqual(constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
@@ -1344,7 +1344,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             vsd_vport_parent['ID'],
             filters='externalID',
             filter_value=port['id'])
-        self.assertEqual(constants.INHERITED,
+        self.assertEqual(constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
@@ -1401,7 +1401,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                 vsd_vport_parent['ID'],
                 filters='externalID',
                 filter_value=port['id'])
-            self.assertEqual(constants.INHERITED,
+            self.assertEqual(constants.DISABLED,
                              nuage_vport[0]['addressSpoofing'])
             nuage_vport_vips = self.vsd_client.get_virtual_ip(
                 constants.VPORT,
@@ -1515,7 +1515,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             vsd_vport_parent['ID'],
             filters='externalID',
             filter_value=port['id'])
-        self.assertEqual(constants.INHERITED,
+        self.assertEqual(constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
@@ -1635,7 +1635,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             vsd_vport_parent['ID'],
             filters='externalID',
             filter_value=port['id'])
-        self.assertEqual(constants.INHERITED,
+        self.assertEqual(constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
 
     @decorators.attr(type='smoke')
@@ -1673,7 +1673,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             vsd_vport_parent['ID'],
             filters='externalID',
             filter_value=port['id'])
-        self.assertEqual(constants.INHERITED,
+        self.assertEqual(constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
 
         # update within subnet should succeed
@@ -1698,7 +1698,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             vsd_vport_parent['ID'],
             filters='externalID',
             filter_value=port['id'])
-        self.assertEqual(constants.INHERITED,
+        self.assertEqual(constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         valid_vips = ['10.0.0.4', allowed_address_pairs[0]['ip_address']]
         nuage_vport_vips = self.vsd_client.get_virtual_ip(

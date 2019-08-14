@@ -149,7 +149,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
             nuage_subnet[0]['ID'],
             filters='externalID',
             filter_value=port_ext_id)
-        self.assertEqual(n_constants.INHERITED,
+        self.assertEqual(n_constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
 
         # Update fixed ip
@@ -326,7 +326,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
             nuage_subnet[0]['ID'],
             filters='externalID',
             filter_value=port_ext_id)
-        self.assertEqual(n_constants.INHERITED,
+        self.assertEqual(n_constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vip = self.nuage_client.get_virtual_ip(
             n_constants.VPORT,
@@ -383,7 +383,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
             nuage_subnet[0]['ID'],
             filters='externalID',
             filter_value=port_ext_id)
-        self.assertEqual(n_constants.INHERITED,
+        self.assertEqual(n_constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vip = self.nuage_client.get_virtual_ip(
             n_constants.VPORT,
@@ -427,7 +427,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
             nuage_subnet[0]['ID'],
             filters='externalID',
             filter_value=port_ext_id)
-        self.assertEqual(n_constants.INHERITED,
+        self.assertEqual(n_constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vip = self.nuage_client.get_virtual_ip(
             n_constants.VPORT,
@@ -551,7 +551,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
             nuage_subnet[0]['ID'],
             filters='externalID',
             filter_value=port_ext_id)
-        self.assertEqual(n_constants.INHERITED,
+        self.assertEqual(n_constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vip = self.nuage_client.get_virtual_ip(
             n_constants.VPORT,
@@ -582,7 +582,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
             nuage_subnet[0]['ID'],
             filters='externalID',
             filter_value=port_ext_id)
-        self.assertEqual(n_constants.INHERITED,
+        self.assertEqual(n_constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vip = self.nuage_client.get_virtual_ip(
             n_constants.VPORT,
@@ -658,7 +658,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
             nuage_subnet[0]['ID'],
             filters='externalID',
             filter_value=port_ext_id)
-        self.assertEqual(n_constants.INHERITED,
+        self.assertEqual(n_constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vip = self.nuage_client.get_virtual_ip(
             n_constants.VPORT,
@@ -711,7 +711,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
             nuage_subnet[0]['ID'],
             filters='externalID',
             filter_value=port_ext_id)
-        self.assertEqual(n_constants.INHERITED,
+        self.assertEqual(n_constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vip = self.nuage_client.get_virtual_ip(
             n_constants.VPORT,
@@ -844,7 +844,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
             nuage_subnet[0]['ID'],
             filters='externalID',
             filter_value=port_ext_id)
-        self.assertEqual(n_constants.INHERITED,
+        self.assertEqual(n_constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vip = self.nuage_client.get_virtual_ip(
             n_constants.VPORT,
