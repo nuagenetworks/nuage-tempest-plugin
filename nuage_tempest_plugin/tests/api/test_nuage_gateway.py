@@ -574,7 +574,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
             assert False, "Host Vport not found"
         self.verify_vport_properties(gw_vport[0], vport, self.network['id'])
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_default_security_group_host_port(self):
         post_body = {"network_id": self.network['id'],
                      "device_owner": 'nuage:vip'}
@@ -643,7 +643,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         if vport_tp_pg_mapping is False:
             assert False, "Host Vport not found in default PG"
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_default_security_group_bridge_port(self):
         kwargs = {
             'gatewayvlan': self.gatewayvlans[4][0]['ID'],
@@ -809,7 +809,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         if vport_tp_pg_mapping is False:
             assert False, "Bridge Vport not found in default PG"
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_default_security_group_host_port_nondef_netpart(self):
         post_body = {"network_id": self.nondef_network['id'],
                      "device_owner": 'nuage:vip'}
@@ -880,7 +880,7 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         if vport_tp_pg_mapping is False:
             assert False, "Host Vport not found in default PG"
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_default_security_group_bridge_port_nondef_netpart(self):
         kwargs = {
             'gatewayvlan': self.gatewayvlans[6][0]['ID'],
