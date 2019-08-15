@@ -59,6 +59,17 @@
 
 
 - job:
+    name: tempest-full-5.4
+    parent: networking-nuage-base-5.4
+    # This currently works from pike on.
+    branches: ^(5.4/(pike|queens|rocky)).*$
+    description: Upstream tests running against Nuage
+    timeout: 14400
+    vars:
+      tempest_test_regex: '^(tempest|neutron_tempest_plugin)\.(api|scenario)'
+      tempest_test_blacklist: "{{devstack_base_dir}}/nuage-tempest-plugin/tempest-blacklist.txt"
+
+- job:
     name: tempest-full-py3
     parent: networking-nuage-base-py3
     # This currently works from stable/pike on.
@@ -216,6 +227,22 @@
         # INF-7814 nuage-metadata-agent runs under py2 and
         # misses dependencie to pyhton-keystoneclient
         FORCE_CONFIG_DRIVE: True
+- job:
+    name: networking-nuage-base-5.4
+    parent: networking-nuage-base
+    description: Base job for devstack/tempest based nuage jobs against 5.4 branches
+    branches: ^(5.4/(pike|queens|rocky)).*$
+    # This currently works from pike on
+    vars:
+      vsp_release: 5.4
+      devstack_local_conf:
+        post-config:
+          $NEUTRON_CONF:
+            DEFAULT:
+              enable_snat_by_default: false
+    required-projects:
+      - name: OpenStack/nuage-tempest-plugin
+        override-checkout: '5.4'
 
 - job:
     name: networking-nuage-tempest-smoke
@@ -233,6 +260,16 @@
     description: job used in gate testing smoke annotated tests
     # This currently works from stable/pike on
     branches: ^(?!stable/(newton|ocata)).*$
+    vars:
+      tempest_test_regex: '^(nuage_tempest_plugin|tempest\.api\.network|neutron_tempest_plugin\.(api|scenario))\..*\[(?=.*smoke)'
+      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|neutron_tempest_plugin\.api\.admin\.test_tag.*|nuage_tempest_plugin.*orchestration.*))'
+
+- job:
+    name: networking-nuage-tempest-5.4
+    parent: networking-nuage-base-5.4
+    description: job used in gate testing smoke annotated tests
+    # This currently works from pike on
+    branches: ^(5.4/(pike|queens|rocky)).*$
     vars:
       tempest_test_regex: '^(nuage_tempest_plugin|tempest\.api\.network|neutron_tempest_plugin\.(api|scenario))\..*\[(?=.*smoke)'
       tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|neutron_tempest_plugin\.api\.admin\.test_tag.*|nuage_tempest_plugin.*orchestration.*))'
@@ -256,6 +293,16 @@
     # This currently works from stable/pike on
     branches: ^(?!stable/(newton|ocata)).*$
     timeout: 18000
+    vars:
+      tempest_test_regex: '^nuage_tempest_plugin\..*'
+      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin.*orchestration.*))'
+
+- job:
+    name: networking-nuage-tempest-full-5.4
+    parent: networking-nuage-base-5.4
+    description: job used in gate testing smoke annotated tests
+    # This currently works from pike on
+    branches: ^(5.4/(pike|queens|rocky)).*$
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\..*'
       tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin.*orchestration.*))'
@@ -291,6 +338,26 @@
           $TEMPEST_CONFIG:
             network:
               port_vnic_type: direct
+- job:
+    name: networking-nuage-tempest-sriov-5.4
+    parent: networking-nuage-base-5.4
+    description: job running api tests against nuage sriov mech driver for 5.4 branches
+    branches: ^(5.4/(pike|queens|rocky)).*$
+    timeout: 9000
+    required-projects:
+      - OpenStack/networking-testsriov
+    vars:
+      tempest_test_regex: '^(nuage_tempest_plugin\.tests\.api\.(test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov)).*'
+      devstack_localrc:
+        Q_ML2_PLUGIN_MECHANISM_DRIVERS: nuage,nuage_sriov,testsriov
+      devstack_plugins:
+        networking-testsriov: https://github.com/nuagenetworks/networking-testsriov.git
+      devstack_local_conf:
+        test-config:
+          $TEMPEST_CONFIG:
+            network:
+              port_vnic_type: direct
+
 - job:
     name: networking-nuage-tempest-sriov-flat-vlan
     parent: networking-nuage-tempest-sriov
