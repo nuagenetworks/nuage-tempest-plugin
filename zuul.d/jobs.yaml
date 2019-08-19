@@ -319,6 +319,38 @@
       tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin.*orchestration.*))'
 
 - job:
+    name: networking-nuage-tempest-virtio
+    parent: networking-nuage-base
+    description: job running all available nuage tests excluding cli, baremetal and orchestration tests
+    # This currently works from stable/pike on
+    branches: ^(?!stable/(newton|ocata)).*$
+    timeout: 18000
+    vars:
+      tempest_test_regex: '^nuage_tempest_plugin\..*'
+      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration).*))'
+
+- job:
+    name: networking-nuage-tempest-virtio-5.4
+    parent: networking-nuage-base-5.4
+    description: job running all available nuage tests excluding cli, baremetal and orchestration tests for 5.4 branches
+    # This currently works from pike on
+    branches: ^(5.4/(pike|queens|rocky)).*$
+    vars:
+      tempest_test_regex: '^nuage_tempest_plugin\..*'
+      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration).*))'
+
+- job:
+    name: networking-nuage-tempest-virtio-py3
+    parent: networking-nuage-base-py3
+    description: job running all available nuage tests excluding cli, baremetal and orchestration tests
+    # This currently works from stable/pike on
+    branches: ^(?!stable/(newton|ocata)).*$
+    timeout: 18000
+    vars:
+      tempest_test_regex: '^nuage_tempest_plugin\..*'
+      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration).*))'
+
+- job:
     name: networking-nuage-tempest-sriov
     parent: networking-nuage-base-py3
     description: job running api tests against nuage sriov mech driver
@@ -385,3 +417,80 @@
       tempest_test_regex: '^nuage_tempest_plugin\..*'
       tempest_black_regex: '^(?:.*(nuage_tempest_plugin\.tests\.(scenario|api\.(upgrade|baremetal|vsd_managed)))).*'
 
+- job:
+    name: networking-nuage-tempest-baremetal
+    parent: networking-nuage-base
+    description: job running all baremetal tests
+    # This currently works from stable/pike on
+    branches: ^(?!stable/(newton|ocata)).*$
+    timeout: 18000
+    vars:
+      tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.baremetal.*'
+
+- job:
+    name: networking-nuage-tempest-baremetal-5.4
+    parent: networking-nuage-base-5.4
+    description: job running all baremetal tests for 5.4 branches
+    # This currently works from pike on
+    branches: ^(5.4/(pike|queens|rocky)).*$
+    vars:
+      tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.baremetal.*'
+
+- job:
+    name: networking-nuage-tempest-baremetal-py3
+    parent: networking-nuage-base-py3
+    description: job running all baremetal tests
+    # This currently works from stable/pike on
+    branches: ^(?!stable/(newton|ocata)).*$
+    timeout: 18000
+    vars:
+      tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.baremetal.*'
+
+- job:
+    name: networking-nuage-tempest-cli
+    parent: networking-nuage-base
+    description: job running all cli tests
+    # This currently works from stable/pike on
+    branches: ^(?!stable/(newton|ocata)).*$
+    timeout: 18000
+    vars:
+      tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.cli.*'
+
+- job:
+    name: networking-nuage-tempest-cli-5.4
+    parent: networking-nuage-base-5.4
+    description: job running all cli tests for 5.4 branches
+    # This currently works from pike on
+    branches: ^(5.4/(pike|queens|rocky)).*$
+    vars:
+      tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.cli.*'
+
+- job:
+    name: networking-nuage-tempest-cli-py3
+    parent: networking-nuage-base-py3
+    description: job running all cli tests
+    # This currently works from stable/pike on
+    branches: ^(?!stable/(newton|ocata)).*$
+    timeout: 18000
+    vars:
+      tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.cli.*'
+
+- job:
+    name: networking-nuage-tempest-aggregateflows
+    parent: networking-nuage-base
+    description: job running l3 vsd managed connectivity tests with aggregate flows enabled
+    # This currently works from stable/pike on
+    branches: ^(?!stable/(newton|ocata)).*$
+    timeout: 18000
+    vars:
+      tempest_test_regex: '^nuage_tempest_plugin\.tests\.scenario\.connectivity\.(test_ipv4_vsd_managed_connectivity.Ipv4L3VsdManagedConnectivityWithAggrFlowsTest|test_ipv6_vsd_managed_connectivity.Ipv6L3VsdManagedConnectivityWithAggrFlowsTest).*'
+
+- job:
+    name: networking-nuage-tempest-aggregateflows-py3
+    parent: networking-nuage-base-py3
+    description: job running l3 vsd managed connectivity tests with aggregate flows enabled
+    # This currently works from stable/pike on
+    branches: ^(?!stable/(newton|ocata)).*$
+    timeout: 18000
+    vars:
+      tempest_test_regex: '^nuage_tempest_plugin\.tests\.scenario\.connectivity\.(test_ipv4_vsd_managed_connectivity.Ipv4L3VsdManagedConnectivityWithAggrFlowsTest|test_ipv6_vsd_managed_connectivity.Ipv6L3VsdManagedConnectivityWithAggrFlowsTest).*'
