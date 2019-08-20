@@ -3,6 +3,7 @@ dist/
 AUTHORS
 ChangeLog
 .tox/
+.stestr/
 *.pyc
 *.egg-info/
 *.log

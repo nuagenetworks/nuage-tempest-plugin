@@ -1,5 +1,5 @@
 heat_template_version: 2013-05-23
-description: Simple template to create network from VSD managed network
+description: Simple template to create network from VSD managed network without netpartition
 parameters:
   vsd_subnet_id:
     type: string
@@ -23,5 +23,6 @@ resources:
     properties:
       network_id: { get_resource: private_net }
       cidr: { get_param: private_net_cidr }
+      gateway_ip: ''
       value_specs: {
         nuagenet: {get_param: vsd_subnet_id} }
