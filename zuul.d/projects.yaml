@@ -28,10 +28,12 @@
     switchdev:
       jobs:
         - networking-nuage-tempest-sriov-switchdev
+    scenario:
+      jobs:
+        - networking-nuage-tempest-scenario
     cli:
       jobs:
         - networking-nuage-tempest-cli
     aggregateflows:
       jobs:
         - networking-nuage-tempest-aggregateflows
-
