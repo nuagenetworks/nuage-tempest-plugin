@@ -327,7 +327,7 @@
     timeout: 18000
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\..*'
-      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov).*))'
+      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway).*))'
 
 - job:
     name: networking-nuage-tempest-virtio-5.4
@@ -337,7 +337,7 @@
     branches: ^(5.4/(pike|queens|rocky)).*$
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\..*'
-      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov).*))'
+      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway).*))'
 
 - job:
     name: networking-nuage-tempest-virtio-py3
@@ -348,7 +348,7 @@
     timeout: 18000
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\..*'
-      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov).*))'
+      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway).*))'
 
 - job:
     name: networking-nuage-tempest-sriov
@@ -360,7 +360,7 @@
     required-projects:
       - OpenStack/networking-testsriov
     vars:
-      tempest_test_regex: '^(nuage_tempest_plugin\.tests\.api\.(test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov)).*'
+      tempest_test_regex: '^(nuage_tempest_plugin\.tests\.api\.(test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway)).*'
       devstack_localrc:
         Q_ML2_PLUGIN_MECHANISM_DRIVERS: nuage,nuage_sriov,testsriov
       devstack_plugins:
@@ -379,7 +379,7 @@
     required-projects:
       - OpenStack/networking-testsriov
     vars:
-      tempest_test_regex: '^(nuage_tempest_plugin\.tests\.api\.(test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov)).*'
+      tempest_test_regex: '^(nuage_tempest_plugin\.tests\.api\.(test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway)).*'
       devstack_localrc:
         Q_ML2_PLUGIN_MECHANISM_DRIVERS: nuage,nuage_sriov,testsriov
       devstack_plugins:
