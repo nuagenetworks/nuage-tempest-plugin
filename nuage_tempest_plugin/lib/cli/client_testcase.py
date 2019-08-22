@@ -9,15 +9,15 @@ import netaddr
 import re
 from six import iteritems
 
-from . import client
-from . import output_parser as cli_output_parser
+from nuage_tempest_plugin.lib.cli import client
+from nuage_tempest_plugin.lib.cli import output_parser as cli_output_parser
+from nuage_tempest_plugin.lib.topology import Topology
 
 from tempest.lib.common import cred_client
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest import test
 
-from nuage_tempest_plugin.lib.topology import Topology
 
 CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
@@ -773,3 +773,60 @@ class CLIClientTestCase(test.BaseTestCase):
         response = self.cli.neutron('nuage-floatingip-show ', params=fp_id)
         show_fp = self.parser.details(response)
         return show_fp
+
+    def create_nuage_netpartition_cli(self, *args):
+        the_params = ''
+        for arg in args:
+            the_params += ' '
+            the_params += arg
+
+        response = self.cli.neutron('nuage-netpartition-create',
+                                    params=the_params)
+        return self.parser.details(response)
+
+    def show_nuage_netpartition_cli(self, *args):
+        the_params = ''
+        for arg in args:
+            the_params += ' '
+            the_params += arg
+
+        response = self.cli.neutron('nuage-netpartition-show',
+                                    params=the_params)
+        return self.parser.details(response)
+
+    def delete_nuage_netpartition_cli(self, id, name=None):
+        if name:
+            self.cli.neutron('nuage-netpartition-delete',
+                             params=' ' + name)
+        else:
+            self.cli.neutron('nuage-netpartition-delete',
+                             params=' ' + id)
+
+    def create_nuage_project_netpartition_mapping_cli(self, *args):
+        the_params = ''
+        for arg in args:
+            the_params += ' '
+            the_params += arg
+
+        response = self.cli.neutron('nuage-netpartition-project-add',
+                                    params=the_params)
+        return self.parser.details(response)
+
+    def show_nuage_project_netpartition_mapping_cli(self, *args):
+        the_params = ''
+        for arg in args:
+            the_params += ' '
+            the_params += arg
+
+        response = self.cli.neutron('nuage-netpartition-project-show',
+                                    params=the_params)
+
+        return self.parser.details(response)
+
+    def list_nuage_project_netpartition_mapping_cli(self):
+        response = self.cli.neutron('nuage-netpartition-project-list')
+        return self.parser.listing(response)
+
+    def delete_nuage_project_netpartition_mapping_cli(self, id):
+        self.cli.neutron('nuage-netpartition-project-delete',
+                         params=' ' + id)
