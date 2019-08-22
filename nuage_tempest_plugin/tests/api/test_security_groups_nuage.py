@@ -507,44 +507,6 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
         self.addCleanup(self.ports_client.delete_port, port['id'])
         return port
 
-    def _test_create_port_with_security_groups(self, sg_num,
-                                               nuage_domain=None,
-                                               should_succeed=True):
-        # Test the maximal number of security groups when creating a port
-        if not nuage_domain:
-            nuage_domain = self.nuage_any_domain
-        security_groups_list = []
-        sg_max = n_constants.MAX_SG_PER_PORT
-        for i in range(sg_num):
-            group_create_body, name = self._create_security_group()
-            security_groups_list.append(group_create_body['security_group']
-                                        ['id'])
-        post_body = {
-            "network_id": self.network['id'],
-            "name": data_utils.rand_name('port-'),
-            "security_groups": security_groups_list
-        }
-        if should_succeed:
-            port = self._create_port(**post_body)
-            vport = self.nuage_client.get_vport(
-                self.nuage_domain_type,
-                nuage_domain[0]['ID'],
-                filters='externalID',
-                filter_value=port['id'])
-            nuage_policy_grps = self.nuage_client.get_policygroup(
-                n_constants.VPORT,
-                vport[0]['ID'])
-            self.assertEqual(sg_num, len(nuage_policy_grps))
-        else:
-            msg = (("Number of %s specified security groups exceeds the "
-                    "maximum of %s security groups on a port "
-                    "supported on nuage VSP") % (sg_num, sg_max))
-            self.assertRaisesRegex(
-                exceptions.BadRequest,
-                msg,
-                self._create_port,
-                **post_body)
-
     def _test_update_port_with_security_groups(self, sg_num,
                                                nuage_domain=None,
                                                should_succeed=True):
@@ -637,22 +599,6 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
     @decorators.attr(type='smoke')
     def test_create_security_group_rule_in_multiple_domains(self):
         self._test_create_security_group_rule_in_multiple_domains()
-
-    def test_create_port_with_max_security_groups(self):
-        self._test_create_port_with_security_groups(
-            n_constants.MAX_SG_PER_PORT)
-
-    def test_create_port_with_overflow_security_groups_neg(self):
-        self._test_create_port_with_security_groups(
-            n_constants.MAX_SG_PER_PORT + 1, should_succeed=False)
-
-    def test_update_port_with_max_security_groups(self):
-        self._test_update_port_with_security_groups(
-            n_constants.MAX_SG_PER_PORT)
-
-    def test_update_port_with_overflow_security_groups_neg(self):
-        self._test_update_port_with_security_groups(
-            n_constants.MAX_SG_PER_PORT + 1, should_succeed=False)
 
     def test_create_security_group_rule_invalid_ip_prefix_negative(self):
         sg1_body, _ = self._create_security_group()
@@ -885,22 +831,6 @@ class TestSecGroupTestNuageL3Domain(SecGroupTestNuageBase):
     @decorators.attr(type='smoke')
     def test_create_security_group_rule_in_multiple_domains(self):
         self._test_create_security_group_rule_in_multiple_domains(l3=True)
-
-    def test_create_port_with_max_security_groups(self):
-        self._test_create_port_with_security_groups(
-            n_constants.MAX_SG_PER_PORT)
-
-    def test_create_port_with_overflow_security_groups_neg(self):
-        self._test_create_port_with_security_groups(
-            n_constants.MAX_SG_PER_PORT + 1, should_succeed=False)
-
-    def test_update_port_with_max_security_groups(self):
-        self._test_update_port_with_security_groups(
-            n_constants.MAX_SG_PER_PORT)
-
-    def test_update_port_with_overflow_security_groups_net(self):
-        self._test_update_port_with_security_groups(
-            n_constants.MAX_SG_PER_PORT + 1, should_succeed=False)
 
 
 class SecGroupTestNuageBaseV6(SecGroupTestNuageBase):
