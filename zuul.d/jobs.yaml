@@ -327,7 +327,7 @@
     timeout: 18000
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\..*'
-      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.(scenario|api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway).*)))'
+      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.(scenario|scale|api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway).*)))'
 
 - job:
     name: networking-nuage-tempest-virtio-5.4
@@ -337,7 +337,7 @@
     branches: ^(5.4/(pike|queens|rocky)).*$
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\..*'
-      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.(scenario|api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway).*)))'
+      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.(scenario|scale|api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway).*)))'
 
 - job:
     name: networking-nuage-tempest-virtio-py3
@@ -348,7 +348,7 @@
     timeout: 18000
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\..*'
-      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.(scenario|api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway).*)))'
+      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.(scenario|scale|api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway).*)))'
 
 - job:
     name: networking-nuage-tempest-sriov
@@ -513,3 +513,30 @@
     branches: ^(?!stable/(newton|ocata)).*$
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.scenario\.connectivity\.(test_ipv4_vsd_managed_connectivity.Ipv4L3VsdManagedConnectivityWithAggrFlowsTest|test_ipv6_vsd_managed_connectivity.Ipv6L3VsdManagedConnectivityWithAggrFlowsTest).*'
+
+- job:
+    name: networking-nuage-tempest-scale
+    parent: networking-nuage-base
+    description: job running all scale tests
+    # This currently works from stable/pike on
+    branches: ^(?!stable/(newton|ocata)).*$
+    vars:
+      tempest_test_regex: '^nuage_tempest_plugin\.tests\.scale.*'
+
+- job:
+    name: networking-nuage-tempest-scale-5.4
+    parent: networking-nuage-base-5.4
+    description: job running all scale tests on 5.4 branches
+    # This currently works from pike on
+    branches: ^(5.4/(pike|queens|rocky)).*$
+    vars:
+      tempest_test_regex: '^nuage_tempest_plugin\.tests\.scale.*'
+
+- job:
+    name: networking-nuage-tempest-scale-py3
+    parent: networking-nuage-base-py3
+    description: job running all scale tests with py3
+    # This currently works from stable/pike on
+    branches: ^(?!stable/(newton|ocata)).*$
+    vars:
+      tempest_test_regex: '^nuage_tempest_plugin\.tests\.scale.*'
