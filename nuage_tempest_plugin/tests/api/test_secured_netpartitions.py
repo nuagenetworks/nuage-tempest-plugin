@@ -36,8 +36,6 @@ class SecuredNetpartitionsTest(NuageBaseTest):
         name = data_utils.rand_name('np_mapping', prefix=None)
         netpart = self.plugin_network_client.create_netpartition(
             name)['net_partition']
-        enterprise = self.vsd.get_enterprise_by_name(netpart['name'])
-        self.addCleanup(enterprise.delete)
         self.addCleanup(self.plugin_network_client.delete_netpartition,
                         netpart['id'])
         project_id = self.plugin_network_client.tenant_id
@@ -92,8 +90,6 @@ class SecuredNetpartitionsTest(NuageBaseTest):
         name = data_utils.rand_name('np_mapping', prefix=None)
         netpart = self.plugin_network_client.create_netpartition(
             name)['net_partition']
-        enterprise = self.vsd.get_enterprise_by_name(netpart['name'])
-        self.addCleanup(enterprise.delete)
         self.addCleanup(self.plugin_network_client.delete_netpartition,
                         netpart['id'])
         # Create a mapping
@@ -139,8 +135,6 @@ class SecuredNetpartitionsTest(NuageBaseTest):
         name = data_utils.rand_name('np_mapping', prefix=None)
         netpart = self.plugin_network_client.create_netpartition(
             name)['net_partition']
-        enterprise = self.vsd.get_enterprise_by_name(netpart['name'])
-        self.addCleanup(enterprise.delete)
         self.addCleanup(self.plugin_network_client.delete_netpartition,
                         netpart['id'])
         project_id = self.manager.subnets_client.tenant_id
@@ -156,8 +150,6 @@ class SecuredNetpartitionsTest(NuageBaseTest):
         name = data_utils.rand_name('np_mapping', prefix=None)
         netpart = self.plugin_network_client.create_netpartition(
             name)['net_partition']
-        enterprise = self.vsd.get_enterprise_by_name(netpart['name'])
-        self.addCleanup(enterprise.delete)
         self.addCleanup(self.plugin_network_client.delete_netpartition,
                         netpart['id'])
         project_id = self.plugin_network_client.tenant_id
@@ -223,8 +215,6 @@ class SecuredNetpartitionsTest(NuageBaseTest):
         # 2: Create resources with a mapping
         netpart = self.plugin_network_client.create_netpartition(
             name)['net_partition']
-        enterprise = self.vsd.get_enterprise_by_name(netpart['name'])
-        self.addCleanup(enterprise.delete)
         self.addCleanup(self.plugin_network_client.delete_netpartition,
                         netpart['id'])
         # We create subnet and router with self.manager
@@ -292,8 +282,6 @@ class SecuredNetpartitionsTest(NuageBaseTest):
         name = data_utils.rand_name('np_mapping', prefix=None)
         netpart = self.plugin_network_client.create_netpartition(
             name)['net_partition']
-        enterprise = self.vsd.get_enterprise_by_name(netpart['name'])
-        self.addCleanup(enterprise.delete)
         self.addCleanup(self.plugin_network_client.delete_netpartition,
                         netpart['id'])
         # Create a mapping
@@ -359,8 +347,6 @@ class SecuredNetpartitionsTest(NuageBaseTest):
         name = data_utils.rand_name('np_mapping', prefix=None)
         netpart = self.plugin_network_client.create_netpartition(
             name)['net_partition']
-        enterprise = self.vsd.get_enterprise_by_name(netpart['name'])
-        self.addCleanup(enterprise.delete)
         self.addCleanup(self.plugin_network_client.delete_netpartition,
                         netpart['id'])
         # Create a mapping
