@@ -66,6 +66,21 @@ class TestSecGroupScaleBase(SecGroupTestNuageBase):
 
 class TestSecGroupScaleTestL2Domain(TestSecGroupScaleBase):
 
+    @classmethod
+    def resource_setup(cls):
+        super(TestSecGroupScaleTestL2Domain, cls).resource_setup()
+
+        # Nuage specific resource addition
+        name = data_utils.rand_name('network-')
+        cls.network = cls.create_network(network_name=name)
+        cls.subnet = cls.create_subnet(cls.network)
+        nuage_l2domain = cls.nuage_client.get_l2domain(
+            filters=['externalID', 'address'],
+            filter_value=[cls.subnet['network_id'],
+                          cls.subnet['cidr']])
+        cls.nuage_any_domain = nuage_l2domain
+        cls.nuage_domain_type = n_constants.L2_DOMAIN
+
     def test_create_port_with_max_security_groups(self):
         self._test_create_port_with_security_groups(
             n_constants.MAX_SG_PER_PORT)
@@ -84,6 +99,34 @@ class TestSecGroupScaleTestL2Domain(TestSecGroupScaleBase):
 
 
 class TestSecGroupScaleTestL3Domain(TestSecGroupScaleBase):
+
+    @classmethod
+    def resource_setup(cls):
+        super(TestSecGroupScaleTestL3Domain, cls).resource_setup()
+
+        # Create a network
+        name = data_utils.rand_name('network-')
+        cls.network = cls.create_network(network_name=name)
+
+        # Create a subnet
+        cls.subnet = cls.create_subnet(cls.network)
+
+        # Create a router
+        name = data_utils.rand_name('router-')
+        create_body = cls.routers_client.create_router(
+            name=name, external_gateway_info={
+                "network_id": CONF.network.public_network_id},
+            admin_state_up=False)
+        cls.router = create_body['router']
+        cls.routers_client.add_router_interface(
+            cls.router['id'], subnet_id=cls.subnet['id'])
+
+        nuage_l3domain = cls.nuage_client.get_l3domain(
+            filters='externalID',
+            filter_value=cls.router['id'])
+
+        cls.nuage_any_domain = nuage_l3domain
+        cls.nuage_domain_type = n_constants.DOMAIN
 
     def test_create_port_with_max_security_groups(self):
         self._test_create_port_with_security_groups(
