@@ -299,6 +299,36 @@ class NuageNetworkClientJSON(service_client.RestClient):
         body = self._get_request(uri)
         return body['net_partitions']
 
+    def create_project_netpartition_mapping(self, mapping, **kwargs):
+        post_body = {'project_net_partition_mapping': mapping}
+        if kwargs:
+            post_body.update(kwargs)
+        body = json.dumps(post_body)
+        uri = '%s/project-net-partition-mappings' % self.uri_prefix
+        resp, body = self.post(uri, body)
+        self.expected_success(201, resp.status)
+        body = json.loads(body)
+        return service_client.ResponseBody(resp, body)
+
+    def delete_project_netpartition_mapping(self, project_id):
+        uri = '%s/project-net-partition-mappings/%s' % (self.uri_prefix,
+                                                        project_id)
+        resp, body = self.delete(uri)
+        self.expected_success(204, resp.status)
+        return service_client.ResponseBody(resp, body)
+
+    def list_project_netpartition_mappings(self):
+        uri = '%s/project-net-partition-mappings' % self.uri_prefix
+        resp, body = self.get(uri)
+        self.expected_success(200, resp.status)
+        body = json.loads(body)
+        return service_client.ResponseBody(resp, body)
+
+    def show_project_netpartition_mappings(self, project_id):
+        uri = '%s/project-net-partition-mappings/%s' % (
+            self.uri_prefix, project_id)
+        return self._get_request(uri)
+
     def list_tiers(self, app_id):
         uri = '%s/tiers?app_id=%s' % (self.uri_prefix, app_id)
         return self._get_request(uri)
