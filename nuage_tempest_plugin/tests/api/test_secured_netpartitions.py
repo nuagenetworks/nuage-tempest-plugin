@@ -335,6 +335,7 @@ class SecuredNetpartitionsTest(NuageBaseTest):
         vsd_l2dom = self.vsd.create_l2domain(
             name=name, enterprise=enterprise, template=vsd_l2dom_tmplt)
         self.addCleanup(self.vsd.delete_l2domain, vsd_l2dom.id)
+        network = self.create_network(name)
         subnet = self.create_subnet(
             network, cidr=cidr,
             mask_bits=24, gateway=None,
