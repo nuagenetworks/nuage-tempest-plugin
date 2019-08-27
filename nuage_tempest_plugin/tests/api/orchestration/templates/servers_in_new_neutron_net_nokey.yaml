@@ -50,7 +50,7 @@ resources:
     properties:
       name: Server1
       image: { get_param: image }
-      flavor: "m1.small"
+      flavor: "m1.tiny"
       networks:
         - port: { get_resource: server1_port }
 
@@ -72,7 +72,7 @@ resources:
     properties:
       name: Server2
       image: { get_param: image }
-      flavor: "m1.small"
+      flavor: "m1.tiny"
       networks:
         - port: { get_resource: server2_port }
 
