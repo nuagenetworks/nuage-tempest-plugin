@@ -766,6 +766,7 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
 
 
 class TestSecGroupTestNuageL3Domain(SecGroupTestNuageBase):
+
     @classmethod
     def resource_setup(cls):
         super(TestSecGroupTestNuageL3Domain, cls).resource_setup()
