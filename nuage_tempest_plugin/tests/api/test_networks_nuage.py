@@ -277,6 +277,34 @@ class NetworksTestJSONNuage(test_networks.NetworksTest):
 
         self._compare_resource_attrs(updated_subnet, kwargs)
 
+    def test_update_subnet_with_no_gw(self):
+        network = self.create_network()
+        subnet = self.create_subnet(
+            network, **self.subnet_dict(['gateway']))
+        subnet_id = subnet['id']
+        nuage_l2dom = self.nuage_client.get_l2domain(
+            filters=['externalID', self._vsd_address],
+            filter_value=[subnet['network_id'],
+                          subnet['cidr']])
+        nuage_dhcpopt = self.nuage_client.get_dhcpoption(
+            n_constants.L2_DOMAIN, nuage_l2dom[0]['ID'], subnet['ip_version'])
+        self._verify_vsd_dhcp_options(nuage_dhcpopt, subnet)
+        # Verify subnet update
+        kwargs = {'gateway_ip': None}
+
+        new_name = "New_subnet"
+        body = self.subnets_client.update_subnet(subnet_id, name=new_name,
+                                                 **kwargs)
+        updated_subnet = body['subnet']
+        kwargs['name'] = new_name
+
+        self._compare_resource_attrs(updated_subnet, kwargs)
+
+        nuage_dhcpopt = self.nuage_client.get_dhcpoption(
+            n_constants.L2_DOMAIN, nuage_l2dom[0]['ID'], subnet['ip_version'])
+
+        self.assertEmpty(nuage_dhcpopt, msg="gateway DHCP option not deleted")
+
     @decorators.attr(type='smoke')
     def test_update_routed_subnet_gw_dns_host_routes(self):
         router = self.create_router(
