@@ -1,6 +1,12 @@
-===============================================
-Tempest Integration of nuage-tempest-plugin
-===============================================
+====================
+Nuage Tempest Plugin
+====================
 
-This directory contains Tempest tests to cover the nuage-tempest-plugin project.
+Tempest plugin for the Nuage OpenStack projects.
 
+It contains the tempest plugin for the functional testing of Nuage OpenStack projects.
+
+* Free software: Apache license
+* Source: https://github.com/nuagenetworks/nuage-tempest-plugin
+
+Visit Nuage Networks at http://www.nuagenetworks.net
