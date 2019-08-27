@@ -301,3 +301,28 @@ class NetpartitionsTest(NuageAdminNetworksTest):
                                name=data_utils.rand_name('router'),
                                admin_state_up=True,
                                **netpart)
+
+    # @decorators.attr(type='smoke')
+    def test_link_net_partition_to_existing_enterprise(self):
+        enterprise_name = data_utils.rand_name('netpart')
+        enterprise = self.vsd.vspk.NUEnterprise(name=enterprise_name)
+        self.vsd.session().user.create_child(enterprise)
+        self.addCleanup(enterprise.delete)
+
+        netpart = self.create_netpartition(enterprise_name)
+        self.addCleanup(self.client.delete_netpartition,
+                        netpart['id'])
+        self.assertIsNotNone(netpart)
+
+        kwargs = {
+            'name': data_utils.rand_name('router'),
+            'admin_state_up': True,
+            'net_partition': netpart['name']
+        }
+        # Create router in that net-partition
+        router = self.admin_routers_client.create_router(**kwargs)['router']
+        self.addCleanup(self.admin_routers_client.delete_router,
+                        router['id'])
+        l3domain = self.vsd.get_l3domain(enterprise=netpart['name'],
+                                         by_router_id=router['id'])
+        self.assertIsNotNone(l3domain)
