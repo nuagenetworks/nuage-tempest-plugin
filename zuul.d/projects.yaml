@@ -20,7 +20,7 @@
         - networking-nuage-tempest-virtio-py3
     baremetal:
       jobs:
-        - networking-nuage-tempest-baremetal-py3
+        - networking-nuage-tempest-baremetal
     sriov:
       jobs:
         - networking-nuage-tempest-sriov
