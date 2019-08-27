@@ -620,7 +620,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         # Test now uses fixed ips, so random error when a port is created
         # with the ip of the dhcp port in L2 is prevented.
         ip = IPAddress(self.l3subnet['allocation_pools'][0]['start'])
-        ip += 1  # first ip is external dhcp port
+        ip += 2  # first ip or second ip is external dhcp port
 
         addrpair_port_1 = self.create_port(
             self.l3network,
