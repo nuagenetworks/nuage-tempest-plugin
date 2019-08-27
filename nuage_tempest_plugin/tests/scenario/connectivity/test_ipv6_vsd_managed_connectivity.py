@@ -14,6 +14,41 @@ CONF = Topology.get_conf()
 
 class Ipv6L2VsdManagedConnectivityTest(NuageBaseTest):
 
+    def _test_icmp_connectivity_l2_vsd_managed_pure_v6(self, stateful):
+        # Provision VSD managed network resources
+        l2domain_template = self.vsd_create_l2domain_template(
+            ip_type="IPV6",
+            cidr6=self.cidr6,
+            gateway6=self.gateway6,
+            enable_dhcpv6=True)
+        vsd_l2domain = self.vsd_create_l2domain(template=l2domain_template)
+
+        self.vsd.define_any_to_any_acl(vsd_l2domain, allow_ipv6=True,
+                                       stateful=stateful)
+
+        # Provision OpenStack network linked to VSD network resources
+        network = self.create_network()
+        self.create_l2_vsd_managed_subnet(
+            network, vsd_l2domain, ip_version=6, dhcp_managed=True)
+
+        # Launch tenant servers in OpenStack network
+        server2 = self.create_tenant_server(
+            [network],
+            prepare_for_connectivity=True)
+
+        server1 = self.create_tenant_server(
+            [network],
+            prepare_for_connectivity=True)
+
+        # Test IPv6 connectivity between peer servers
+        self.assert_ping(server1, server2, network, ip_version=6)
+
+    def test_icmp_connectivity_stateful_acl_l2_vsd_managed_pure_v6(self):
+        self._test_icmp_connectivity_l2_vsd_managed_pure_v6(stateful=True)
+
+    def test_icmp_connectivity_stateless_acl_l2_vsd_managed_pure_v6(self):
+        self._test_icmp_connectivity_l2_vsd_managed_pure_v6(stateful=False)
+
     def test_icmp_connectivity_l2_vsd_managed_dualstack(self):
         # Provision VSD managed network resources
         l2domain_template = self.vsd_create_l2domain_template(
@@ -48,34 +83,6 @@ class Ipv6L2VsdManagedConnectivityTest(NuageBaseTest):
         # Test IPv6 connectivity between peer servers
         self.assert_ping(server1, server2, network, ip_version=6)
 
-    def test_icmp_connectivity_l2_vsd_managed_pure_v6(self):
-        # Provision VSD managed network resources
-        l2domain_template = self.vsd_create_l2domain_template(
-            ip_type="IPV6",
-            cidr6=self.cidr6,
-            gateway6=self.gateway6,
-            enable_dhcpv6=True)
-        vsd_l2domain = self.vsd_create_l2domain(template=l2domain_template)
-
-        self.vsd.define_any_to_any_acl(vsd_l2domain, allow_ipv6=True)
-
-        # Provision OpenStack network linked to VSD network resources
-        network = self.create_network()
-        self.create_l2_vsd_managed_subnet(
-            network, vsd_l2domain, ip_version=6, dhcp_managed=True)
-
-        # Launch tenant servers in OpenStack network
-        server2 = self.create_tenant_server(
-            [network],
-            prepare_for_connectivity=True)
-
-        server1 = self.create_tenant_server(
-            [network],
-            prepare_for_connectivity=True)
-
-        # Test IPv6 connectivity between peer servers
-        self.assert_ping(server1, server2, network, ip_version=6)
-
 
 class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
 
@@ -83,6 +90,92 @@ class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
     def get_static_route_data(remote_cidr, local_gw, nic):
         # no static route needed if l3domain has aggregateflows disabled on vsd
         return ''
+
+    def _create_vsd_managed_resources(self):
+        # Provision VSD network resources
+        vsd_l3domain_template = self.vsd_create_l3domain_template()
+        vsd_l3domain = self.vsd_create_l3domain(
+            template_id=vsd_l3domain_template.id)
+        vsd_zone = self.vsd_create_zone(domain=vsd_l3domain)
+        vsd_l3domain_subnet1 = self.create_vsd_subnet(
+            zone=vsd_zone,
+            ip_type="IPV6",
+            cidr6=self.cidr6,
+            gateway6=self.gateway6,
+            enable_dhcpv6=True)
+
+        # Provision OpenStack network linked to VSD network resources
+        network = self.create_network()
+        self.create_l3_vsd_managed_subnet(
+            network, vsd_l3domain, vsd_l3domain_subnet1, ip_version=6)
+        return network, vsd_l3domain
+
+    def _test_icmp_connectivity_l3_vsd_managed_pure_v6(self, stateful):
+        # provision nuage resource
+        vsd_l3domain_template = self.vsd_create_l3domain_template()
+        vsd_l3domain = self.vsd_create_l3domain(
+            template_id=vsd_l3domain_template.id)
+        vsd_zone = self.vsd_create_zone(domain=vsd_l3domain)
+
+        subnet_ipv6_1_cidr = IPNetwork("2000:5f74:c4a5:b82e::/64")
+        subnet_ipv6_1_gateway = str(IPAddress(subnet_ipv6_1_cidr) + 1)
+        vsd_l3domain_subnet6_1 = self.create_vsd_subnet(
+            zone=vsd_zone,
+            ip_type="IPV6",
+            cidr6=subnet_ipv6_1_cidr,
+            gateway6=subnet_ipv6_1_gateway,
+            enable_dhcpv6=True)
+
+        subnet_ipv6_2_cidr = IPNetwork("2001:5f74:c4a5:b82e::/64")
+        subnet_ipv6_2_gateway = str(IPAddress(subnet_ipv6_2_cidr) + 1)
+        vsd_l3domain_subnet6_2 = self.create_vsd_subnet(
+            zone=vsd_zone,
+            ip_type="IPV6",
+            cidr6=subnet_ipv6_2_cidr,
+            gateway6=subnet_ipv6_2_gateway,
+            enable_dhcpv6=True)
+
+        self.vsd.define_any_to_any_acl(vsd_l3domain, allow_ipv6=True,
+                                       stateful=stateful)
+
+        # Provision OpenStack network linked to VSD network resources
+        network6_1 = self.create_network()
+        self.create_l3_vsd_managed_subnet(
+            network6_1, vsd_l3domain, vsd_l3domain_subnet6_1, ip_version=6)
+        network6_2 = self.create_network()
+        self.create_l3_vsd_managed_subnet(
+            network6_2, vsd_l3domain, vsd_l3domain_subnet6_2, ip_version=6)
+
+        jump_network = self.create_network()
+        jump_subnet = self.create_subnet(jump_network)
+        jump_router = self.create_router(
+            external_network_id=CONF.network.public_network_id)
+        self.router_attach(jump_router, jump_subnet)
+
+        # create open-ssh security group
+        ssh_security_group = self.create_open_ssh_security_group()
+
+        # provision ports
+        port6_1 = self.create_port(
+            network6_1, security_groups=[ssh_security_group['id']])
+        port6_2 = self.create_port(
+            network6_2, security_groups=[ssh_security_group['id']])
+        j_port_1 = self.create_port(
+            jump_network, security_groups=[ssh_security_group['id']])
+        j_port_2 = self.create_port(
+            jump_network, security_groups=[ssh_security_group['id']])
+
+        # Launch tenant servers in OpenStack network
+        server2 = self.create_tenant_server(
+            ports=[j_port_2, port6_2],
+            prepare_for_connectivity=True)
+
+        server1 = self.create_tenant_server(
+            ports=[j_port_1, port6_1],
+            prepare_for_connectivity=True)
+
+        # Test IPv6 connectivity between peer servers
+        self.assert_ping(server1, server2, network6_2, ip_version=6)
 
     def icmp_connectivity_l3_vsd_managed(
             self, cidr4, cidr6,
@@ -204,71 +297,11 @@ class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
             vsd_domain=vsd_domain, vsd_subnet=vsd_subnet,
             server2_pre_set_up=server)
 
-    def test_icmp_connectivity_l3_vsd_managed_pure_v6(self):
-        # provision nuage resource
-        vsd_l3domain_template = self.vsd_create_l3domain_template()
-        vsd_l3domain = self.vsd_create_l3domain(
-            template_id=vsd_l3domain_template.id)
-        vsd_zone = self.vsd_create_zone(domain=vsd_l3domain)
+    def test_icmp_connectivity_stateful_acl_l3_vsd_managed_pure_v6(self):
+        self._test_icmp_connectivity_l3_vsd_managed_pure_v6(stateful=True)
 
-        subnet_ipv6_1_cidr = IPNetwork("2000:5f74:c4a5:b82e::/64")
-        subnet_ipv6_1_gateway = str(IPAddress(subnet_ipv6_1_cidr) + 1)
-        vsd_l3domain_subnet6_1 = self.create_vsd_subnet(
-            zone=vsd_zone,
-            ip_type="IPV6",
-            cidr6=subnet_ipv6_1_cidr,
-            gateway6=subnet_ipv6_1_gateway,
-            enable_dhcpv6=True)
-
-        subnet_ipv6_2_cidr = IPNetwork("2001:5f74:c4a5:b82e::/64")
-        subnet_ipv6_2_gateway = str(IPAddress(subnet_ipv6_2_cidr) + 1)
-        vsd_l3domain_subnet6_2 = self.create_vsd_subnet(
-            zone=vsd_zone,
-            ip_type="IPV6",
-            cidr6=subnet_ipv6_2_cidr,
-            gateway6=subnet_ipv6_2_gateway,
-            enable_dhcpv6=True)
-
-        self.vsd.define_any_to_any_acl(vsd_l3domain, allow_ipv6=True)
-
-        # Provision OpenStack network linked to VSD network resources
-        network6_1 = self.create_network()
-        self.create_l3_vsd_managed_subnet(
-            network6_1, vsd_l3domain, vsd_l3domain_subnet6_1, ip_version=6)
-        network6_2 = self.create_network()
-        self.create_l3_vsd_managed_subnet(
-            network6_2, vsd_l3domain, vsd_l3domain_subnet6_2, ip_version=6)
-
-        jump_network = self.create_network()
-        jump_subnet = self.create_subnet(jump_network)
-        jump_router = self.create_router(
-            external_network_id=CONF.network.public_network_id)
-        self.router_attach(jump_router, jump_subnet)
-
-        # create open-ssh security group
-        ssh_security_group = self.create_open_ssh_security_group()
-
-        # provision ports
-        port6_1 = self.create_port(network6_1,
-                                   security_groups=[ssh_security_group['id']])
-        port6_2 = self.create_port(network6_2,
-                                   security_groups=[ssh_security_group['id']])
-        j_port_1 = self.create_port(jump_network,
-                                    security_groups=[ssh_security_group['id']])
-        j_port_2 = self.create_port(jump_network,
-                                    security_groups=[ssh_security_group['id']])
-
-        # Launch tenant servers in OpenStack network
-        server2 = self.create_tenant_server(
-            ports=[j_port_2, port6_2],
-            prepare_for_connectivity=True)
-
-        server1 = self.create_tenant_server(
-            ports=[j_port_1, port6_1],
-            prepare_for_connectivity=True)
-
-        # Test IPv6 connectivity between peer servers
-        self.assert_ping(server1, server2, network6_2, ip_version=6)
+    def test_icmp_connectivity_stateless_acl_l3_vsd_managed_pure_v6(self):
+        self._test_icmp_connectivity_l3_vsd_managed_pure_v6(stateful=False)
 
     def test_icmp_connectivity_l3_vsd_managed_dualstack_link_shared_subnet(
             self):
@@ -456,6 +489,93 @@ class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
         # Test IPv6 connectivity between peer servers
         self.assert_ping(server1, server2, network2, ip_version=6)
 
+    @decorators.attr(type='smoke')
+    def test_tcp_connectivity_stateful_acl_l3_vsd_managed_ipv6(self):
+        network, vsd_l3domain = self._create_vsd_managed_resources()
+        ingress_tpl, egress_tpl = self.vsd.create_acl_templates(vsd_l3domain)
+
+        # Launch tenant servers in OpenStack network
+        client_server = self.create_tenant_server(
+            [network], prepare_for_connectivity=True)
+        web_server = self.create_tenant_server(
+            [network], prepare_for_connectivity=True)
+        self.vsd.define_ssh_acl(ingress_tpl=ingress_tpl, egress_tpl=egress_tpl)
+        self.start_web_server(web_server, port=80)
+
+        self.assert_tcp_connectivity(client_server, web_server,
+                                     is_connectivity_expected=False,
+                                     source_port=None,
+                                     destination_port=80,
+                                     ip_version=6)
+        self.vsd.define_tcp_acl(direction='egress', acl_template=egress_tpl,
+                                ip_version=6)
+        self.assert_tcp_connectivity(client_server, web_server,
+                                     is_connectivity_expected=False,
+                                     source_port=None,
+                                     destination_port=80,
+                                     ip_version=6)
+        self.vsd.define_tcp_acl(direction='ingress', acl_template=ingress_tpl,
+                                ip_version=6, s_port='*', d_port='80')
+        self.assert_tcp_connectivity(client_server, web_server,
+                                     is_connectivity_expected=True,
+                                     source_port=None,
+                                     destination_port=80,
+                                     ip_version=6)
+
+    @decorators.attr(type='smoke')
+    def test_tcp_connectivity_stateless_acl_l3_vsd_managed_ipv6(self):
+        network, vsd_l3domain = self._create_vsd_managed_resources()
+        ingress_tpl, egress_tpl = self.vsd.create_acl_templates(vsd_l3domain)
+
+        client_port = self.create_port(network)
+        web_server_port = self.create_port(network)
+        # Launch tenant servers in OpenStack network
+        client_server = self.create_tenant_server(
+            ports=[client_port], prepare_for_connectivity=True)
+        web_server = self.create_tenant_server(
+            ports=[web_server_port], prepare_for_connectivity=True)
+        self.vsd.define_ssh_acl(ingress_tpl=ingress_tpl, egress_tpl=egress_tpl,
+                                stateful=False)
+        self.start_web_server(web_server, port=80)
+
+        self.assert_tcp_connectivity(client_server, web_server,
+                                     is_connectivity_expected=False,
+                                     source_port=None,
+                                     destination_port=80,
+                                     ip_version=6)
+
+        client_pg = self.vsd.create_policy_group(vsd_l3domain,
+                                                 name="client_pg")
+        web_server_pg = self.vsd.create_policy_group(vsd_l3domain,
+                                                     name="web_server_pg")
+        self.update_port(client_port,
+                         **{'nuage_policy_groups': [client_pg.id]})
+        self.update_port(web_server_port,
+                         **{'nuage_policy_groups': [web_server_pg.id]})
+
+        self.vsd.define_tcp_acl(
+            direction='egress', acl_template=egress_tpl, ip_version=6,
+            s_port='80', d_port='*', stateful=False,
+            location_type='POLICYGROUP', location_id=client_pg.id)
+        self.vsd.define_tcp_acl(
+            direction='ingress', acl_template=ingress_tpl, ip_version=6,
+            s_port='*', d_port='80', stateful=False,
+            location_type='POLICYGROUP', location_id=client_pg.id)
+        self.vsd.define_tcp_acl(
+            direction='egress', acl_template=egress_tpl, ip_version=6,
+            s_port='*', d_port='80', stateful=False,
+            location_type='POLICYGROUP', location_id=web_server_pg.id)
+        self.vsd.define_tcp_acl(
+            direction='ingress', acl_template=ingress_tpl, ip_version=6,
+            s_port='80', d_port='*', stateful=False,
+            location_type='POLICYGROUP', location_id=web_server_pg.id)
+
+        self.assert_tcp_connectivity(client_server, web_server,
+                                     is_connectivity_expected=True,
+                                     source_port=None,
+                                     destination_port=80,
+                                     ip_version=6)
+
 
 class Ipv6L3VsdManagedConnectivityWithAggrFlowsTest(
         Ipv6L3VsdManagedConnectivityTest):
@@ -469,3 +589,11 @@ class Ipv6L3VsdManagedConnectivityWithAggrFlowsTest(
 
     def test_icmp_connectivity_l3_vsd_managed_dualstack_linked_networks(self):
         self.skipTest('Skip for aggregate flows')   # not worth it, skip
+
+    def test_tcp_connectivity_stateful_acl_l3_vsd_managed_ipv6(self):
+        self.skipTest('Stateful acl entry not supported in aggregate flow '
+                      'enabled Domain')
+
+    def test_icmp_connectivity_stateful_acl_l3_vsd_managed_pure_v6(self):
+        self.skipTest('Stateful acl entry not supported in aggregate flow '
+                      'enabled Domain')

@@ -389,7 +389,7 @@ class TenantServer(object):
     def is_ip_configured(self, ip, assert_permanent=False,
                          assert_true=False):
         ip_configured = False
-        for cnt in range(3):
+        for cnt in range(5):
             if assert_permanent:
                 ip_configured = bool(self.send('ip a '
                                                '| grep "{}.* scope global" '
@@ -639,12 +639,29 @@ class TenantServer(object):
                   "echo '----- arp -a   -----'; arp -a; "
                   "echo")
 
-    def get_ip_addresses(self):
-        ips = self.get_server_details()['addresses'].values()[0]
+    def get_ip_addresses(self, neutron_dst_port=None, cidr=None):
+        ips = self.get_server_details()['addresses'].values()
         fixed_ip4 = fixed_ip6 = None
-        for ip in ips:
-            if ip['version'] == 4:
-                fixed_ip4 = ip['addr']
+        fixed_ips = []
+        if neutron_dst_port:
+            fixed_ips = ([ip['ip_address']
+                          for ip in neutron_dst_port['fixed_ips']
+                          if ip['ip_address']])
+        if cidr:
+            ips = [ip for ip in ips if (IPAddress(ip[0]['addr']) in
+                                        IPNetwork(cidr))]
+        for ip_details in ips:
+            if ip_details[0]['version'] == 4:
+                if fixed_ips:
+                    if ip_details[0]['addr'] in fixed_ips:
+                        fixed_ip4 = ip_details[0]['addr']
+                else:
+                    fixed_ip4 = ip_details[0]['addr']
             else:
-                fixed_ip6 = ip['addr']
-        return IPAddress(fixed_ip4), IPAddress(fixed_ip6)
+                if fixed_ips:
+                    if ip_details[0]['addr'] in fixed_ips:
+                        fixed_ip6 = ip_details[0]['addr']
+                else:
+                    fixed_ip6 = ip_details[0]['addr']
+        return (IPAddress(fixed_ip4) if fixed_ip4 else None,
+                IPAddress(fixed_ip6) if fixed_ip6 else None)

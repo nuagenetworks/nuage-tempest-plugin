@@ -443,6 +443,23 @@ class BaseTestCase(object):
         def test_multi_compute_icmp_connectivity_l3_os_managed(self):
             self._test_multi_compute_icmp_connectivity_os_managed(is_l3=True)
 
+        def test_tcp_stateful_connectivity_l2_os_managed(self):
+            # Provision OpenStack network resources
+            network = self.create_network()
+            self.create_subnet(network, ip_version=self._ip_version)
+            self.validate_tcp_stateful_traffic(network,
+                                               ip_version=self._ip_version,
+                                               is_l2=True)
+
+        def test_tcp_stateful_connectivity_l3_os_managed(self):
+            # Provision OpenStack network resources
+            router = self.create_test_router()
+            network = self.create_network()
+            subnet = self.create_subnet(network, ip_version=self._ip_version)
+            self.router_attach(router, subnet)
+            self.validate_tcp_stateful_traffic(network,
+                                               ip_version=self._ip_version)
+
 
 class Ipv4OsManagedConnectivityTest(
         BaseTestCase.SinglestackOsManagedConnectivityTest):

@@ -35,42 +35,6 @@ class TestFWaaS(fwaas_mixins.FWaaSClientMixin, NuageBaseTest):
                 msg = "%s Extension not enabled." % ext
                 raise self.skipException(msg)
 
-    def assert_icmp_connectivity(self, from_server, to_server,
-                                 is_connectivity_expected=True):
-        to_server.complete_prepare_for_connectivity()
-        _, to = to_server.get_ip_addresses()
-
-        error_msg = ("Ping error: timed out waiting for {} to "
-                     "become reachable".format(to)
-                     if is_connectivity_expected
-                     else ("Ping error: ip address {} is reachable while "
-                           "it shouldn't be".format(to)))
-        has_connectivity = from_server.ping(to)
-        self.assertEqual(expected=is_connectivity_expected,
-                         observed=has_connectivity,
-                         message=error_msg)
-
-    def assert_tcp_connectivity(self, from_server, to_server,
-                                is_connectivity_expected=True,
-                                source_port=None,
-                                destination_port=80):
-        to_server.complete_prepare_for_connectivity()
-        _, to = to_server.get_ip_addresses()
-
-        output = from_server.curl(destination_ip=to,
-                                  destination_port=destination_port,
-                                  source_port=source_port)
-        has_connectivity = output is not False
-
-        error_msg = ("HTTP error: timed out waiting for {} to "
-                     "become reachable".format(to)
-                     if is_connectivity_expected
-                     else ("HTTP error: server [{}]:{} is reachable while "
-                           "it shouldn't be".format(to, destination_port)))
-        self.assertEqual(expected=is_connectivity_expected,
-                         observed=has_connectivity,
-                         message=error_msg)
-
     def assert_no_icmp_connectivity(self, **kwargs):
         self.assert_icmp_connectivity(is_connectivity_expected=False,
                                       **kwargs)

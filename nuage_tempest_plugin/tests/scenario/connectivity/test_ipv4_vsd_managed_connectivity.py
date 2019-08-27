@@ -14,7 +14,7 @@ LOG = Topology.get_logger(__name__)
 
 class Ipv4L2VsdManagedConnectivityTest(NuageBaseTest):
 
-    def test_icmp_connectivity_l2_vsd_managed(self):
+    def _test_icmp_connectivity_l2_vsd_managed(self, stateful):
         # Provision VSD managed network resources
         l2domain_template = self.vsd_create_l2domain_template(
             cidr4=self.cidr4,
@@ -22,12 +22,11 @@ class Ipv4L2VsdManagedConnectivityTest(NuageBaseTest):
             mask_bits=self.mask_bits4)
         l2domain = self.vsd_create_l2domain(template=l2domain_template)
 
-        self.vsd.define_any_to_any_acl(l2domain)
-
         # Provision OpenStack network linked to VSD network resources
         network = self.create_network()
         self.create_l2_vsd_managed_subnet(network, l2domain)
 
+        self.vsd.define_any_to_any_acl(l2domain, stateful=stateful)
         # Launch tenant servers in OpenStack network
         server2 = self.create_tenant_server([network])
         server1 = self.create_tenant_server([network],
@@ -35,6 +34,12 @@ class Ipv4L2VsdManagedConnectivityTest(NuageBaseTest):
 
         # Test IPv4 connectivity between peer servers
         self.assert_ping(server1, server2, network)
+
+    def test_icmp_connectivity_stateful_acl_l2_vsd_managed(self):
+        self._test_icmp_connectivity_l2_vsd_managed(stateful=True)
+
+    def test_icmp_connectivity_stateless_acl_l2_vsd_managed(self):
+        self._test_icmp_connectivity_l2_vsd_managed(stateful=False)
 
 
 class Ipv4L3VsdManagedConnectivityTest(NuageBaseTest):
@@ -44,8 +49,7 @@ class Ipv4L3VsdManagedConnectivityTest(NuageBaseTest):
         # no static route needed if l3domain has aggregateflows disabled on vsd
         return ''
 
-    @decorators.attr(type='smoke')
-    def test_icmp_connectivity_l3_vsd_managed(self):
+    def _create_vsd_managed_resources(self):
         # Provision VSD managed network resources
         vsd_l3domain_template = self.vsd_create_l3domain_template()
         vsd_l3domain = self.vsd_create_l3domain(
@@ -55,11 +59,14 @@ class Ipv4L3VsdManagedConnectivityTest(NuageBaseTest):
             zone=vsd_zone,
             cidr4=self.cidr4, gateway4=self.gateway4)
 
-        self.vsd.define_any_to_any_acl(vsd_l3domain)
-
         # Provision OpenStack network linked to VSD network resources
         network = self.create_network()
         self.create_l3_vsd_managed_subnet(network, vsd_l3domain, vsd_subnet)
+        return vsd_l3domain, network
+
+    def _test_icmp_connectivity_l3_vsd_managed(self, stateful):
+        vsd_l3domain, network = self._create_vsd_managed_resources()
+        self.vsd.define_any_to_any_acl(vsd_l3domain, stateful=stateful)
 
         # Launch tenant servers in OpenStack network
         server2 = self.create_tenant_server([network],
@@ -70,7 +77,16 @@ class Ipv4L3VsdManagedConnectivityTest(NuageBaseTest):
         # Test IPv4 connectivity between peer servers
         self.assert_ping(server1, server2, network)
 
-    def test_icmp_connectivity_l3_vsd_managed_link_shared_subnet(self):
+    @decorators.attr(type='smoke')
+    def test_icmp_connectivity_stateful_acl_l3_vsd_managed(self):
+        self._test_icmp_connectivity_l3_vsd_managed(stateful=True)
+
+    @decorators.attr(type='smoke')
+    def test_icmp_connectivity_stateless_acl_l3_vsd_managed(self):
+        self._test_icmp_connectivity_l3_vsd_managed(stateful=False)
+
+    def test_icmp_connectivity_l3_vsd_managed_link_shared_subnet(
+            self):
         # Provision shared dualstack subnet in shared infrastructure
         shared_vsd_l3domain_template = self.vsd_create_l3domain_template(
             enterprise=self.shared_infrastructure)
@@ -147,6 +163,95 @@ class Ipv4L3VsdManagedConnectivityTest(NuageBaseTest):
         # Test IPv4 connectivity between peer servers
         self.assert_ping(server1, server2, network2)
 
+    @decorators.attr(type='smoke')
+    def test_tcp_connectivity_stateful_acl_l3_vsd_managed(self):
+        vsd_l3domain, network = self._create_vsd_managed_resources()
+        ingress_tpl, egress_tpl = self.vsd.create_acl_templates(vsd_l3domain)
+
+        # Launch tenant servers in OpenStack network
+        client_server = self.create_tenant_server(
+            [network], prepare_for_connectivity=True)
+        web_server = self.create_tenant_server(
+            [network], prepare_for_connectivity=True)
+        self.vsd.define_ssh_acl(ingress_tpl=ingress_tpl, egress_tpl=egress_tpl,
+                                stateful=True)
+        self.start_web_server(web_server, port=80)
+
+        self.assert_tcp_connectivity(client_server, web_server,
+                                     is_connectivity_expected=False,
+                                     source_port=None,
+                                     destination_port=80,
+                                     ip_version=4)
+        self.vsd.define_tcp_acl(direction='egress', acl_template=egress_tpl,
+                                ip_version=4)
+        self.assert_tcp_connectivity(client_server, web_server,
+                                     is_connectivity_expected=False,
+                                     source_port=None,
+                                     destination_port=80,
+                                     ip_version=4)
+        self.vsd.define_tcp_acl(direction='ingress', acl_template=ingress_tpl,
+                                ip_version=4)
+        self.assert_tcp_connectivity(client_server, web_server,
+                                     is_connectivity_expected=True,
+                                     source_port=None,
+                                     destination_port=80,
+                                     ip_version=4)
+
+    @decorators.attr(type='smoke')
+    def test_tcp_connectivity_stateless_acl_l3_vsd_managed(self):
+        vsd_l3domain, network = self._create_vsd_managed_resources()
+        ingress_tpl, egress_tpl = self.vsd.create_acl_templates(vsd_l3domain)
+
+        # Launch tenant servers in OpenStack network
+        client_server = self.create_tenant_server(
+            [network], prepare_for_connectivity=True)
+        web_server = self.create_tenant_server(
+            [network], prepare_for_connectivity=True)
+        self.vsd.define_ssh_acl(ingress_tpl=ingress_tpl, egress_tpl=egress_tpl,
+                                stateful=False)
+        self.start_web_server(web_server, port=80)
+
+        self.assert_tcp_connectivity(client_server, web_server,
+                                     is_connectivity_expected=False,
+                                     source_port=None,
+                                     destination_port=80,
+                                     ip_version=4)
+        client_port = self.osc_get_server_port_in_network(client_server,
+                                                          network)
+        web_server_port = self.osc_get_server_port_in_network(web_server,
+                                                              network)
+        client_pg = self.vsd.create_policy_group(vsd_l3domain,
+                                                 name="client_pg")
+        web_server_pg = self.vsd.create_policy_group(vsd_l3domain,
+                                                     name="web_server_pg")
+        self.update_port(client_port,
+                         **{'nuage_policy_groups': [client_pg.id]})
+        self.update_port(web_server_port,
+                         **{'nuage_policy_groups': [web_server_pg.id]})
+
+        self.vsd.define_tcp_acl(
+            direction='egress', acl_template=egress_tpl, ip_version=4,
+            s_port='80', d_port='*', stateful=False,
+            location_type='POLICYGROUP', location_id=client_pg.id)
+        self.vsd.define_tcp_acl(
+            direction='ingress', acl_template=ingress_tpl, ip_version=4,
+            s_port='*', d_port='80', stateful=False,
+            location_type='POLICYGROUP', location_id=client_pg.id)
+        self.vsd.define_tcp_acl(
+            direction='egress', acl_template=egress_tpl, ip_version=4,
+            s_port='*', d_port='80', stateful=False,
+            location_type='POLICYGROUP', location_id=web_server_pg.id)
+        self.vsd.define_tcp_acl(
+            direction='ingress', acl_template=ingress_tpl, ip_version=4,
+            s_port='80', d_port='*', stateful=False,
+            location_type='POLICYGROUP', location_id=web_server_pg.id)
+
+        self.assert_tcp_connectivity(client_server, web_server,
+                                     is_connectivity_expected=True,
+                                     source_port=None,
+                                     destination_port=80,
+                                     ip_version=4)
+
 
 class Ipv4L3VsdManagedConnectivityWithAggrFlowsTest(
         Ipv4L3VsdManagedConnectivityTest):
@@ -157,3 +262,11 @@ class Ipv4L3VsdManagedConnectivityWithAggrFlowsTest(
     def get_static_route_data(remote_cidr, local_gw, nic):
         return 'route add -net {} gw {} {}\n'.format(remote_cidr,
                                                      local_gw, nic)
+
+    def test_tcp_connectivity_stateful_acl_l3_vsd_managed(self):
+        self.skipTest('Stateful acl entry not supported in aggregate flow '
+                      'enabled Domain')
+
+    def test_icmp_connectivity_stateful_acl_l3_vsd_managed(self):
+        self.skipTest('Stateful acl entry not supported in aggregate flow '
+                      'enabled Domain')

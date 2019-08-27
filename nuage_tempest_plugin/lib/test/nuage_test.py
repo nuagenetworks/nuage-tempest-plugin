@@ -239,6 +239,90 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         except lib_exc.NotFound:
             pass
 
+    def assert_icmp_connectivity(self, from_server, to_server,
+                                 is_connectivity_expected=True):
+        to_server.complete_prepare_for_connectivity()
+        _, to = to_server.get_ip_addresses()
+
+        error_msg = ("Ping error: timed out waiting for {} to "
+                     "become reachable".format(to)
+                     if is_connectivity_expected
+                     else ("Ping error: ip address {} is reachable while "
+                           "it shouldn't be".format(to)))
+        has_connectivity = from_server.ping(to)
+        self.assertEqual(expected=is_connectivity_expected,
+                         observed=has_connectivity,
+                         message=error_msg)
+
+    def assert_tcp_connectivity(self, from_server, to_server,
+                                is_connectivity_expected=True,
+                                source_port=None,
+                                destination_port=80, ip_version=6,
+                                is_l2=False):
+        to_server.complete_prepare_for_connectivity()
+        neutron_dst_port = to_server.ports[1] if is_l2 else None
+        cidr = self.cidr6 if ip_version == 6 else self.cidr4
+        ipv4_to, ipv6_to = to_server.get_ip_addresses(neutron_dst_port,
+                                                      cidr=cidr)
+
+        to_ip = ipv6_to if ip_version == 6 else ipv4_to
+
+        output = from_server.curl(destination_ip=to_ip,
+                                  destination_port=destination_port,
+                                  source_port=source_port)
+        has_connectivity = output is not False
+
+        error_msg = ("HTTP error: timed out waiting for {} to "
+                     "become reachable".format(to_ip)
+                     if is_connectivity_expected
+                     else ("HTTP error: server [{}]:{} is reachable while "
+                           "it shouldn't be".format(to_ip,
+                                                    destination_port)))
+        self.assertEqual(expected=is_connectivity_expected,
+                         observed=has_connectivity,
+                         message=error_msg)
+
+    def validate_tcp_stateful_traffic(self, network, ip_version=4,
+                                      is_l2=False):
+        # create open-ssh security group
+        web_server_sg = self.create_open_ssh_security_group()
+        client_sg = self.create_open_ssh_security_group()
+        # Launch tenant servers in OpenStack network
+        client_server = self.create_tenant_server(
+            [network],
+            security_groups=[client_sg],
+            prepare_for_connectivity=True)
+        web_server = self.create_tenant_server(
+            [network],
+            security_groups=[web_server_sg],
+            prepare_for_connectivity=True)
+        self.start_web_server(web_server, port=80)
+
+        self.assert_tcp_connectivity(client_server, web_server,
+                                     is_connectivity_expected=False,
+                                     source_port=None,
+                                     destination_port=80,
+                                     ip_version=ip_version,
+                                     is_l2=is_l2)
+        self.create_tcp_rule(client_sg,
+                             direction='egress',
+                             ip_version=ip_version)
+        self.assert_tcp_connectivity(client_server, web_server,
+                                     is_connectivity_expected=False,
+                                     source_port=None,
+                                     destination_port=80,
+                                     ip_version=ip_version,
+                                     is_l2=is_l2)
+        self.create_tcp_rule(web_server_sg,
+                             direction='ingress',
+                             ip_version=ip_version)
+        self.assert_tcp_connectivity(client_server, web_server,
+                                     is_connectivity_expected=True,
+                                     source_port=None,
+                                     destination_port=80,
+                                     ip_version=ip_version,
+                                     is_l2=is_l2)
+
     def sleep(self, seconds=1, msg=None, tag=None):
         if tag is None:
             tag = self.test_name
@@ -696,6 +780,24 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 raise ValueError('Security group ID specified multiple times.')
 
         return self._create_security_group_rule(security_group, **kwargs)
+
+    def create_tcp_rule(self, sec_grp, direction, ip_version):
+        if direction == 'egress':
+            port_range_min = 1
+            port_range_max = 65535
+        else:
+            port_range_min = 80
+            port_range_max = 80
+        ruleset = {
+            # for web server
+            'protocol': 'tcp',
+            'port_range_min': port_range_min,
+            'port_range_max': port_range_max,
+            'direction': direction,
+            'ethertype': 'ipv' + str(ip_version)
+        }
+        self.create_security_group_rule(security_group=sec_grp,
+                                        **ruleset)
 
     def create_test_router(self, client=None):
         if Topology.access_to_l2_supported():

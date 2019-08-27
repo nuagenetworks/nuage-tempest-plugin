@@ -563,26 +563,86 @@ class VsdHelper(object):
 
         return template.create_child(entry)[0]
 
+    def create_acl_templates(self, the_domain, allow_spoofing=False):
+        acl_params = {
+            'name': 'default-acl-template',
+            'active': True,
+            'default_allow_ip': False,
+            'default_allow_non_ip': False,
+            'allow_address_spoof': allow_spoofing,
+            'default_install_acl_implicit_rules': False
+        }
+        ingress_template = self.vspk.NUIngressACLTemplate(**acl_params)
+        the_domain.create_child(ingress_template)
+        egress_template = self.vspk.NUEgressACLTemplate(**acl_params)
+        the_domain.create_child(egress_template)
+        return ingress_template, egress_template
+
+    def define_ssh_acl(self, ingress_tpl, egress_tpl, stateful=True):
+        res = []
+        # Add SSH rule for FIP access
+        entry = self.vspk.NUIngressACLEntryTemplate(
+            ether_type=self.CONST_ETHER_TYPE_IPV4,
+            protocol='6',
+            location_type='ANY',
+            network_type='ANY',
+            stateful=stateful,
+            destination_port='*',
+            source_port='22',
+            action='FORWARD')
+        obj = ingress_tpl.create_child(entry)[0]
+        res.append(obj.stats_id)
+        entry = self.vspk.NUEgressACLEntryTemplate(
+            ether_type=self.CONST_ETHER_TYPE_IPV4,
+            protocol='6',
+            location_type='ANY',
+            network_type='ANY',
+            stateful=stateful,
+            destination_port='22',
+            source_port='*',
+            action='FORWARD')
+        obj = egress_tpl.create_child(entry)[0]
+        res.append(obj.stats_id)
+        return res
+
+    def define_tcp_acl(self, direction, acl_template, ip_version, s_port='*',
+                       d_port='80', stateful=True, location_type='ANY',
+                       location_id=None):
+        res = []
+        ether_type = (self.CONST_ETHER_TYPE_IPV4 if ip_version == 4 else
+                      self.CONST_ETHER_TYPE_IPV6)
+        if direction == 'ingress':
+            entry = self.vspk.NUIngressACLEntryTemplate(
+                ether_type=ether_type,
+                protocol='6',
+                location_type=location_type,
+                location_id=location_id,
+                network_type='ANY',
+                stateful=stateful,
+                destination_port=d_port,
+                source_port=s_port,
+                action='FORWARD')
+            obj = acl_template.create_child(entry)[0]
+            res.append(obj.stats_id)
+        elif direction == 'egress':
+            entry = self.vspk.NUEgressACLEntryTemplate(
+                ether_type=ether_type,
+                protocol='6',
+                location_type='ANY',
+                network_type='ANY',
+                stateful=stateful,
+                destination_port=d_port,
+                source_port=s_port,
+                action='FORWARD')
+            obj = acl_template.create_child(entry)[0]
+            res.append(obj.stats_id)
+        return res
+
     def define_any_to_any_acl(self, domain,
                               ingress='FORWARD', egress='FORWARD',
                               allow_ipv4=True,
                               allow_ipv6=False,
                               stateful=False, spoof=False):
-        def create_acl_templates(the_domain, allow_spoofing):
-            acl_params = {
-                'name': 'default-acl-template',
-                'active': True,
-                'default_allow_ip': False,
-                'default_allow_non_ip': False,
-                'allow_address_spoof': allow_spoofing,
-                'default_install_acl_implicit_rules': False
-            }
-            ingress_template = self.vspk.NUIngressACLTemplate(**acl_params)
-            the_domain.create_child(ingress_template)
-            egress_template = self.vspk.NUEgressACLTemplate(**acl_params)
-            the_domain.create_child(egress_template)
-            return ingress_template, egress_template
-
         # always delete first
         for acl in domain.ingress_acl_templates.get():
             acl.delete()
@@ -590,7 +650,7 @@ class VsdHelper(object):
             acl.delete()
         # and then create new
         res = []
-        ingress_tpl, egress_tpl = create_acl_templates(domain, spoof)
+        ingress_tpl, egress_tpl = self.create_acl_templates(domain, spoof)
 
         if allow_ipv4:
             entry = self.vspk.NUIngressACLEntryTemplate(
