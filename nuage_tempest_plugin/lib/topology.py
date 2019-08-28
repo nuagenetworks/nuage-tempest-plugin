@@ -119,10 +119,6 @@ class Topology(Singleton):
         #               for the standard jobs that run in CI
 
     @staticmethod
-    def nuage_underlay_config():
-        return True  # assumed as True, according to what is done in CI
-
-    @staticmethod
     def nuage_fip_rate_limit_configs():
         return None, None  # egress & ingress rate limit configured in neutron
         #                    Defaulting to None, None, according CI settings

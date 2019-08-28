@@ -48,24 +48,17 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest):
     @classmethod
     def resource_setup(cls):
         super(NuageFipUnderlayBase, cls).resource_setup()
-
         cls.ext_net_id = CONF.network.public_network_id
-
-        nuage_fip_underlay_ini = Topology.nuage_underlay_config()
-        if nuage_fip_underlay_ini == '':
-            nuage_fip_underlay_ini = None
-        cls.nuage_fip_underlay_ini = nuage_fip_underlay_ini
+        cls.nuage_fip_underlay_ini = CONF.nuage_sut.nuage_fip_underlay
 
     @classmethod
     def needs_ini_nuage_fip_underlay(cls, underlay_value):
-        if underlay_value != Topology.nuage_underlay_config():
+        if underlay_value != cls.nuage_fip_underlay_ini:
             if not Topology.neutron_restart_supported():
                 raise cls.skipException(
                     'Skipping tests that require neutron restart ...')
             else:
                 assert False  # we don't support it :)
-
-        cls.nuage_fip_underlay_ini = underlay_value
 
     # Taken from test_external_network_extensions.py,trying to avoid issues
     # with the cli client
@@ -301,10 +294,7 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest):
     def _cli_create_delete_external_subnet_without_underlay(self):
         # underlay_default = None is same as False, change to False because
         # that will be in the response
-        if self.nuage_fip_underlay_ini is None:
-            underlay_default = False
-        else:
-            underlay_default = self.nuage_fip_underlay_ini
+        underlay_default = self.nuage_fip_underlay_ini or False
         ext_network_name = data_utils.rand_name("ext-fip-network")
         ext_network = self.create_network_with_args(ext_network_name,
                                                     " --router:external")
