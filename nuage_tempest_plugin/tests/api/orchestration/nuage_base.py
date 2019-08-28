@@ -9,10 +9,11 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-
+import json
 import os.path
 import yaml
 
+from tempest.lib.common import rest_client
 from tempest.lib.common.utils import data_utils
 from tempest.lib.common.utils import test_utils
 from tempest.services import orchestration
@@ -87,6 +88,23 @@ class BaseOrchestrationTest(tempest.test.BaseTestCase):
         stack_identifier = '%s/%s' % (stack_name, stack_id)
         cls.stacks.append(stack_identifier)
         return stack_identifier
+
+    @classmethod
+    def update_stack(cls, stack_identifier, stack_name, parameters=None,
+                     template_data=None, environment=None, files=None):
+        if parameters is None:
+            parameters = {}
+        headers, body = cls.client._prepare_update_create(
+            stack_name,
+            parameters=parameters,
+            template=template_data,
+            environment=environment)
+
+        uri = "stacks/%s" % stack_identifier
+        resp, body = cls.client.put(uri, headers=headers, body=body)
+        body = json.loads(body)
+        cls.client.expected_success(202, resp.status)
+        return rest_client.ResponseBody(resp, body)
 
     @classmethod
     def _clear_stacks(cls):
@@ -194,6 +212,12 @@ class NuageBaseOrchestrationTest(BaseOrchestrationTest):
         cls.admin_networks_client = cls.os_admin.networks_client
         cls.admin_subnets_client = cls.os_admin.subnets_client
         cls.admin_routers_client = cls.os_admin.routers_client
+
+    @classmethod
+    def setup_credentials(cls):
+        # Create no network resources for these tests.
+        cls.set_network_resources()
+        super(NuageBaseOrchestrationTest, cls).setup_credentials()
 
     @classmethod
     def resource_setup(cls):

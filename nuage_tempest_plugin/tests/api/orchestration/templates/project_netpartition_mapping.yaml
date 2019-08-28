@@ -1,0 +1,32 @@
+heat_template_version: 2015-04-30
+description: >
+  Simple template to associate a project to a netpartition
+
+parameters:
+  netpartition_name:
+    type: string
+    label: NetPartition Name
+    description: Name of netpartition to create
+  project:
+    type: string
+    label: project ID
+    description: Name of project to link to the netpartition
+
+resources:
+  netpartition:
+    type: Nuage::Neutron::Netpartition
+    properties:
+        name: {get_param: netpartition_name }
+  mapping:
+    type: Nuage::Neutron::ProjectNetpartitionMapping
+    properties:
+        project: {get_param: project}
+        net_partition_id: {get_resource: netpartition}
+
+outputs:
+  project:
+    description: ID of the Project
+    value: { get_attr: [ mapping, project ] }
+  net_partition_id:
+    description: ID of the Netpartition
+    value: { get_attr: [ mapping, net_partition_id ] }
