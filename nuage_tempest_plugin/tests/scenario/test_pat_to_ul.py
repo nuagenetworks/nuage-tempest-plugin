@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import testtools
+
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
 
@@ -56,8 +58,12 @@ class NuagePatToUnderlayScenarioTest(NuageBaseTest):
         else:
             self.assertNotEqual(result, '0')
 
+    @testtools.skipIf(not Topology.new_route_to_underlay_model_enabled(),
+                      'Skipping test as new route-to-UL model is not enabled')
     def test_pat_to_underlay_up_to_hv(self):
         self._test_pat_to_underlay_up_to_hv('snat', True)
 
+    @testtools.skipIf(not Topology.new_route_to_underlay_model_enabled(),
+                      'Skipping test as new route-to-UL model is not enabled')
     def test_pat_to_underlay_disabled_up_to_hv(self):
         self._test_pat_to_underlay_up_to_hv('off', False)
