@@ -101,9 +101,7 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
         port = self.create_port(network)
         self._verify_port(port, subnet4=ipv4_subnet, subnet6=None),
         self._verify_vport_in_l3_subnet(port, vsd_l3_subnet)
-
-        server1 = self.create_tenant_server(
-            ports=[port])
+        server1 = self.create_tenant_server(ports=[port])
         self.assertIsNotNone(server1)
 
     @decorators.attr(type='smoke')
