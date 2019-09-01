@@ -399,8 +399,35 @@
         NUAGE_SRIOV_ALLOW_EXISTING_FLAT_VLAN: true
 
 - job:
+    name: networking-nuage-tempest-sriov-flat-vlan-5.4
+    parent: networking-nuage-tempest-sriov-5.4
+    # This currently works from stable/pike on
+    branches: ^(?!stable/(newton|ocata)).*$
+    description: job running api tests against nuage sriov mech driver with allow_existing_flat_vlan
+    vars:
+      devstack_localrc:
+        NUAGE_SRIOV_ALLOW_EXISTING_FLAT_VLAN: true
+
+- job:
     name: networking-nuage-tempest-sriov-switchdev
     parent: networking-nuage-tempest-sriov
+    description: job running api tests against nuage sriov mech driver with switchdev capability
+    # This currently works from stable/pike on
+    branches: ^(?!stable/(newton|ocata)).*$
+    vars:
+      devstack_localrc:
+        NUAGE_USE_SWITCHDEV: true
+      devstack_local_conf:
+        test-config:
+          $TEMPEST_CONFIG:
+            network:
+              port_profile: capabilities:[switchdev]
+      tempest_test_regex: '^nuage_tempest_plugin\..*'
+      tempest_black_regex: '^(?:.*(nuage_tempest_plugin\.tests\.(scenario|api\.(upgrade|baremetal|vsd_managed)))).*'
+
+- job:
+    name: networking-nuage-tempest-sriov-switchdev-5.4
+    parent: networking-nuage-tempest-sriov-5.4
     description: job running api tests against nuage sriov mech driver with switchdev capability
     # This currently works from stable/pike on
     branches: ^(?!stable/(newton|ocata)).*$
