@@ -11,7 +11,8 @@
         - networking-nuage-tempest-smoke-py3
     full:
       jobs:
-        - networking-nuage-tempest-full-py3
+        - networking-nuage-tempest-virtio-py3
+        - networking-nuage-tempest-scenario
     agent:
       jobs:
         - networking-nuage-tempest-qdhcp
