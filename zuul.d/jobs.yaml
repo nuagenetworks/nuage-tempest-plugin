@@ -326,8 +326,8 @@
     branches: ^(?!stable/(newton|ocata)).*$
     timeout: 18000
     vars:
-      tempest_test_regex: '^nuage_tempest_plugin\..*'
-      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.(scenario|scale|api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway).*)))'
+      tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\..*'
+      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway).*))'
 
 - job:
     name: networking-nuage-tempest-virtio-5.4
@@ -336,8 +336,8 @@
     # This currently works from pike on
     branches: ^(5.4/(pike|queens|rocky)).*$
     vars:
-      tempest_test_regex: '^nuage_tempest_plugin\..*'
-      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.(scenario|scale|api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway).*)))'
+      tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\..*'
+      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway).*))'
 
 - job:
     name: networking-nuage-tempest-virtio-py3
@@ -347,8 +347,8 @@
     branches: ^(?!stable/(newton|ocata)).*$
     timeout: 18000
     vars:
-      tempest_test_regex: '^nuage_tempest_plugin\..*'
-      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.(scenario|scale|api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway).*)))'
+      tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\..*'
+      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway).*))'
 
 - job:
     name: networking-nuage-tempest-sriov
@@ -412,8 +412,8 @@
           $TEMPEST_CONFIG:
             network:
               port_profile: capabilities:[switchdev]
-      tempest_test_regex: '^nuage_tempest_plugin\..*'
-      tempest_black_regex: '^(?:.*(nuage_tempest_plugin\.tests\.(scenario|api\.(upgrade|baremetal|vsd_managed)))).*'
+      tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\..*'
+      tempest_black_regex: '^(?:.*(nuage_tempest_plugin\.tests\.api\.(cli|upgrade|baremetal|vsd_managed))).*'
 
 - job:
     name: networking-nuage-tempest-baremetal
