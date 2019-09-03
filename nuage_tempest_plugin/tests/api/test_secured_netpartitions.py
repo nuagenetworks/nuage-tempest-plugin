@@ -79,8 +79,9 @@ class SecuredNetpartitionsTest(NuageBaseTest):
             delete_project_netpartition_mapping(project_id)
 
         # Show the deleted mapping
-        self.assertRaises(
+        self.assertRaisesRegex(
             exceptions.NotFound,
+            'project_net_partition_mapping .* could not be found',
             self.plugin_admin_network_client.
             show_project_netpartition_mappings,
             project_id)
@@ -139,8 +140,10 @@ class SecuredNetpartitionsTest(NuageBaseTest):
                         netpart['id'])
         project_id = self.manager.subnets_client.tenant_id
         # Create a mapping
-        self.assertRaises(
+        self.assertRaisesRegex(
             exceptions.Forbidden,
+            'rule:create_project_net_partition_mapping is disallowed '
+            'by policy',
             self.plugin_network_client.create_project_netpartition_mapping,
             {'project': project_id,
              'net_partition_id': netpart['id']})
@@ -384,13 +387,15 @@ class SecuredNetpartitionsTest(NuageBaseTest):
             gateway=gateway)
         self.addCleanup(self.vsd.delete_subnet, vsd_subnet.id)
         network = self.create_network(name)
-        self.assertRaises(exceptions.BadRequest,
-                          self.create_subnet,
-                          network,
-                          cidr=cidr,
-                          mask_bits=24,
-                          nuagenet=vsd_subnet.id,
-                          no_net_partition=True)
+        self.assertRaisesRegex(exceptions.BadRequest,
+                               'Bad request: Provided Nuage subnet not in '
+                               'the provided Nuage net-partition',
+                               self.create_subnet,
+                               network,
+                               cidr=cidr,
+                               mask_bits=24,
+                               nuagenet=vsd_subnet.id,
+                               no_net_partition=True)
 
         # l2
         cidr = IPNetwork('50.50.50.0/24')
@@ -402,9 +407,11 @@ class SecuredNetpartitionsTest(NuageBaseTest):
         vsd_l2dom = self.vsd.create_l2domain(
             name=name, enterprise=enterprise, template=vsd_l2dom_tmplt)
         self.addCleanup(self.vsd.delete_l2domain, vsd_l2dom.id)
-        self.assertRaises(exceptions.BadRequest,
-                          self.create_subnet,
-                          network, cidr=cidr,
-                          mask_bits=24, gateway=None,
-                          nuagenet=vsd_l2dom.id,
-                          no_net_partition=True)
+        self.assertRaisesRegex(exceptions.BadRequest,
+                               'Provided Nuage subnet not in the '
+                               'provided Nuage net-partition',
+                               self.create_subnet,
+                               network, cidr=cidr,
+                               mask_bits=24, gateway=None,
+                               nuagenet=vsd_l2dom.id,
+                               no_net_partition=True)
