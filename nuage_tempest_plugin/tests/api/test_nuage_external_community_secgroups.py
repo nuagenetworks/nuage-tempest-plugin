@@ -146,9 +146,8 @@ class NuageExtSecGroup(test_security_groups_nuage.SecGroupTestNuageBase):
         self._verify_external_secgroup_properties(
             show_resp['nuage_external_security_group'],
             show_vsd_resp[0])
-        if Topology.within_ext_id_release():
-            self.assertEqual(self.nuage_client.get_vsd_external_id(
-                esg_router['id']), show_vsd_resp[0]['externalID'])
+        self.assertEqual(self.nuage_client.get_vsd_external_id(
+            esg_router['id']), show_vsd_resp[0]['externalID'])
         # list_external_security_group
         res_path = self.nuageclient.build_resource_path(
             constants.POLICYGROUP,
@@ -210,10 +209,9 @@ class NuageExtSecGroup(test_security_groups_nuage.SecGroupTestNuageBase):
         for resp, vsd_resp in zip(list_resp, list_vsd_resp):
             self._verify_external_secgroup_rule_properties(
                 resp, vsd_resp, sec_group)
-        if Topology.within_ext_id_release():
-            for vsd_resp in list_vsd_resp:
-                self.assertEqual(self.nuage_client.get_vsd_external_id(
-                    esg_router['id']), vsd_resp['externalID'])
+        for vsd_resp in list_vsd_resp:
+            self.assertEqual(self.nuage_client.get_vsd_external_id(
+                esg_router['id']), vsd_resp['externalID'])
 
     def test_create_show_list_delete_ext_secgroup_l2domain(self):
         net_name = data_utils.rand_name('network-')
@@ -238,9 +236,8 @@ class NuageExtSecGroup(test_security_groups_nuage.SecGroupTestNuageBase):
         self._verify_external_secgroup_properties(
             show_resp['nuage_external_security_group'],
             show_vsd_resp[0])
-        if Topology.within_ext_id_release():
-            self.assertEqual(self.nuage_client.get_vsd_external_id(
-                esg_subnet['id']), show_vsd_resp[0]['externalID'])
+        self.assertEqual(self.nuage_client.get_vsd_external_id(
+            esg_subnet['id']), show_vsd_resp[0]['externalID'])
         # list_external_security_group
         res_path = self.nuageclient.build_resource_path(
             constants.POLICYGROUP,

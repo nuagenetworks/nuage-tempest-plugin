@@ -23,7 +23,7 @@ from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 
-from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
+from nuage_tempest_plugin.tests.api.external_id.external_id \
     import ExternalId
 from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_networks
@@ -84,9 +84,8 @@ class VSDManagedRedirectTargetTest(
                             "Redirect target not found on VSD")
 
         # with externalID
-        if Topology.within_ext_id_release():
-            self.assertEqual(vsd_redirect_target[0]['externalID'],
-                             ExternalId(subnet['network_id']).at_cms_id())
+        self.assertEqual(vsd_redirect_target[0]['externalID'],
+                         ExternalId(subnet['network_id']).at_cms_id())
 
         # When I associate a port to the redirect-target
         rtport = self.create_port(network)
@@ -535,10 +534,9 @@ class VSDManagedRedirectTargetTest(
                 msg = "update_port_precommit failed"
         else:
             # VSD-14419 - VSD throws wrong error
-            if not Topology.within_ext_id_release():
-                expected_exception = exceptions.ServerFault
-                LOG.warning("VSD-14419: throws wrong http error code: "
-                            "ServerFault iso BadRequest")
+            expected_exception = exceptions.ServerFault
+            LOG.warning("VSD-14419: throws wrong http error code: "
+                        "ServerFault iso BadRequest")
 
         self.assertRaisesRegex(
             expected_exception,

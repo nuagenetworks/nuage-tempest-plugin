@@ -13,8 +13,7 @@ from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.test.vsd_helper import VsdHelper
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
-from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
-    import ExternalId
+from nuage_tempest_plugin.tests.api.external_id.external_id import ExternalId
 
 CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)

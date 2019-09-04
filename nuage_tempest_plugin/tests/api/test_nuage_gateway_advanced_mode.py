@@ -371,7 +371,7 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
         self.assertEqual(actual_vlan['userMnemonic'],
                          expected_vlan['usermnemonic'])
         self.assertEqual(actual_vlan['value'], expected_vlan['value'])
-        if Topology.within_ext_id_release() and verify_ext:
+        if verify_ext:
             external_id = (expected_vlan['gatewayport'] + "." +
                            str(expected_vlan['value']))
             self.assertEqual(actual_vlan['externalID'],
@@ -383,15 +383,14 @@ class NuageGatewayTestJSON(base.BaseAdminNetworkTest,
         self.assertEqual(actual_vport['ID'], expected_vport['id'])
         self.assertEqual(actual_vport['type'], expected_vport['type'])
         self.assertEqual(actual_vport['name'], expected_vport['name'])
-        if Topology.within_ext_id_release():
-            if expected_vport['type'] == n_constants.BRIDGE_VPORT:
-                self.assertEqual(actual_vport['externalID'],
-                                 self.nuage_client.get_vsd_external_id(
-                                     network_id))
-            else:
-                self.assertEqual(actual_vport['externalID'],
-                                 self.nuage_client.get_vsd_external_id(
-                                     expected_vport['port']))
+        if expected_vport['type'] == n_constants.BRIDGE_VPORT:
+            self.assertEqual(actual_vport['externalID'],
+                             self.nuage_client.get_vsd_external_id(
+                                 network_id))
+        else:
+            self.assertEqual(actual_vport['externalID'],
+                             self.nuage_client.get_vsd_external_id(
+                                 expected_vport['port']))
 
     @decorators.attr(type='smoke')
     def test_list_gateway(self):

@@ -21,8 +21,7 @@ from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.lib.utils import exceptions as n_exceptions
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
-from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
-    import ExternalId
+from nuage_tempest_plugin.tests.api.external_id.external_id import ExternalId
 from nuage_tempest_plugin.tests.scenario \
     import base_nuage_network_scenario_test
 
@@ -96,11 +95,6 @@ class ExternalIdForVmTest(
         super(ExternalIdForVmTest, self).setUp()
         self.keypairs = {}
         self.servers = []
-
-    @classmethod
-    def skip_checks(cls):
-        super(ExternalIdForVmTest, cls).skip_checks()
-        cls.test_upgrade = not Topology.within_ext_id_release()
 
     @classmethod
     def setup_clients(cls):

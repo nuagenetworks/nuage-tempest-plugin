@@ -307,11 +307,6 @@ class ExternalIdForL3domainTest(base.BaseAdminNetworkTest):
                     subnet['ID'])
 
     @classmethod
-    def skip_checks(cls):
-        super(ExternalIdForL3domainTest, cls).skip_checks()
-        cls.test_upgrade = not Topology.within_ext_id_release()
-
-    @classmethod
     def setup_clients(cls):
         super(ExternalIdForL3domainTest, cls).setup_clients()
         cls.nuage_client = NuageRestClient()

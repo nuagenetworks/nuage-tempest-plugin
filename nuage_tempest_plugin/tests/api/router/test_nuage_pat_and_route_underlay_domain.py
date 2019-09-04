@@ -8,7 +8,7 @@ from tempest.lib import exceptions
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
+from nuage_tempest_plugin.tests.api.external_id.external_id \
     import ExternalId
 
 CONF = Topology.get_conf()

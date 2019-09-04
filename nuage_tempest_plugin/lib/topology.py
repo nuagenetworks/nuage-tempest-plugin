@@ -94,10 +94,6 @@ class Topology(Singleton):
     def up_to_openstack(openstack_version):
         return Topology.openstack_version <= Release(openstack_version)
 
-    @staticmethod
-    def within_ext_id_release():
-        return Topology.from_nuage('4.0r5')
-
     # - - - - - -
 
     nbr_retries_for_test_robustness = 5  # same as plugin

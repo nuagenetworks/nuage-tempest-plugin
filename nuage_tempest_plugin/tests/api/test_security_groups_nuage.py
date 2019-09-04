@@ -26,8 +26,7 @@ from tempest.test import decorators
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
-from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
-    import ExternalId
+from nuage_tempest_plugin.tests.api.external_id.external_id import ExternalId
 
 CONF = Topology.get_conf()
 
@@ -114,9 +113,8 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
             ent_net_macro = self.nuage_client.get_enterprise_net_macro(
                 filters='IPv6Address', filter_value=remote_ip_prefix)
         self.assertNotEqual(ent_net_macro, '', msg='Macro not found')
-        if Topology.within_ext_id_release():
-            self.assertEqual(ent_net_macro[0]['externalID'],
-                             ent_net_macro[0]['parentID'] + '@openstack')
+        self.assertEqual(ent_net_macro[0]['externalID'],
+                         ent_net_macro[0]['parentID'] + '@openstack')
 
     def _get_nuage_acl_entry_template(self, sec_group_rule, nuage_domain=None,
                                       reverse=False):

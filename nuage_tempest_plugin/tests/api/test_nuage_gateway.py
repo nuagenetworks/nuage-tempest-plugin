@@ -23,8 +23,7 @@ from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
-from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
-    import ExternalId
+from nuage_tempest_plugin.tests.api.external_id.external_id import ExternalId
 
 from . import base_nuage_gateway as base
 
@@ -688,16 +687,12 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         self.assertEqual(n_constants.NUAGE_PLCY_GRP_ALLOW_ALL,
                          default_pg[0]['name'])
 
-        if Topology.within_ext_id_release():
-            self.assertThat(default_pg[0],
-                            ContainsDict(
-                                {'externalID':
-                                 Equals(ExternalId(
-                                     n_constants.NUAGE_PLCY_GRP_ALLOW_ALL
-                                 ).at_cms_id())}))
-        else:
-            self.assertThat(default_pg[0],
-                            ContainsDict({'externalID': Equals(None)}))
+        self.assertThat(default_pg[0],
+                        ContainsDict(
+                            {'externalID':
+                             Equals(ExternalId(
+                                 n_constants.NUAGE_PLCY_GRP_ALLOW_ALL
+                             ).at_cms_id())}))
 
         vports_from_pg = self.nuage_client.get_vport(
             n_constants.POLICYGROUP,
@@ -714,44 +709,32 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
             n_constants.DOMAIN,
             l3domain[0]['ID'])
 
-        if Topology.within_ext_id_release():
-            # must have external ID as router_id @ cms_id
-            self.assertThat(nuage_eacl_template[0],
-                            ContainsDict({'externalID':
-                                         Equals(ExternalId(
-                                             self.router['id']
-                                         ).at_cms_id())}))
-        else:
-            self.assertThat(nuage_eacl_template[0],
-                            ContainsDict({'externalID': Equals(None)}))
+        # must have external ID as router_id @ cms_id
+        self.assertThat(nuage_eacl_template[0],
+                        ContainsDict({'externalID':
+                                     Equals(ExternalId(
+                                         self.router['id']
+                                     ).at_cms_id())}))
 
         nuage_eacl_entrytemplate = \
             self.nuage_client.get_egressacl_entrytemplate(
                 n_constants.EGRESS_ACL_TEMPLATE,
                 nuage_eacl_template[0]['ID'])
 
-        if Topology.within_ext_id_release():
-            self.assertThat(nuage_eacl_entrytemplate[0],
-                            ContainsDict({'externalID': Equals(
-                                ExternalId(
-                                    n_constants.NUAGE_PLCY_GRP_ALLOW_ALL
-                                ).at_cms_id())}))
-        else:
-            self.assertThat(nuage_eacl_entrytemplate[0],
-                            ContainsDict({'externalID': Equals(None)}))
+        self.assertThat(nuage_eacl_entrytemplate[0],
+                        ContainsDict({'externalID': Equals(
+                            ExternalId(
+                                n_constants.NUAGE_PLCY_GRP_ALLOW_ALL
+                            ).at_cms_id())}))
 
         vport_tp_pg_mapping = False
         for nuage_eacl_entry in nuage_eacl_entrytemplate:
             if nuage_eacl_entry['locationID'] == default_pg[0]['ID']:
-                if Topology.within_ext_id_release():
-                    self.assertThat(
-                        nuage_eacl_entry,
-                        ContainsDict({'externalID': Equals(ExternalId(
-                            n_constants.NUAGE_PLCY_GRP_ALLOW_ALL
-                        ).at_cms_id())}))
-                else:
-                    self.assertThat(nuage_eacl_entry,
-                                    ContainsDict({'externalID': Equals(None)}))
+                self.assertThat(
+                    nuage_eacl_entry,
+                    ContainsDict({'externalID': Equals(ExternalId(
+                        n_constants.NUAGE_PLCY_GRP_ALLOW_ALL
+                    ).at_cms_id())}))
 
                 self.assertEqual(
                     nuage_eacl_entry['networkType'],
@@ -769,44 +752,32 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
             n_constants.DOMAIN,
             l3domain[0]['ID'])
 
-        if Topology.within_ext_id_release():
-            # must have external ID as router_id @ cms_id
-            self.assertThat(nuage_iacl_template[0],
-                            ContainsDict({'externalID':
-                                         Equals(ExternalId(
-                                             self.router['id']
-                                         ).at_cms_id())}))
-        else:
-            self.assertThat(nuage_iacl_template[0],
-                            ContainsDict({'externalID': Equals(None)}))
+        # must have external ID as router_id @ cms_id
+        self.assertThat(nuage_iacl_template[0],
+                        ContainsDict({'externalID':
+                                     Equals(ExternalId(
+                                         self.router['id']
+                                     ).at_cms_id())}))
 
         nuage_iacl_entrytemplate = \
             self.nuage_client.get_ingressacl_entrytemplate(
                 n_constants.INGRESS_ACL_TEMPLATE,
                 nuage_iacl_template[0]['ID'])
 
-        if Topology.within_ext_id_release():
-            self.assertThat(nuage_iacl_entrytemplate[0],
-                            ContainsDict({'externalID': Equals(
-                                ExternalId(
-                                    n_constants.NUAGE_PLCY_GRP_ALLOW_ALL,
-                                ).at_cms_id())}))
-        else:
-            self.assertThat(nuage_iacl_entrytemplate[0],
-                            ContainsDict({'externalID': Equals(None)}))
+        self.assertThat(nuage_iacl_entrytemplate[0],
+                        ContainsDict({'externalID': Equals(
+                            ExternalId(
+                                n_constants.NUAGE_PLCY_GRP_ALLOW_ALL,
+                            ).at_cms_id())}))
 
         vport_tp_pg_mapping = False
         for nuage_iacl_entry in nuage_iacl_entrytemplate:
             if nuage_iacl_entry['locationID'] == default_pg[0]['ID']:
-                if Topology.within_ext_id_release():
-                    self.assertThat(
-                        nuage_iacl_entry,
-                        ContainsDict({'externalID': Equals(ExternalId(
-                            n_constants.NUAGE_PLCY_GRP_ALLOW_ALL
-                        ).at_cms_id())}))
-                else:
-                    self.assertThat(nuage_iacl_entry,
-                                    ContainsDict({'externalID': Equals(None)}))
+                self.assertThat(
+                    nuage_iacl_entry,
+                    ContainsDict({'externalID': Equals(ExternalId(
+                        n_constants.NUAGE_PLCY_GRP_ALLOW_ALL
+                    ).at_cms_id())}))
 
                 self.assertEqual(
                     nuage_iacl_entry['networkType'],

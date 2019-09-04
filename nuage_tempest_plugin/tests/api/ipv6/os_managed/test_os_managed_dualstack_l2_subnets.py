@@ -18,7 +18,7 @@ from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.utils import constants as nuage_constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
-from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
+from nuage_tempest_plugin.tests.api.external_id.external_id \
     import ExternalId
 
 MSG_IP_ADDRESS_INVALID_OR_RESERVED = "IP Address %s is not valid " \
