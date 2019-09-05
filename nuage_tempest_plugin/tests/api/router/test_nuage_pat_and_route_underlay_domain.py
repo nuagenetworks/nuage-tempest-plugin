@@ -27,7 +27,7 @@ class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
             raise cls.skipException(msg)
 
     @testtools.skipIf(Topology.new_route_to_underlay_model_enabled(),
-                      'Skipping test as new route-to-UL model is  enabled')
+                      'Skipping test as new route-to-UL model is enabled')
     def test_nuage_pat_legacy(self):
         """Relevant router interface:
 
