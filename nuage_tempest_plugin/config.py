@@ -78,7 +78,7 @@ NuageSutGroup = [
                default=1,
                help='Number of neutron api workers deployed.'),
     cfg.StrOpt('nuage_pat_legacy',
-               default='enabled',
+               default='disabled',
                choices=['enabled', 'disabled'],
                help="Nuage_pat legacy mode enabled or disabled."),
     cfg.BoolOpt('image_is_advanced',
