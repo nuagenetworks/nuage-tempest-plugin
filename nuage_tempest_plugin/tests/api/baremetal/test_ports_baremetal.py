@@ -116,7 +116,7 @@ class BaremetalPortsTest(network_mixin.NetworkMixin,
         self._test_baremetal_port(topology, update=False,
                                   vlan_transparent=True)
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_baremetal_port_l3_update(self):
         topology = self._create_topology(with_router=True)
         self._test_baremetal_port(topology, update=True)
@@ -127,12 +127,12 @@ class BaremetalPortsTest(network_mixin.NetworkMixin,
         self._test_baremetal_port(topology, update=True,
                                   vlan_transparent=True)
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_baremetal_port_l2_create(self):
         topology = self._create_topology(with_router=False)
         self._test_baremetal_port(topology, update=False)
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_baremetal_port_l2_create_vlan_transparent(self):
         topology = self._create_topology(with_router=False,
                                          vlan_transparent=True)
@@ -238,7 +238,7 @@ class BaremetalPortsTest(network_mixin.NetworkMixin,
                           topology.network['id'],
                           **data)
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_l2_create_without_psec(self):
         topology = self._create_topology()
         create_data = {
@@ -278,7 +278,7 @@ class BaremetalPortsTest(network_mixin.NetworkMixin,
             topology, pg_name=constants.NUAGE_PLCY_GRP_ALLOW_ALL_HW,
             vport_num=2)
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_l2_update_without_psec(self):
         topology = self._create_topology()
         create_data = {
@@ -301,7 +301,7 @@ class BaremetalPortsTest(network_mixin.NetworkMixin,
         self._validate_policygroup(
             topology, pg_name=constants.NUAGE_PLCY_GRP_ALLOW_ALL_HW)
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_l3_create_without_psec(self):
         topology = self._create_topology(with_router=True)
         create_data = {
@@ -341,7 +341,7 @@ class BaremetalPortsTest(network_mixin.NetworkMixin,
             topology, pg_name=constants.NUAGE_PLCY_GRP_ALLOW_ALL_HW,
             vport_num=2)
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_l3_update_without_psec(self):
         topology = self._create_topology(with_router=True)
         create_data = {
