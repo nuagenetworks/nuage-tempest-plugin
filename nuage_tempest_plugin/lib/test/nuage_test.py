@@ -1336,8 +1336,8 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             self.test_name, server_name))
 
         # Current network (L2 or L3 pure v6)
-        ports = []
         if networks:
+            ports = []
             sgs = []
             if security_groups:
                 for sg in security_groups:
