@@ -234,7 +234,7 @@
     branches: ^(5.4/(pike|queens|rocky)).*$
     # This currently works from pike on
     vars:
-      vsp_release: 5.4
+      vsp_release: '5.4'
       devstack_local_conf:
         post-config:
           $NEUTRON_CONF:
