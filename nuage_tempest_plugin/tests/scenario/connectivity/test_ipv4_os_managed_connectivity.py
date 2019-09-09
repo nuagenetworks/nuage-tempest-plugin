@@ -2,6 +2,8 @@
 # All Rights Reserved.
 
 from netaddr import IPNetwork
+import sys
+import testtools
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
@@ -59,12 +61,12 @@ class Ipv4OsManagedConnectivityTest(NuageBaseTest):
 
         # Launch tenant servers in OpenStack network
         server2 = self.create_tenant_server(
-            name=nova_friendly_name,
+            name=nova_friendly_name + '-2',
             networks=[network],
             security_groups=[ssh_security_group])
 
         server1 = self.create_tenant_server(
-            name=nova_friendly_name,
+            name=nova_friendly_name + '-1',
             networks=[network],
             security_groups=[ssh_security_group],
             make_reachable=True)
@@ -74,22 +76,26 @@ class Ipv4OsManagedConnectivityTest(NuageBaseTest):
 
     @decorators.attr(type='smoke')
     def test_icmp_connectivity_l3_os_managed(self):
-        self._icmp_connectivity_l3_os_managed_by_name()
+        self._icmp_connectivity_l3_os_managed_by_name('test-server')
 
+    @testtools.skipUnless(sys.version_info >= (3, 0),
+                          reason='Skip with python 2')
     @decorators.attr(type='smoke')
     def test_icmp_connectivity_l3_os_managed_russian(self):
-        # Russian, ask Vlad :)
+        # Let's serve some Russian horseradish...
         name = (u'\u0445\u0440\u0435\u043d-\u0441-' +
                 u'\u0440\u0443\u0447\u043a\u043e\u0439')
 
         self._icmp_connectivity_l3_os_managed_by_name(name)
 
+    @testtools.skipUnless(sys.version_info >= (3, 0),
+                          reason='Skip with python 2')
     @decorators.attr(type='smoke')
     def test_icmp_connectivity_l3_os_managed_line_tab(self):
         line_tab = u'\u000b'
-        name = 'hi' + line_tab + 'there'
+        name = 'test' + line_tab + 'server'
 
-        self._icmp_connectivity_l3_os_managed_by_name(name, 'hi there')
+        self._icmp_connectivity_l3_os_managed_by_name(name, 'test-server')
 
     def test_icmp_connectivity_l3_os_managed_neg(self):
         # Provision OpenStack network resources
