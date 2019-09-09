@@ -328,3 +328,46 @@ class NuageFipToVip(NuageBaseTest):
         self.assertIsNotNone(
             nuage_vport.associated_floating_ip_id,
             "Floating ip not correctly attached to the vport.")
+
+    @decorators.attr(type='smoke')
+    def test_fip_to_vip_vm(self):
+        network = self.create_network()
+        self.assertIsNotNone(network, "Unable to create network")
+        subnet = self.create_subnet(network)
+        self.assertIsNotNone(subnet, "Unable to create subnet")
+        router = self.create_router(
+            external_network_id=CONF.network.public_network_id)
+        self.assertIsNotNone(router, "Unable to create router")
+        self.router_attach(router, subnet)
+
+        # Create VIP_port
+        vip_port = self.create_port(network=network, device_owner="nuage:vip")
+        self.assertIsNotNone(vip_port, "Unable to create vip port")
+
+        # Create Port with AAP of VIP Port
+        AAP_port = self.create_port(network=network)
+        self.assertIsNotNone(AAP_port, "Unable to create port")
+
+        # Add Allowable_address_pair to port, this should result in the
+        # VIP creation on VSD.
+        aap_ip = vip_port['fixed_ips'][0]['ip_address']
+        aap_mac = AAP_port['mac_address']
+        self.update_port(port=AAP_port,
+                         allowed_address_pairs=[{"ip_address": aap_ip,
+                                                "mac_address": aap_mac}])
+
+        # Create server on port
+        self.create_tenant_server(ports=[AAP_port])
+
+        # Create floating ip and attach to VIP_PORT
+        floating_ip = self.create_floatingip()
+        self.assertIsNotNone(floating_ip, "Unable to create floating ip")
+        self.update_floatingip(floatingip=floating_ip,
+                               port_id=vip_port['id'])
+
+        # Check VSD status
+        nuage_vip = self.vsd.get_vport_vip(vport_id=AAP_port['id'],
+                                           router_id=router['id'])
+        self.assertIsNotNone(nuage_vip, "Not able to find VIP on VSD.")
+        self.assertIsNotNone(nuage_vip.associated_floating_ip_id,
+                             "Floating ip not associated with vip.")
