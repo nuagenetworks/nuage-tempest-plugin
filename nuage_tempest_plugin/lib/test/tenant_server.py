@@ -200,8 +200,7 @@ class TenantServer(object):
             self.name, self.flavor, self.image_id, self.keypair, cleanup,
             **kwargs)
 
-        LOG.info('[{}] Became {}'.format(
-            self.tag, wait_until))
+        LOG.info('[{}] Became {}'.format(self.tag, wait_until))
 
         for addresses in self.get_server_details()['addresses'].values():
             address = []

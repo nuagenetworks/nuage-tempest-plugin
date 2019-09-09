@@ -1300,8 +1300,8 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         # making the server reachable is postponed, such that parallel booting
         # of servers is maximized (and test execution minimized)
 
-        LOG.info('[{}] {} deployed SUCCESSFULLY'.format(self.test_name,
-                                                        name.capitalize()))
+        LOG.info('[{}] {} deployed SUCCESSFULLY'.format(
+            self.test_name, name.capitalize()))
 
         # If to be prepared for connectivity, create/associate FIP now
         if prepare_for_connectivity:
