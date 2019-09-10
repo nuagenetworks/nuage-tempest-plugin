@@ -95,3 +95,9 @@ tempest\.api\.compute\.servers\.test_attach_interfaces\.AttachInterfacesUnderV24
 # although port does not have any ICMP allow rules. (VRS-8575)
 neutron_tempest_plugin\.scenario\.test_security_groups\.NetworkSecGroupTest\.test_two_sec_groups
 
+# OPENSTACK-2695
+tempest\.api\.compute\.servers\.test_server_rescue_negative\.ServerRescueNegativeTestJSON\.test_rescue_paused_instance
+tempest\.api\.compute\.servers\.test_device_tagging\.TaggedAttachmentsTest\.test_tagged_attachment
+tempest\.api\.compute\.servers\.test_server_actions\.ServerActionsTestJSON\.test_reboot_server_hard
+tempest\.api\.compute\.servers\.test_server_actions\.ServerActionsTestJSON\.test_resize_server_revert
+tempest\.api\.compute\.servers\.test_server_actions\.ServerActionsTestJSON\.test_resize_server_revert_with_volume_attached
