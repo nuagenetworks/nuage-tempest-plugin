@@ -210,13 +210,10 @@ class Ipv4OsManagedConnectivityTest(NuageBaseTest):
         fl2 = self.create_floatingip(external_network_id=ext_network['id'],
                                      subnet_id=ext_s2['id'], port_id=p2['id'])
 
-        server2 = self.create_tenant_server(
-            ports=[p2])
-        server1 = self.create_tenant_server(
-            ports=[p1])
+        server2 = self.create_tenant_server(ports=[p2])
+        server1 = self.create_tenant_server(ports=[p1])
 
         server1.associate_fip(fl1['floating_ip_address'])
-        server1.validate_authentication()
 
         # Test IPv4 connectivity between peer servers
         self.assert_ping(server1, server2, ext_network,

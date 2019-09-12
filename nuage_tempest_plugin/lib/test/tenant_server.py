@@ -21,6 +21,7 @@ LOG = Topology.get_logger(__name__)
 class FipAccessConsole(RemoteClient):
 
     def __init__(self, tenant_server):
+        assert tenant_server.associated_fip
         super(FipAccessConsole, self).__init__(
             ip_address=tenant_server.associated_fip,
             username=tenant_server.username,
@@ -150,8 +151,8 @@ class TenantServer(object):
         return bool(self._vm_console)
 
     def console(self):
-        if not self.has_console():
-            self.make_fip_reachable()
+        if not self._vm_console:
+            self._vm_console = FipAccessConsole(self)
             self.validate_authentication()
             self.wait_for_cloudinit_to_complete()
         return self._vm_console
@@ -252,10 +253,6 @@ class TenantServer(object):
                                                    filter_by_ip_type=ip_type)
         return addresses[0] if addresses else None
 
-    def get_first_port(self):
-        return self.parent_test.osc_get_server_port_in_network(
-            self, self.networks[0]) if self.networks else self.ports[0]
-
     def is_dhcp_enabled(self, network):
         return (
             self.force_dhcp or
@@ -289,9 +286,6 @@ class TenantServer(object):
 
     def associate_fip(self, fip):
         self.associated_fip = fip
-        # now is the time to init the fip-access console also
-        if not self._vm_console:
-            self._vm_console = FipAccessConsole(self)
 
     def send(self, cmd, timeout=CONF.validation.ssh_timeout,
              ssh_shell_prologue=None, as_sudo=True,
@@ -305,11 +299,6 @@ class TenantServer(object):
                                    one_off_attempt=one_off_attempt,
                                    assert_success=assert_success,
                                    on_failure_return=on_failure_return)
-
-    def make_fip_reachable(self):
-        if not self.has_console():
-            assert self.prepare_for_connectivity
-            self.parent_test.make_fip_reachable(self)
 
     def validate_authentication(self):
         LOG.info('[{}] Validating authentication'.format(self.tag))

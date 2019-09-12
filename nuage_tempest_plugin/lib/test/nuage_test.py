@@ -1302,36 +1302,42 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
         LOG.info('[{}] {} deployed SUCCESSFULLY'.format(self.test_name,
                                                         name.capitalize()))
+
+        # If to be prepared for connectivity, create/associate FIP now
+        if prepare_for_connectivity:
+            self.make_fip_reachable(server)
+
         return server
 
     def make_fip_reachable(self, server, client=None):
-        if not server.has_console():
-            LOG.info('[{}] Making {} FIP reachable'.format(
-                self.test_name, server.name))
+        LOG.info('[{}] Making {} FIP reachable'.format(
+            self.test_name, server.name))
 
-            if server.networks:
-                networks = server.networks
-            else:
-                networks = []
-                for port in server.ports:
-                    networks.append(port['parent_network'])
+        # make reachable over the 1st port
+        if server.networks:
+            first_network = server.networks[0]
+            first_port = self.osc_get_server_port_in_network(server,
+                                                             first_network)
+        else:
+            first_port = server.ports[0]
+            first_network = first_port['parent_network']
 
-            # make reachable over the 1st port
-            first_port = server.get_first_port()
+        if first_network.get('vsd_l3_subnet'):
+            # vsd managed l3
+            self.create_fip_to_server(
+                server, first_port,
+                vsd_domain=first_network.get('vsd_l3_domain'),
+                vsd_subnet=first_network.get('vsd_l3_subnet'),
+                client=client)
+        elif first_network.get('vsd_l2_domain'):
+            # vsd managed l2
+            raise NotImplementedError
+        else:
+            # OS managed
+            self.create_fip_to_server(server, first_port)
 
-            if networks[0].get('vsd_l3_subnet'):
-                # vsd managed l3
-                self.create_fip_to_server(
-                    server, first_port,
-                    vsd_domain=networks[0].get('vsd_l3_domain'),
-                    vsd_subnet=networks[0].get('vsd_l3_subnet'),
-                    client=client)
-            elif networks[0].get('vsd_l2_domain'):
-                # vsd managed l2
-                raise NotImplementedError
-            else:
-                # OS managed
-                self.create_fip_to_server(server, first_port)
+        LOG.info('[{}] {} is FIP reachable'.format(
+            self.test_name, server.name))
 
     def prepare_fip_topology(
             self, server_name, networks, ports, security_groups=None,
