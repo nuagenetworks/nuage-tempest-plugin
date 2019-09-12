@@ -1309,23 +1309,28 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             LOG.info('[{}] Making {} FIP reachable'.format(
                 self.test_name, server.name))
 
-            networks = server.networks
+            if server.networks:
+                networks = server.networks
+            else:
+                networks = []
+                for port in server.ports:
+                    networks.append(port['parent_network'])
 
             # make reachable over the 1st port
             first_port = server.get_first_port()
 
-            if networks and networks[0].get('vsd_l3_subnet'):
+            if networks[0].get('vsd_l3_subnet'):
                 # vsd managed l3
                 self.create_fip_to_server(
                     server, first_port,
                     vsd_domain=networks[0].get('vsd_l3_domain'),
                     vsd_subnet=networks[0].get('vsd_l3_subnet'),
                     client=client)
-            elif networks and networks[0].get('vsd_l2_domain'):
+            elif networks[0].get('vsd_l2_domain'):
                 # vsd managed l2
                 raise NotImplementedError
             else:
-                # server was created based on ports, or networks are OS managed
+                # OS managed
                 self.create_fip_to_server(server, first_port)
 
     def prepare_fip_topology(
