@@ -135,6 +135,16 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         self.verify_vlan_properties(gw_vlan[0], vlan)
 
     @decorators.attr(type='smoke')
+    def test_list_gv_vlans_without_any_vlan(self):
+        gw = self.create_gateway('VRSG')
+        gw_port = self.create_gateway_port(gw)
+
+        # List the vlans
+        body = self.admin_client.list_gateway_vlans(gw_port[0]['ID'])
+        vlans = body['nuage_gateway_vlans']
+        self.assertEmpty(vlans)
+
+    @decorators.attr(type='smoke')
     def test_delete_vlan(self):
         gw_port = self.gatewayports[0]
         kwargs = {
