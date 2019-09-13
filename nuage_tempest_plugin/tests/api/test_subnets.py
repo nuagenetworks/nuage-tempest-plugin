@@ -14,16 +14,24 @@
 
 from netaddr import IPNetwork
 
+from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageAdminNetworksTest
 from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.services import nuage_client
+
 
 LOG = Topology.get_logger(__name__)
 
 
 class SubnetsTest(NuageAdminNetworksTest):
+
+    @classmethod
+    def setup_clients(cls):
+        super(SubnetsTest, cls).setup_clients()
+        cls.nuage_rest_client = nuage_client.NuageRestClient()
 
     @decorators.attr(type='smoke')
     def test_create_2nd_v4_subnet_in_network(self):
@@ -130,3 +138,24 @@ class SubnetsTest(NuageAdminNetworksTest):
             self.assertEqual(1, len(dhcp_ports))
             self.assertEqual(dhcp_ports[0]['fixed_ips'][0]['subnet_id'],
                              subnet2['id'])
+
+    def test_subnet_l2_domain_template_description(self):
+        net_name = data_utils.rand_name('test-subnet-net-')
+        sub_name = data_utils.rand_name('test-subnet-sub-')
+        network = self.create_network(network_name=net_name)
+        self.create_subnet(network, name=sub_name)
+        l2_domains = self.nuage_rest_client.get_l2domain(filters="externalID",
+                                                         filter_value=network[
+                                                             "id"])
+        l2_domain_templates = self.nuage_rest_client.get_l2domaintemplate(
+            filters="externalID", filter_value=network["id"])
+        msg = "Descriptions of L2 Domain and L2 Domain Template should " \
+              "match Subnet name "
+
+        self.assertEqual(1, len(l2_domains))
+        self.assertEqual(1, len(l2_domain_templates))
+        self.assertEqual(l2_domains[0]["templateID"],
+                         l2_domain_templates[0]["ID"])
+
+        self.assertEqual(sub_name, l2_domains[0]["description"], msg)
+        self.assertEqual(sub_name, l2_domain_templates[0]["description"], msg)

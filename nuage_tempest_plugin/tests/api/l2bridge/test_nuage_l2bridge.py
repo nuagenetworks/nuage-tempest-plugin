@@ -1196,6 +1196,75 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             bridge = self.get_l2bridge(bridge['id'])
             self.assertEqual(bridge['nuage_subnet_id'], None)
 
+    def test_nuage_l2bridge_update_bridge_name(self):
+        physnets = [{
+            'physnet_name': 'physnet1',
+            'segmentation_id': self._segmentation_id_1,
+            'segmentation_type': 'vlan'
+        }, {
+            'physnet_name': 'physnet2',
+            'segmentation_id': self._segmentation_id_1,
+            'segmentation_type': 'vlan'
+        }]
+        name = data_utils.rand_name('test-l2bridge-')
+        bridge = self.create_l2bridge(name, physnets)
+        kwargs = {
+            'segments': [
+                {
+                    'provider:network_type': 'vlan',
+                    'provider:segmentation_id': self._segmentation_id_1,
+                    'provider:physical_network': 'physnet1'},
+                {
+                    'provider:network_type': 'vxlan'
+                }
+            ]
+        }
+        n1 = self.create_network(network_name=name + '-1',
+                                 client=self.admin_manager,
+                                 **kwargs)
+
+        if self.is_dhcp_agent_present():
+            msg = ("Bad request: A network cannot be attached to an l2bridge"
+                   " when neutron-dhcp-agent is enabled'")
+            self.assertRaisesRegex(exceptions.BadRequest,
+                                   msg,
+                                   self.create_subnet,
+                                   n1, subnet_name=name + '-subnet',
+                                   client=self.admin_manager,
+                                   cidr=self._cidr,
+                                   mask_bits=self._mask_bits,
+                                   ip_version=self._ip_version)
+        else:
+            self.create_subnet(n1, subnet_name=name + '-subnet',
+                               client=self.admin_manager,
+                               cidr=self._cidr,
+                               mask_bits=self._mask_bits, cleanup=False,
+                               ip_version=self._ip_version)
+
+            self._check_description_l2domain_and_template(
+                bridge['id'], name)
+            # update with new name
+            name = data_utils.rand_name('test-l2bridge1-newname-')
+            self.update_l2bridge(bridge['id'], name, physnets)
+            self._check_description_l2domain_and_template(
+                bridge['id'], name)
+
+    def _check_description_l2domain_and_template(self, l2domain_name,
+                                                 l2bridge_name):
+        l2_domain = self.vsd.get_l2domain(
+            vspk_filter='name == "{}"'.format(l2domain_name))
+        l2_domain_template = self.vsd.get_l2domain_template(
+            vspk_filter='name == "{}"'.format(l2domain_name))
+        msg = ("Descriptions of L2 Domain and L2 Domain Template "
+               "should match")
+        self.assertIsNotNone(l2_domain)
+        self.assertIsNotNone(l2_domain_template)
+        self.assertEqual(l2_domain.template_id, l2_domain_template.id)
+        self.assertEqual(l2_domain_template.description,
+                         l2_domain.description, msg)
+        self.assertEqual(l2bridge_name, l2_domain.description, msg
+                         + " reference name")
+
 
 class NuageL2BridgeV4Test(BaseNuageL2Bridge):
     # This class assumes that the following resources are available:

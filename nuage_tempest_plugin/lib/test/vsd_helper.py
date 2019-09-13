@@ -217,6 +217,35 @@ class VsdHelper(object):
     def delete_l2domain(self, l2dom_id):
         return self.nuage_rest_client.delete_l2domain(l2dom_id)
 
+    def _get_enterprise_or_default(self, enterprise):
+        if enterprise and not isinstance(enterprise, self.vspk.NUEnterprise):
+            # get enterprise by _name_
+            enterprise = self.get_enterprise_by_name(enterprise)
+
+        if not enterprise:
+            enterprise = self.get_default_enterprise()
+        return enterprise
+
+    def _get_vspk_filter_for_l2domain_or_domain_template(
+            self,
+            vspk_filter=None,
+            by_subnet_id=None, by_network_id=None,
+            cidr=None, ip_type=4):
+
+        if not vspk_filter and by_subnet_id:
+            vspk_filter = self.get_external_id_filter(by_subnet_id)
+        elif not vspk_filter and by_network_id and cidr:
+            if ip_type == 6:
+                vspk_filter = self.filter_str(
+                    ['externalID', 'IPv6Address'],
+                    [self.external_id(by_network_id), cidr])
+            else:
+                vspk_filter = self.filter_str(
+                    ['externalID', 'address'],
+                    [self.external_id(by_network_id),
+                     cidr.split('/')[0]])
+        return vspk_filter
+
     def get_l2domain(self, enterprise=None, vspk_filter=None,
                      by_subnet_id=None, by_network_id=None,
                      cidr=None, ip_type=4):
@@ -233,37 +262,67 @@ class VsdHelper(object):
         self.vsd.get_l2domain(
             vspk_filter='externalID == "{}"'.format(ext_id))
         """
-        if enterprise and not isinstance(enterprise, self.vspk.NUEnterprise):
-            # get enterprise by _name_
-            enterprise = self.get_enterprise_by_name(enterprise)
+        enterprise = self._get_enterprise_or_default(enterprise)
 
-        if not enterprise:
-            enterprise = self.get_default_enterprise()
+        if not vspk_filter:
+            vspk_filter = (
+                self._get_vspk_filter_for_l2domain_or_domain_template(
+                    vspk_filter=vspk_filter,
+                    by_subnet_id=by_subnet_id, by_network_id=by_network_id,
+                    cidr=cidr,
+                    ip_type=ip_type)
+            )
 
-        if vspk_filter:
-            l2_domain = enterprise.l2_domains.get_first(filter=vspk_filter)
-        elif by_subnet_id:
-            l2_domain = self.get_l2domain(
-                enterprise, self.get_external_id_filter(by_subnet_id))
-        elif by_network_id and cidr:
-            if ip_type == 6:
-                vspk_filter = self.filter_str(
-                    ['externalID', 'IPv6Address'],
-                    [self.external_id(by_network_id), cidr])
-                l2_domain = self.get_l2domain(enterprise, vspk_filter)
-            else:
-                vspk_filter = self.filter_str(
-                    ['externalID', 'address'],
-                    [self.external_id(by_network_id),
-                     cidr.split('/')[0]])
-                l2_domain = self.get_l2domain(enterprise, vspk_filter)
-        else:
+        if not vspk_filter:
             LOG.error('a qualifier is required')
             return None
+
+        l2_domain = enterprise.l2_domains.get_first(
+            filter=vspk_filter)
         if not l2_domain:
-            LOG.warning('could not fetch the l2 domain '
-                        'matching the filter "{}"'.format(vspk_filter))
+            LOG.warning('could not fetch the L2 domain '
+                        'matching the filter "{}"'
+                        .format(vspk_filter))
         return l2_domain
+
+    def get_l2domain_template(self, enterprise=None, vspk_filter=None,
+                              by_subnet_id=None, by_network_id=None,
+                              cidr=None, ip_type=4):
+        """get_l2domain_template
+
+        @params: enterprise object or enterprise id
+                 filter following vspk filter structure
+        @return  l2 domain template object
+        @Example:
+        self.vsd.get_l2domain_template(enterprise=enterprise,
+                              vspk_filter='name == "{}"'.format(name))
+        self.vsd.get_l2domain_template(enterprise=enterprise_name,
+                              vspk_filter='name == "{}"'.format(name))
+        self.vsd.get_l2domain_template(
+            vspk_filter='externalID == "{}"'.format(ext_id))
+        """
+        enterprise = self._get_enterprise_or_default(enterprise)
+
+        if not vspk_filter:
+            vspk_filter = (
+                self._get_vspk_filter_for_l2domain_or_domain_template(
+                    vspk_filter=vspk_filter,
+                    by_subnet_id=by_subnet_id, by_network_id=by_network_id,
+                    cidr=cidr,
+                    ip_type=ip_type)
+            )
+
+        if not vspk_filter:
+            LOG.error('a qualifier is required')
+            return None
+
+        l2_domain_template = enterprise.l2_domain_templates.get_first(
+            filter=vspk_filter)
+        if not l2_domain_template:
+            LOG.warning('could not fetch the L2 domain template'
+                        'matching the filter "{}"'
+                        .format(vspk_filter))
+        return l2_domain_template
 
     ###
     # l3 domain
