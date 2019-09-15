@@ -57,7 +57,6 @@
       tempest_test_regex: '^(tempest|neutron_tempest_plugin)\.(api|scenario)'
       tempest_test_blacklist: "{{devstack_base_dir}}/nuage-tempest-plugin/tempest-blacklist.txt"
 
-
 - job:
     name: tempest-full-5.4
     parent: networking-nuage-base-5.4
@@ -227,6 +226,7 @@
         # INF-7814 nuage-metadata-agent runs under py2 and
         # misses dependencies to python-keystoneclient
         FORCE_CONFIG_DRIVE: True
+
 - job:
     name: networking-nuage-base-5.4
     parent: networking-nuage-base
@@ -338,6 +338,7 @@
           $TEMPEST_CONFIG:
             network:
               port_vnic_type: direct
+
 - job:
     name: networking-nuage-tempest-sriov-5.4
     parent: networking-nuage-base-5.4

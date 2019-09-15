@@ -12,6 +12,8 @@
     full:
       jobs:
         - networking-nuage-tempest-virtio-py3
+        - networking-nuage-tempest-sriov
+        - networking-nuage-tempest-baremetal
         - networking-nuage-tempest-scenario
     agent:
       jobs:
