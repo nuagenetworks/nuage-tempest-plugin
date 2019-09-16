@@ -31,6 +31,9 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         body = self.ports_client.show_port(port_id)
         return body['port']
 
+    # NOTE: By convention, all tests in this class that deploy a VM,  must have
+    # 'with_vm' in their name.
+    # Switchdev test pipeline with exclude them.
     def _create_server(self, name, network, port_id=None):
         keypair = self.create_keypair()
         network = {'uuid': network['id']}
@@ -93,7 +96,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         self.assertEqual('DOWN', port['status'])
 
     @decorators.attr(type='smoke')
-    def test_nuage_port_create_server_create_delete_check_status(self):
+    def test_nuage_port_with_vm_create_delete_check_status(self):
         network = self.create_network()
         self.create_subnet(network, cidr=IPNetwork("10.0.0.0/24"),
                            mask_bits=24)

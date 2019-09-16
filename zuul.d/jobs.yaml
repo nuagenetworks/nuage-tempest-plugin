@@ -392,8 +392,8 @@
           $TEMPEST_CONFIG:
             network:
               port_profile: capabilities:[switchdev]
-      tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\..*'
-      tempest_black_regex: '^(?:.*(nuage_tempest_plugin\.tests\.api\.(cli|upgrade|baremetal|vsd_managed))).*'
+      tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.test_ports\..*'
+      tempest_black_regex: '^nuage_tempest_plugin\.tests\.api\.test_ports\.PortsTest\.test_.*_with_vm.*'
 
 - job:
     name: networking-nuage-tempest-sriov-switchdev-5.4
@@ -409,8 +409,8 @@
           $TEMPEST_CONFIG:
             network:
               port_profile: capabilities:[switchdev]
-      tempest_test_regex: '^nuage_tempest_plugin\..*'
-      tempest_black_regex: '^(?:.*(nuage_tempest_plugin\.tests\.(scenario|api\.(cli|upgrade|baremetal|vsd_managed)))).*'
+      tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.test_ports\..*'
+      tempest_black_regex: '^nuage_tempest_plugin\.tests\.api\.test_ports\.PortsTest\.test_.*_with_vm.*'
 
 - job:
     name: networking-nuage-tempest-baremetal
