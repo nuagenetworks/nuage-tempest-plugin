@@ -18,8 +18,6 @@ from netaddr import IPNetwork
 from tempest.api.network import base as base
 from tempest.lib.common.utils import data_utils
 
-import testtools
-
 from .external_id import ExternalId
 
 from nuage_tempest_plugin.lib.topology import Topology
@@ -231,11 +229,6 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
                 self.vsd_vport['ID'])
 
     @classmethod
-    def setUpClass(cls):
-        super(ExternalIdForVPortTest, cls).setUpClass()
-        cls.test_upgrade = not Topology.within_ext_id_release()
-
-    @classmethod
     def setup_clients(cls):
         super(ExternalIdForVPortTest, cls).setup_clients()
         cls.nuage_client = NuageRestClient()
@@ -253,8 +246,6 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
                         vsd_l2dom_tmplt[0]['ID'])
         return vsd_l2dom_tmplt
 
-    @testtools.skipUnless(Topology.within_ext_id_release(),
-                          'No upgrade testing on vport')
     def test_port_dhcp_options_matches_to_port(self):
         net_name = data_utils.rand_name()
         cidr = IPNetwork('10.10.100.0/24')

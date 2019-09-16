@@ -34,7 +34,7 @@ from nuage_tempest_plugin.lib.utils import data_utils as nuage_data_utils
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
-from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
+from nuage_tempest_plugin.tests.api.external_id.external_id \
     import ExternalId
 
 CONF = Topology.get_conf()
@@ -105,83 +105,82 @@ class NuageRoutersTest(base.BaseNetworkTest):
         nuage_domain = self.nuage_client.get_l3domain(
             filters='externalID', filter_value=rtr_id)
         self.assertEqual(nuage_domain[0]['description'], name)
-        if Topology.within_ext_id_release():
-            nuage_zones = self.nuage_client.get_zone(
-                parent_id=nuage_domain[0]['ID'])
-            self.assertEqual(len(nuage_zones), 2, "Zones for the corresponding"
-                                                  " Domain are not found")
-            for zone in nuage_zones:
-                self.assertEqual(zone['externalID'],
-                                 self.nuage_client.get_vsd_external_id(
-                                     rtr_id))
-                permissions = self.nuage_client.get_permissions(
-                    parent=n_constants.ZONE,
-                    parent_id=zone['ID'])
-                self.assertEqual(len(permissions), 1)
-                self.assertEqual(permissions[0]['externalID'],
-                                 self.nuage_client.get_vsd_external_id(
-                                     create_body['router']['tenant_id']))
-                if zone['name'].split('-')[1] == 'pub':
-                    self.assertEqual(permissions[0]['permittedEntityName'],
-                                     "Everybody")
-                else:
-                    self.assertEqual(permissions[0]['permittedEntityName'],
-                                     self.routers_client.tenant_id)
-                    group_resp = self.nuage_client.get_resource(
-                        resource=n_constants.GROUP,
-                        filters='externalID',
-                        filter_value=(self.routers_client.tenant_id +
-                                      '@openstack'),
-                        netpart_name=self.nuage_client.def_netpart_name)
-                    self.assertIsNot(group_resp, "",
-                                     "User Group on VSD for the user who "
-                                     "created the Router was not Found")
-                    self.assertEqual(group_resp[0]['name'],
-                                     self.routers_client.tenant_id)
-                user_resp = self.nuage_client.get_user(
+        nuage_zones = self.nuage_client.get_zone(
+            parent_id=nuage_domain[0]['ID'])
+        self.assertEqual(len(nuage_zones), 2, "Zones for the corresponding"
+                                              " Domain are not found")
+        for zone in nuage_zones:
+            self.assertEqual(zone['externalID'],
+                             self.nuage_client.get_vsd_external_id(
+                                 rtr_id))
+            permissions = self.nuage_client.get_permissions(
+                parent=n_constants.ZONE,
+                parent_id=zone['ID'])
+            self.assertEqual(len(permissions), 1)
+            self.assertEqual(permissions[0]['externalID'],
+                             self.nuage_client.get_vsd_external_id(
+                                 create_body['router']['tenant_id']))
+            if zone['name'].split('-')[1] == 'pub':
+                self.assertEqual(permissions[0]['permittedEntityName'],
+                                 "Everybody")
+            else:
+                self.assertEqual(permissions[0]['permittedEntityName'],
+                                 self.routers_client.tenant_id)
+                group_resp = self.nuage_client.get_resource(
+                    resource=n_constants.GROUP,
                     filters='externalID',
                     filter_value=(self.routers_client.tenant_id +
                                   '@openstack'),
                     netpart_name=self.nuage_client.def_netpart_name)
-                self.assertIsNot(user_resp, "",
-                                 "User on VSD for the user who created the "
-                                 "Router was not Found")
-                self.assertEqual(user_resp[0]['userName'],
+                self.assertIsNot(group_resp, "",
+                                 "User Group on VSD for the user who "
+                                 "created the Router was not Found")
+                self.assertEqual(group_resp[0]['name'],
                                  self.routers_client.tenant_id)
-            default_egress_tmpl = self.nuage_client.get_child_resource(
+            user_resp = self.nuage_client.get_user(
+                filters='externalID',
+                filter_value=(self.routers_client.tenant_id +
+                              '@openstack'),
+                netpart_name=self.nuage_client.def_netpart_name)
+            self.assertIsNot(user_resp, "",
+                             "User on VSD for the user who created the "
+                             "Router was not Found")
+            self.assertEqual(user_resp[0]['userName'],
+                             self.routers_client.tenant_id)
+        default_egress_tmpl = self.nuage_client.get_child_resource(
+            resource=n_constants.DOMAIN,
+            resource_id=nuage_domain[0]['ID'],
+            child_resource=n_constants.EGRESS_ACL_TEMPLATE,
+            filters='externalID',
+            filter_value=self.nuage_client.get_vsd_external_id(
+                rtr_id))
+        self.assertIsNot(default_egress_tmpl,
+                         "",
+                         "Could not Find Default EGRESS Template on VSD "
+                         "For Router")
+        default_ingress_tmpl = self.nuage_client.get_child_resource(
+            resource=n_constants.DOMAIN,
+            resource_id=nuage_domain[0]['ID'],
+            child_resource=n_constants.INGRESS_ACL_TEMPLATE,
+            filters='externalID',
+            filter_value=self.nuage_client.get_vsd_external_id(
+                rtr_id))
+        self.assertIsNot(default_ingress_tmpl,
+                         "",
+                         "Could not Find Default INGRESS Template on VSD"
+                         " For Router")
+        default_ingress_awd_tmpl = \
+            self.nuage_client.get_child_resource(
                 resource=n_constants.DOMAIN,
                 resource_id=nuage_domain[0]['ID'],
-                child_resource=n_constants.EGRESS_ACL_TEMPLATE,
+                child_resource=n_constants.INGRESS_ADV_FWD_TEMPLATE,
                 filters='externalID',
                 filter_value=self.nuage_client.get_vsd_external_id(
                     rtr_id))
-            self.assertIsNot(default_egress_tmpl,
-                             "",
-                             "Could not Find Default EGRESS Template on VSD "
-                             "For Router")
-            default_ingress_tmpl = self.nuage_client.get_child_resource(
-                resource=n_constants.DOMAIN,
-                resource_id=nuage_domain[0]['ID'],
-                child_resource=n_constants.INGRESS_ACL_TEMPLATE,
-                filters='externalID',
-                filter_value=self.nuage_client.get_vsd_external_id(
-                    rtr_id))
-            self.assertIsNot(default_ingress_tmpl,
-                             "",
-                             "Could not Find Default INGRESS Template on VSD"
-                             " For Router")
-            default_ingress_awd_tmpl = \
-                self.nuage_client.get_child_resource(
-                    resource=n_constants.DOMAIN,
-                    resource_id=nuage_domain[0]['ID'],
-                    child_resource=n_constants.INGRESS_ADV_FWD_TEMPLATE,
-                    filters='externalID',
-                    filter_value=self.nuage_client.get_vsd_external_id(
-                        rtr_id))
-            self.assertIsNot(default_ingress_awd_tmpl,
-                             "",
-                             "Could not Find Default Forwarding INGRESS"
-                             " Template on VSD For Router")
+        self.assertIsNot(default_ingress_awd_tmpl,
+                         "",
+                         "Could not Find Default Forwarding INGRESS"
+                         " Template on VSD For Router")
         self.assertEqual(
             create_body['router']['external_gateway_info']['network_id'],
             CONF.network.public_network_id)

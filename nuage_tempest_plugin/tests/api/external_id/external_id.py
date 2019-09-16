@@ -19,7 +19,7 @@ from nuage_tempest_plugin.lib.topology import Topology
 
 
 class ExternalId(object):
-    external_id_regex = re.compile("^([a-zA-Z0-9\-_]*)(?:@)?([a-zA-Z0-9\-]*)")
+    external_id_regex = re.compile(r'^([a-zA-Z0-9\-_]*)(?:@)?([a-zA-Z0-9\-]*)')
 
     def __init__(self, id_string):
         self.cms = ""

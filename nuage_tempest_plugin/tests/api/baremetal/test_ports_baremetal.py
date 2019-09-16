@@ -28,7 +28,7 @@ from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.tests.api.baremetal.baremetal_topology \
     import BaremetalTopology
-from nuage_tempest_plugin.tests.api.upgrade.external_id.external_id \
+from nuage_tempest_plugin.tests.api.external_id.external_id \
     import ExternalId
 
 CONF = Topology.get_conf()

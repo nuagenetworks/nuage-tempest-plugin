@@ -13,8 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import testtools
-
 from tempest.lib.common.utils import data_utils
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
@@ -257,17 +255,10 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
                 self.vsd_vport['ID'])
 
     @classmethod
-    def setUpClass(cls):
-        super(ExternalIdForVPortTest, cls).setUpClass()
-        cls.test_upgrade = not Topology.within_ext_id_release()
-
-    @classmethod
     def setup_clients(cls):
         super(ExternalIdForVPortTest, cls).setup_clients()
         cls.nuage_client = NuageRestClient()
 
-    @testtools.skipUnless(Topology.within_ext_id_release(),
-                          'No upgrade testing on vport')
     def test_port_dhcp_options_matches_to_port(self):
         # Create a network
         name = data_utils.rand_name('network-')
