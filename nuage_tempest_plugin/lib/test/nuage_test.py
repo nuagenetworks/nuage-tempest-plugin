@@ -1365,9 +1365,11 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
         # Create a jump (FIP) network (L3)
         fip_network = self.create_network(client=client)
+        fip_cidr = IPNetwork("192.168.0.0/24")
         subnet = self.create_subnet(
-            fip_network, cidr=IPNetwork("192.168.0.0/24"),
-            client=client)
+            fip_network, cidr=fip_cidr,
+            client=client, mask_bits=fip_cidr.prefixlen,
+            ip_version=fip_cidr.version)
         router = self.create_test_router(client=client)
         self.router_attach(router, subnet, client=client)
 
