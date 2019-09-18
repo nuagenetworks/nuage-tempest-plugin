@@ -58,8 +58,17 @@ class NetpartitionsTest(NuageAdminNetworksTest):
         body = self.client.create_netpartition(name)
         self.assertEqual('201', body.response['status'])
         netpart = body['net_partition']
-        self.assertEqual(name, netpart['name'])
+        ascii_name = name.encode("unicode-escape").decode().replace('\\', "")
+        self.assertEqual(ascii_name, netpart['name'])
         return netpart
+
+    # @decorators.attr(type='smoke')
+    def test_create_non_ascii_netpartition(self):
+        # Test non ASCII: Russian
+        name = u'\u041f\u0440\u0438\u0432\u0435\u0442 and some ascii'
+        netpart = self.create_netpartition(name)
+        self.addCleanup(self.client.delete_netpartition,
+                        netpart['id'])
 
     @decorators.attr(type='smoke')
     def test_create_list_verify_delete_netpartition(self):
