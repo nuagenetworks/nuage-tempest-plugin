@@ -526,18 +526,6 @@ class VSDManagedRedirectTargetTest(
               "redundancy disabled"
         expected_exception = exceptions.BadRequest
 
-        if NUAGE_FEATURES.ml2_limited_exceptions:
-            expected_exception = exceptions.ServerFault
-            if Topology.at_openstack('kilo') and Topology.is_ml2:
-                msg = "update_port_postcommit failed"
-            elif Topology.is_ml2:
-                msg = "update_port_precommit failed"
-        else:
-            # VSD-14419 - VSD throws wrong error
-            expected_exception = exceptions.ServerFault
-            LOG.warning("VSD-14419: throws wrong http error code: "
-                        "ServerFault iso BadRequest")
-
         self.assertRaisesRegex(
             expected_exception,
             msg,
