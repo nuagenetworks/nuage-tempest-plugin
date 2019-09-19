@@ -28,6 +28,10 @@ from nuage_tempest_plugin.services.nuage_network_client \
 class NetpartitionsTest(NuageAdminNetworksTest):
 
     shared_infrastructure = 'Shared Infrastructure'
+    russian_horseradish = (u'\u0445\u0440\u0435\u043d-\u0441-' +
+                           u'\u0440\u0443\u0447\u043a\u043e\u0439')
+    collision_symbol = u"\U0001F4A5"
+    n_tilde_symbol = u'\xf1'
 
     @classmethod
     def setup_clients(cls):
@@ -40,7 +44,7 @@ class NetpartitionsTest(NuageAdminNetworksTest):
 
     @classmethod
     def setup_credentials(cls):
-        # Create no network resources for these tests.
+        # Create no network resources for these tests
         cls.set_network_resources()
         super(NetpartitionsTest, cls).setup_credentials()
 
@@ -58,17 +62,20 @@ class NetpartitionsTest(NuageAdminNetworksTest):
         body = self.client.create_netpartition(name)
         self.assertEqual('201', body.response['status'])
         netpart = body['net_partition']
-        ascii_name = name.encode("unicode-escape").decode().replace('\\', "")
-        self.assertEqual(ascii_name, netpart['name'])
+        self.assertIsNotNone(netpart)
         if cleanup:
-            self.addCleanup(self.client.delete_netpartition,
-                            netpart['id'])
+            self.addCleanup(self._delete_netpartition, netpart['id'])
         return netpart
+
+    def _delete_netpartition(self, np_id):
+        body = self.client.delete_netpartition(np_id)
+        self.assertEqual('204', body.response['status'])
 
     @decorators.attr(type='smoke')
     def test_create_list_verify_delete_netpartition(self):
         name = data_utils.rand_name('tempest-np')
-        netpart = self._create_netpartition(name, cleanup=False)
+        netpart = self._create_netpartition(name)
+        self.assertEqual(name, netpart['name'])
         net_partition = self.nuage_client.get_global_resource(
             resource=constants.NET_PARTITION,
             filters='externalID',
@@ -79,15 +86,15 @@ class NetpartitionsTest(NuageAdminNetworksTest):
             filters='externalID',
             filter_value=netpart['id'] + '@openstack',
             netpart_name=name)
-        self.assertIsNot(default_l2dom_template, "", "Default L2Domain "
-                                                     "Template Not Found")
+        self.assertIsNot(expected='', observed=default_l2dom_template,
+                         message='Default L2Domain Template Not Found')
         default_dom_template = self.nuage_client.get_resource(
             resource=constants.DOMAIN_TEMPLATE,
             filters='externalID',
             filter_value=netpart['id'] + '@openstack',
             netpart_name=name)
-        self.assertIsNot(default_dom_template, "", "Default Domain "
-                                                   "Template Not Found")
+        self.assertIsNot(expected='', observed=default_dom_template,
+                         message='Default Domain Template Not Found')
         zone_templates = self.nuage_client.get_child_resource(
             resource=constants.DOMAIN_TEMPLATE,
             resource_id=default_dom_template[0]['ID'],
@@ -96,15 +103,43 @@ class NetpartitionsTest(NuageAdminNetworksTest):
             filter_value=netpart['id'] + '@openstack')
         self.assertEqual(2, len(zone_templates))
         body = self.client.list_netpartition()
-        netpartition_idlist = list()
-        netpartition_namelist = list()
+        netpartition_id_list = []
+        netpartition_name_list = []
         for netpartition in body['net_partitions']:
-            netpartition_idlist.append(netpartition['id'])
-            netpartition_namelist.append(netpartition['name'])
-        self.assertIn(netpart['id'], netpartition_idlist)
-        self.assertIn(netpart['name'], netpartition_namelist)
-        body = self.client.delete_netpartition(netpart['id'])
-        self.assertEqual('204', body.response['status'])
+            netpartition_id_list.append(netpartition['id'])
+            netpartition_name_list.append(netpartition['name'])
+        self.assertIn(netpart['id'], netpartition_id_list)
+        self.assertIn(netpart['name'], netpartition_name_list)
+
+    # @decorators.attr(type='smoke')
+    def test_create_netpartition_utf_notation_16(self):
+        name = self.russian_horseradish + data_utils.rand_name('ascii')
+        msg = "Invalid netpartition name: Only ascii names are allowed"
+        self.assertRaisesRegex(
+            exceptions.BadRequest,
+            msg,
+            self._create_netpartition,
+            name)
+
+    # @decorators.attr(type='smoke')
+    def test_create_netpartition_utf_notation_32(self):
+        name = self.collision_symbol + data_utils.rand_name('ascii')
+        msg = "Invalid netpartition name: Only ascii names are allowed"
+        self.assertRaisesRegex(
+            exceptions.BadRequest,
+            msg,
+            self._create_netpartition,
+            name)
+
+    # @decorators.attr(type='smoke')
+    def test_create_netpartition_utf_notation_short(self):
+        name = self.n_tilde_symbol + data_utils.rand_name('ascii')
+        msg = "Invalid netpartition name: Only ascii names are allowed"
+        self.assertRaisesRegex(
+            exceptions.BadRequest,
+            msg,
+            self._create_netpartition,
+            name)
 
     @decorators.attr(type='smoke')
     def test_shared_infrastructure(self):
@@ -129,10 +164,10 @@ class NetpartitionsTest(NuageAdminNetworksTest):
         netpart_name = data_utils.rand_name('netpart')
         netpart = self._create_netpartition(netpart_name)
         kwargs = {
-            "network_id": ext_network['id'],
-            "cidr": nuage_data_utils.gimme_a_cidr_address(),
-            "ip_version": self._ip_version,
-            "net_partition": netpart['name']
+            'network_id': ext_network['id'],
+            'cidr': nuage_data_utils.gimme_a_cidr_address(),
+            'ip_version': self._ip_version,
+            'net_partition': netpart['name']
         }
         ext_subnet = self.admin_subnets_client.create_subnet(
             **kwargs)['subnet']
@@ -157,10 +192,10 @@ class NetpartitionsTest(NuageAdminNetworksTest):
         netpart_name = data_utils.rand_name('netpart')
         netpart = self._create_netpartition(netpart_name)
         kwargs = {
-            "network_id": int_network['id'],
-            "cidr": nuage_data_utils.gimme_a_cidr_address(),
-            "ip_version": self._ip_version,
-            "net_partition": netpart['name']
+            'network_id': int_network['id'],
+            'cidr': nuage_data_utils.gimme_a_cidr_address(),
+            'ip_version': self._ip_version,
+            'net_partition': netpart['name']
         }
         int_subnet = self.admin_subnets_client.create_subnet(
             **kwargs)['subnet']
@@ -199,10 +234,10 @@ class NetpartitionsTest(NuageAdminNetworksTest):
     def test_create_external_subnet_within_shared_netpartition(self):
         ext_network = self._create_network(external=True)
         kwargs = {
-            "network_id": ext_network['id'],
-            "cidr": nuage_data_utils.gimme_a_cidr_address(),
-            "ip_version": self._ip_version,
-            "net_partition": self.shared_infrastructure
+            'network_id': ext_network['id'],
+            'cidr': nuage_data_utils.gimme_a_cidr_address(),
+            'ip_version': self._ip_version,
+            'net_partition': self.shared_infrastructure
         }
         ext_subnet = self.admin_subnets_client.create_subnet(
             **kwargs)['subnet']
@@ -223,8 +258,8 @@ class NetpartitionsTest(NuageAdminNetworksTest):
 
     def test_create_internal_within_shared_netpartition(self):
         netpart_name = self.shared_infrastructure
-        msg = ("It is not allowed to create OpenStack managed subnets "
-               "in the net_partition {}").format(netpart_name)
+        msg = ('It is not allowed to create OpenStack managed subnets '
+               'in the net_partition {}').format(netpart_name)
         int_net = self._create_network(external=False)
         cidr = nuage_data_utils.gimme_a_cidr_address()
         self.assertRaisesRegex(
@@ -244,14 +279,14 @@ class NetpartitionsTest(NuageAdminNetworksTest):
             ip_version=6,
             net_partition=netpart_name)
 
-    def test_create_external_subnet_within_non_existent_netpartition(self):
+    def test_create_external_subnet_within_non_existing_netpartition(self):
         ext_network = self._create_network(external=True)
-        netpart_name = data_utils.rand_name('nonexistent-netpart')
+        netpart_name = data_utils.rand_name('non_existing-netpart')
         kwargs = {
-            "network_id": ext_network['id'],
-            "cidr": nuage_data_utils.gimme_a_cidr_address(),
-            "ip_version": self._ip_version,
-            "net_partition": netpart_name
+            'network_id': ext_network['id'],
+            'cidr': nuage_data_utils.gimme_a_cidr_address(),
+            'ip_version': self._ip_version,
+            'net_partition': netpart_name
         }
         ext_subnet = self.admin_subnets_client.create_subnet(
             **kwargs)['subnet']
@@ -270,26 +305,26 @@ class NetpartitionsTest(NuageAdminNetworksTest):
             self.shared_infrastructure)[0]['ID']
         self.assertEqual(shared_netpart_id, l3domain.parent_id)
 
-    def test_create_internal_subnet_within_non_existent_netpartition(self):
+    def test_create_internal_subnet_within_non_existing_netpartition(self):
         int_network = self._create_network(external=False)
-        netpart_name = data_utils.rand_name('nonexistent-netpart')
-        msg = "Net-partition {} does not exist".format(netpart_name)
+        netpart_name = data_utils.rand_name('non_existing-netpart')
+        msg = 'Net-partition {} does not exist'.format(netpart_name)
         kwargs = {
-            "network_id": int_network['id'],
-            "cidr": nuage_data_utils.gimme_a_cidr_address(),
-            "ip_version": self._ip_version,
-            "net_partition": netpart_name
+            'network_id': int_network['id'],
+            'cidr': nuage_data_utils.gimme_a_cidr_address(),
+            'ip_version': self._ip_version,
+            'net_partition': netpart_name
         }
         self.assertRaisesRegex(exceptions.BadRequest,
                                msg,
                                self.admin_subnets_client.create_subnet,
                                **kwargs)
 
-    def test_create_router_within_non_existent_netpartition(self):
-        netpart_name = data_utils.rand_name('nonexistent-netpart')
-        msg = "Net-partition {} does not exist".format(netpart_name)
+    def test_create_router_within_non_existing_netpartition(self):
+        netpart_name = data_utils.rand_name('non_existing-netpart')
+        msg = 'Net-partition {} does not exist'.format(netpart_name)
         netpart = {
-            "net_partition": netpart_name
+            'net_partition': netpart_name
         }
         self.assertRaisesRegex(exceptions.BadRequest,
                                msg,
@@ -298,15 +333,14 @@ class NetpartitionsTest(NuageAdminNetworksTest):
                                admin_state_up=True,
                                **netpart)
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_link_net_partition_to_existing_enterprise(self):
-        enterprise_name = data_utils.rand_name('netpart')
-        enterprise = self.vsd.vspk.NUEnterprise(name=enterprise_name)
+        name = data_utils.rand_name('tempest-np')
+        enterprise = self.vsd.vspk.NUEnterprise(name=name)
         self.vsd.session().user.create_child(enterprise)
         self.addCleanup(enterprise.delete)
 
-        netpart = self._create_netpartition(enterprise_name)
-        self.assertIsNotNone(netpart)
+        netpart = self._create_netpartition(name)
 
         kwargs = {
             'name': data_utils.rand_name('router'),
@@ -317,6 +351,6 @@ class NetpartitionsTest(NuageAdminNetworksTest):
         router = self.admin_routers_client.create_router(**kwargs)['router']
         self.addCleanup(self.admin_routers_client.delete_router,
                         router['id'])
-        l3domain = self.vsd.get_l3domain(enterprise=netpart['name'],
+        l3domain = self.vsd.get_l3domain(enterprise=name,
                                          by_router_id=router['id'])
         self.assertIsNotNone(l3domain)
