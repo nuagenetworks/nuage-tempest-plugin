@@ -1,6 +1,8 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
 
+import testtools
+
 from netaddr import IPNetwork
 from tempest.test import decorators
 
@@ -432,3 +434,43 @@ class Ipv6OsManagedConnectivityTest(nuage_test.NuageBaseTest):
     def test_icmp_connectivity_stateless_acl_os_managed_l3_v6_neg(self):
         self._test_icmp_connectivity_stateful_acl_os_managed_v6(
             is_l3=True, stateful=False)
+
+    def _test_multi_compute_icmp_connectivity_os_managed(self, is_l3=False):
+        # Provision OpenStack network resources
+        network = self.create_network()
+        subnet = self.create_subnet(network, ip_version=6)
+
+        if is_l3:
+            router = self.create_router(
+                external_network_id=CONF.network.public_network_id)
+            self.router_attach(router, subnet)
+
+        # create open-ssh security group
+        ssh_security_group = self.create_open_ssh_security_group()
+
+        # Launch tenant servers in OpenStack network
+        server2 = self.create_tenant_server(
+            networks=[network],
+            security_groups=[ssh_security_group])
+
+        kwargs = {'networks': [network],
+                  'scheduler_hints': {
+                      'different_host': [server2.openstack_data['id']]},
+                  'security_groups': [ssh_security_group],
+                  'prepare_for_connectivity': True}
+        server1 = self.create_tenant_server(**kwargs)
+
+        # Test IPv6 connectivity between peer servers
+        self.assert_ping(server1, server2, network, ip_type=6)
+
+    @testtools.skipUnless(CONF.compute.min_compute_nodes > 1,
+                          'Less than 2 compute nodes, skipping multinode '
+                          'tests.')
+    def test_multi_compute_icmp_connectivity_l2_os_managed(self):
+        self._test_multi_compute_icmp_connectivity_os_managed(is_l3=False)
+
+    @testtools.skipUnless(CONF.compute.min_compute_nodes > 1,
+                          'Less than 2 compute nodes, skipping multinode '
+                          'tests.')
+    def test_multi_compute_icmp_connectivity_l3_os_managed(self):
+        self._test_multi_compute_icmp_connectivity_os_managed(is_l3=True)
