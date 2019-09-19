@@ -54,12 +54,15 @@ class NetpartitionsTest(NuageAdminNetworksTest):
                         network['id'])
         return network
 
-    def create_netpartition(self, name):
+    def _create_netpartition(self, name, cleanup=True):
         body = self.client.create_netpartition(name)
         self.assertEqual('201', body.response['status'])
         netpart = body['net_partition']
         ascii_name = name.encode("unicode-escape").decode().replace('\\', "")
         self.assertEqual(ascii_name, netpart['name'])
+        if cleanup:
+            self.addCleanup(self.client.delete_netpartition,
+                            netpart['id'])
         return netpart
 
     # @decorators.attr(type='smoke')
@@ -73,7 +76,7 @@ class NetpartitionsTest(NuageAdminNetworksTest):
     @decorators.attr(type='smoke')
     def test_create_list_verify_delete_netpartition(self):
         name = data_utils.rand_name('tempest-np')
-        netpart = self.create_netpartition(name)
+        netpart = self._create_netpartition(name, cleanup=False)
         net_partition = self.nuage_client.get_global_resource(
             resource=constants.NET_PARTITION,
             filters='externalID',
@@ -122,7 +125,7 @@ class NetpartitionsTest(NuageAdminNetworksTest):
         self.assertEqual(1, len(netparts))
         # create shared infrastructure
         name = self.shared_infrastructure
-        netpart = self.create_netpartition(name)
+        netpart = self._create_netpartition(name, cleanup=False)
         self.assertEqual(shared_netpart['ID'], netpart['id'])
         netparts = self.client.list_netpartition_by_name(
             self.shared_infrastructure)
@@ -132,9 +135,7 @@ class NetpartitionsTest(NuageAdminNetworksTest):
     def test_create_external_subnet_within_custom_netpartition(self):
         ext_network = self._create_network(external=True)
         netpart_name = data_utils.rand_name('netpart')
-        netpart = self.create_netpartition(netpart_name)
-        self.addCleanup(self.client.delete_netpartition,
-                        netpart['id'])
+        netpart = self._create_netpartition(netpart_name)
         kwargs = {
             "network_id": ext_network['id'],
             "cidr": nuage_data_utils.gimme_a_cidr_address(),
@@ -162,9 +163,7 @@ class NetpartitionsTest(NuageAdminNetworksTest):
     def test_create_internal_subnet_within_custom_netpartition(self):
         int_network = self._create_network(external=False)
         netpart_name = data_utils.rand_name('netpart')
-        netpart = self.create_netpartition(netpart_name)
-        self.addCleanup(self.client.delete_netpartition,
-                        netpart['id'])
+        netpart = self._create_netpartition(netpart_name)
         kwargs = {
             "network_id": int_network['id'],
             "cidr": nuage_data_utils.gimme_a_cidr_address(),
@@ -187,9 +186,7 @@ class NetpartitionsTest(NuageAdminNetworksTest):
     @decorators.attr(type='smoke')
     def test_create_router_within_custom_netpartition(self):
         netpart_name = data_utils.rand_name('netpart')
-        netpart = self.create_netpartition(netpart_name)
-        self.addCleanup(self.client.delete_netpartition,
-                        netpart['id'])
+        netpart = self._create_netpartition(netpart_name)
         kwargs = {
             'name': data_utils.rand_name('router'),
             'admin_state_up': True,
@@ -316,9 +313,7 @@ class NetpartitionsTest(NuageAdminNetworksTest):
         self.vsd.session().user.create_child(enterprise)
         self.addCleanup(enterprise.delete)
 
-        netpart = self.create_netpartition(enterprise_name)
-        self.addCleanup(self.client.delete_netpartition,
-                        netpart['id'])
+        netpart = self._create_netpartition(enterprise_name)
         self.assertIsNotNone(netpart)
 
         kwargs = {
