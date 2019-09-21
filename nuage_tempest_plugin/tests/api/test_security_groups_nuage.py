@@ -505,52 +505,6 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
         self.addCleanup(self.ports_client.delete_port, port['id'])
         return port
 
-    def _test_update_port_with_security_groups(self, sg_num,
-                                               nuage_domain=None,
-                                               should_succeed=True):
-        # Test the maximal number of security groups when updating a port
-        if not nuage_domain:
-            nuage_domain = self.nuage_any_domain
-        group_create_body, name = self._create_security_group()
-        post_body = {
-            "network_id": self.network['id'],
-            "name": data_utils.rand_name('port-'),
-            "security_groups": [group_create_body['security_group']['id']]
-        }
-        port = self._create_port(**post_body)
-
-        security_groups_list = []
-        sg_max = n_constants.MAX_SG_PER_PORT
-        for i in range(sg_num):
-            group_create_body, name = self._create_security_group()
-            security_groups_list.append(group_create_body['security_group']
-                                        ['id'])
-        sg_body = {"security_groups": security_groups_list}
-        if should_succeed:
-            self.update_port(port, **sg_body)
-            vport = self.nuage_client.get_vport(self.nuage_domain_type,
-                                                nuage_domain[0]['ID'],
-                                                filters='externalID',
-                                                filter_value=port['id'])
-            nuage_policy_grps = self.nuage_client.get_policygroup(
-                n_constants.VPORT,
-                vport[0]['ID'])
-            self.assertEqual(sg_num, len(nuage_policy_grps))
-
-            # clear sgs such that cleanup will work fine
-            sg_body = {"security_groups": []}
-            self.ports_client.update_port(port['id'], **sg_body)
-        else:
-            msg = (("Number of %s specified security groups exceeds the "
-                    "maximum of %s security groups on a port "
-                    "supported on nuage VSP") % (sg_num, sg_max))
-            self.assertRaisesRegex(
-                exceptions.BadRequest,
-                msg,
-                self.ports_client.update_port,
-                port['id'],
-                **sg_body)
-
 
 class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
 
