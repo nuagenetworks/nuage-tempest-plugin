@@ -31,16 +31,9 @@ class TestNuageBidiFRLCliWODefault(BaseNuageFipRateLimit):
     """
 
     @classmethod
-    def read_nuage_fip_rate_limit_configs(cls):
-        if Topology.assume_default_fip_rate_limits():
-            return None, None
-        else:
-            assert False  # unsupported
-
-    @classmethod
     def nuage_fip_rate_limit_configs_needs_update(cls):
-        fip_eg_rate_limit, fip_ig_rate_limit = \
-            cls.read_nuage_fip_rate_limit_configs()
+        fip_eg_rate_limit, fip_ig_rate_limit = (Topology.
+                                                nuage_fip_rate_limit_configs())
         return (not cls.fip_rate_config_value_matches(
             cls.configured_default_fip_rate, fip_eg_rate_limit) or
             not cls.fip_rate_config_value_matches(

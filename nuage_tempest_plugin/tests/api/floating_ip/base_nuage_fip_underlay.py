@@ -51,14 +51,14 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest):
 
         cls.ext_net_id = CONF.network.public_network_id
 
-        nuage_fip_underlay_ini = cls.read_nuage_fip_underlay_value_ini()
+        nuage_fip_underlay_ini = Topology.nuage_underlay_config()
         if nuage_fip_underlay_ini == '':
             nuage_fip_underlay_ini = None
         cls.nuage_fip_underlay_ini = nuage_fip_underlay_ini
 
     @classmethod
     def needs_ini_nuage_fip_underlay(cls, underlay_value):
-        if underlay_value != cls.read_nuage_fip_underlay_value_ini():
+        if underlay_value != Topology.nuage_underlay_config():
             if not Topology.neutron_restart_supported():
                 raise cls.skipException(
                     'Skipping tests that require neutron restart ...')
@@ -66,13 +66,6 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest):
                 assert False  # we don't support it :)
 
         cls.nuage_fip_underlay_ini = underlay_value
-
-    @classmethod
-    def read_nuage_fip_underlay_value_ini(cls):
-        if Topology.assume_fip_to_underlay_as_enabled_by_default():
-            return True
-        else:
-            assert False  # we don't support reading it out
 
     # Taken from test_external_network_extensions.py,trying to avoid issues
     # with the cli client
