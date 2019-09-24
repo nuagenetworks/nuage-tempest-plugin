@@ -40,7 +40,7 @@ class DualstackOsManagedConnectivityTest(nuage_test.NuageBaseTest):
         self.assert_ping(server1, server2, network)
 
         # Test IPv6 connectivity between peer servers
-        self.assert_ping(server1, server2, network, ip_type=6)
+        self.assert_ping(server1, server2, network, ip_version=6)
 
     @decorators.attr(type='smoke')
     def test_icmp_connectivity_l3_os_managed_dualstack(self):

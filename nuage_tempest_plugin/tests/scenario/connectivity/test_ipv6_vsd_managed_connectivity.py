@@ -46,7 +46,7 @@ class Ipv6L2VsdManagedConnectivityTest(NuageBaseTest):
         self.assert_ping(server1, server2, network)
 
         # Test IPv6 connectivity between peer servers
-        self.assert_ping(server1, server2, network, ip_type=6)
+        self.assert_ping(server1, server2, network, ip_version=6)
 
     def test_icmp_connectivity_l2_vsd_managed_pure_v6(self):
         # Provision VSD managed network resources
@@ -74,7 +74,7 @@ class Ipv6L2VsdManagedConnectivityTest(NuageBaseTest):
             prepare_for_connectivity=True)
 
         # Test IPv6 connectivity between peer servers
-        self.assert_ping(server1, server2, network, ip_type=6)
+        self.assert_ping(server1, server2, network, ip_version=6)
 
 
 class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
@@ -158,7 +158,7 @@ class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
         self.assert_ping(server1, server2, network2)
 
         # Test IPv6 connectivity between peer servers
-        self.assert_ping(server1, server2, network2, ip_type=6)
+        self.assert_ping(server1, server2, network2, ip_version=6)
 
         if incl_negative_ping_test:
             # Allow IPv6 only
@@ -167,7 +167,7 @@ class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
                                            allow_ipv6=True)
 
             self.assert_ping(server1, server2, network2, should_pass=False)
-            self.assert_ping(server1, server2, network2, ip_type=6)
+            self.assert_ping(server1, server2, network2, ip_version=6)
 
         if incl_negative_ping_test:
             # Allow IPv4 only
@@ -177,7 +177,7 @@ class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
 
             self.assert_ping(server1, server2, network2)
             self.assert_ping(server1, server2, network2,
-                             ip_type=6, should_pass=False)
+                             ip_version=6, should_pass=False)
 
         return vsd_domain, vsd_subnet, server1
 
@@ -268,7 +268,7 @@ class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
             prepare_for_connectivity=True)
 
         # Test IPv6 connectivity between peer servers
-        self.assert_ping(server1, server2, network6_2, ip_type=6)
+        self.assert_ping(server1, server2, network6_2, ip_version=6)
 
     def test_icmp_connectivity_l3_vsd_managed_dualstack_link_shared_subnet(
             self):
@@ -454,7 +454,7 @@ class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
                                             prepare_for_connectivity=True)
 
         # Test IPv6 connectivity between peer servers
-        self.assert_ping(server1, server2, network2, ip_type=6)
+        self.assert_ping(server1, server2, network2, ip_version=6)
 
 
 class Ipv6L3VsdManagedConnectivityWithAggrFlowsTest(

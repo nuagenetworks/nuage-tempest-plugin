@@ -12,7 +12,6 @@ import yaml
 from netaddr import IPAddress
 from netaddr import IPNetwork
 from netaddr import IPRange
-from netaddr import valid_ipv6
 
 from tempest.api.network import base
 from tempest.common import waiters
@@ -1442,12 +1441,14 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 LOG.exception('Stopping server {} failed ({})'.format(
                     server_id, e))
 
-    def assert_ping(self, server1, server2=None, network=None, ip_type=4,
+    def assert_ping(self, server1, server2=None, network=None, ip_version=None,
                     should_pass=True, interface=None, address=None,
                     ping_count=3, ping_size=None, ping_timeout=10):
         LOG.info('[{}] Pinging {} > {}'.format(
             self.test_name,
             server1.name, server2.name if server2 else address))
+
+        ip_version = ip_version if ip_version else self._ip_version
 
         if server2:
             server2.complete_prepare_for_connectivity()
@@ -1456,11 +1457,10 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             else:
                 assert network
                 dest = server2.get_server_ip_in_network(
-                    network['name'], ip_type)
+                    network['name'], ip_version)
         else:
             assert address
             dest = address
-        ip_version = 6 if valid_ipv6(dest) else 4
 
         server1.complete_prepare_for_connectivity()
 

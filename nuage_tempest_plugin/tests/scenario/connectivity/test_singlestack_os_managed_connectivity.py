@@ -44,7 +44,7 @@ class BaseTestCase(object):
 
             # Test connectivity between peer servers
             self.assert_ping(
-                server1, server2, network, ip_type=self._ip_version)
+                server1, server2, network)
 
         def _icmp_connectivity_l3_os_managed_by_name(self, name=None,
                                                      nova_friendly_name=None):
@@ -83,7 +83,7 @@ class BaseTestCase(object):
 
             # Test connectivity between peer servers
             self.assert_ping(
-                server1, server2, network, ip_type=self._ip_version)
+                server1, server2, network)
 
         @decorators.attr(type='smoke')
         def test_icmp_connectivity_l3_os_managed(self):
@@ -129,8 +129,7 @@ class BaseTestCase(object):
                 prepare_for_connectivity=True)
 
             # Test connectivity between peer servers
-            self.assert_ping(server1, server2, network, should_pass=False,
-                             ip_type=self._ip_version)
+            self.assert_ping(server1, server2, network, should_pass=False)
 
         def test_icmp_connectivity_l3_os_managed_dual_nic(self):
             # Provision OpenStack network resources
@@ -177,9 +176,9 @@ class BaseTestCase(object):
 
             # Test connectivity between peer servers
             self.assert_ping(
-                server12, server1, network1, ip_type=self._ip_version)
+                server12, server1, network1)
             self.assert_ping(
-                server12, server2, network2, ip_type=self._ip_version)
+                server12, server2, network2)
 
         @decorators.attr(type='smoke')
         def test_icmp_connectivity_l2_os_managed_no_dhcp(self):
@@ -203,7 +202,7 @@ class BaseTestCase(object):
 
             # Test connectivity between peer servers
             self.assert_ping(
-                server1, server2, network, ip_type=self._ip_version)
+                server1, server2, network)
 
         def test_icmp_connectivity_l2_os_managed_no_dhcp_neg(self):
             # Provision OpenStack network resources
@@ -228,8 +227,7 @@ class BaseTestCase(object):
                 prepare_for_connectivity=True)
 
             # Test connectivity between peer servers (should fail)
-            self.assert_ping(server1, server2, network, should_pass=False,
-                             ip_type=self._ip_version)
+            self.assert_ping(server1, server2, network, should_pass=False)
 
         def test_icmp_connectivity_l3_os_managed_no_dhcp(self):
             # Provision OpenStack network resources
@@ -258,7 +256,7 @@ class BaseTestCase(object):
 
             # Test connectivity between peer servers
             self.assert_ping(
-                server1, server2, network, ip_type=self._ip_version)
+                server1, server2, network)
 
         def test_icmp_connectivity_l3_os_managed_no_dhcp_neg(self):
             # Provision OpenStack network resources
@@ -288,8 +286,7 @@ class BaseTestCase(object):
                 prepare_for_connectivity=True)
 
             # Test connectivity between peer servers
-            self.assert_ping(server1, server2, network, should_pass=False,
-                             ip_type=self._ip_version)
+            self.assert_ping(server1, server2, network, should_pass=False)
 
         def _test_icmp_connectivity_stateful_acl_os_managed(self, is_l3=None,
                                                             stateful=True):
@@ -383,10 +380,10 @@ class BaseTestCase(object):
 
             # vm_hollywood can ping vm_actor if the acl is stateful
             self.assert_ping(vm_hollywood, vm_actor, network,
-                             should_pass=stateful, ip_type=self._ip_version)
+                             should_pass=stateful)
             # vm_actor is not supposed to ping vm_hollywood in any case
             self.assert_ping(vm_actor, vm_hollywood, network,
-                             should_pass=False, ip_type=self._ip_version)
+                             should_pass=False)
 
         def test_icmp_connectivity_stateful_acl_os_managed_l2(self):
             self._test_icmp_connectivity_stateful_acl_os_managed(is_l3=False)
@@ -430,7 +427,7 @@ class BaseTestCase(object):
 
             # Test connectivity between peer servers
             self.assert_ping(
-                server1, server2, network, ip_type=self._ip_version)
+                server1, server2, network)
 
         @decorators.attr(type='smoke')
         @testtools.skipUnless(CONF.compute.min_compute_nodes > 1,
