@@ -56,6 +56,10 @@ class NuageFeatures(object):
                  format(Topology.nuage_release_qualifier))
         LOG.info('OpenStack version                : {}'.
                  format(Topology.openstack_version_qualifier))
+        LOG.info('Python version                   : {}.{}.{}'.
+                 format(Topology.python_version.major,
+                        Topology.python_version.minor,
+                        Topology.python_version.micro))
         LOG.info('')
         LOG.info('FEATURES:')
         LOG.info('full_external_id_support         : {}'.
