@@ -11,7 +11,7 @@
       set the nodeset to a multi-node one.
     required-projects:
       - opendev.org/openstack/tempest
-    timeout: 7200
+    timeout: 10800
     roles:
       - zuul: opendev.org/openstack/openstack-zuul-jobs
       - zuul: opendev.org/openstack/devstack
@@ -99,7 +99,6 @@
     branches: ^(?!stable/(newton|ocata)).*$
     description: Base job for devstack/tempest based nuage jobs and python2.7.
     nodeset: openstack-single-node-rhel7
-    timeout: 10800
     required-projects:
       - opendev.org/openstack/devstack-gate
       - opendev.org/openstack/neutron-tempest-plugin
@@ -436,6 +435,7 @@
     description: job running all scenario tests
     # This currently works from stable/pike on
     branches: ^(?!stable/(newton|ocata)).*$
+    timeout: 14400
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.scenario\..*'
       tempest_black_regex: '^nuage_tempest_plugin\.tests\.scenario\.connectivity\..*\..*AggrFlowsTest\..*'
@@ -446,6 +446,7 @@
     description: job running all scenario tests on 5.4 branches
     # This currently works from pike on
     branches: ^(5.4/(pike|queens|rocky)).*$
+    timeout: 14400
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.scenario\..*'
 
