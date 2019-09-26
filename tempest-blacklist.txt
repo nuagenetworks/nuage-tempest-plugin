@@ -102,3 +102,11 @@ tempest\.api\.compute\.servers\.test_server_actions\.ServerActionsTestJSON\.test
 tempest\.api\.compute\.servers\.test_server_actions\.ServerActionsTestJSON\.test_resize_server_revert_with_volume_attached
 tempest\.api\.compute\.servers\.test_servers_negative\.ServersNegativeTestJSON\.test_pause_paused_server
 tempest\.api\.compute\.servers\.test_server_rescue_negative\.ServerRescueNegativeTestJSON\.test_rescue_paused_instance
+
+# IPv6 Classes
+neutron_tempest_plugin\.api\.test_network_ip_availability\.NetworksIpAvailabilityIPv6Test
+neutron_tempest_plugin\.api\.test_allowed_address_pair\.AllowedAddressPairIpV6TestJSON
+tempest\.api\.network\.test_allowed_address_pair\.AllowedAddressPairIpV6TestJSON
+tempest\.api\.network\.test_dhcp_ipv6\.NetworksTestDHCPv6
+tempest\.api\.network\.test_ports\.PortsIpV6TestJSON
+tempest\.api\.network\.test_routers\.RoutersIpV6Test
