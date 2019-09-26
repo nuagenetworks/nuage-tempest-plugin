@@ -1,4 +1,5 @@
 from oslo_log import log as logging
+import sys
 
 from tempest import config
 
@@ -15,6 +16,8 @@ class Topology(Singleton):
     nuage_release = Release(nuage_release_qualifier)
     openstack_version_qualifier = CONF.nuage_sut.openstack_version
     openstack_version = Release(openstack_version_qualifier)
+    python_version = sys.version_info
+
     is_ml2 = True
     api_workers = int(CONF.nuage_sut.api_workers)
     console_logging = CONF.nuage_sut.console_logging
