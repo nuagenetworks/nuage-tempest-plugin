@@ -102,10 +102,6 @@ class Topology(Singleton):
     nbr_retries_for_test_robustness = 5  # same as plugin
 
     @staticmethod
-    def is_devstack():
-        return True  # hardcoded now ; next step is take out all checks (later)
-
-    @staticmethod
     def single_worker_run():
         return Topology.api_workers == 1
 
@@ -119,19 +115,17 @@ class Topology(Singleton):
 
     @staticmethod
     def neutron_restart_supported():
-        return not Topology.is_devstack()
+        return False  # assumed as non-applicable capability, which is correct
+        #               for the standard jobs that run in CI
 
     @staticmethod
-    def assume_fip_to_underlay_as_enabled_by_default():
-        return Topology.is_devstack()
+    def nuage_underlay_config():
+        return True  # assumed as True, according to what is done in CI
 
     @staticmethod
-    def assume_pat_to_underlay_as_disabled_by_default():
-        return Topology.is_devstack()
-
-    @staticmethod
-    def assume_default_fip_rate_limits():
-        return Topology.is_devstack()
+    def nuage_fip_rate_limit_configs():
+        return None, None  # egress & ingress rate limit configured in neutron
+        #                    Defaulting to None, None, according CI settings
 
     @staticmethod
     def is_existing_flat_vlan_allowed():
