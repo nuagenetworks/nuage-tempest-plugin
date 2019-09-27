@@ -97,7 +97,9 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
         l2domain = self._create_subnet(network, name=l2domain_name,
                                        net_partition=netpart, cidr=cidr)
         self.addCleanup(self.subnets_client.delete_subnet, l2domain['id'])
-        kwargs = {'name': port_name, 'network_id': network['id']}
+        port_ip = str(IPNetwork(l2domain['cidr']).network + 10)
+        kwargs = {'name': port_name, 'network_id': network['id'],
+                  'fixed_ips': [{'ip_address': port_ip}]}
         if allowed_address_pairs:
             kwargs.update({'allowed_address_pairs': allowed_address_pairs})
         if port_security is not None:
@@ -146,7 +148,9 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
                                                  subnet_id=subnet['id'])
         self.addCleanup(self.routers_client.remove_router_interface,
                         router['id'], subnet_id=subnet['id'])
-        kwargs = {'name': port_name, 'network_id': network['id']}
+        port_ip = str(IPNetwork(subnet['cidr']).network + 10)
+        kwargs = {'name': port_name, 'network_id': network['id'],
+                  'fixed_ips': [{'ip_address': port_ip}]}
         if allowed_address_pairs:
             kwargs.update({'allowed_address_pairs': allowed_address_pairs})
         if port_security is not None:
@@ -1016,7 +1020,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
 
     def test_anti_spoofing_for_params_1_1_0_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
-        # different ip, different ip,  different subnet in
+        # different mac, different ip, different subnet in
         # comparison with the corresponding port parameters
         ip_address = '30.30.30.100'
         mac_address = 'fe:a0:36:4b:c8:70'
@@ -1292,7 +1296,7 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
 
     def test_anti_spoofing_for_params_1_1_0_1_l3domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
-        # different ip, different ip,  different subnet in
+        # different mac, different ip, different subnet in
         # comparison with the corresponding port parameters
         ip_address = '30.30.30.100'
         mac_address = 'fe:a0:36:4b:c8:70'
@@ -1478,16 +1482,15 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         network = self.create_network(ntw_name)
         cidr = IPNetwork(cidr)
         subnet = self.create_subnet(network, cidr=cidr,
-                                    mask_bits=cidr.prefixlen,
+                                    mask_bits=cidr.prefixlen, name=sub_name,
                                     net_partition=self.def_net_partition)
         if mac:
             raise NotImplemented
-
+        port_ip = str(IPNetwork(cidr).network + 10)
+        kwargs = {'name': port_name,
+                  'fixed_ips': [{'ip_address': port_ip}]}
         if addr_pr:
-            kwargs = {'allowed_address_pairs': addr_pr,
-                      'name': port_name}
-        else:
-            kwargs = {'name': port_name}
+            kwargs.update({'allowed_address_pairs': addr_pr})
         self._configure_smart_nic_attributes(kwargs)
 
         port = self.create_port(network, **kwargs)
@@ -1505,15 +1508,13 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         kwargs = {'name': sub_name, 'net_partition': self.def_net_partition}
         subnet = self.create_subnet(network, cidr=cidr, mask_bits=24, **kwargs)
         self.create_router_interface(router['id'], subnet['id'])
+        port_ip = str(IPNetwork(cidr).network + 10)
+        kwargs = {'name': port_name,
+                  'fixed_ips': [{'ip_address': port_ip}]}
         if addr_pr:
-            kwargs = {'allowed_address_pairs': addr_pr,
-                      'name': port_name}
-            self._configure_smart_nic_attributes(kwargs)
-            port = self.create_port(network, **kwargs)
-        else:
-            kwargs = {}
-            self._configure_smart_nic_attributes(kwargs)
-            port = self.create_port(network, **kwargs)
+            kwargs.update({'allowed_address_pairs': addr_pr})
+        self._configure_smart_nic_attributes(kwargs)
+        port = self.create_port(network, **kwargs)
         return router, subnet, port
 
     def test_create_show_update_delete_ntw_with_sec_disabled(self):
