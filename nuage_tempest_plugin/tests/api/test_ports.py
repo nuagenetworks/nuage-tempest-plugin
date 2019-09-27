@@ -58,7 +58,6 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         self.create_subnet(network, cidr=IPNetwork("10.0.0.0/24"),
                            mask_bits=24)
         create_port = self.create_port(network)
-        create_port.pop('parent_network')
         show_port = self.show_port(create_port['id'])
 
         self.assertIn('id', show_port)

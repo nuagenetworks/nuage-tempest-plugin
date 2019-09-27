@@ -129,7 +129,6 @@ class TenantServer(object):
         self.keypair = keypair
         self.openstack_data = None
         self.server_details = None
-        self.ips = []
         self.force_dhcp = False
         self.prepare_for_connectivity = False
         self.needs_provisioning = False
@@ -209,17 +208,10 @@ class TenantServer(object):
             **kwargs)
 
         LOG.info('[{}] Became {}'.format(self.tag, wait_until))
-
-        for addresses in self.get_server_details()['addresses'].values():
-            address = []
-            for addr in addresses:
-                address.append(addr['addr'])
-            self.ips.append(address)
-
         LOG.info('[{}] IP\'s are {}'.format(
             self.tag,
             ' and '.join(('/'.join(address for address in addresses))
-                         for addresses in self.ips)))
+                         for addresses in self.get_server_ips())))
         return self.openstack_data
 
     def did_deploy(self):
@@ -229,46 +221,45 @@ class TenantServer(object):
         self.openstack_data = \
             self.admin_client.show_server(osc_server_id)['server']
 
-    def get_server_details(self, force=False):
-        if not self.server_details or force:
+    def get_server_details(self):
+        if not self.server_details:
             self.server_details = \
                 self.admin_client.show_server(self.id)['server']
         return self.server_details
 
     def get_server_networks(self):
-        if self.networks:
-            return self.networks
-        else:
-            networks = []
+        if not self.networks:
             for port in self.ports:
-                networks.append(port['parent_network'])
-            return networks
+                self.networks.append(
+                    self.parent_test.osc_get_network(port['network_id']))
+        return self.networks
 
-    def get_server_ips_in_network(self, network_name, filter_by_ip_type=None,
-                                  filter_by_os_ext_ips_type='fixed'):
-        assert self.did_deploy()
-        server = self.get_server_details()
-        ip_addresses = []
-        self.parent_test.assertIn(network_name, server['addresses'])
-        for subnet_interface in server['addresses'][network_name]:
-            if (subnet_interface['OS-EXT-IPS:type'] !=
-                    filter_by_os_ext_ips_type):
-                continue
-            if (filter_by_ip_type is None or
-                    subnet_interface['version'] == filter_by_ip_type):
-                ip_addresses.append(subnet_interface['addr'])
-        return ip_addresses
+    def get_server_interfaces(self, network_name=None):
+        # returning a list of lists, per network
+        server_addresses = self.get_server_details()['addresses']
+        return ([server_addresses[network_name]] if network_name
+                else server_addresses.values())
+
+    def get_server_ips(self, network_name=None,
+                       filter_by_ip_type=None,
+                       filter_by_os_ext_ips_type='fixed'):
+        ips = []
+        for interfaces in self.get_server_interfaces(network_name):
+            addresses = []
+            for interface in interfaces:
+                if ((filter_by_os_ext_ips_type is None or
+                        interface['OS-EXT-IPS:type'] ==
+                        filter_by_os_ext_ips_type) and
+                    (filter_by_ip_type is None or
+                        interface['version'] == filter_by_ip_type)):
+                    addresses.append(interface['addr'])
+            ips.append(addresses)
+        return ips
 
     def get_server_ip_in_network(self, network_name, ip_type=4):
-        addresses = self.get_server_ips_in_network(network_name,
-                                                   filter_by_ip_type=ip_type)
+        addresses = self.get_server_ips(network_name,
+                                        filter_by_ip_type=ip_type)[0]
         return addresses[0] if addresses else None
-
-    def is_dhcp_enabled(self, network):
-        return (
-            self.force_dhcp or
-            network.get('v4_subnet') and network['v4_subnet']['enable_dhcp'] or
-            network.get('v6_subnet') and network['v6_subnet']['enable_dhcp'])
 
     def complete_prepare_for_connectivity(self):
         if self.prepare_for_connectivity_complete:
@@ -342,29 +333,19 @@ class TenantServer(object):
     def provision(self):
         if self.needs_provisioning and not self.force_dhcp:
             LOG.info('[{}] Provisioning'.format(self.tag))
-
-            networks = self.networks
-            if not networks:
-                networks = []
-                for port in self.ports:
-                    if port.get('parent_network'):
-                        networks.append(port['parent_network'])
-
-            for eth_i, network in enumerate(networks):
-                if network.get('v4_subnet'):
-                    if not network['v4_subnet']['enable_dhcp']:
-                        server_ipv4 = self.get_server_ip_in_network(
-                            network['name'])
-                        self.configure_static_interface(
-                            server_ipv4, subnet=network['v4_subnet'],
-                            ip_version=4, device=eth_i)
-                if network.get('v6_subnet'):
-                    if not network['v6_subnet']['enable_dhcp']:
-                        server_ipv6 = self.get_server_ip_in_network(
-                            network['name'], ip_type=6)
-                        self.configure_static_interface(
-                            server_ipv6, subnet=network['v6_subnet'],
-                            ip_version=6, device=eth_i)
+            for eth_i, network in enumerate(self.get_server_networks()):
+                v4_subnet = self.parent_test.get_network_subnet(network, 4)
+                if v4_subnet and not v4_subnet['enable_dhcp']:
+                    server_ipv4 = self.get_server_ip_in_network(
+                        network['name'])
+                    self.configure_static_interface(
+                        server_ipv4, v4_subnet, ip_version=4, device=eth_i)
+                v6_subnet = self.parent_test.get_network_subnet(network, 6)
+                if v6_subnet and not v6_subnet['enable_dhcp']:
+                    server_ipv6 = self.get_server_ip_in_network(
+                        network['name'], ip_type=6)
+                    self.configure_static_interface(
+                        server_ipv6, v6_subnet, ip_version=6, device=eth_i)
 
             self.needs_provisioning = False
             LOG.info('[{}] Provisioning complete'.format(self.tag))
@@ -373,23 +354,15 @@ class TenantServer(object):
         is_validate_needed = CONF.scenario.dhcp_client != ''
         if is_validate_needed and not self.dhcp_validated:
             LOG.info('[{}] Validating DHCP'.format(self.tag))
-
-            networks = self.networks
-            if not networks:
-                networks = []
-                for port in self.ports:
-                    if port.get('parent_network'):
-                        networks.append(port['parent_network'])
-
-            for eth_i, network in enumerate(networks):
-                if network.get('v4_subnet'):
-                    if network['v4_subnet']['enable_dhcp']:
-                        self.device_served_by_dhclient(
-                            'eth{}'.format(eth_i), 4, assert_true=True)
-                if network.get('v6_subnet'):
-                    if network['v6_subnet']['enable_dhcp']:
-                        self.device_served_by_dhclient(
-                            'eth{}'.format(eth_i), 6, assert_true=True)
+            for eth_i, network in enumerate(self.get_server_networks()):
+                v4_subnet = self.parent_test.get_network_subnet(network, 4)
+                if v4_subnet and v4_subnet['enable_dhcp']:
+                    self.device_served_by_dhclient(
+                        'eth{}'.format(eth_i), 4, assert_true=True)
+                v6_subnet = self.parent_test.get_network_subnet(network, 6)
+                if v6_subnet and v6_subnet['enable_dhcp']:
+                    self.device_served_by_dhclient(
+                        'eth{}'.format(eth_i), 6, assert_true=True)
             self.dhcp_validated = True
             LOG.info('[{}] Validation complete'.format(self.tag))
 
@@ -422,18 +395,6 @@ class TenantServer(object):
                 ip, 'permanent' if assert_permanent else 'configured'))
 
         return ip_configured
-
-    def validate_ips(self):
-        if not self.ips_validated:
-            LOG.info('[{}] Validating server IP\'s'.format(self.tag))
-
-            for addresses in self.ips:
-                for address in addresses:
-                    self.is_ip_configured(
-                        address, assert_permanent=True, assert_true=True)
-
-            self.ips_validated = True
-            LOG.info('[{}] Validating server IP\'s OK!'.format(self.tag))
 
     def device_served_by_dhclient(self, device, ip_version,
                                   assert_true=False):
@@ -579,7 +540,9 @@ class TenantServer(object):
         for nic, network in enumerate(networks):
             if nic == 0:
                 continue   # nic 0 is auto-served
-            if self.is_dhcp_enabled(network):
+            # TODO(Kris) check each subnet separately for dhcp seems more
+            #            suited?
+            if self.force_dhcp or self.parent_test.is_dhcp_enabled(network):
                 if first_nic_prepared:
                     LOG.info('[{}] Preparing user-data for {} nics'.format(
                         self.tag, nbr_nics))
@@ -593,13 +556,13 @@ class TenantServer(object):
                     s += '/sbin/cirros-dhcpc up eth%s\n' % nic
                 else:
                     s += '/sbin/ip link set eth%s up\n' % nic
-                    if network.get('v6_subnet'):
+                    if self.parent_test.get_network_subnet(network, 6):
                         s += '/bin/sleep 2\n'  # TODO(OPENSTACK-2666) this is
                         #                         current low-cost approach
                         #                         for v6 DAD to complete, but
                         #                         is platform-dependent
                         s += '/sbin/dhclient -1 -6 eth%s\n' % nic
-                    if network.get('v4_subnet'):
+                    if self.parent_test.get_network_subnet(network, 4):
                         s += '/sbin/dhclient -1 eth%s\n' % nic
         return s
 

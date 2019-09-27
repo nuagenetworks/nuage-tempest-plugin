@@ -8,11 +8,18 @@ from six import iteritems
 
 from tempest.lib.common.utils import data_utils
 
-from bambou.exceptions import BambouHTTPError
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
 LOG = Topology.get_logger(__name__)
+
+
+def fetch_by_id(fetcher, obj_id):
+    return fetcher.fetch(filter='ID is "{}"'.format(obj_id))[2]
+
+
+def get_by_id(fetcher, obj_id):
+    return fetcher.get(filter='ID is "{}"'.format(obj_id))[0]
 
 
 def fetch_by_name(fetcher, name):
@@ -64,6 +71,9 @@ class VsdHelper(object):
         match = pattern.search(base_uri)
         version = match.group()
         return str(version)
+
+    def get_enterprise_by_id(self, ent_id):
+        return get_by_id(self.session().user.enterprises, ent_id)
 
     def get_enterprise_by_name(self, ent_name):
         if ent_name in self.enterprise_name_to_enterprise:
@@ -227,27 +237,28 @@ class VsdHelper(object):
         return enterprise
 
     def _get_vspk_filter_for_l2domain_or_domain_template(
-            self,
-            vspk_filter=None,
-            by_subnet_id=None, by_network_id=None,
+            self, vspk_filter=None,
+            by_id=None, by_subnet_id=None, by_network_id=None,
             cidr=None, ip_type=4):
-
-        if not vspk_filter and by_subnet_id:
-            vspk_filter = self.get_external_id_filter(by_subnet_id)
-        elif not vspk_filter and by_network_id and cidr:
-            if ip_type == 6:
-                vspk_filter = self.filter_str(
-                    ['externalID', 'IPv6Address'],
-                    [self.external_id(by_network_id), cidr])
-            else:
-                vspk_filter = self.filter_str(
-                    ['externalID', 'address'],
-                    [self.external_id(by_network_id),
-                     cidr.split('/')[0]])
+        if not vspk_filter:
+            if by_id:
+                vspk_filter = 'ID is "{}"'.format(by_id)
+            elif by_subnet_id:
+                vspk_filter = self.get_external_id_filter(by_subnet_id)
+            elif by_network_id and cidr:
+                if ip_type == 6:
+                    vspk_filter = self.filter_str(
+                        ['externalID', 'IPv6Address'],
+                        [self.external_id(by_network_id), cidr])
+                else:
+                    vspk_filter = self.filter_str(
+                        ['externalID', 'address'],
+                        [self.external_id(by_network_id),
+                         cidr.split('/')[0]])
         return vspk_filter
 
     def get_l2domain(self, enterprise=None, vspk_filter=None,
-                     by_subnet_id=None, by_network_id=None,
+                     by_id=None, by_subnet_id=None, by_network_id=None,
                      cidr=None, ip_type=4):
         """get_l2domain
 
@@ -268,24 +279,18 @@ class VsdHelper(object):
             vspk_filter = (
                 self._get_vspk_filter_for_l2domain_or_domain_template(
                     vspk_filter=vspk_filter,
-                    by_subnet_id=by_subnet_id, by_network_id=by_network_id,
-                    cidr=cidr,
-                    ip_type=ip_type)
+                    by_id=by_id, by_subnet_id=by_subnet_id,
+                    by_network_id=by_network_id, cidr=cidr, ip_type=ip_type)
             )
 
         if not vspk_filter:
             LOG.error('a qualifier is required')
             return None
 
-        l2_domain = enterprise.l2_domains.get_first(
-            filter=vspk_filter)
-        if not l2_domain:
-            LOG.warning('could not fetch the L2 domain '
-                        'matching the filter "{}"'
-                        .format(vspk_filter))
-        return l2_domain
+        return enterprise.l2_domains.get_first(filter=vspk_filter)
 
     def get_l2domain_template(self, enterprise=None, vspk_filter=None,
+                              by_id=None,
                               by_subnet_id=None, by_network_id=None,
                               cidr=None, ip_type=4):
         """get_l2domain_template
@@ -306,7 +311,7 @@ class VsdHelper(object):
         if not vspk_filter:
             vspk_filter = (
                 self._get_vspk_filter_for_l2domain_or_domain_template(
-                    vspk_filter=vspk_filter,
+                    vspk_filter=vspk_filter, by_id=by_id,
                     by_subnet_id=by_subnet_id, by_network_id=by_network_id,
                     cidr=cidr,
                     ip_type=ip_type)
@@ -316,13 +321,7 @@ class VsdHelper(object):
             LOG.error('a qualifier is required')
             return None
 
-        l2_domain_template = enterprise.l2_domain_templates.get_first(
-            filter=vspk_filter)
-        if not l2_domain_template:
-            LOG.warning('could not fetch the L2 domain template'
-                        'matching the filter "{}"'
-                        .format(vspk_filter))
-        return l2_domain_template
+        return enterprise.l2_domain_templates.get_first(filter=vspk_filter)
 
     ###
     # l3 domain
@@ -385,24 +384,7 @@ class VsdHelper(object):
         if not subnet:
             return None
 
-        # get the parent, which is the zone
-        try:
-            zone, _ = self.vspk.NUZone(id=subnet.parent_id).fetch()
-        except BambouHTTPError as exc:
-            if exc.connection.response.status_code == 404:
-                return None
-            else:
-                raise
-
-        # get the parent, which is the domain
-        try:
-            domain, _ = self.vspk.NUDomain(id=zone.parent_id).fetch()
-        except BambouHTTPError as exc:
-            if exc.connection.response.status_code == 404:
-                return None
-            else:
-                raise
-
+        _, domain = self.get_zone_and_domain_parent_of_subnet(subnet)
         return domain
 
     def get_domain(self, enterprise=None, vspk_filter=None, by_router_id=None):
@@ -447,14 +429,7 @@ class VsdHelper(object):
     def create_zone(self, name=None, domain=None, **kwargs):
         zone_name = name or data_utils.rand_name('test-zone')
 
-        params = {}
-
-        for key, value in iteritems(kwargs):
-            params.update({key: value})
-
-        zone_data = self.vspk.NUZone(
-            name=zone_name,
-            **params)
+        zone_data = self.vspk.NUZone(name=zone_name, **kwargs)
 
         zone_tuple = domain.create_child(zone_data)
         return zone_tuple[0]
@@ -812,8 +787,9 @@ class VsdHelper(object):
                         .format(vspk_filter))
         return zone
 
-    def get_subnet(self, zone=None, vspk_filter=None, by_subnet_id=None,
-                   by_network_id=None, cidr=None, ip_type=4):
+    def get_subnet(self, zone=None, vspk_filter=None, by_id=None,
+                   by_subnet_id=None, by_network_id=None, cidr=None,
+                   ip_type=4):
         """get_subnet
 
         @params: zone object or zone id
@@ -835,9 +811,13 @@ class VsdHelper(object):
                 subnet = self.session().user.subnets.get_first(
                     filter=vspk_filter)
 
+        elif by_id:
+            subnet = self.get_subnet(vspk_filter='ID is "{}"'.format(by_id))
+
         elif by_subnet_id:
             subnet = self.get_subnet(
                 zone, self.get_external_id_filter(by_subnet_id))
+
         elif by_network_id and cidr:
             if ip_type == 6:
                 vspk_filter = self.filter_str(
@@ -857,6 +837,11 @@ class VsdHelper(object):
             LOG.warning('could not fetch the subnet matching the filter "{}"'
                         .format(filter))
         return subnet
+
+    def get_zone_and_domain_parent_of_subnet(self, subnet):
+        zone, _ = self.vspk.NUZone(id=subnet.parent_id).fetch()
+        domain, _ = self.vspk.NUDomain(id=zone.parent_id).fetch()
+        return zone, domain
 
     def get_subnet_from_domain(self, domain=None, vspk_filter=None,
                                by_subnet_id=None, by_network_id=None,

@@ -396,11 +396,6 @@ class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
             gateway=subnet2_ipv6_gateway,
             enable_dhcp=False)
 
-        network1['vsd_l3_domain'] = vsd_l3domain1
-        network1['vsd_l3_subnet'] = vsd_subnet1
-        network2['vsd_l3_domain'] = vsd_l3domain2
-        network2['vsd_l3_subnet'] = vsd_subnet2
-
         user_data1 = self.get_static_route_data(
             subnet2_cidr, subnet1_gateway, 'eth1')
         user_data2 = self.get_static_route_data(
@@ -474,11 +469,6 @@ class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
             network2,
             cidr=subnet2_cidr, mask_bits=64, gateway=subnet2_gateway,
             nuagenet=vsd_subnet2.id, ip_version=6)
-
-        network1['vsd_l3_domain'] = vsd_l3domain1
-        network1['vsd_l3_subnet'] = vsd_subnet1
-        network2['vsd_l3_domain'] = vsd_l3domain2
-        network2['vsd_l3_subnet'] = vsd_subnet2
 
         # Launch tenant servers in OpenStack network
         server2 = self.create_tenant_server([network2],

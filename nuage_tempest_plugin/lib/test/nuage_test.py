@@ -447,26 +447,19 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         network = body['network']
         return network
 
-    @staticmethod
-    def set_network_as_l3_connected(network):
-        network['is_l3'] = True
-
-    @staticmethod
-    def set_network_as_l2_isolated(network):
-        network['is_l3'] = False
-
-    def is_l3_network(self, network):
-        if self.enable_aggregate_flows_on_vsd_managed:
-            # There is a limitation today of FIP 2 UL not working with
-            # aggregate flows; therefore, treat L3 vsd managed as L2, such
-            # that a new network will be created at which the FIP will be
-            # applied; and as such overcome the limitation
-            return network.get('is_l3')
+    def is_l2_subnet(self, subnet):
+        if subnet['vsd_managed']:
+            return self.vsd.get_l2domain(
+                self.vsd.get_enterprise_by_id(subnet['net_partition']),
+                by_id=subnet['nuagenet']) is not None
         else:
-            return network.get('is_l3') or network.get('vsd_l3_subnet')
+            router_ports = self.osc_list_ports(
+                device_owner='network:router_interface',
+                network_id=subnet['network_id'])
+            return len(router_ports) == 0
 
-    def is_l2_network(self, network):
-        return not self.is_l3_network(network)
+    def is_l3_subnet(self, subnet):
+        return not self.is_l2_subnet(subnet)
 
     def get_network(self, network_id, client=None, **kwargs):
         """Wrapper utility that gets a test network."""
@@ -575,15 +568,6 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             cls.addClassResourceCleanup(
                 client.subnets_client.delete_subnet, subnet['id'])
 
-        # add parent network
-        subnet['parent_network'] = network
-
-        # add me to network
-        if ip_version == 4:
-            network['v4_subnet'] = subnet  # keeps last created only
-        else:
-            network['v6_subnet'] = subnet  # keeps last created only
-
         return subnet
 
     def create_subnet(self, network, subnet_name=None, gateway='', cidr=None,
@@ -611,6 +595,31 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                                                    **kwargs)
         return body['subnet']
 
+    def get_network_subnet(self, network, ip_version):
+        subnets = self.osc_list_subnets(network_id=network['id'],
+                                        ip_version=ip_version)
+        if len(subnets) == 0:
+            return None
+        elif len(subnets) == 1:
+            return subnets[0]
+        else:
+            self.fail('Cannot return 1 arbitrary IPv{} subnet of network '
+                      'as there are many ({})'.format(ip_version,
+                                                      len(subnets)))
+
+    def is_dhcp_enabled(self, network, require_all_subnets_to_match=False):
+        subnets = self.osc_list_subnets(network_id=network['id'])
+        if require_all_subnets_to_match:
+            for subnet in subnets:
+                if not subnet['enable_dhcp']:
+                    return False
+            return True
+        else:
+            for subnet in subnets:
+                if subnet['enable_dhcp']:
+                    return True
+            return False
+
     def create_l2_vsd_managed_subnet(self, network, vsd_l2domain, ip_version=4,
                                      dhcp_managed=True, dhcp_option_3=None,
                                      **subnet_kwargs):
@@ -637,9 +646,6 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             nuagenet=vsd_l2domain.id,
             net_partition=vsd_l2domain.parent_object.name,
             **subnet_kwargs)
-
-        # add vsd mgd info to network
-        subnet['parent_network']['vsd_l2_domain'] = vsd_l2domain
 
         return subnet
 
@@ -676,10 +682,6 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             net_partition=net_partition,
             **subnet_kwargs)
 
-        # add vsd mgd info to network
-        subnet['parent_network']['vsd_l3_domain'] = vsd_domain
-        subnet['parent_network']['vsd_l3_subnet'] = vsd_subnet
-
         return subnet
 
     def create_port(self, network, client=None, cleanup=True, **kwargs):
@@ -697,9 +699,6 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         port = body['port']
         if cleanup:
             self.addCleanup(client.ports_client.delete_port, port['id'])
-
-        # add parent network
-        port['parent_network'] = network
 
         return port
 
@@ -972,12 +971,8 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         self.create_router_interface(router['id'], subnet['id'],
                                      client=client, cleanup=cleanup)
 
-        self.set_network_as_l3_connected(subnet['parent_network'])
-
     def router_detach(self, router, subnet):
         self.remove_router_interface(router['id'], subnet['id'])
-
-        self.set_network_as_l2_isolated(subnet['parent_network'])
 
     def create_router_interface_with_port_id(self, router_id, port_id,
                                              client=None, cleanup=True):
@@ -1075,6 +1070,13 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         if not self.ssh_keypair:
             self.ssh_keypair = self._create_keypair(client)
         return self.ssh_keypair
+
+    def osc_get_network(self, network_id, client=None, **kwargs):
+        """List networks using admin creds else provide client """
+        if not client:
+            client = self.admin_manager
+        network = client.networks_client.show_network(network_id, **kwargs)
+        return network['network']
 
     def osc_list_networks(self, client=None, *args, **kwargs):
         """List networks using admin creds else provide client """
@@ -1194,11 +1196,16 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             networks = kwargs.pop('networks', [])
         else:
             networks = []
-        if tenant_networks:
-            networks.extend(tenant_networks)
-        if ports:
-            for p in ports:
-                networks.append({'port': p})
+
+        # process ports and networks, ports take precedence
+        port_network_id_list = []
+        for p in ports or []:
+            networks.append({'port': p})
+            port_network_id_list.append(p['network_id'])
+        for net in tenant_networks or []:
+            if net['id'] not in port_network_id_list:  # don't process it twice
+                networks.append(net)
+
         # If vnic_type or profile are configured create port for
         # every network
         if vnic_type or profile:
@@ -1215,22 +1222,23 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 for sg in security_groups:
                     security_groups_ids.append(sg['id'])
                 create_port_body['security_groups'] = security_groups_ids
-            for net in networks:
-                if 'port' not in net:
-                    port = self.create_port(net,
+            for network in networks:
+                if 'port' in network:
+                    ports.append({'port': network['port']['id']})
+                else:
+                    port = self.create_port(network,
                                             client=client,
                                             **create_port_body)
                     ports.append({'port': port['id']})
-                else:
-                    ports.append({'port': net['port']['id']})
             if ports:
                 kwargs['networks'] = ports
         else:
             nets = []
-            for net in tenant_networks or []:
-                nets.append({'uuid': net['id']})
-            for port in ports or []:
-                nets.append({'port': port['id']})
+            for network in networks:
+                if 'port' in network:
+                    nets.append({'port': network['port']['id']})
+                else:
+                    nets.append({'uuid': network['id']})
             kwargs['networks'] = nets
             if security_groups:
                 sg_name_dicts = []  # nova requires sg names in dicts
@@ -1355,8 +1363,10 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
         name = name or data_utils.rand_name('test-server')
 
-        LOG.info('[{}] Creating tenant server {}'.format(self.test_name,
-                                                         name))
+        LOG.info('[{}] Creating tenant server {} ({})'.format(
+            self.test_name, name,
+            '{} networks'.format(len(networks)) if networks
+            else '{} ports'.format(len(ports))))
 
         def needs_provisioning(server_networks=None, server_ports=None):
             # we configure through cloudinit the interfaces for DHCP;
@@ -1365,35 +1375,52 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 return False
             if server_networks:
                 for net in server_networks:
-                    if (net.get('v4_subnet') and
-                            not net['v4_subnet']['enable_dhcp']):
-                        return True
-                    if (net.get('v6_subnet') and
-                            not net['v6_subnet']['enable_dhcp']):
+                    if not self.is_dhcp_enabled(
+                            net, require_all_subnets_to_match=True):
                         return True
                 return False
             else:
                 server_networks = []
                 for port in server_ports:
-                    server_networks.append(port['parent_network'])
+                    server_networks.append(self.osc_get_network(
+                        port['network_id']))
                 return needs_provisioning(server_networks)
 
         provisioning_needed = (needs_provisioning(networks, ports)
                                if prepare_for_connectivity
                                else False)
 
-        first_network = (networks[0] if networks
-                         else ports[0].get('parent_network'))
-        is_l3 = self.is_l3_network(first_network)
-
         if prepare_for_connectivity:
+
+            first_network = (
+                networks[0] if networks
+                else self.osc_get_network(ports[0]['network_id']))
+            first_v4_subnet = self.get_network_subnet(first_network, 4)
+
             # fip is only supported on L3 v4, so in L2 or L3 pure v6 cases,
             # another L3 domain with v4 subnet will be created to associate FIP
             # - this is also done for L3 subnets that have v4 but no dhcpv4,
             #   as the nic won't obtain ip then
-            if (not is_l3 or
-                    not first_network.get('v4_subnet') or
-                    not first_network.get('v4_subnet')['enable_dhcp']):
+
+            if not first_v4_subnet:
+                prepare = True
+
+            # ----------------------- aggregate flows -------------------------
+            # There is a limitation today of FIP 2 UL not working with
+            # aggregate flows; therefore, treat vsd managed always as L2, such
+            # that a new network will be created at which the FIP will be
+            # applied; and as such overcome the limitation
+            elif (first_v4_subnet['vsd_managed'] and
+                    self.enable_aggregate_flows_on_vsd_managed):
+                prepare = True
+            # ----------------------- aggregate flows -------------------------
+
+            elif self.is_l2_subnet(first_v4_subnet):
+                prepare = True
+            else:
+                prepare = not first_v4_subnet['enable_dhcp']
+
+            if prepare:
                 ports = self.prepare_fip_topology(
                     name, networks, ports, security_groups, client)
                 networks = []
@@ -1402,6 +1429,12 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
         keypairs_client = client.keypairs_client if client else None
         keypair = self.create_keypair(client=keypairs_client)
+
+        LOG.info('[{}] Creating TenantServer {} ({})'.format(
+            self.test_name, name,
+            '{} networks'.format(len(networks)) if networks
+            else '{} ports'.format(len(ports))))
+
         server = TenantServer(self, client, self.admin_manager.servers_client,
                               name, networks, ports, security_groups,
                               flavor, keypair, volume_backed)
@@ -1420,9 +1453,6 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             LOG.info('[{}] {} will need provisioning'.format(
                 self.test_name, name.capitalize()))
             server.needs_provisioning = True
-        elif prepare_for_connectivity:
-            LOG.info('[{}] {} won\'t need provisioning'.format(
-                self.test_name, name.capitalize()))
 
         # In both cases, the actual provisioning or the potential need for
         # making the server reachable is postponed, such that parallel booting
@@ -1444,22 +1474,33 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         # make reachable over the 1st port
         if server.networks:
             first_network = server.networks[0]
-            first_port = self.osc_get_server_port_in_network(server,
-                                                             first_network)
+            if server.ports:
+                first_port = server.ports[0]
+            else:
+                first_port = self.osc_get_server_port_in_network(server,
+                                                                 first_network)
         else:
+            assert server.ports
             first_port = server.ports[0]
-            first_network = first_port['parent_network']
+            first_network = self.osc_get_network(first_port['network_id'])
 
-        if first_network.get('vsd_l3_subnet'):
-            # vsd managed l3
-            self.create_fip_to_server(
-                server, first_port,
-                vsd_domain=first_network.get('vsd_l3_domain'),
-                vsd_subnet=first_network.get('vsd_l3_subnet'),
-                manager=client)
-        elif first_network.get('vsd_l2_domain'):
-            # vsd managed l2
-            raise NotImplementedError
+        v4_subnet = self.get_network_subnet(first_network, 4)
+        if v4_subnet['vsd_managed']:
+            if self.is_l3_subnet(v4_subnet):
+                # vsd managed l3
+                vsd_l3_subnet = self.vsd.get_subnet(
+                    by_id=v4_subnet['nuagenet'])
+                assert vsd_l3_subnet
+                _, domain = self.vsd.get_zone_and_domain_parent_of_subnet(
+                    vsd_l3_subnet)
+                self.create_fip_to_server(
+                    server, first_port,
+                    vsd_domain=domain,
+                    vsd_subnet=vsd_l3_subnet,
+                    manager=client)
+            else:
+                # vsd managed l2
+                raise NotImplementedError
         else:
             # OS managed
             self.create_fip_to_server(server, first_port, manager=client)
