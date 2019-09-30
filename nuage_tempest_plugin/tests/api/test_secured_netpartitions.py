@@ -86,7 +86,6 @@ class SecuredNetpartitionsTest(NuageBaseTest):
             show_project_netpartition_mappings,
             project_id)
 
-    @decorators.attr(type='smoke')
     def test_project_netpartition_mapping_list_non_admin(self):
         name = data_utils.rand_name('np_mapping', prefix=None)
         netpart = self.plugin_network_client.create_netpartition(
@@ -131,7 +130,6 @@ class SecuredNetpartitionsTest(NuageBaseTest):
         self.assertNotIn(project_admin, proj_np)
         self.assertEqual(netpart['id'], proj_np.get(project_user))
 
-    @decorators.attr(type='smoke')
     def test_project_netpartition_mapping_non_admin_neg(self):
         name = data_utils.rand_name('np_mapping', prefix=None)
         netpart = self.plugin_network_client.create_netpartition(
@@ -148,7 +146,6 @@ class SecuredNetpartitionsTest(NuageBaseTest):
             {'project': project_id,
              'net_partition_id': netpart['id']})
 
-    @decorators.attr(type='smoke')
     def test_project_netpartition_mapping_update(self):
         name = data_utils.rand_name('np_mapping', prefix=None)
         netpart = self.plugin_network_client.create_netpartition(
@@ -193,7 +190,6 @@ class SecuredNetpartitionsTest(NuageBaseTest):
                          mapping2['project'])
         self.assertEqual(netpart['id'], mapping2['net_partition_id'])
 
-    @decorators.attr(type='smoke')
     def test_create_resource_in_mapped_netpartition(self):
         name = data_utils.rand_name('np_mapping', prefix=None)
 
@@ -280,7 +276,6 @@ class SecuredNetpartitionsTest(NuageBaseTest):
         self.assertIsNotNone(vsd_domain, 'l2domain not found under expected, '
                                          'mapped netpartition.')
 
-    @decorators.attr(type='smoke')
     def test_project_netpartition_mapping_vsd_managed(self):
         name = data_utils.rand_name('np_mapping', prefix=None)
         netpart = self.plugin_network_client.create_netpartition(
@@ -346,7 +341,6 @@ class SecuredNetpartitionsTest(NuageBaseTest):
             no_net_partition=True)
         self.assertIsNotNone(subnet)
 
-    @decorators.attr(type='smoke')
     def test_project_netpartition_mapping_vsd_managed_neg(self):
         name = data_utils.rand_name('np_mapping', prefix=None)
         netpart = self.plugin_network_client.create_netpartition(
