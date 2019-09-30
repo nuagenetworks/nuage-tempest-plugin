@@ -91,7 +91,6 @@ class BaseTestCase(object):
 
         @testtools.skipUnless(sys.version_info >= (3, 0),
                               reason='Skip with python 2')
-        @decorators.attr(type='smoke')
         def test_icmp_connectivity_l3_os_managed_russian(self):
             # Let's serve some Russian horseradish...
             name = (u'\u0445\u0440\u0435\u043d-\u0441-' +
@@ -101,7 +100,6 @@ class BaseTestCase(object):
 
         @testtools.skipUnless(sys.version_info >= (3, 0),
                               reason='Skip with python 2')
-        @decorators.attr(type='smoke')
         def test_icmp_connectivity_l3_os_managed_line_tab(self):
             line_tab = u'\u000b'
             name = 'test' + line_tab + 'server'
@@ -429,14 +427,12 @@ class BaseTestCase(object):
             self.assert_ping(
                 server1, server2, network)
 
-        @decorators.attr(type='smoke')
         @testtools.skipUnless(CONF.compute.min_compute_nodes > 1,
                               'Less than 2 compute nodes, skipping multinode '
                               'tests.')
         def test_multi_compute_icmp_connectivity_l2_os_managed(self):
             self._test_multi_compute_icmp_connectivity_os_managed(is_l3=False)
 
-        @decorators.attr(type='smoke')
         @testtools.skipUnless(CONF.compute.min_compute_nodes > 1,
                               'Less than 2 compute nodes, skipping multinode '
                               'tests.')

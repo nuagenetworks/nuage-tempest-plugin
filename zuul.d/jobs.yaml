@@ -251,7 +251,7 @@
     branches: ^(?!stable/(newton|ocata)).*$
     vars:
       tempest_test_regex: '^(nuage_tempest_plugin|tempest\.api\.network|neutron_tempest_plugin\.(api|scenario))\..*\[(?=.*smoke)'
-      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|neutron_tempest_plugin\.api\.admin\.test_tag.*|nuage_tempest_plugin.*orchestration.*))'
+      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|neutron_tempest_plugin\.api\.admin\.test_tag.*|nuage_tempest_plugin.*orchestration.*|nuage_tempest_plugin\.tests\.scenario\.connectivity\..*\..*AggrFlowsTest\..*))'
 
 - job:
     name: networking-nuage-tempest-smoke-py3
@@ -261,7 +261,7 @@
     branches: ^(?!stable/(newton|ocata)).*$
     vars:
       tempest_test_regex: '^(nuage_tempest_plugin|tempest\.api\.network|neutron_tempest_plugin\.(api|scenario))\..*\[(?=.*smoke)'
-      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|neutron_tempest_plugin\.api\.admin\.test_tag.*|nuage_tempest_plugin.*orchestration.*))'
+      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|neutron_tempest_plugin\.api\.admin\.test_tag.*|nuage_tempest_plugin.*orchestration.*|nuage_tempest_plugin\.tests\.scenario\.connectivity\..*\..*AggrFlowsTest\..*))'
 
 - job:
     name: networking-nuage-tempest-5.4
