@@ -132,7 +132,7 @@ class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
             subnet4)
 
     @decorators.attr(type='smoke')
-    def test_create_port_with_aap_ipv4_moving_from_l2_to_l3_validation(self):
+    def test_delete_v6_subnet_with_ip_as_vip_in_v4_subnet_neg(self):
         network = self.create_network()
         subnet4 = self.create_subnet(
             network, ip_version=4, enable_dhcp=True)
@@ -149,13 +149,38 @@ class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
                            'mac_address': VALID_MAC_ADDRESS}]}
         port = self.create_port(network, **port_args)
 
-        msg = 'IPV6 IP %s is in use for nuage VIP, ' \
-              'hence cannot delete the subnet' % \
-              port['allowed_address_pairs'][0]['ip_address']
+        msg = ('IP {} is in use for nuage VIP, hence cannot delete the subnet'
+               ).format(port['allowed_address_pairs'][0]['ip_address'])
         self.assertRaisesRegex(tempest_exceptions.BadRequest,
                                msg,
                                self.delete_subnet,
                                subnet6)
+
+    # @decorators.attr(type='smoke')
+    def test_delete_v4_subnet_with_ip_as_vip_in_v6_subnet_neg(self):
+        network = self.create_network()
+        subnet4 = self.create_subnet(
+            network, ip_version=4, enable_dhcp=True)
+        subnet6 = self.create_subnet(
+            network, ip_version=6, enable_dhcp=False)
+        router = self.create_router()
+
+        self.create_router_interface(router['id'], subnet6['id'])
+
+        port_args = {'fixed_ips': [{'subnet_id': subnet6['id'],
+                                    'ip_address': str(
+                                        IPAddress(self.cidr6.first) + 10)}],
+                     'allowed_address_pairs':
+                         [{'ip_address': str(IPAddress(self.cidr4.first) + 10),
+                           'mac_address': VALID_MAC_ADDRESS}]}
+        port = self.create_port(network, **port_args)
+
+        msg = ('IP {} is in use for nuage VIP, hence cannot delete the subnet'
+               ).format(port['allowed_address_pairs'][0]['ip_address'])
+        self.assertRaisesRegex(tempest_exceptions.BadRequest,
+                               msg,
+                               self.delete_subnet,
+                               subnet4)
 
     @decorators.attr(type='smoke')
     def test_create_port_with_invalid_address_formats_neg_l2_and_l3(self):
