@@ -5,6 +5,7 @@ import functools
 import os.path
 from six import iteritems
 import socket
+import subprocess
 import testtools
 import time
 import yaml
@@ -1747,6 +1748,14 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         except lib_exc.NotFound:
             if not ignore_not_found:
                 raise
+
+    @staticmethod
+    def execute_from_shell(command, success_expected=True, pause=None):
+        errcode = subprocess.call(command, shell=True)
+        if success_expected:
+            assert 0 == errcode
+        if pause:
+            time.sleep(pause)
 
 
 class NuageBaseOrchestrationTest(NuageBaseTest):
