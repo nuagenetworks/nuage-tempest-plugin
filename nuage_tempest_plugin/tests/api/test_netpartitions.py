@@ -30,7 +30,7 @@ class NetpartitionsTest(NuageAdminNetworksTest):
     shared_infrastructure = 'Shared Infrastructure'
     russian_horseradish = (u'\u0445\u0440\u0435\u043d-\u0441-' +
                            u'\u0440\u0443\u0447\u043a\u043e\u0439')
-    collision_symbol = u"\U0001F4A5"
+    collision_symbol = u'\U0001F4A5'
     n_tilde_symbol = u'\xf1'
 
     @classmethod
@@ -111,30 +111,27 @@ class NetpartitionsTest(NuageAdminNetworksTest):
         self.assertIn(netpart['id'], netpartition_id_list)
         self.assertIn(netpart['name'], netpartition_name_list)
 
-    # @decorators.attr(type='smoke')
-    def test_create_netpartition_utf_notation_16(self):
+    def test_create_netpartition_utf_notation_16_neg(self):
         name = self.russian_horseradish + data_utils.rand_name('ascii')
-        msg = "Invalid netpartition name: Only ascii names are allowed"
+        msg = 'Invalid netpartition name: Only ascii names are allowed'
         self.assertRaisesRegex(
             exceptions.BadRequest,
             msg,
             self._create_netpartition,
             name)
 
-    # @decorators.attr(type='smoke')
-    def test_create_netpartition_utf_notation_32(self):
+    def test_create_netpartition_utf_notation_32_neg(self):
         name = self.collision_symbol + data_utils.rand_name('ascii')
-        msg = "Invalid netpartition name: Only ascii names are allowed"
+        msg = 'Invalid netpartition name: Only ascii names are allowed'
         self.assertRaisesRegex(
             exceptions.BadRequest,
             msg,
             self._create_netpartition,
             name)
 
-    # @decorators.attr(type='smoke')
-    def test_create_netpartition_utf_notation_short(self):
+    def test_create_netpartition_utf_notation_short_neg(self):
         name = self.n_tilde_symbol + data_utils.rand_name('ascii')
-        msg = "Invalid netpartition name: Only ascii names are allowed"
+        msg = 'Invalid netpartition name: Only ascii names are allowed'
         self.assertRaisesRegex(
             exceptions.BadRequest,
             msg,
