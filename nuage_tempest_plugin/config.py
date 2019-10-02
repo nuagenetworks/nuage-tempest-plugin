@@ -88,4 +88,7 @@ NuageSutGroup = [
                 help='Set to true to enable driver to complete port '
                      'binding on a flat network, when corresponding'
                      'GW port has vlan 0 provisioned by external entity'),
+    cfg.BoolOpt('nuage_fip_underlay',
+                default=False,
+                help='System under test underlay setting for FIP subnets')
 ]
