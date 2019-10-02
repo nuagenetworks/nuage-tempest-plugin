@@ -264,7 +264,7 @@
       tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|neutron_tempest_plugin\.api\.admin\.test_tag.*|nuage_tempest_plugin.*orchestration.*|nuage_tempest_plugin\.tests\.scenario\.connectivity\..*\..*AggrFlowsTest\..*))'
 
 - job:
-    name: networking-nuage-tempest-5.4
+    name: networking-nuage-tempest-smoke-5.4
     parent: networking-nuage-base-5.4
     description: job used in gate testing smoke annotated tests
     # This currently works from pike on
@@ -276,6 +276,18 @@
 - job:
     name: networking-nuage-tempest-qdhcp
     parent: networking-nuage-tempest-smoke-py3
+    description: job running smoke annotated tests agains q-dhcp enabled deployment
+    # This currently works from stable/pike on
+    branches: ^(?!stable/(newton|ocata)).*$
+    vars:
+      devstack_localrc:
+        NEUTRON_AGENT: nuagevrs
+      devstack_services:
+        q-dhcp: true
+
+- job:
+    name: networking-nuage-tempest-qdhcp-5.4
+    parent: networking-nuage-tempest-smoke-5.4
     description: job running smoke annotated tests agains q-dhcp enabled deployment
     # This currently works from stable/pike on
     branches: ^(?!stable/(newton|ocata)).*$
