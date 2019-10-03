@@ -447,7 +447,7 @@
     description: job running all scenario tests
     # This currently works from stable/pike on
     branches: ^(?!stable/(newton|ocata)).*$
-    timeout: 14400
+    timeout: 18000
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.scenario\..*'
       tempest_black_regex: '^nuage_tempest_plugin\.tests\.scenario\.connectivity\..*\..*AggrFlowsTest\..*'
@@ -458,7 +458,7 @@
     description: job running all scenario tests on 5.4 branches
     # This currently works from pike on
     branches: ^(5.4/(pike|queens|rocky)).*$
-    timeout: 14400
+    timeout: 18000
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.scenario\..*'
 
