@@ -45,6 +45,9 @@
     - setup-tempest-run-dir
     - setup-tempest-data-dir
     - acl-devstack-files
-    - run-tempest
   environment: '{{ proxy_env|combine(env) }}'
+
+- hosts: tempest
+  roles:
+    - run-tempest
 
