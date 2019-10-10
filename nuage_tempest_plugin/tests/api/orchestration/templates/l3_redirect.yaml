@@ -8,6 +8,9 @@ parameters:
   remote_group_id:
     type: string
     default: default
+  flavor:
+    type: string
+    description: Flavor to use for servers
 
 resources:
   router:
@@ -166,7 +169,7 @@ resources:
     properties:
       name: FW_SERVER
       image: { get_param: image }
-      flavor: m1.tiny
+      flavor: { get_param: flavor }
       networks:
         - port: { get_resource: fw_port_ext }
         - port: { get_resource: fw_port_int }
@@ -176,6 +179,6 @@ resources:
     properties:
       name: LB_SERVER
       image: { get_param: image }
-      flavor: m1.tiny
+      flavor: { get_param: flavor }
       networks:
         - port: { get_resource: lb_port }

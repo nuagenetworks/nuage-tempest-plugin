@@ -49,7 +49,7 @@ class OrchestrationVMwithFIP(nuage_base.NuageBaseOrchestrationTest):
             'private_net_pool_start': '97.0.0.5',
             'private_net_pool_end': '97.0.0.100',
             'image': CONF.compute.image_ref,
-            'flavor': "m1.tiny"
+            'flavor': CONF.compute.flavor_ref
         }
         # create the stack
         stack_identifier = self.create_stack(

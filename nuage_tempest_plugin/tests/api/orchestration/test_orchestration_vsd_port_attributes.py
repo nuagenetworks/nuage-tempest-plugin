@@ -241,7 +241,8 @@ class HeatVsdManagedPortAttributesTest(
             'l3_aap_ip_address': l3_aap_fixed_ip,
             'l3_aap_mac_address': l3_aap_mac_address,
             'claimed_fip_id': claimed_fip[0]['ID'],
-            'image': CONF.compute.image_ref
+            'image': CONF.compute.image_ref,
+            'flavor': CONF.compute.flavor_ref
         }
         self.launch_stack(stack_name, stack_parameters)
         self.client.wait_for_stack_status(self.stack_id, 'CREATE_COMPLETE')

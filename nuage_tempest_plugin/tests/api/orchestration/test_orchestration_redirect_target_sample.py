@@ -80,7 +80,8 @@ class NeutronRedirectionTargetsTest(nuage_base.NuageBaseOrchestrationTest):
         cls.stack_name = data_utils.rand_name('redirecttarget')
         template = cls.read_template('l3_redirect')
         stack_parameters = {
-            'image': CONF.compute.image_ref
+            'image': CONF.compute.image_ref,
+            'flavor': CONF.compute.flavor_ref
         }
         # create the stack
         cls.stack_identifier = cls.create_stack(

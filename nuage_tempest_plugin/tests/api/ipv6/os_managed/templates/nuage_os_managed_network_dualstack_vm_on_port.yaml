@@ -35,6 +35,12 @@ parameters:
   pool_end6:
     type: string
     description: End of private network IP address allocation pool
+  flavor:
+    type: string
+    description: Flavor to use for servers
+  image:
+    type: string
+    default: cirros
 
 resources:
   dualstack_net:
@@ -76,8 +82,8 @@ resources:
   vm1:
     type: OS::Nova::Server
     properties:
-      flavor: m1.tiny
-      image: cirros
+      flavor: { get_param: flavor }
+      image: { get_param: image }
       networks:
         - port: { get_resource: port1 }
 
@@ -91,7 +97,7 @@ resources:
   vm2:
     type: OS::Nova::Server
     properties:
-      flavor: m1.tiny
-      image: cirros
+      flavor: { get_param: flavor }
+      image: { get_param: image }
       networks:
         - port: { get_resource: port2 }

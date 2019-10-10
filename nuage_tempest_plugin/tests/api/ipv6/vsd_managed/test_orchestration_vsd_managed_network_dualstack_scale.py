@@ -61,7 +61,7 @@ class OrchestrationDualStackScaleTest(
     type: OS::Nova::Server
     depends_on: [subnet4, subnet6]
     properties:
-      flavor: m1.tiny
+      flavor: { get_param: flavor }
       image: { get_param: image }
       networks:
         - network: { get_resource: dualstack_net }
@@ -87,7 +87,8 @@ class OrchestrationDualStackScaleTest(
             'cidr6': str(self.cidr6),
             'gateway6': self.gateway6,
             'maskbits6': self.mask_bits6,
-            'image': CONF.compute.image_ref
+            'image': CONF.compute.image_ref,
+            'flavor': CONF.compute.flavor_ref
         }
         self.launch_stack_template(stack_name, template, stack_parameters)
 
@@ -169,7 +170,8 @@ class OrchestrationDualStackScaleTest(
             'maskbits6': IPNetwork(vsd_l3domain_subnet.ipv6_address).prefixlen,
             'pool_start6': str(IPAddress(subnet_ipv6_gateway) + 1),
             'pool_end6': str(IPAddress(subnet_ipv6_cidr.last)),
-            'image': CONF.compute.image_ref
+            'image': CONF.compute.image_ref,
+            'flavor': CONF.compute.flavor_ref
         }
         self.launch_stack_template(stack_name, template, stack_parameters)
 
@@ -230,7 +232,7 @@ class OrchestrationDualStackScaleTest(
     type: OS::Nova::Server
     depends_on: [subnet4, subnet6]
     properties:
-      flavor: m1.tiny
+      flavor: { get_param: flavor }
       image: { get_param: image }
       networks:
         - network: { get_resource: dualstack_net }
@@ -259,7 +261,8 @@ class OrchestrationDualStackScaleTest(
             'gateway6': subnet_ipv6_gateway,
             'maskbits6': IPNetwork(
                 vsd_l3domain_subnet.ipv6_address).prefixlen,
-            'image': CONF.compute.image_ref
+            'image': CONF.compute.image_ref,
+            'flavor': CONF.compute.flavor_ref
         }
         self.launch_stack_template(stack_name, template, stack_parameters)
 
