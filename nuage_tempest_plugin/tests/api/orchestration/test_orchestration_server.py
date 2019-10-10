@@ -46,6 +46,7 @@ class OrchestrationServerTest(nuage_base.NuageBaseOrchestrationTest):
         stack_file_name = 'servers_in_new_neutron_net_nokey'
         stack_parameters = {
             'image': CONF.compute.image_ref,
+            'flavor': CONF.compute.flavor_ref,
             'public_net': ext_net_id,
             'private_net_name': "servers_in_new_neutron_net_nokey-net",
             'private_net_cidr': "8.7.6.0/24"}
