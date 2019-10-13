@@ -22,8 +22,10 @@ from tempest.lib import exceptions
 
 from nuage_tempest_plugin.lib.topology import Topology
 
+CLI_CLIENT_CONSOLE_LOGGING = False
+
 CONF = Topology.get_conf()
-LOG = Topology.get_logger(__name__)
+LOG = Topology.get_logger(__name__, console_logging=CLI_CLIENT_CONSOLE_LOGGING)
 
 
 # TODO(Kris) Refactor me - this for now is copy of execute() method from
@@ -61,8 +63,6 @@ def execute(cmd, action, flags='', params='', fail_ok=False,
     if six.PY2:
         cmd = cmd.encode('utf-8')
     cmd = shlex.split(cmd)
-    result = ''
-    result_err = ''
     stdout = subprocess.PIPE
     stderr = subprocess.STDOUT if merge_stderr else subprocess.PIPE
     proc = subprocess.Popen(cmd, stdout=stdout, stderr=stderr)
