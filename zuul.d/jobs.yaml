@@ -518,3 +518,19 @@
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.upgrade\..*'
       tempest_concurrency: 1
+
+- job:
+    name: networking-nuage-tempest-lbaas-5.4
+    parent: networking-nuage-base-5.4
+    description: Legacy lbaas run
+    branches: ^(5.4/(pike|queens|rocky)).*$
+    required-projects:
+      - opendev.org/openstack/neutron-lbaas
+    vars:
+      tempest_test_regex: '^neutron_lbaas*'
+      devstack_localrc:
+        NEUTRON_LBAAS_SERVICE_PROVIDERV2: LOADBALANCERV2:Haproxy:neutron_lbaas.drivers.haproxy.plugin_driver.HaproxyOnHostPluginDriver:default
+      devstack_plugins:
+        neutron-lbaas: https://opendev.org/openstack/neutron-lbaas.git
+      tempest_plugins:
+        - neutron-lbaas
