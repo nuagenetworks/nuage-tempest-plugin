@@ -39,10 +39,6 @@ class Iterable(object):
         return self
 
 
-def nextitem(iterable):
-    return next(Iterable(iterable))  # eventually can become next(iterable)
-
-
 # works in Python 2 & 3
 class _Singleton(type):
     """A metaclass that creates a Singleton base class when called."""
@@ -56,6 +52,8 @@ class _Singleton(type):
 
 
 class Singleton(_Singleton('SingletonMeta', (object,), {})):
+    def __init__(self):
+        pass
     pass
 
 

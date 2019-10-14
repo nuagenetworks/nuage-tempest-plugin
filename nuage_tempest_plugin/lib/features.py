@@ -52,7 +52,7 @@ class NuageFeatures(object):
 
         LOG.info('')
         LOG.info('RELEASES:')
-        LOG.info('NUAGE release                    : {}'.
+        LOG.info('Nuage version                    : {}'.
                  format(Topology.nuage_release_qualifier))
         LOG.info('OpenStack version                : {}'.
                  format(Topology.openstack_version_qualifier))

@@ -993,10 +993,6 @@ class VSDManagedAllowedAddresPairsCLITest(
         client_testcase.CLIClientTestCase,
         base_vsd_managed_port_attributes.BaseVSDManagedPortAttributes):
 
-    @classmethod
-    def resource_setup(cls):
-        super(VSDManagedAllowedAddresPairsCLITest, cls).resource_setup()
-
     def test_cli_create_address_pair_l2domain_no_mac(self):
         # Given I have a VSD-L2-Managed subnet
         vsd_l2_subnet, l2_domtmpl = self._create_vsd_l2_managed_subnet()

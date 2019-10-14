@@ -5,12 +5,11 @@ from tempest import config
 
 from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.utils.console_logging import ConsoleLogging
-from nuage_tempest_plugin.lib.utils.data_utils import Singleton
 
 CONF = config.CONF
 
 
-class Topology(Singleton):
+class Topology(object):
 
     nuage_release_qualifier = CONF.nuage_sut.release
     nuage_release = Release(nuage_release_qualifier)
@@ -31,6 +30,11 @@ class Topology(Singleton):
                    CONF.nuage.nuage_vsd_password)
     def_netpartition = CONF.nuage.nuage_default_netpartition
     cms_id = CONF.nuage.nuage_cms_id
+
+    # - - - - - -
+
+    def __init__(self):
+        assert False  # you don't need to instantiate a topology
 
     # - - - - - -
 

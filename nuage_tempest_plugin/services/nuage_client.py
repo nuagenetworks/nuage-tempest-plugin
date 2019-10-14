@@ -25,8 +25,11 @@ SERVERTIMEOUT = 30
 RESPONSECHOICE = '?responseChoice=1'
 CMS_ID = None
 
+NUAGE_CLIENT_CONSOLE_LOGGING = False
+
 CONF = Topology.get_conf()
-LOG = Topology.get_logger(__name__)
+LOG = Topology.get_logger(__name__,
+                          console_logging=NUAGE_CLIENT_CONSOLE_LOGGING)
 
 
 # convert a structure into a string safely
