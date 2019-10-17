@@ -53,7 +53,7 @@ class VsdHelper(object):
 
         self.enterprise_name_to_enterprise = {}
 
-    @ staticmethod
+    @staticmethod
     def assertIsNotNone(obj, message):
         if obj is None:
             raise AssertionError(message or "{} is None".format(obj))
