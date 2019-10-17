@@ -59,7 +59,6 @@ resources:
 
   subnet6:
     type: OS::Neutron::Subnet
-    #depends_on: [subnet4]
     properties:
       network_id: { get_resource: dualstack_net }
       cidr: { get_param: cidr6 }
