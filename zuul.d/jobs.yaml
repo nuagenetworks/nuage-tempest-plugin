@@ -56,6 +56,7 @@
     vars:
       tempest_test_regex: '^(tempest|neutron_tempest_plugin)\.(api|scenario)'
       tempest_test_blacklist: "{{devstack_base_dir}}/nuage-tempest-plugin/tempest-blacklist.txt"
+      tempest_concurrency: 2
 
 - job:
     name: tempest-full-5.4
@@ -67,6 +68,7 @@
     vars:
       tempest_test_regex: '^(tempest|neutron_tempest_plugin)\.(api|scenario)'
       tempest_test_blacklist: "{{devstack_base_dir}}/nuage-tempest-plugin/tempest-blacklist.txt"
+      tempest_concurrency: 2
 
 - job:
     name: tempest-full-py3
@@ -91,6 +93,7 @@
         c-bak: false
       tempest_test_regex: '^(tempest|neutron_tempest_plugin)\.(api|scenario)'
       tempest_test_blacklist: "{{devstack_base_dir}}/nuage-tempest-plugin/tempest-blacklist.txt"
+      tempest_concurrency: 2
 
 - job:
     name: networking-nuage-base
@@ -121,7 +124,7 @@
       nuage_fip_range: "172.{{ 255 | random }}.{{ 255 | random }}"
       vsp_release: "{{ nuage_vsp_release }}"
       tox_envlist: all
-      tempest_concurrency: 2
+      tempest_concurrency: 4
       devstack_localrc:
         LIBVIRT_TYPE: kvm
         IMAGE_URLS: "{{ image_url }}"
@@ -451,6 +454,8 @@
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.scenario\..*'
       tempest_black_regex: '^nuage_tempest_plugin\.tests\.scenario\.connectivity\..*\..*AggrFlowsTest\..*'
+      tempest_concurrency: 2
+
 
 - job:
     name: networking-nuage-tempest-scenario-5.4
@@ -461,6 +466,7 @@
     timeout: 18000
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.scenario\..*'
+      tempest_concurrency: 2
 
 - job:
     name: networking-nuage-tempest-cli
@@ -482,12 +488,13 @@
 
 - job:
     name: networking-nuage-tempest-aggregateflows
-    parent: networking-nuage-base-py3
+    parent: networking-nuage-tempest-scenario
     description: job running l3 vsd managed connectivity tests with aggregate flows enabled
     # This currently works from stable/pike on
     branches: ^(?!stable/(newton|ocata)).*$
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.scenario\.connectivity\..*\..*AggrFlowsTest\..*'
+      tempest_black_regex: ''
 
 - job:
     name: networking-nuage-tempest-scale
