@@ -53,10 +53,9 @@ nuage_sut_group = cfg.OptGroup(name='nuage_sut',
 
 NuageSutGroup = [
     cfg.StrOpt('openstack_version',
-               default='newton',
-               choices=['kilo', 'liberty', 'mitaka', 'newton', 'ocata', 'pike',
-                        'queens', 'rocky', 'stein', 'master'],
-               help="The mode for controlling services on controller node."),
+               default='master',
+               help="The OpenStack version run. Can be 'queens', 'rocky', "
+                    "'stein', etc, or 'master'"),
     cfg.StrOpt('nuage_baremetal_driver',
                default=constants.BAREMETAL_DRIVER_BRIDGE,
                choices=[constants.BAREMETAL_DRIVER_BRIDGE,
