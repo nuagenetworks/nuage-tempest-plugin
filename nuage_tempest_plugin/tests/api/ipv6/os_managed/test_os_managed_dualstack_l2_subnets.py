@@ -5,7 +5,6 @@ from six import iteritems
 
 from netaddr import IPAddress
 from netaddr import IPNetwork
-from netaddr import IPRange
 
 from tempest.lib import decorators
 from tempest.lib import exceptions as tempest_exceptions
@@ -13,7 +12,6 @@ from tempest.lib import exceptions as tempest_exceptions
 from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
 
-from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.utils import constants as nuage_constants
@@ -21,24 +19,24 @@ from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.tests.api.external_id.external_id \
     import ExternalId
 
-MSG_IP_ADDRESS_INVALID_OR_RESERVED = "IP Address %s is not valid " \
-                                     "or cannot be in reserved address space"
+MSG_IP_ADDRESS_INVALID_OR_RESERVED = ('IP Address %s is not valid '
+                                      'or cannot be in reserved address space')
 
-MSG_INVALID_INPUT_FOR_FIXED_IPS = "Invalid input for fixed_ips. " \
-                                  "Reason: '%s' is not a valid IP address."
-MSG_INVALID_IP_ADDRESS_FOR_SUBNET = "IP address %s is not a valid IP for " \
-                                    "the specified subnet."
+MSG_INVALID_INPUT_FOR_FIXED_IPS = ("Invalid input for fixed_ips. "
+                                   "Reason: '%s' is not a valid IP address.")
+MSG_INVALID_IP_ADDRESS_FOR_SUBNET = ('IP address %s is not a valid IP for '
+                                     'the specified subnet.')
 
-MSG_GATEWAY_NOT_IN_SUBNET_CIDR = "Gateway IP outside of the subnet CIDR"
-MSG_GATEWAY_NOT_VALID_ON_SUBNET = "Gateway is not valid on subnet"
-MSG_GATEWAY_INVALID_IP_ADDRESS = "Invalid input for gateway_ip. " \
-                                 "Reason: '%s' is not a valid IP address."
+MSG_GATEWAY_NOT_IN_SUBNET_CIDR = 'Gateway IP outside of the subnet CIDR'
+MSG_GATEWAY_NOT_VALID_ON_SUBNET = 'Gateway is not valid on subnet'
+MSG_GATEWAY_INVALID_IP_ADDRESS = ("Invalid input for gateway_ip. "
+                                  "Reason: '%s' is not a valid IP address.")
 
-MSG_INVALID_IPV6_NETMASK = "Invalid IPv6 netmask. Netmask can only be " \
-                           "between a minimum 64 and maximum 128 length."
+MSG_INVALID_IPV6_NETMASK = ('Invalid IPv6 prefix length. '
+                            'Only prefix length 64 is supported.')
 
-MSG_INVALID_GATEWAY_FOR_IP_TYPE = "Invalid input for operation: gateway_ip " \
-                                  "'%s' does not match the ip_version '6'"
+MSG_INVALID_GATEWAY_FOR_IP_TYPE = ("Invalid input for operation: gateway_ip "
+                                   "'%s' does not match the ip_version '6'")
 
 
 def _is_v4_ip(ip):
@@ -52,13 +50,6 @@ def _is_v6_ip(ip):
 class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
                                       nuage_test.NuageAdminNetworksTest):
     credentials = ['primary', 'admin']
-
-    @classmethod
-    def skip_checks(cls):
-        super(OsManagedDualStackL2SubnetsTest, cls).skip_checks()
-        if not NUAGE_FEATURES.os_managed_dualstack_subnets:
-            raise cls.skipException(
-                'OS Managed Dual Stack is not supported in this release')
 
     # TODO(waelj) port to VSD helper
     @classmethod
@@ -128,12 +119,12 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
 
         for fixed_ip in port['fixed_ips']:
             ip_address = fixed_ip['ip_address']
-            if subnet4 and fixed_ip['subnet_id'] == subnet4['id']:
+            if subnet4 is not None and fixed_ip['subnet_id'] == subnet4['id']:
                 self.verify_ip_in_allocation_pools(ip_address,
                                                    subnet4['allocation_pools'])
                 has_ipv4_ip = True
 
-            if subnet6 and fixed_ip['subnet_id'] == subnet6['id']:
+            if subnet6 is not None and fixed_ip['subnet_id'] == subnet6['id']:
                 self.verify_ip_in_allocation_pools(ip_address,
                                                    subnet6['allocation_pools'])
                 has_ipv6_ip = True
@@ -258,33 +249,21 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
     ###########################################################################
     # Special cases
     ###########################################################################
-    @decorators.attr(type='smoke')
-    # OPENSTACK-1947
-    def test_os_managed_dual_stack_subnet_with_invalid_ipv6_prefixlen(self):
+    # @decorators.attr(type='smoke')
+    def test_os_managed_subnet_with_invalid_ipv6_prefixlen(self):
         # Provision OpenStack network
         network = self.create_network()
-        ipv6_cidr, ipv6_gateway = "2001:5f74:c4a5:b82e::/63", \
-                                  "2001:5f74:c4a5:b82e:0000:0000:0000:0001"
-        self.assertRaisesRegex(
-            tempest_exceptions.BadRequest,
-            MSG_INVALID_IPV6_NETMASK,
-            self.create_subnet,
-            network,
-            ip_version=6,
-            cidr=IPNetwork(ipv6_cidr),
-            mask_bits=IPNetwork(ipv6_cidr).prefixlen,
-            gateway=ipv6_gateway,
-            enable_dhcp=False)
-
-        # corner case which tests we are able to create
-        # subnet with prefixlen 128 only when No Gateway is provided.
-        ipv6_cidr, ipv6_gateway = "2001:5f74:c4a5:b82e::/128", None
-        ipv6_subnet = self.create_subnet(
-            network, ip_version=6, cidr=IPNetwork(ipv6_cidr),
-            mask_bits=IPNetwork(ipv6_cidr).prefixlen,
-            gateway=None,
-            enable_dhcp=False)
-        self.assertIsNotNone(ipv6_subnet)
+        for ipv6_cidr in ['cafe:babe::/63', 'cafe:babe::/65']:
+            ipv6_gateway = 'cafe:babe::1'
+            self.assertRaisesRegex(
+                tempest_exceptions.BadRequest,
+                MSG_INVALID_IPV6_NETMASK,
+                self.create_subnet,
+                network,
+                ip_version=6,
+                cidr=IPNetwork(ipv6_cidr),
+                mask_bits=IPNetwork(ipv6_cidr).prefixlen,
+                gateway=ipv6_gateway)
 
     @decorators.attr(type='smoke')
     def test_os_managed_dhcp_subnet_ipv6_first(self):
@@ -558,7 +537,6 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
 
     @decorators.attr(type='smoke')
     def test_no_vsd_auto_assignment_for_ipv6_addresses(self):
-        """See VSD-21971"""
         network = self.create_network()
 
         # When I create an IPv4 subnet
@@ -575,46 +553,36 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
                          "VSD should not allocated IPv6 address")
 
         # When I add an IPv6 subnet
+        ipv6_cidr = IPNetwork('cafe:babe::/64')
         ipv6_subnet = self.create_subnet(
             network,
-            ip_version=6,
-            gateway=None,
-            mask_bits=126,
-            enable_dhcp=False)
+            cidr=ipv6_cidr,
+            mask_bits=ipv6_cidr.prefixlen,
+            gateway=IPAddress(ipv6_cidr.first + 1),
+            ip_version=6, allocation_pools=[
+                {
+                    'start': IPAddress('cafe:babe::a:0:0:0'),
+                    'end': IPAddress('cafe:babe::a:ffff:ffff:ffff')
+                }
+            ])
         self.assertIsNotNone(ipv6_subnet)
 
         vsd_l2_domain = self.nuage_client.get_l2domain(
             filters=['externalID', 'address'],
             filter_value=[ipv4_subnet['network_id'], ipv4_subnet['cidr']])[0]
         self.assertIsNotNone(vsd_l2_domain)
-        self.assertIsNotNone(vsd_l2_domain)
         self.assertFalse(vsd_l2_domain['dualStackDynamicIPAllocation'],
                          "VSD should not allocated IPv6 address")
 
-        # Allocated port for each address in the allocation pools
-        ipv6_range = IPRange(ipv6_subnet['allocation_pools'][0]['start'],
-                             ipv6_subnet['allocation_pools'][0]['end'])
-        for ipv6 in ipv6_range:
-            if str(ipv6) != vsd_l2_domain['IPv6Gateway']:
-                port_args = {'fixed_ips': [{'subnet_id': ipv4_subnet['id']},
-                                           {'subnet_id': ipv6_subnet['id'],
-                                            'ip_address': ipv6}]}
-                port = self.create_port(network, **port_args)
-                self.assertIsNotNone(port)
-
-        # When I create a port outside the pool, it should fail with BadRequest
-        ip_out_of_ipv6_allocation_pool = IPAddress(ipv6_range.last + 1)
+        # When I create a port outside the pool, it should succeed
+        ip_out_of_ipv6_allocation_pool = IPAddress('cafe:babe::b:0:0:0')
         port_args = {'fixed_ips': [{'subnet_id': ipv4_subnet['id']},
                                    {'subnet_id': ipv6_subnet['id'],
                                     'ip_address':
                                     ip_out_of_ipv6_allocation_pool}]}
-        self.assertRaisesRegex(
-            tempest_exceptions.BadRequest,
-            "IP address {} is not a valid IP for the specified subnet."
-            .format(ip_out_of_ipv6_allocation_pool),
-            self.create_port,
-            network,
-            **port_args)
+        port = self.create_port(
+            network, **port_args)
+        self.assertIsNotNone(port)
 
     ########################################
     # IPv6 address formats
@@ -635,7 +603,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
             # - at first address
             ("2001:5f74:c4a5:b82e::/64",
              "2001:5f74:c4a5:b82e:ffff:ffff:ffff:ffff"),
-            # valid address, gateway at last addres
+            # valid address, gateway at last address
             ("2001:5f74:c4a5:b82e::/64",
              "2001:5f74:c4a5:b82e:f483:3427:ab3e:bc21"),
             # valid address, gateway at random address
@@ -1020,13 +988,11 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
                 # iana-ipv6-special-registry/iana-ipv6-special-registry.xhtml
                 "fe80:5f74:c4a5:b82e::/120",
                 "fe80:5f74:c4a5:b82e::1",
-                MSG_IP_ADDRESS_INVALID_OR_RESERVED
-                % "fe80:5f74:c4a5:b82e::/120"),
+                MSG_INVALID_IPV6_NETMASK),
             (   # Reserved addresses: 6to4
                 "2002:5f74:c4a5:b82e::/120",
                 "2002:5f74:c4a5:b82e::1",
-                MSG_IP_ADDRESS_INVALID_OR_RESERVED
-                % "2002:5f74:c4a5:b82e::/120"),
+                MSG_INVALID_IPV6_NETMASK),
             (
                 "2001:5f74:c4a5:b82e::/63",
                 "2001:5f74:c4a5:b82e::1",
@@ -1036,7 +1002,6 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
                 "::1",
                 "Invalid input for operation: 0 is not allowed as CIDR prefix "
                 "length."),
-            # invalid CIDR prefix 0
             (
                 "2001:5f74:c4a5:b82e::/64",
                 "2001:5f74:c4a5:b82b:ffff:ffff:ffff:ffff",
