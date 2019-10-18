@@ -639,29 +639,27 @@ class TenantServer(object):
                   "echo '----- arp -a   -----'; arp -a; "
                   "echo")
 
-    def get_ip_addresses(self, neutron_dst_port=None, cidr=None):
-        ips = self.get_server_details()['addresses'].values()
+    def get_ip_addresses(self, neutron_dst_port=None):
+        server_ips = self.get_server_details()['addresses'].values()
+        ips = [ip_info for net_ips in server_ips for ip_info in net_ips]
         fixed_ip4 = fixed_ip6 = None
         fixed_ips = []
         if neutron_dst_port:
             fixed_ips = ([ip['ip_address']
                           for ip in neutron_dst_port['fixed_ips']
                           if ip['ip_address']])
-        if cidr:
-            ips = [ip for ip in ips if (IPAddress(ip[0]['addr']) in
-                                        IPNetwork(cidr))]
         for ip_details in ips:
-            if ip_details[0]['version'] == 4:
+            if ip_details['version'] == 4:
                 if fixed_ips:
-                    if ip_details[0]['addr'] in fixed_ips:
-                        fixed_ip4 = ip_details[0]['addr']
+                    if ip_details['addr'] in fixed_ips:
+                        fixed_ip4 = ip_details['addr']
                 else:
-                    fixed_ip4 = ip_details[0]['addr']
+                    fixed_ip4 = ip_details['addr']
             else:
                 if fixed_ips:
-                    if ip_details[0]['addr'] in fixed_ips:
-                        fixed_ip6 = ip_details[0]['addr']
+                    if ip_details['addr'] in fixed_ips:
+                        fixed_ip6 = ip_details['addr']
                 else:
-                    fixed_ip6 = ip_details[0]['addr']
+                    fixed_ip6 = ip_details['addr']
         return (IPAddress(fixed_ip4) if fixed_ip4 else None,
                 IPAddress(fixed_ip6) if fixed_ip6 else None)

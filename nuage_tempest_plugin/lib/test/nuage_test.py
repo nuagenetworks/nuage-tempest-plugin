@@ -262,9 +262,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                                 is_l2=False):
         to_server.complete_prepare_for_connectivity()
         neutron_dst_port = to_server.ports[1] if is_l2 else None
-        cidr = self.cidr6 if ip_version == 6 else self.cidr4
-        ipv4_to, ipv6_to = to_server.get_ip_addresses(neutron_dst_port,
-                                                      cidr=cidr)
+        ipv4_to, ipv6_to = to_server.get_ip_addresses(neutron_dst_port)
 
         to_ip = ipv6_to if ip_version == 6 else ipv4_to
 
