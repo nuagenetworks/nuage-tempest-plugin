@@ -1797,7 +1797,7 @@ class NuageBaseOrchestrationTest(NuageBaseTest):
         cls.build_timeout = CONF.heat_plugin.build_timeout
         cls.build_interval = CONF.heat_plugin.build_interval
 
-        cls.net_partition_name = CONF.def_netpartition
+        cls.net_partition_name = Topology.def_netpartition
         cls.private_net_name = data_utils.rand_name('heat-network-')
 
         cls.test_resources = {}
