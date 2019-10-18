@@ -76,7 +76,6 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
         self.assertIsNone(subnet['ipv6_ra_mode'])
         self.assertIsNone(subnet['ipv6_address_mode'])
         self.assertEqual(subnet['cidr'], vsd_l2_domain.ipv6_address)
-        self.assertEqual(subnet['gateway_ip'], vsd_l2_domain.ipv6_gateway)
         self.assertFalse(subnet['vsd_managed'])
         self.assertEqual(subnet['enable_dhcp'],
                          False, "IPv6 subnet MUST have enable_dhcp=FALSE")
