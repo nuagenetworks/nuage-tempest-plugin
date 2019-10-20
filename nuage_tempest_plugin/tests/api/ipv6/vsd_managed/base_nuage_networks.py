@@ -180,10 +180,6 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
 
             if cidr6:
                 self.assertEqual(str(cidr6), l2domain_template.ipv6_address)
-                if "ipv6_gateway" not in kwargs:
-                    gateway_ip = str(IPAddress(cidr6) + 1)
-                    self.assertEqual(gateway_ip,
-                                     l2domain_template.ipv6_gateway)
         else:
             self.assertFalse(l2domain_template.dhcp_managed)
 

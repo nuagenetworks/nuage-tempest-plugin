@@ -196,7 +196,6 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
                                            dhcp_managed=True,
                                            cidr4=self.cidr4,
                                            cidr6=self.cidr6,
-                                           ipv6_gateway=self.gateway6,
                                            gateway=self.gateway4)
 
         vsd_l2domain = self.vsd_create_l2domain(template=vsd_l2domain_template)
@@ -317,7 +316,6 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
                                            dhcp_managed=True,
                                            cidr4=self.cidr4,
                                            cidr6=self.cidr6,
-                                           ipv6_gateway=self.gateway6,
                                            gateway=self.gateway4)
 
         vsd_l2domain = self.vsd_create_l2domain(template=vsd_l2domain_template)
@@ -459,8 +457,7 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
                                                ip_type="DUALSTACK",
                                                dhcp_managed=True,
                                                cidr4=self.cidr4,
-                                               ipv6_address=ipv6_cidr,
-                                               ipv6_gateway=ipv6_gateway)
+                                               ipv6_address=ipv6_cidr)
 
     @decorators.attr(type='smoke')
     def test_create_fixed_ipv6_ports_in_vsd_managed_l2domain(self):
@@ -488,7 +485,6 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
                                            dhcp_managed=True,
                                            cidr4=self.cidr4,
                                            cidr6=self.cidr6,
-                                           ipv6_gateway=self.gateway6,
                                            gateway=self.gateway4)
 
         vsd_l2domain = self.vsd_create_l2domain(template=vsd_l2domain_template)
@@ -631,7 +627,6 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
                                            dhcp_managed=True,
                                            cidr4=self.cidr4,
                                            cidr6=self.cidr6,
-                                           ipv6_gateway=self.gateway6,
                                            gateway=self.gateway4)
 
         vsd_l2domain = self.vsd_create_l2domain(template=vsd_l2domain_template)
