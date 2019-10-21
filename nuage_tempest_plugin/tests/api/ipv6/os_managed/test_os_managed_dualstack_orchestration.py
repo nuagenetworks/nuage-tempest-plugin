@@ -13,6 +13,7 @@ from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseOrchestrationTest
 from nuage_tempest_plugin.lib.test.nuage_test import TenantServer
 from nuage_tempest_plugin.lib.topology import Topology
 
+CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
 
 
@@ -64,7 +65,9 @@ class OsManagedDualStackOrchestrationTest(NuageBaseOrchestrationTest):
             'gateway6': self.gateway6,
             'maskbits6': self.mask_bits6,
             'pool_start6': str(IPAddress(self.gateway6) + 1),
-            'pool_end6': str(IPAddress(self.cidr6.last))
+            'pool_end6': str(IPAddress(self.cidr6.last)),
+            'image': CONF.compute.image_ref,
+            'flavor': CONF.compute.flavor_ref
         }
 
         self.launch_stack(stack_file_name, stack_parameters)
@@ -114,7 +117,9 @@ class OsManagedDualStackOrchestrationTest(NuageBaseOrchestrationTest):
             'gateway6': self.gateway6,
             'maskbits6': self.mask_bits6,
             'pool_start6': str(IPAddress(self.gateway6) + 1),
-            'pool_end6': str(IPAddress(self.cidr6.last))
+            'pool_end6': str(IPAddress(self.cidr6.last)),
+            'image': CONF.compute.image_ref,
+            'flavor': CONF.compute.flavor_ref
         }
 
         stack_name = data_utils.rand_name('heat-' + stack_file_name)
@@ -163,7 +168,9 @@ class OsManagedDualStackOrchestrationTest(NuageBaseOrchestrationTest):
             'gateway6': self.gateway6,
             'maskbits6': self.mask_bits6,
             'pool_start6': str(IPAddress(self.gateway6) + 1),
-            'pool_end6': str(IPAddress(self.cidr6.last))
+            'pool_end6': str(IPAddress(self.cidr6.last)),
+            'image': CONF.compute.image_ref,
+            'flavor': CONF.compute.flavor_ref
         }
 
         stack_name = data_utils.rand_name('heat-' + stack_file_name)

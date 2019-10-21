@@ -64,7 +64,8 @@ class OrchestrationVsdManagedNetworkDualStackTest(
             'maskbits6': self.mask_bits6,
             'pool_start6': str(IPAddress(self.gateway6) + 1),
             'pool_end6': str(IPAddress(self.cidr6.last)),
-            'image': CONF.compute.image_ref
+            'image': CONF.compute.image_ref,
+            'flavor': CONF.compute.flavor_ref
         }
 
         self.launch_stack(stack_file_name, stack_parameters)
@@ -124,7 +125,8 @@ class OrchestrationVsdManagedNetworkDualStackTest(
             'cidr6': str(self.cidr6),
             'gateway6': self.gateway6,
             'maskbits6': self.mask_bits6,
-            'image': CONF.compute.image_ref
+            'image': CONF.compute.image_ref,
+            'flavor': CONF.compute.flavor_ref
         }
         self.launch_stack(stack_file_name, stack_parameters)
 
@@ -179,7 +181,8 @@ class OrchestrationVsdManagedNetworkDualStackTest(
             'cidr6': str(self.cidr6),
             'gateway6': self.gateway6,
             'maskbits6': self.mask_bits6,
-            'image': CONF.compute.image_ref
+            'image': CONF.compute.image_ref,
+            'flavor': CONF.compute.flavor_ref
         }
         self.launch_stack(stack_file_name, stack_parameters)
 

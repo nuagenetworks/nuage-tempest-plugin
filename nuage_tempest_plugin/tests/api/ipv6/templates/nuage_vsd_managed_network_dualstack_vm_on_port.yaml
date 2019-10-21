@@ -46,6 +46,9 @@ parameters:
     type: string
     description: Image to use.
     default: cirros
+  flavor:
+    type: string
+    description: Flavor to use for servers
 
 resources:
   dualstack_net:
@@ -86,7 +89,7 @@ resources:
   instance:
     type: OS::Nova::Server
     properties:
-      flavor: m1.tiny
+      flavor: { get_param: flavor }
       image: { get_param: image}
       networks:
         - port: { get_resource: port }

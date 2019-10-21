@@ -39,7 +39,9 @@ parameters:
   image:
     type: string
     default: cirros
-
+  flavor:
+    type: string
+    description: Flavor to use for servers
 
 
 resources:
@@ -70,7 +72,7 @@ resources:
     type: OS::Nova::Server
     depends_on: [subnet4, subnet6]
     properties:
-      flavor: m1.tiny
+      flavor: { get_param: flavor }
       image: { get_param: image }
       networks:
       - network: { get_resource: dualstack_net }
