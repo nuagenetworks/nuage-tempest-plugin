@@ -156,7 +156,6 @@ class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
                                self.delete_subnet,
                                subnet6)
 
-    # @decorators.attr(type='smoke')
     def test_delete_v4_subnet_with_ip_as_vip_in_v6_subnet_neg(self):
         network = self.create_network()
         subnet4 = self.create_subnet(

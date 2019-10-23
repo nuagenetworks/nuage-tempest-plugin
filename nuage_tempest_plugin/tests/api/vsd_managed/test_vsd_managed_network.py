@@ -313,11 +313,6 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
             allocation_pools=[overlapping_pool]
         )
 
-    # @decorators.attr(type='smoke')
-    # def test_link_subnet_l2_using_preconfigured_netpartition_id(self):
-    #     np = self.create_netpartition()
-    #     self.link_subnet_l2(net_partition=np)
-
     def double_link_subnet_l2(
             self, cidr=None, mask_bits=None, dhcp_port=None,
             dhcp_option_3=None,
@@ -832,11 +827,6 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
     @decorators.attr(type='smoke')
     def test_link_subnet_l3(self):
         self.link_subnet_l3()
-
-    # @decorators.attr(type='smoke')
-    # def test_link_subnet_l3_using_preconfigured_netpartition_id(self):
-    #     np = self.create_netpartition()
-    #     self.link_subnet_l3(net_partition=np)
 
     @decorators.attr(type='smoke')
     def test_link_subnet_with_incorrect_gw_l3(self):
