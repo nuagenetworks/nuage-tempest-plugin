@@ -1378,7 +1378,8 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 security_groups = []
                 provisioning_needed |= needs_provisioning(server_ports=ports)
 
-        keypair = self.create_keypair()
+        keypairs_client = client.keypairs_client if client else None
+        keypair = self.create_keypair(client=keypairs_client)
         server = TenantServer(self, client, self.admin_manager.servers_client,
                               name, networks, ports, security_groups,
                               flavor, keypair, volume_backed)

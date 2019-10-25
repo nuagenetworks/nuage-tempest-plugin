@@ -2,6 +2,7 @@ build/
 dist/
 AUTHORS
 ChangeLog
+.eggs/
 .tox/
 .stestr/
 *.pyc
