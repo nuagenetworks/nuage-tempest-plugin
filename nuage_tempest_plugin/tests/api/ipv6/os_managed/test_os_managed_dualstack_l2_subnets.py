@@ -249,8 +249,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
     ###########################################################################
     # Special cases
     ###########################################################################
-    # @decorators.attr(type='smoke')
-    def test_os_managed_subnet_with_invalid_ipv6_prefixlen(self):
+    def test_os_managed_subnet_with_invalid_ipv6_prefixlen_neg(self):
         # Provision OpenStack network
         network = self.create_network()
         for ipv6_cidr in ['cafe:babe::/63', 'cafe:babe::/65']:

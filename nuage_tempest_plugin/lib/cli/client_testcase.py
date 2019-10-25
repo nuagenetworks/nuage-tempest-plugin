@@ -669,7 +669,6 @@ class CLIClientTestCase(test.BaseTestCase):
                                    params=router_id + ' ' + subnet_id)
         return response
 
-    # @classmethod
     def _cli_create_redirect_target_with_args(self, *args):
         the_params = ''
         for arg in args:
