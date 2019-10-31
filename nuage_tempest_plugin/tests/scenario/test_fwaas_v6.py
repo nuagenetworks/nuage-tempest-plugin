@@ -12,6 +12,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+from netaddr import IPAddress
 from netaddr import IPNetwork
 
 from tempest import test
@@ -306,7 +307,11 @@ class TestFWaaS(fwaas_mixins.FWaaSClientMixin, NuageBaseTest):
         server = self.create_tenant_server([network],
                                            security_groups=[security_group],
                                            prepare_for_connectivity=True)
-        fixed_ip4, fixed_ip6 = server.get_ip_addresses()
+        fixed_ip4 = IPAddress(
+            server.get_server_ip_in_network(network['name'], 4))
+        fixed_ip6 = IPAddress(
+            server.get_server_ip_in_network(network['name'], 6))
+
         return server, fixed_ip4, fixed_ip6
 
     def _test_firewall_basic(self, block, allow=None,

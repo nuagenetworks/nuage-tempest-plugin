@@ -444,8 +444,7 @@ class BaseTestCase(object):
             network = self.create_network()
             self.create_subnet(network, ip_version=self._ip_version)
             self.validate_tcp_stateful_traffic(network,
-                                               ip_version=self._ip_version,
-                                               is_l2=True)
+                                               ip_version=self._ip_version)
 
         def test_tcp_stateful_connectivity_l3_os_managed(self):
             # Provision OpenStack network resources

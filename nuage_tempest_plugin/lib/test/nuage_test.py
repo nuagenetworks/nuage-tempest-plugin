@@ -241,9 +241,14 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             pass
 
     def assert_icmp_connectivity(self, from_server, to_server,
-                                 is_connectivity_expected=True):
+                                 network_name=None,
+                                 is_connectivity_expected=True, ip_version=6):
+        if network_name is None:
+            network_name = to_server.get_server_networks()[0]['name']
+
         to_server.complete_prepare_for_connectivity()
-        _, to = to_server.get_ip_addresses()
+        to = IPAddress(to_server.get_server_ip_in_network(
+            network_name, ip_version))
 
         error_msg = ("Ping error: timed out waiting for {} to "
                      "become reachable".format(to)
@@ -256,15 +261,17 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                          message=error_msg)
 
     def assert_tcp_connectivity(self, from_server, to_server,
+                                network_name=None,
                                 is_connectivity_expected=True,
                                 source_port=None,
-                                destination_port=80, ip_version=6,
-                                is_l2=False):
-        to_server.complete_prepare_for_connectivity()
-        neutron_dst_port = to_server.ports[1] if is_l2 else None
-        ipv4_to, ipv6_to = to_server.get_ip_addresses(neutron_dst_port)
+                                destination_port=80, ip_version=6):
 
-        to_ip = ipv6_to if ip_version == 6 else ipv4_to
+        if network_name is None:
+            network_name = to_server.get_server_networks()[0]['name']
+
+        to_server.complete_prepare_for_connectivity()
+        to_ip = IPAddress(to_server.get_server_ip_in_network(
+            network_name, ip_version))
 
         output = from_server.curl(destination_ip=to_ip,
                                   destination_port=destination_port,
@@ -281,8 +288,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                          observed=has_connectivity,
                          message=error_msg)
 
-    def validate_tcp_stateful_traffic(self, network, ip_version=4,
-                                      is_l2=False):
+    def validate_tcp_stateful_traffic(self, network, ip_version=4):
         # create open-ssh security group
         web_server_sg = self.create_open_ssh_security_group()
         client_sg = self.create_open_ssh_security_group()
@@ -302,7 +308,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                                      source_port=None,
                                      destination_port=80,
                                      ip_version=ip_version,
-                                     is_l2=is_l2)
+                                     network_name=network['name'])
         self.create_tcp_rule(client_sg,
                              direction='egress',
                              ip_version=ip_version)
@@ -311,7 +317,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                                      source_port=None,
                                      destination_port=80,
                                      ip_version=ip_version,
-                                     is_l2=is_l2)
+                                     network_name=network['name'])
         self.create_tcp_rule(web_server_sg,
                              direction='ingress',
                              ip_version=ip_version)
@@ -320,7 +326,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                                      source_port=None,
                                      destination_port=80,
                                      ip_version=ip_version,
-                                     is_l2=is_l2)
+                                     network_name=network['name'])
 
     def sleep(self, seconds=1, msg=None, tag=None):
         if tag is None:

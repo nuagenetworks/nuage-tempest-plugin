@@ -506,21 +506,24 @@ class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
                                      is_connectivity_expected=False,
                                      source_port=None,
                                      destination_port=80,
-                                     ip_version=6)
+                                     ip_version=6,
+                                     network_name=network['name'])
         self.vsd.define_tcp_acl(direction='egress', acl_template=egress_tpl,
                                 ip_version=6)
         self.assert_tcp_connectivity(client_server, web_server,
                                      is_connectivity_expected=False,
                                      source_port=None,
                                      destination_port=80,
-                                     ip_version=6)
+                                     ip_version=6,
+                                     network_name=network['name'])
         self.vsd.define_tcp_acl(direction='ingress', acl_template=ingress_tpl,
                                 ip_version=6, s_port='*', d_port='80')
         self.assert_tcp_connectivity(client_server, web_server,
                                      is_connectivity_expected=True,
                                      source_port=None,
                                      destination_port=80,
-                                     ip_version=6)
+                                     ip_version=6,
+                                     network_name=network['name'])
 
     @decorators.attr(type='smoke')
     def test_tcp_connectivity_stateless_acl_l3_vsd_managed_ipv6(self):
@@ -542,7 +545,8 @@ class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
                                      is_connectivity_expected=False,
                                      source_port=None,
                                      destination_port=80,
-                                     ip_version=6)
+                                     ip_version=6,
+                                     network_name=network['name'])
 
         client_pg = self.vsd.create_policy_group(vsd_l3domain,
                                                  name="client_pg")
@@ -574,7 +578,8 @@ class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
                                      is_connectivity_expected=True,
                                      source_port=None,
                                      destination_port=80,
-                                     ip_version=6)
+                                     ip_version=6,
+                                     network_name=network['name'])
 
 
 class Ipv6L3VsdManagedConnectivityWithAggrFlowsTest(

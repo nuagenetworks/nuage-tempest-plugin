@@ -181,21 +181,24 @@ class Ipv4L3VsdManagedConnectivityTest(NuageBaseTest):
                                      is_connectivity_expected=False,
                                      source_port=None,
                                      destination_port=80,
-                                     ip_version=4)
+                                     ip_version=4,
+                                     network_name=network['name'])
         self.vsd.define_tcp_acl(direction='egress', acl_template=egress_tpl,
                                 ip_version=4)
         self.assert_tcp_connectivity(client_server, web_server,
                                      is_connectivity_expected=False,
                                      source_port=None,
                                      destination_port=80,
-                                     ip_version=4)
+                                     ip_version=4,
+                                     network_name=network['name'])
         self.vsd.define_tcp_acl(direction='ingress', acl_template=ingress_tpl,
                                 ip_version=4)
         self.assert_tcp_connectivity(client_server, web_server,
                                      is_connectivity_expected=True,
                                      source_port=None,
                                      destination_port=80,
-                                     ip_version=4)
+                                     ip_version=4,
+                                     network_name=network['name'])
 
     @decorators.attr(type='smoke')
     def test_tcp_connectivity_stateless_acl_l3_vsd_managed(self):
@@ -215,7 +218,8 @@ class Ipv4L3VsdManagedConnectivityTest(NuageBaseTest):
                                      is_connectivity_expected=False,
                                      source_port=None,
                                      destination_port=80,
-                                     ip_version=4)
+                                     ip_version=4,
+                                     network_name=network['name'])
         client_port = self.osc_get_server_port_in_network(client_server,
                                                           network)
         web_server_port = self.osc_get_server_port_in_network(web_server,
@@ -250,7 +254,8 @@ class Ipv4L3VsdManagedConnectivityTest(NuageBaseTest):
                                      is_connectivity_expected=True,
                                      source_port=None,
                                      destination_port=80,
-                                     ip_version=4)
+                                     ip_version=4,
+                                     network_name=network['name'])
 
 
 class Ipv4L3VsdManagedConnectivityWithAggrFlowsTest(
