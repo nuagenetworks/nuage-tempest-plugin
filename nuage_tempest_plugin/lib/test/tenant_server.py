@@ -88,9 +88,10 @@ class FipAccessConsole(RemoteClient):
 
     def ping(self, destination, cnt, interface=None):
         try:
-            return self.ping_host(destination, cnt, nic=interface)
+            self.ping_host(destination, cnt, nic=interface)
+            return True
         except lib_exc.SSHExecCommandFailed:
-            return "SSHExecCommandFailed"
+            return False
 
 
 class TenantServer(object):
@@ -600,10 +601,8 @@ class TenantServer(object):
         self.complete_prepare_for_connectivity()
         # destination readiness is invoker's responsibility!
 
-        ping_out = self.console().ping(destination, count, interface)
-        expected_packet_cnt = count if should_pass else 0
-
-        return str(expected_packet_cnt) + ' packets received' in ping_out
+        passed = self.console().ping(destination, count, interface)
+        return should_pass == passed
 
     def curl(self, destination_ip, destination_port=80,
              source_port=None, max_time_to_wait_for_response=2,

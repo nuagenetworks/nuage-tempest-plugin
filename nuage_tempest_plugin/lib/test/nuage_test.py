@@ -243,6 +243,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
     def assert_icmp_connectivity(self, from_server, to_server,
                                  network_name=None,
                                  is_connectivity_expected=True, ip_version=6):
+        # TODO(glenn) investigate if we can replace this with upstream methods
         if network_name is None:
             network_name = to_server.get_server_networks()[0]['name']
 
@@ -265,6 +266,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                                 is_connectivity_expected=True,
                                 source_port=None,
                                 destination_port=80, ip_version=6):
+        # TODO(glenn) investigate if we can replace this with upstream methods
 
         if network_name is None:
             network_name = to_server.get_server_networks()[0]['name']
@@ -701,6 +703,11 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
         return port
 
+    @staticmethod
+    def is_offload_capable(port):
+        return (port['binding:vnic_type'] == 'direct' and
+                'switchdev' in port['binding:profile'].get('capabilities', []))
+
     def update_port(self, port, client=None, **kwargs):
         """Wrapper utility that updates a test port."""
         if not client:
@@ -769,10 +776,14 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                                    by_port_id=port['id'])
         self.assertEqual(port['id'], vport.name)
 
-    def create_open_ssh_security_group(self, sg_name=None):
+    def create_open_ssh_security_group(self, sg_name=None, client=None):
         if not self.ssh_security_group:
             self.ssh_security_group = self._create_security_group(
-                namestart=sg_name or 'tempest-open-ssh')
+                namestart=sg_name or 'tempest-open-ssh',
+                security_group_rules_client=(client.security_group_rules_client
+                                             if client else None),
+                security_groups_client=(client.security_groups_client
+                                        if client else None))
         return self.ssh_security_group
 
     def create_security_group_rule(self, security_group=None, **kwargs):
@@ -1379,7 +1390,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                     not first_network.get('v4_subnet') or
                     not first_network.get('v4_subnet')['enable_dhcp']):
                 ports = self.prepare_fip_topology(
-                    name, networks, ports, security_groups)
+                    name, networks, ports, security_groups, client)
                 networks = []
                 security_groups = []
                 provisioning_needed |= needs_provisioning(server_ports=ports)
@@ -1412,7 +1423,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
         # If to be prepared for connectivity, create/associate FIP now
         if prepare_for_connectivity:
-            self.make_fip_reachable(server)
+            self.make_fip_reachable(server, client=client)
 
         return server
 
@@ -1435,13 +1446,13 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 server, first_port,
                 vsd_domain=first_network.get('vsd_l3_domain'),
                 vsd_subnet=first_network.get('vsd_l3_subnet'),
-                client=client)
+                manager=client)
         elif first_network.get('vsd_l2_domain'):
             # vsd managed l2
             raise NotImplementedError
         else:
             # OS managed
-            self.create_fip_to_server(server, first_port)
+            self.create_fip_to_server(server, first_port, manager=client)
 
         LOG.info('[{}] {} is FIP reachable'.format(
             self.test_name, server.name))
@@ -1480,7 +1491,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         router = self.create_test_router(client=client)
         self.router_attach(router, subnet, client=client)
 
-        open_ssh_sg = self.create_open_ssh_security_group()
+        open_ssh_sg = self.create_open_ssh_security_group(client=client)
         fip_port = self.create_port(fip_network, client,
                                     security_groups=[open_ssh_sg['id']])
 
@@ -1490,22 +1501,24 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         return [fip_port] + ports
 
     def create_fip_to_server(self, server, port=None,
-                             vsd_domain=None, vsd_subnet=None, client=None):
+                             vsd_domain=None, vsd_subnet=None, manager=None):
         """Create a fip and connect it to the given server
 
         :param server: the tenant server
         :param port: its first port
         :param vsd_domain: L3Domain VSPK object
         :param vsd_subnet: L3Subnet VSPK object
-        :param client: os client
+        :param manager: os client
         :return: the associated FIP
         """
+        fip_client = manager.floating_ips_client if manager else None
+
         if not server.associated_fip:
             if vsd_domain:
                 LOG.info('[{}] Creating FIP for {} using VSD domain'.format(
                     self.test_name, server.name))
                 ip = self.osc_create_floatingip(
-                    client=client).get('floating_ip_address')
+                    client=fip_client).get('floating_ip_address')
                 fip = self.create_associate_vsd_managed_floating_ip(
                     server.get_server_details(),
                     port_id=port['id'] if port else None,
@@ -1518,7 +1531,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                     self.test_name, server.name))
                 fip = self.create_floating_ip(
                     server.get_server_details(),
-                    port_id=port['id'] if port else None, client=client
+                    port_id=port['id'] if port else None, client=fip_client
                 )['floating_ip_address']
 
             server.associate_fip(fip)
@@ -1756,11 +1769,15 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
     @staticmethod
     def execute_from_shell(command, success_expected=True, pause=None):
-        errcode = subprocess.call(command, shell=True)
-        if success_expected:
-            assert 0 == errcode
+        output = None
+        try:
+            output = subprocess.check_output(command, shell=True)
+        except subprocess.CalledProcessError:
+            if success_expected:
+                raise
         if pause:
             time.sleep(pause)
+        return output
 
 
 class NuageBaseOrchestrationTest(NuageBaseTest):
