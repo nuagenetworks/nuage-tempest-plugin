@@ -242,6 +242,10 @@
           $NEUTRON_CONF:
             DEFAULT:
               enable_snat_by_default: false
+        test-config:
+          $TEMPEST_CONFIG:
+            network:
+              project_network_v6_cidr: '2003::/48'
     required-projects:
       - name: OpenStack/nuage-tempest-plugin
         override-checkout: '5.4'
