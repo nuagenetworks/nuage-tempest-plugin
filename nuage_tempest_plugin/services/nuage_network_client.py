@@ -188,6 +188,12 @@ class NuageNetworkClientJSON(service_client.RestClient):
         body = json.loads(body)
         return service_client.ResponseBody(resp, body)
 
+    def delete_gateway_vport(self, id):
+        uri = '%s/nuage-gateway-vports/%s' % (self.uri_prefix, id)
+        resp, body = self.delete(uri)
+        self.expected_success(204, resp.status)
+        return service_client.ResponseBody(resp, body)
+
     def delete_gateway_vlan(self, id):
         uri = '%s/nuage-gateway-vlans/%s' % (self.uri_prefix, id)
         resp, body = self.delete(uri)
