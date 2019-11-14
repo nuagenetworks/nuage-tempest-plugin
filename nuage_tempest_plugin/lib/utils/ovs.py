@@ -18,15 +18,19 @@ class FlowQuery(object):
     """Filter flows based on criteria"""
 
     def __init__(self, flows):
-        self.flows = flows.splitlines()
+        """Constructor
+
+        :param flows: A list of strings
+        """
+        self.flows = flows
 
     def _matches(self, regex):
         matcher = re.compile(regex)
-        self.flows = (flow for flow in self.flows if matcher.match(flow))
+        self.flows = [flow for flow in self.flows if matcher.match(flow)]
 
     def _not_matches(self, regex):
         matcher = re.compile(regex)
-        self.flows = (flow for flow in self.flows if not matcher.match(flow))
+        self.flows = [flow for flow in self.flows if not matcher.match(flow)]
 
     def src_mac(self, mac):
         """Flows must have src mac equal to input"""

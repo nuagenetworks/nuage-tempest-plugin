@@ -1341,6 +1341,8 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                              security_groups=None, wait_until='ACTIVE',
                              volume_backed=False, name=None, flavor=None,
                              prepare_for_connectivity=False,
+                             start_web_server=False,
+                             web_server_port=80,
                              force_dhcp_config=False,
                              client=None, cleanup=True, **kwargs):
 
@@ -1400,6 +1402,11 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         server = TenantServer(self, client, self.admin_manager.servers_client,
                               name, networks, ports, security_groups,
                               flavor, keypair, volume_backed)
+
+        if start_web_server:
+            kwargs['user_data'] = (kwargs.get('user_data', '') +
+                                   self._get_start_web_server_cmd(
+                                       web_server_port))
 
         server.boot(wait_until, cleanup, **kwargs)
         server.force_dhcp = force_dhcp_config
@@ -1666,10 +1673,14 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             self.assertEqual(d1[k], d2[k], "{} for key {}".format(msg, k))
 
     @staticmethod
+    def _get_start_web_server_cmd(tcp_port):
+        return ("screen -d -m sh -c '"
+                "while true; do echo -e \"HTTP/1.0 200 Ok\\n\\nHELLO\\n\" "
+                "| nc -l -p {port}; done;'".format(port=tcp_port))
+
+    @staticmethod
     def start_web_server(server, port):
-        cmd = ("screen -d -m sh -c '"
-               "while true; do echo -e \"HTTP/1.0 200 Ok\\nHELLO\\n\" "
-               "| nc -l -p {port}; done;'".format(port=port))
+        cmd = NuageBaseTest._get_start_web_server_cmd(port)
         server.send(cmd)
 
     def osc_delete_test_server(self, vm_id, client=None):

@@ -23,7 +23,7 @@ class E2eTestBase(NuageBaseTest):
 
         cmd = ('ssh heat-admin@{host_ip} "sudo ovs-dpctl dump-flows -m"'
                .format(host_ip=hypervisor['host_ip']))
-        return self.execute_from_shell(cmd)
+        return self.execute_from_shell(cmd).splitlines()
 
     def restart_openvswitch(self, hypervisor):
         cmd = ('ssh heat-admin@{host_ip} "sudo service openvswitch restart"'
