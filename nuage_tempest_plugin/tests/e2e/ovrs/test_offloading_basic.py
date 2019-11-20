@@ -97,10 +97,6 @@ class BasicOffloadingL3Test(E2eTestBase):
         :param to_port: Port on that server used for the traffic
         """
 
-        # TODO(Kris) RHEL image uses cloudinit, no dhcp client will start
-        from_server.dhcp_validated = True
-        to_server.dhcp_validated = True
-
         server_0 = from_server.get_server_details()
         server_1 = to_server.get_server_details()
         is_different_hv = (server_0['OS-EXT-SRV-ATTR:hypervisor_hostname'] !=

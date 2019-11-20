@@ -370,7 +370,8 @@ class TenantServer(object):
             LOG.info('[{}] Provisioning complete'.format(self.tag))
 
     def validate_dhcp(self):
-        if not self.dhcp_validated:
+        is_validate_needed = CONF.scenario.dhcp_client != ''
+        if is_validate_needed and not self.dhcp_validated:
             LOG.info('[{}] Validating DHCP'.format(self.tag))
 
             networks = self.networks
@@ -566,6 +567,11 @@ class TenantServer(object):
         self.send('umount /mnt')
 
     def get_user_data_for_nic_prep(self, dhcp_client='udhcpc'):
+        if not dhcp_client:
+            # Not all images (e.g. RHEL 7-7) use DHCP client
+            # they instead configure statically through cloudinit
+            return
+
         networks = self.get_server_networks()
         s = ''
         nbr_nics = len(networks)
