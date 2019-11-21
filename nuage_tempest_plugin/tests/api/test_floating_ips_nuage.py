@@ -81,10 +81,10 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
                         created_floating_ip['floating_ip_address'] and
                         nuage_vport[0]['associatedFloatingIPID'] == fip['ID']):
                     validation = True
-            error_message = ("FIP IP on OpenStack" +
+            error_message = ("FIP IP on OpenStack " +
                              created_floating_ip['floating_ip_address'] +
-                             "does not match VSD FIP IP" + "(OR) FIP is not"
-                             " Associated to the port" + port_id + " on VSD")
+                             " does not match VSD FIP IP" + " (OR) FIP is not"
+                             " associated to the port" + port_id + " on VSD")
             self.assertTrue(validation, msg=error_message)
 
         else:
@@ -295,27 +295,70 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
             "device_owner": "compute:None", "device_id": str(uuid.uuid1())}
         port_other_router = self.create_port(network2, **post_body)
 
-        if Topology.from_openstack('Newton') and Topology.is_ml2:
-            self.floating_ips_client.update_floatingip(
-                created_floating_ip['id'],
-                port_id=port_other_router['id'])
-            updated_floating_ip = self.floating_ips_client.show_floatingip(
-                created_floating_ip['id'])['floatingip']
-            self.assertEqual(updated_floating_ip['port_id'],
-                             port_other_router['id'])
-            self._verify_fip_on_vsd(
-                updated_floating_ip, updated_floating_ip['router_id'],
-                port_other_router['id'], subnet2, True)
-        else:
-            # Associate floating IP to the other port on another router
-            self.assertRaises(exceptions.ServerFault,
-                              self.floating_ips_client.update_floatingip,
-                              created_floating_ip['id'],
-                              port_id=port_other_router['id'])
-            # VSD Validation
-            self._verify_fip_on_vsd(
-                created_floating_ip, created_floating_ip['router_id'],
-                self.ports[3]['id'], self.subnet, True)
+        self.floating_ips_client.update_floatingip(
+            created_floating_ip['id'],
+            port_id=port_other_router['id'])
+        updated_floating_ip = self.floating_ips_client.show_floatingip(
+            created_floating_ip['id'])['floatingip']
+        self.assertEqual(updated_floating_ip['port_id'],
+                         port_other_router['id'])
+        self._verify_fip_on_vsd(
+            updated_floating_ip, updated_floating_ip['router_id'],
+            port_other_router['id'], subnet2, True)
+
+    def test_floating_ip_disassociate_delete_router_associate(self):
+        # Create topology
+        network = self.create_network()
+        subnet = self.create_subnet(network)
+        router = self.create_router(data_utils.rand_name('router-'),
+                                    external_network_id=self.ext_net_id)
+        self.create_router_interface(router['id'], subnet['id'])
+        post_body = {
+            "device_owner": "compute:None", "device_id": str(uuid.uuid1())}
+        port1 = self.create_port(network, **post_body)
+
+        # Associate a floating IP to a port on a router
+        body = self.floating_ips_client.create_floatingip(
+            floating_network_id=self.ext_net_id,
+            port_id=port1['id'])
+        created_floating_ip = body['floatingip']
+        self.addCleanup(self.floating_ips_client.delete_floatingip,
+                        created_floating_ip['id'])
+        self.assertEqual(created_floating_ip['router_id'], router['id'])
+
+        # VSD Validation
+        self._verify_fip_on_vsd(
+            created_floating_ip, created_floating_ip['router_id'],
+            port1['id'], subnet, True)
+
+        # Disassociate fip from port
+        self.floating_ips_client.update_floatingip(
+            created_floating_ip['id'],
+            port_id=None)
+
+        # Delete existing router
+        self.delete_router(router)
+
+        # Associate to second router
+        network2 = self.create_network()
+        subnet2 = self.create_subnet(network2)
+        router2 = self.create_router(data_utils.rand_name('router-'),
+                                     external_network_id=self.ext_net_id)
+        self.create_router_interface(router2['id'], subnet2['id'])
+        post_body = {
+            "device_owner": "compute:None", "device_id": str(uuid.uuid1())}
+        port_other_router = self.create_port(network2, **post_body)
+
+        self.floating_ips_client.update_floatingip(
+            created_floating_ip['id'],
+            port_id=port_other_router['id'])
+        updated_floating_ip = self.floating_ips_client.show_floatingip(
+            created_floating_ip['id'])['floatingip']
+        self.assertEqual(updated_floating_ip['port_id'],
+                         port_other_router['id'])
+        self._verify_fip_on_vsd(
+            updated_floating_ip, updated_floating_ip['router_id'],
+            port_other_router['id'], subnet2, True)
 
     @decorators.attr(type='smoke')
     def test_create_floating_ip_specifying_a_fixed_ip_address(self):
