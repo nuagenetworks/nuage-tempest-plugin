@@ -497,6 +497,21 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
                 self.fail("No cleanup happened. Floatingip still exists on "
                           "VSD and not in Neutron.")
 
+    def test_delete_associated_port_fip_associate(self):
+        port = self.create_port(self.network)
+        port2 = self.create_port(self.network)
+        fip = self.floating_ips_client.create_floatingip(
+            floating_network_id=self.ext_net_id,
+            port_id=port['id'])['floatingip']
+        self.ports_client.delete_port(port['id'])
+
+        # Update fip to port2
+        self.floating_ips_client.update_floatingip(fip['id'],
+                                                   port_id=port2['id'])
+
+        self._verify_fip_on_vsd(
+            fip, self.router['id'], port2['id'], self.subnet)
+
     @decorators.attr(type='smoke')
     def test_fip_on_multiple_ip_port(self):
         network = self.create_network()
