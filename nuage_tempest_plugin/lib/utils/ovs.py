@@ -68,6 +68,12 @@ class FlowQuery(object):
         self._matches('.*tcp.*')
         return self
 
+    def wildcard_protocol(self):
+        """Flow allows any protocol"""
+
+        self._matches('.*proto=0/0.*actions.*')
+        return self
+
     def offload(self):
         """Flows must be offloaded"""
 
