@@ -103,3 +103,6 @@ tempest\.api\.compute\.servers\.test_server_actions\.ServerActionsTestJSON\.test
 tempest\.api\.compute\.servers\.test_servers_negative\.ServersNegativeTestJSON\.test_pause_paused_server
 tempest\.api\.compute\.servers\.test_server_rescue_negative\.ServerRescueNegativeTestJSON\.test_rescue_paused_instance
 tempest\.api\.compute\.admin\.test_migrations\.MigrationsAdminTest\.test_resize_server_revert_deleted_flavor
+
+# Nuage attributes are included in a create, but not in a show api call
+tempest\.api\.network\.test_ports.*test_show_port

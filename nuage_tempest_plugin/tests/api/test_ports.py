@@ -10,6 +10,7 @@ from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
+from tempest.common import custom_matchers
 from tempest.common import waiters
 from tempest.lib import exceptions
 from tempest.scenario import manager
@@ -50,6 +51,26 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             clients = self.os_primary
         clients.servers_client.delete_server(server_id)
         waiters.wait_for_server_termination(clients.servers_client, server_id)
+
+    @decorators.attr(type='smoke')
+    def test_nuage_port_show(self):
+        network = self.create_network()
+        self.create_subnet(network, cidr=IPNetwork("10.0.0.0/24"),
+                           mask_bits=24)
+        create_port = self.create_port(network)
+        create_port.pop('parent_network')
+        show_port = self.show_port(create_port['id'])
+
+        self.assertIn('id', show_port)
+        # NOTE(rfolco): created_at and updated_at may get inconsistent values
+        # due to possible delay between POST request and resource creation.
+        self.assertThat(create_port,
+                        custom_matchers.MatchesDictExceptForKeys
+                        (show_port, excluded_keys=['nuage_floatingip',
+                                                   'nuage_policy_groups',
+                                                   'nuage_redirect_targets',
+                                                   'created_at',
+                                                   'updated_at']))
 
     @decorators.attr(type='smoke')
     def test_nuage_dhcp_port_create_check_status(self):
