@@ -797,7 +797,8 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
         return self._create_security_group_rule(security_group, **kwargs)
 
-    def create_tcp_rule(self, sec_grp, direction, ip_version):
+    def create_tcp_rule(self, sec_grp, direction, ip_version,
+                        sec_group_rules_client=None):
         if direction == 'egress':
             port_range_min = 1
             port_range_max = 65535
@@ -812,8 +813,10 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             'direction': direction,
             'ethertype': 'ipv' + str(ip_version)
         }
-        self.create_security_group_rule(security_group=sec_grp,
-                                        **ruleset)
+        self.create_security_group_rule(
+            security_group=sec_grp,
+            sec_group_rules_client=sec_group_rules_client,
+            **ruleset)
 
     def create_test_router(self, client=None):
         if Topology.access_to_l2_supported():

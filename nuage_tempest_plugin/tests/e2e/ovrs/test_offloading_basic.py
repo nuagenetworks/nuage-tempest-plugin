@@ -40,6 +40,7 @@ class BasicOffloadingL3Test(E2eTestBase):
     network = None
     default_port_args = None
     virtio_port_args = None
+    sg = None
 
     @classmethod
     def setup_clients(cls):
@@ -62,7 +63,7 @@ class BasicOffloadingL3Test(E2eTestBase):
         """Setup test topology"""
         super(BasicOffloadingL3Test, self).setUp()
 
-        # TODO(glenn) remove restart openvswitch VRS-31204
+        # TODO(glenn) remove restart openvswitch BUG VRS-31204
         # for hv in self.selected_hypervisors:
         #     self.restart_openvswitch(hv)
 
@@ -71,9 +72,17 @@ class BasicOffloadingL3Test(E2eTestBase):
         self.network = self.create_network()
         self.router_attach(self.router, self.create_subnet(self.network))
 
+        self.sg = self.create_open_ssh_security_group(
+            client=self.admin_manager)
+        sec_grp_rules_client = self.admin_manager.security_group_rules_client
+        self.create_tcp_rule(self.sg, direction='ingress', ip_version=4,
+                             sec_group_rules_client=sec_grp_rules_client)
+        self.create_tcp_rule(self.sg, direction='egress', ip_version=4,
+                             sec_group_rules_client=sec_grp_rules_client)
+
         self.default_port_args = dict(network=self.network,
                                       client=self.admin_manager,
-                                      port_security_enabled=False)
+                                      security_groups=[self.sg['id']])
         self.virtio_port_args = dict(VIRTIO_ARGS, **self.default_port_args)
 
     def dump_flows(self, both_hypervisors):
@@ -139,12 +148,18 @@ class BasicOffloadingL3Test(E2eTestBase):
                                   self.is_offload_capable(from_port))
 
         LOG.debug("Validating ICMP flows")
-        self._validate_flow_pair(FlowQuery(flows_after_icmp).icmp().result(),
+        query_after_icmp = FlowQuery(flows_after_icmp)
+        flows = (query_after_icmp.icmp() if from_port['port_security_enabled']
+                 else query_after_icmp.wildcard_protocol())
+        self._validate_flow_pair(flows.result(),
                                  from_port, to_port,
                                  is_different_hv, is_offloading_expected)
 
         LOG.debug("Validating TCP flows")
-        self._validate_flow_pair(FlowQuery(flows_after_tcp).tcp().result(),
+        query_after_tcp = FlowQuery(flows_after_tcp)
+        flows = (query_after_tcp.icmp() if from_port['port_security_enabled']
+                 else query_after_tcp.wildcard_protocol())
+        self._validate_flow_pair(flows.result(),
                                  from_port, to_port,
                                  is_different_hv, is_offloading_expected)
 
@@ -358,7 +373,7 @@ class BasicOffloadingL3Test(E2eTestBase):
         self._offload_test(from_server=from_server, from_port=from_port,
                            to_server=to_server, to_port=to_port)
 
-    def test_diff_hv_switchdev_switchdev_extra_servers(self):
+    def test_diff_hv_switchdev_switchdev_no_port_security(self):
 
         if len(self.selected_hypervisors) < 2:
             raise self.skipException('at least 2 hypervisors required')
@@ -366,19 +381,13 @@ class BasicOffloadingL3Test(E2eTestBase):
         hv0 = self.selected_hypervisors[0]['hypervisor_hostname']
         hv1 = self.selected_hypervisors[1]['hypervisor_hostname']
 
-        from_port = self.create_port(**self.default_port_args)
-        to_port = self.create_port(**self.default_port_args)
-        extra_port = self.create_port(**self.virtio_port_args)
+        args = dict(self.default_port_args, port_security_enabled=False,
+                    security_groups=[])
+        from_port = self.create_port(**args)
+        to_port = self.create_port(**args)
 
         self.assertTrue(self.is_offload_capable(from_port))
         self.assertTrue(self.is_offload_capable(to_port))
-        self.assertFalse(self.is_offload_capable(extra_port))
-
-        self.create_tenant_server(
-            ports=[extra_port],
-            availability_zone='nova:' + hv0,
-            client=self.admin_manager,
-            name=data_utils.rand_name('test-server-virtio-extra'))
 
         to_server = self.create_tenant_server(
             ports=[to_port],
