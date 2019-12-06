@@ -164,14 +164,14 @@ class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
                              "ext_gw_info.enable_snat={}"
                              .format(nuage_underlay, enable_snat))
         self.assertEqual(pat_enabled, nuage_router.pat_enabled,
-                         "PATEnabled excpected to be: {}, but was {} "
+                         "PATEnabled expected to be: {}, but was {} "
                          "for nuage_underlay={}, ext_gw_info.enable_snat={}."
                          .format(pat_enabled,
                                  nuage_router.pat_enabled,
                                  nuage_underlay,
                                  enable_snat))
         self.assertEqual(underlay_enabled, nuage_router.underlay_enabled,
-                         "UnderlayEnabled excpected to be: {}, but was {} "
+                         "UnderlayEnabled expected to be: {}, but was {} "
                          "for nuage_underlay ={}, ext_gw_info.enable_snat={}."
                          .format(underlay_enabled,
                                  nuage_router.underlay_enabled,
@@ -215,14 +215,14 @@ class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
                              "ext_gw_info.enable_snat={}"
                              .format(nuage_underlay, enable_snat))
         self.assertEqual(pat_enabled, nuage_router.pat_enabled,
-                         "PATEnabled excpected to be: {}, but was {} "
+                         "PATEnabled expected to be: {}, but was {} "
                          "for nuage_underlay={}, ext_gw_info.enable_snat={}."
                          .format(pat_enabled,
                                  nuage_router.pat_enabled,
                                  nuage_underlay,
                                  enable_snat))
         self.assertEqual(underlay_enabled, nuage_router.underlay_enabled,
-                         "UnderlayEnabled excpected to be: {}, but was {} "
+                         "UnderlayEnabled expected to be: {}, but was {} "
                          "for nuage_underlay ={}, ext_gw_info.enable_snat={}."
                          .format(underlay_enabled,
                                  nuage_router.underlay_enabled,
@@ -287,14 +287,14 @@ class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
                              "ext_gw_info.enable_snat={}"
                              .format(nuage_underlay, enable_snat))
         self.assertEqual(pat_enabled, nuage_router.pat_enabled,
-                         "PATEnabled excpected to be: {}, but was {} "
+                         "PATEnabled expected to be: {}, but was {} "
                          "for nuage_underlay={}, ext_gw_info.enable_snat={}."
                          .format(pat_enabled,
                                  nuage_router.pat_enabled,
                                  nuage_underlay,
                                  enable_snat))
         self.assertEqual(underlay_enabled, nuage_router.underlay_enabled,
-                         "UnderlayEnabled excpected to be: {}, but was {} "
+                         "UnderlayEnabled expected to be: {}, but was {} "
                          "for nuage_underlay ={}, ext_gw_info.enable_snat={}."
                          .format(underlay_enabled,
                                  nuage_router.underlay_enabled,
@@ -338,14 +338,14 @@ class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
                              "ext_gw_info.enable_snat={}"
                              .format(nuage_underlay, enable_snat))
         self.assertEqual(pat_enabled, nuage_router.pat_enabled,
-                         "PATEnabled excpected to be: {}, but was {} "
+                         "PATEnabled expected to be: {}, but was {} "
                          "for nuage_underlay={}, ext_gw_info.enable_snat={}."
                          .format(pat_enabled,
                                  nuage_router.pat_enabled,
                                  nuage_underlay,
                                  enable_snat))
         self.assertEqual(underlay_enabled, nuage_router.underlay_enabled,
-                         "UnderlayEnabled excpected to be: {}, but was {} "
+                         "UnderlayEnabled expected to be: {}, but was {} "
                          "for nuage_underlay ={}, ext_gw_info.enable_snat={}."
                          .format(underlay_enabled,
                                  nuage_router.underlay_enabled,
