@@ -7,6 +7,7 @@ import inspect
 import os.path
 from six import iteritems
 import socket
+import subprocess
 import testtools
 import time
 import yaml
@@ -1592,6 +1593,18 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             s.close()
         LOG.debug("Local IP: {}".format(ip))
         return ip
+
+    @staticmethod
+    def execute_from_shell(command, success_expected=True, pause=None):
+        output = None
+        try:
+            output = subprocess.check_output(command, shell=True)
+        except subprocess.CalledProcessError:
+            if success_expected:
+                raise
+        if pause:
+            time.sleep(pause)
+        return output
 
 
 class NuageBaseOrchestrationTest(NuageBaseTest):
