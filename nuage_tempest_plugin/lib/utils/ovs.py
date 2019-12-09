@@ -74,6 +74,12 @@ class FlowQuery(object):
         self._matches('.*proto=0/0.*actions.*')
         return self
 
+    def ip_version(self, version):
+        """Flow with specific ip version"""
+
+        self._matches('.*ipv{}.*actions.*'.format(version))
+        return self
+
     def offload(self):
         """Flows must be offloaded"""
 
