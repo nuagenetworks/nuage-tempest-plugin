@@ -122,7 +122,7 @@ class TestNuageL2BridgeSRIOV(BaseNuageL2Bridge,
         }
 
         n1 = self.create_network(network_name=name + '-1',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
         if self.is_dhcp_agent_present():
             msg = ("Bad request: A network cannot be attached to an l2bridge"
@@ -131,7 +131,7 @@ class TestNuageL2BridgeSRIOV(BaseNuageL2Bridge,
                                    msg,
                                    self.create_subnet,
                                    n1, subnet_name=name + '-subnet-1',
-                                   client=self.admin_manager,
+                                   manager=self.admin_manager,
                                    cidr=IPNetwork('10.10.1.0/24'),
                                    mask_bits=24)
         else:
@@ -145,7 +145,7 @@ class TestNuageL2BridgeSRIOV(BaseNuageL2Bridge,
                 extra_params={'VLANRange': '0-4095'})[0]
 
             s1 = self.create_subnet(n1, subnet_name=name + '-subnet-1',
-                                    client=self.admin_manager,
+                                    manager=self.admin_manager,
                                     cidr=IPNetwork('10.10.1.0/24'),
                                     mask_bits=24)
 
@@ -227,11 +227,11 @@ class TestNuageL2BridgeSRIOV(BaseNuageL2Bridge,
                 }
 
                 n2 = self.create_network(network_name=name + '-2',
-                                         client=self.admin_manager,
+                                         manager=self.admin_manager,
                                          **kwargs)
 
                 s2 = self.create_subnet(n2, subnet_name=name + '-subnet-2',
-                                        client=self.admin_manager,
+                                        manager=self.admin_manager,
                                         cidr=IPNetwork('10.10.1.0/24'),
                                         mask_bits=24)
 

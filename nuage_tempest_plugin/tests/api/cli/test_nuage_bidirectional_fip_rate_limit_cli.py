@@ -21,8 +21,6 @@ MSG_INVALID_INPUT_FOR_OPERATION = "Invalid input for operation: " \
                                   "-1 for unlimited or 'default' for " \
                                   "the configured default value.."
 
-LOG = Topology.get_logger(__name__)
-
 
 class TestNuageBidiFRLCliWODefault(BaseNuageFipRateLimit):
 
@@ -63,10 +61,6 @@ class TestNuageBidiFRLCliWODefault(BaseNuageFipRateLimit):
 
         self.assertEqual(created_floating_ip['fixed_ip_address'],
                          fixed_ips_dict['ip_address'])
-        LOG.info("Ingress FIP Rate limit %s",
-                 created_floating_ip['nuage_ingress_fip_rate_kbps'])
-        LOG.info("Egress FIP Rate limit %s",
-                 created_floating_ip['nuage_egress_fip_rate_kbps'])
         if ingress_rate_limit is not None:
             self.assertEqual(
                 float(created_floating_ip['nuage_ingress_fip_rate_kbps']),
@@ -116,10 +110,6 @@ class TestNuageBidiFRLCliWODefault(BaseNuageFipRateLimit):
         self.assertEqual(1, len(qos))
         self.assertEqual(True, qos[0]['FIPRateLimitingActive'])
 
-        LOG.info("OpenStack Egress FIP Rate limit %s",
-                 qos[0]['FIPPeakInformationRate'])
-        LOG.info("OpenStack Ingress FIP Rate limit %s",
-                 qos[0]['EgressFIPPeakInformationRate'])
         if ingress_rate_limit is not None:
             self.assertEqualFiprate(
                 ingress_rate_limit,

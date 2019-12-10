@@ -204,7 +204,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             ]
         }
         n1 = self.create_network(network_name=name + '-1',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
         self.assertEqual(n1['nuage_l2bridge'], bridge['id'])
         kwargs = {
@@ -219,7 +219,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             ]
         }
         n2 = self.create_network(network_name=name + '-2',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
         self.assertEqual(n2['nuage_l2bridge'], bridge['id'])
 
@@ -273,7 +273,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             ]
         }
         n1 = self.create_network(network_name=name + '-1',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
         kwargs = {
             'segments': [
@@ -287,7 +287,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             ]
         }
         n2 = self.create_network(network_name=name + '-2',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
         msg = ("Bad request: A network cannot be attached to an l2bridge"
                " when neutron-dhcp-agent is enabled'")
@@ -297,25 +297,25 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                    self.create_subnet,
                                    n1,
                                    subnet_name=name + '-subnet-1',
-                                   client=self.admin_manager,
+                                   manager=self.admin_manager,
                                    cidr=IPNetwork('10.10.1.0/24'),
                                    mask_bits=24)
         else:
             s14 = self.create_subnet(n1, subnet_name=name + '-subnet-1',
-                                     client=self.admin_manager,
+                                     manager=self.admin_manager,
                                      cidr=IPNetwork('10.10.1.0/24'),
                                      mask_bits=24)
             s16 = self.create_subnet(n1, subnet_name=name + '-subnet-16',
-                                     client=self.admin_manager,
+                                     manager=self.admin_manager,
                                      ip_version=6,
                                      cidr=IPNetwork('cafe::babe/64'),
                                      mask_bits=64)
             s24 = self.create_subnet(n2, subnet_name=name + '-subnet-2',
-                                     client=self.admin_manager,
+                                     manager=self.admin_manager,
                                      cidr=IPNetwork('10.10.1.0/24'),
                                      mask_bits=24)
             s26 = self.create_subnet(n2, subnet_name=name + '-subnet-26',
-                                     client=self.admin_manager,
+                                     manager=self.admin_manager,
                                      ip_version=6,
                                      cidr=IPNetwork('cafe::babe/64'),
                                      mask_bits=64)
@@ -367,7 +367,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                        msg,
                                        self.update_subnet,
                                        subnet=sb,
-                                       client=self.admin_manager,
+                                       manager=self.admin_manager,
                                        enable_dhcp=False)
 
     @decorators.attr(type='smoke')
@@ -396,7 +396,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             ]
         }
         n1 = self.create_network(network_name=name + '-1',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
         kwargs = {
             'segments': [
@@ -410,7 +410,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             ]
         }
         n2 = self.create_network(network_name=name + '-2',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
         msg = ("Bad request: A network cannot be attached to an l2bridge"
                " when neutron-dhcp-agent is enabled'")
@@ -419,16 +419,16 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                    msg,
                                    self.create_subnet,
                                    n1, subnet_name=name + '-subnet-14',
-                                   client=self.admin_manager,
+                                   manager=self.admin_manager,
                                    cidr=IPNetwork('10.10.1.0/24'),
                                    mask_bits=24)
         else:
             s14 = self.create_subnet(n1, subnet_name=name + '-subnet-14',
-                                     client=self.admin_manager,
+                                     manager=self.admin_manager,
                                      cidr=IPNetwork('10.10.1.0/24'),
                                      mask_bits=24)
             self.create_subnet(n2, subnet_name=name + '-subnet-26',
-                               client=self.admin_manager,
+                               manager=self.admin_manager,
                                ip_version=6,
                                cidr=IPNetwork('cafe::babe/64'),
                                mask_bits=64)
@@ -490,7 +490,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             ]
         }
         n1 = self.create_network(network_name=name + '-1',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
         kwargs = {
             'segments': [
@@ -504,7 +504,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             ]
         }
         n2 = self.create_network(network_name=name2 + '-2',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
 
         msg = ("Bad request: A network cannot be attached to an l2bridge"
@@ -514,26 +514,26 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                    msg,
                                    self.create_subnet,
                                    n1, subnet_name=name + '-subnet-16',
-                                   client=self.admin_manager,
+                                   manager=self.admin_manager,
                                    ip_version=6,
                                    cidr=IPNetwork('cafe::babe/64'),
                                    mask_bits=64)
         else:
             s14 = self.create_subnet(n1, subnet_name=name + '-subnet-14',
-                                     client=self.admin_manager,
+                                     manager=self.admin_manager,
                                      cidr=IPNetwork('10.10.1.0/24'),
                                      mask_bits=24)
             self.create_subnet(n1, subnet_name=name + '-subnet-16',
-                               client=self.admin_manager,
+                               manager=self.admin_manager,
                                ip_version=6,
                                cidr=IPNetwork('cafe::babe/64'),
                                mask_bits=64)
             s24 = self.create_subnet(n2, subnet_name=name2 + '-subnet-24',
-                                     client=self.admin_manager,
+                                     manager=self.admin_manager,
                                      cidr=IPNetwork('10.10.1.0/24'),
                                      mask_bits=24)
             self.create_subnet(n2, subnet_name=name2 + '-subnet-26',
-                               client=self.admin_manager,
+                               manager=self.admin_manager,
                                ip_version=6,
                                cidr=IPNetwork('cafe::babe/64'),
                                mask_bits=64)
@@ -570,11 +570,11 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
 
             host_routes = [{'destination': '10.20.0.0/32',
                             'nexthop': '10.100.1.2'}]
-            self.update_subnet(subnet=s14, client=self.admin_manager,
+            self.update_subnet(subnet=s14, manager=self.admin_manager,
                                host_routes=host_routes)
 
             self.update_subnet(subnet=s24,
-                               client=self.admin_manager,
+                               manager=self.admin_manager,
                                host_routes=host_routes,
                                dns_nameservers=['7.8.8.8', '7.8.4.4'])
 
@@ -629,7 +629,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             ]
         }
         n1 = self.create_network(network_name=name + '-1',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
         kwargs = {
             'segments': [
@@ -643,7 +643,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             ]
         }
         n2 = self.create_network(network_name=name + '-2',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
         msg = ("Bad request: A network cannot be attached to an l2bridge"
                " when neutron-dhcp-agent is enabled'")
@@ -653,12 +653,12 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                    self.create_subnet,
                                    n1,
                                    subnet_name=name + '-subnet-1',
-                                   client=self.admin_manager,
+                                   manager=self.admin_manager,
                                    cidr=IPNetwork('10.10.1.0/24'),
                                    mask_bits=24)
         else:
             self.create_subnet(n1, subnet_name=name + '-subnet-1',
-                               client=self.admin_manager,
+                               manager=self.admin_manager,
                                cidr=IPNetwork('10.10.1.0/24'),
                                mask_bits=24)
             msg = ('Bad request: A network attached to a nuage_l2bridge cannot'
@@ -667,7 +667,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                    msg,
                                    self.create_subnet,
                                    n1, subnet_name=name + '-subnet-2',
-                                   client=self.admin_manager,
+                                   manager=self.admin_manager,
                                    cidr=IPNetwork('1.1.1.0/24'),
                                    mask_bits=24)
             msg = ('Bad request: The gateway_ip associated with nuage_l2bridge'
@@ -678,7 +678,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                    msg,
                                    self.create_subnet,
                                    n2, subnet_name=name + '-subnet-2',
-                                   client=self.admin_manager,
+                                   manager=self.admin_manager,
                                    cidr=IPNetwork('10.10.1.0/24'),
                                    gateway='10.10.1.2',
                                    mask_bits=24)
@@ -690,7 +690,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                    msg,
                                    self.create_subnet,
                                    n2, subnet_name=name + '-subnet-2',
-                                   client=self.admin_manager,
+                                   manager=self.admin_manager,
                                    cidr=IPNetwork('10.10.1.0/24'),
                                    enable_dhcp=False,
                                    mask_bits=24)
@@ -703,7 +703,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                    self.create_subnet,
                                    n2,
                                    subnet_name='create-subnet-fails',
-                                   client=self.admin_manager,
+                                   manager=self.admin_manager,
                                    cidr=IPNetwork('10.10.1.0/24'),
                                    mask_bits=24,
                                    host_routes=host_routes)
@@ -714,13 +714,13 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                    self.create_subnet,
                                    n2,
                                    subnet_name='create-subnet-fails',
-                                   client=self.admin_manager,
+                                   manager=self.admin_manager,
                                    cidr=IPNetwork('10.10.1.0/24'),
                                    mask_bits=24,
                                    dns_nameservers=['7.8.8.8'])
             # ipv6
             self.create_subnet(n1, subnet_name=name + '-subnet-1-ipv6',
-                               client=self.admin_manager,
+                               manager=self.admin_manager,
                                cidr=IPNetwork('cafe::/64'),
                                ip_version=6,
                                mask_bits=64)
@@ -731,7 +731,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                    msg,
                                    self.create_subnet,
                                    n2, subnet_name=name + '-subnet-2',
-                                   client=self.admin_manager,
+                                   manager=self.admin_manager,
                                    cidr=IPNetwork('10::/64'),
                                    ip_version=6,
                                    mask_bits=64)
@@ -743,7 +743,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                    msg,
                                    self.create_subnet,
                                    n2, subnet_name=name + '-subnet-2',
-                                   client=self.admin_manager,
+                                   manager=self.admin_manager,
                                    cidr=IPNetwork('cafe::/64'),
                                    ip_version=6,
                                    gateway='cafe::2',
@@ -756,7 +756,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                    msg,
                                    self.create_subnet,
                                    n2, subnet_name=name + '-subnet-2',
-                                   client=self.admin_manager,
+                                   manager=self.admin_manager,
                                    cidr=IPNetwork('cafe::/64'),
                                    ip_version=6,
                                    enable_dhcp=False,
@@ -769,7 +769,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                    msg,
                                    self.create_subnet,
                                    n2, subnet_name=name + '-subnet-2',
-                                   client=self.admin_manager,
+                                   manager=self.admin_manager,
                                    cidr=IPNetwork('cafe::/64'),
                                    ip_version=6,
                                    ipv6_ra_mode='dhcpv6-stateful',
@@ -782,7 +782,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                    msg,
                                    self.create_subnet,
                                    n2, subnet_name=name + '-subnet-2',
-                                   client=self.admin_manager,
+                                   manager=self.admin_manager,
                                    cidr=IPNetwork('cafe::/64'),
                                    ip_version=6,
                                    ipv6_address_mode='dhcpv6-stateful',
@@ -809,18 +809,18 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                 ]
             }
             n3 = self.create_network(network_name=name + '-3',
-                                     client=self.admin_manager,
+                                     manager=self.admin_manager,
                                      **kwargs)
 
             s1_non_bridge = self.create_subnet(n3,
                                                subnet_name=name + '-subnet-2',
-                                               client=self.admin_manager,
+                                               manager=self.admin_manager,
                                                cidr=IPNetwork('10.10.1.0/24'),
                                                mask_bits=24)
 
             s2_non_bridge = self.create_subnet(n3,
                                                subnet_name=name + '-subnet-2',
-                                               client=self.admin_manager,
+                                               manager=self.admin_manager,
                                                cidr=IPNetwork('1.1.1.0/24'),
                                                mask_bits=24)
 
@@ -861,7 +861,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             ]
         }
         n1 = self.create_network(network_name=name + '-1',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
         kwargs = {
             'segments': [
@@ -875,7 +875,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             ]
         }
         n2 = self.create_network(network_name=name2 + '-2',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
         msg = ("Bad request: A network cannot be attached to an l2bridge"
                " when neutron-dhcp-agent is enabled'")
@@ -885,25 +885,25 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                    self.create_subnet,
                                    n1,
                                    subnet_name=name + '-subnet-14',
-                                   client=self.admin_manager,
+                                   manager=self.admin_manager,
                                    cidr=IPNetwork('10.10.1.0/24'),
                                    mask_bits=24)
         else:
             s14 = self.create_subnet(n1, subnet_name=name + '-subnet-14',
-                                     client=self.admin_manager,
+                                     manager=self.admin_manager,
                                      cidr=IPNetwork('10.10.1.0/24'),
                                      mask_bits=24)
             self.create_subnet(n1, subnet_name=name + '-subnet-16',
-                               client=self.admin_manager,
+                               manager=self.admin_manager,
                                ip_version=6,
                                cidr=IPNetwork('cafe::babe/64'),
                                mask_bits=64)
             s24 = self.create_subnet(n2, subnet_name=name2 + '-subnet-24',
-                                     client=self.admin_manager,
+                                     manager=self.admin_manager,
                                      cidr=IPNetwork('10.10.1.0/24'),
                                      mask_bits=24)
             self.create_subnet(n2, subnet_name=name2 + '-subnet-26',
-                               client=self.admin_manager,
+                               manager=self.admin_manager,
                                ip_version=6,
                                cidr=IPNetwork('cafe::babe/64'),
                                mask_bits=64)
@@ -926,11 +926,11 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                             'nexthop': '10.100.1.2'}]
 
             self.update_subnet(subnet=s24,
-                               client=self.admin_manager,
+                               manager=self.admin_manager,
                                host_routes=host_routes,
                                dns_nameservers=['7.8.8.8', '7.8.4.4'])
 
-            self.update_subnet(subnet=s14, client=self.admin_manager,
+            self.update_subnet(subnet=s14, manager=self.admin_manager,
                                host_routes=host_routes)
 
             l2domain = self.vsd.get_l2domain(
@@ -966,7 +966,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             ]
         }
         n1 = self.create_network(network_name=name + '-1',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
         kwargs = {
             'segments': [
@@ -980,7 +980,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             ]
         }
         n2 = self.create_network(network_name=name2 + '-2',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
         msg = ("Bad request: A network cannot be attached to an l2bridge"
                " when neutron-dhcp-agent is enabled'")
@@ -990,12 +990,12 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                    self.create_subnet,
                                    n1,
                                    subnet_name=name + '-subnet-14',
-                                   client=self.admin_manager,
+                                   manager=self.admin_manager,
                                    cidr=IPNetwork('10.10.1.0/24'),
                                    mask_bits=24)
         else:
             s14 = self.create_subnet(n1, subnet_name=name + '-subnet-14',
-                                     client=self.admin_manager,
+                                     manager=self.admin_manager,
                                      cidr=IPNetwork('10.10.1.0/24'),
                                      mask_bits=24,
                                      cleanup=False)
@@ -1006,7 +1006,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                           bridge=bridge)
 
             s26 = self.create_subnet(n2, subnet_name=name2 + '-subnet-26',
-                                     client=self.admin_manager,
+                                     manager=self.admin_manager,
                                      ip_version=6,
                                      cidr=IPNetwork('cafe::babe/64'),
                                      mask_bits=64,
@@ -1016,14 +1016,14 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             self.validate_l2domain_on_vsd(l2domain, ip_type='DUALSTACK',
                                           bridge=bridge)
 
-            self.delete_subnet(s26, client=self.admin_manager)
+            self.delete_subnet(s26, manager=self.admin_manager)
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
             self.validate_l2domain_on_vsd(l2domain, ip_type='IPV4',
                                           bridge=bridge)
 
             s16 = self.create_subnet(n1, subnet_name=name + '-subnet-16',
-                                     client=self.admin_manager,
+                                     manager=self.admin_manager,
                                      ip_version=6,
                                      cidr=IPNetwork('cafe::babe/64'),
                                      mask_bits=64,
@@ -1034,7 +1034,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                           bridge=bridge)
 
             s24 = self.create_subnet(n2, subnet_name=name2 + '-subnet-24',
-                                     client=self.admin_manager,
+                                     manager=self.admin_manager,
                                      cidr=IPNetwork('10.10.1.0/24'),
                                      mask_bits=24,
                                      cleanup=False)
@@ -1044,7 +1044,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                           bridge=bridge)
 
             self.create_subnet(n2, subnet_name=name2 + '-subnet-26',
-                               client=self.admin_manager,
+                               manager=self.admin_manager,
                                ip_version=6,
                                cidr=IPNetwork('cafe::babe/64'),
                                mask_bits=64)
@@ -1053,19 +1053,19 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             self.validate_l2domain_on_vsd(l2domain, ip_type='DUALSTACK',
                                           bridge=bridge)
 
-            self.delete_subnet(s16, client=self.admin_manager)
+            self.delete_subnet(s16, manager=self.admin_manager)
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
             self.validate_l2domain_on_vsd(l2domain, ip_type='DUALSTACK',
                                           bridge=bridge)
 
-            self.delete_subnet(s24, client=self.admin_manager)
+            self.delete_subnet(s24, manager=self.admin_manager)
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
             self.validate_l2domain_on_vsd(l2domain, ip_type='DUALSTACK',
                                           bridge=bridge)
 
-            self.delete_subnet(s14, client=self.admin_manager)
+            self.delete_subnet(s14, manager=self.admin_manager)
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
             self.validate_l2domain_on_vsd(l2domain, ip_type='IPV6',
@@ -1102,7 +1102,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                msg,
                                self.create_network,
                                network_name=name + '-1',
-                               client=self.admin_manager,
+                               manager=self.admin_manager,
                                **kwargs)
 
     @decorators.attr(type='smoke')
@@ -1136,7 +1136,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                msg,
                                self.create_network,
                                network_name=name + '-1',
-                               client=self.admin_manager,
+                               manager=self.admin_manager,
                                **kwargs)
 
     @decorators.attr(type='smoke')
@@ -1164,7 +1164,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             ]
         }
         n1 = self.create_network(network_name=name + '-1',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
         msg = ("Bad request: A network cannot be attached to an l2bridge"
                " when neutron-dhcp-agent is enabled'")
@@ -1173,25 +1173,25 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                    msg,
                                    self.create_subnet,
                                    n1, subnet_name=name + '-subnet-1',
-                                   client=self.admin_manager,
+                                   manager=self.admin_manager,
                                    cidr=IPNetwork('10.10.1.0/24'),
                                    mask_bits=24)
         else:
             s14 = self.create_subnet(n1, subnet_name=name + '-subnet-1',
-                                     client=self.admin_manager,
+                                     manager=self.admin_manager,
                                      cidr=IPNetwork('10.10.1.0/24'),
                                      mask_bits=24, cleanup=False)
             s16 = self.create_subnet(n1, subnet_name=name + '-subnet-16',
-                                     client=self.admin_manager,
+                                     manager=self.admin_manager,
                                      ip_version=6,
                                      cidr=IPNetwork('cafe::babe/64'),
                                      mask_bits=64, cleanup=False)
 
-            self.delete_subnet(s16, client=self.admin_manager)
+            self.delete_subnet(s16, manager=self.admin_manager)
             bridge = self.get_l2bridge(bridge['id'])
 
             self.assertNotEmpty(bridge['nuage_subnet_id'])
-            self.delete_subnet(s14, client=self.admin_manager)
+            self.delete_subnet(s14, manager=self.admin_manager)
 
             bridge = self.get_l2bridge(bridge['id'])
             self.assertEqual(bridge['nuage_subnet_id'], None)
@@ -1220,7 +1220,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             ]
         }
         n1 = self.create_network(network_name=name + '-1',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
 
         if self.is_dhcp_agent_present():
@@ -1230,13 +1230,13 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                    msg,
                                    self.create_subnet,
                                    n1, subnet_name=name + '-subnet',
-                                   client=self.admin_manager,
+                                   manager=self.admin_manager,
                                    cidr=self._cidr,
                                    mask_bits=self._mask_bits,
                                    ip_version=self._ip_version)
         else:
             self.create_subnet(n1, subnet_name=name + '-subnet',
-                               client=self.admin_manager,
+                               manager=self.admin_manager,
                                cidr=self._cidr,
                                mask_bits=self._mask_bits, cleanup=False,
                                ip_version=self._ip_version)
@@ -1298,7 +1298,7 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
         }
 
         n1 = self.create_network(network_name=name + '-1',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
 
         msg = ("Bad request: A network cannot be attached to an l2bridge"
@@ -1309,13 +1309,13 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
                                    self.create_subnet,
                                    n1,
                                    subnet_name=name + '-subnet-1',
-                                   client=self.admin_manager,
+                                   manager=self.admin_manager,
                                    cidr=self._cidr,
                                    mask_bits=self._mask_bits,
                                    ip_version=self._ip_version)
         else:
             self.create_subnet(n1, subnet_name=name + '-subnet-1',
-                               client=self.admin_manager,
+                               manager=self.admin_manager,
                                cidr=self._cidr,
                                mask_bits=self._mask_bits,
                                ip_version=self._ip_version)
@@ -1333,7 +1333,7 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
             #                       msg,
             #                       self.update_network,
             #                      network_id=n1['id'],
-            #                       client=self.admin_manager,
+            #                       manager=self.admin_manager,
             #                       **kwargs)
 
             msg = ("Bad request: Physical network {} with"
@@ -1413,7 +1413,7 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
         }
 
         n1 = self.create_network(network_name=name + '-1',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
         msg = ("Bad request: A network cannot be attached to an l2bridge"
                " when neutron-dhcp-agent is enabled'")
@@ -1422,13 +1422,13 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
                                    msg,
                                    self.create_subnet,
                                    n1, subnet_name=name + '-subnet-1',
-                                   client=self.admin_manager,
+                                   manager=self.admin_manager,
                                    cidr=self._cidr,
                                    mask_bits=self._mask_bits,
                                    ip_version=self._ip_version)
         else:
             s1 = self.create_subnet(n1, subnet_name=name + '-subnet-1',
-                                    client=self.admin_manager,
+                                    manager=self.admin_manager,
                                     cidr=self._cidr,
                                     mask_bits=self._mask_bits,
                                     ip_version=self._ip_version)
@@ -1498,11 +1498,11 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
             }
 
             n2 = self.create_network(network_name=name + '-2',
-                                     client=self.admin_manager,
+                                     manager=self.admin_manager,
                                      **kwargs)
 
             s2 = self.create_subnet(n2, subnet_name=name + '-subnet-2',
-                                    client=self.admin_manager,
+                                    manager=self.admin_manager,
                                     cidr=self._cidr,
                                     mask_bits=self._mask_bits,
                                     ip_version=self._ip_version)
@@ -1578,11 +1578,11 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
         }
 
         n1 = self.create_network(network_name=name + '-1',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
 
         self.create_subnet(n1, subnet_name=name + '-subnet-subnet-1',
-                           client=self.admin_manager,
+                           manager=self.admin_manager,
                            cidr=self._cidr,
                            mask_bits=self._mask_bits,
                            ip_version=self._ip_version)
@@ -1636,7 +1636,7 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
             ]
         }
         n1 = self.create_network(network_name=name + '-1',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
         kwargs = {
             'segments': [
@@ -1650,7 +1650,7 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
             ]
         }
         n2 = self.create_network(network_name=name + '-2',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
         msg = ("Bad request: A network cannot be attached to an l2bridge"
                " when neutron-dhcp-agent is enabled'")
@@ -1659,18 +1659,18 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
                                    msg,
                                    self.create_subnet,
                                    n1, subnet_name=name + '-subnet-1',
-                                   client=self.admin_manager,
+                                   manager=self.admin_manager,
                                    cidr=self._cidr,
                                    mask_bits=self._mask_bits,
                                    ip_version=self._ip_version)
         else:
             s1 = self.create_subnet(n1, subnet_name=name + '-subnet-1',
-                                    client=self.admin_manager,
+                                    manager=self.admin_manager,
                                     cidr=self._cidr,
                                     mask_bits=self._mask_bits,
                                     ip_version=self._ip_version)
             s2 = self.create_subnet(n2, subnet_name=name + '-subnet-2',
-                                    client=self.admin_manager,
+                                    manager=self.admin_manager,
                                     cidr=self._cidr,
                                     mask_bits=self._mask_bits,
                                     ip_version=self._ip_version)
@@ -1717,13 +1717,13 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
                                        msg,
                                        self.update_subnet,
                                        subnet=sb,
-                                       client=self.admin_manager,
+                                       manager=self.admin_manager,
                                        enable_dhcp=False)
                 self.assertRaisesRegex(exceptions.BadRequest,
                                        msg,
                                        self.update_subnet,
                                        subnet=sb,
-                                       client=self.admin_manager,
+                                       manager=self.admin_manager,
                                        name='update-should-have-failed',
                                        host_routes=self._host_routes,
                                        dns_nameservers=self._dns_nameservers)
@@ -1762,7 +1762,7 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
             ]
         }
         n1 = self.create_network(network_name=name + '-1',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
         kwargs = {
             'segments': [
@@ -1776,7 +1776,7 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
             ]
         }
         n2 = self.create_network(network_name=name + '-2',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
         msg = ("Bad request: A network cannot be attached to an l2bridge"
                " when neutron-dhcp-agent is enabled'")
@@ -1785,24 +1785,24 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
                                    msg,
                                    self.create_subnet,
                                    n1, subnet_name=name + '-subnet-1',
-                                   client=self.admin_manager,
+                                   manager=self.admin_manager,
                                    cidr=self._cidr,
                                    mask_bits=self._mask_bits,
                                    ip_version=self._ip_version)
         else:
             s1 = self.create_subnet(n1, subnet_name=name + '-subnet-1',
-                                    client=self.admin_manager,
+                                    manager=self.admin_manager,
                                     cidr=self._cidr,
                                     ip_version=self._ip_version,
                                     mask_bits=self._mask_bits)
             s1_dual = self.create_subnet(n1,
                                          subnet_name=name + '-subnet-1-dual',
-                                         client=self.admin_manager,
+                                         manager=self.admin_manager,
                                          cidr=self._dual_cidr,
                                          ip_version=self._dual_ip_version,
                                          mask_bits=self._dual_mask_bits)
             s2 = self.create_subnet(n2, subnet_name=name + '-subnet-2',
-                                    client=self.admin_manager,
+                                    manager=self.admin_manager,
                                     cidr=self._cidr,
                                     mask_bits=self._mask_bits,
                                     ip_version=self._ip_version)
@@ -1848,7 +1848,7 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
                                        msg,
                                        self.update_subnet,
                                        subnet=sb,
-                                       client=self.admin_manager,
+                                       manager=self.admin_manager,
                                        enable_dhcp=False)
 
     @decorators.attr(type='smoke')
@@ -1887,7 +1887,7 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
             ]
         }
         n1 = self.create_network(network_name=name + '-1',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
         kwargs = {
             'segments': [
@@ -1901,7 +1901,7 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
             ]
         }
         n2 = self.create_network(network_name=name + '-2',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
         msg = ("Bad request: A network cannot be attached to an l2bridge"
                " when neutron-dhcp-agent is enabled'")
@@ -1911,18 +1911,18 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
                                    self.create_subnet,
                                    n1,
                                    subnet_name=name + '-subnet-1',
-                                   client=self.admin_manager,
+                                   manager=self.admin_manager,
                                    cidr=self._cidr,
                                    mask_bits=self._mask_bits,
                                    ip_version=self._ip_version)
         else:
             s1 = self.create_subnet(n1, subnet_name=name + '-subnet-1',
-                                    client=self.admin_manager,
+                                    manager=self.admin_manager,
                                     cidr=self._cidr,
                                     mask_bits=self._mask_bits,
                                     ip_version=self._ip_version)
             s2 = self.create_subnet(n2, subnet_name=name + '-subnet-2',
-                                    client=self.admin_manager,
+                                    manager=self.admin_manager,
                                     cidr=self._cidr,
                                     mask_bits=self._mask_bits,
                                     ip_version=self._ip_version)
@@ -1970,10 +1970,10 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
             self.assertIsNotNone(vport_2,
                                  "Vport not created for port in network 2")
 
-            self.update_subnet(subnet=s1, client=self.admin_manager,
+            self.update_subnet(subnet=s1, manager=self.admin_manager,
                                enable_dhcp=False)
             self.update_subnet(subnet=s2,
-                               client=self.admin_manager,
+                               manager=self.admin_manager,
                                host_routes=self._host_routes,
                                dns_nameservers=self._dns_nameservers)
 
@@ -2030,7 +2030,7 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
             ]
         }
         n1 = self.create_network(network_name=name + '-1',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
         n2 = self.create_network(network_name=name + '-2')
         msg = ("Bad request: A network cannot be attached to an l2bridge"
@@ -2041,18 +2041,18 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
                                    self.create_subnet,
                                    n1,
                                    subnet_name=name + '-subnet-1',
-                                   client=self.admin_manager,
+                                   manager=self.admin_manager,
                                    cidr=self._cidr,
                                    mask_bits=self._mask_bits,
                                    ip_version=self._ip_version)
         else:
             s1 = self.create_subnet(n1, subnet_name=name + '-subnet-1',
-                                    client=self.admin_manager,
+                                    manager=self.admin_manager,
                                     cidr=self._cidr,
                                     mask_bits=self._mask_bits,
                                     ip_version=self._ip_version)
             s2 = self.create_subnet(n2, subnet_name=name + '-subnet-2',
-                                    client=self.admin_manager,
+                                    manager=self.admin_manager,
                                     cidr=self._cidr,
                                     mask_bits=self._mask_bits,
                                     ip_version=self._ip_version)
@@ -2101,10 +2101,10 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
             self.assertIsNotNone(vport_2,
                                  "Vport not created for port in network 2")
 
-            self.update_subnet(subnet=s1, client=self.admin_manager,
+            self.update_subnet(subnet=s1, manager=self.admin_manager,
                                enable_dhcp=False)
             self.update_subnet(subnet=s2,
-                               client=self.admin_manager,
+                               manager=self.admin_manager,
                                host_routes=self._host_routes,
                                dns_nameservers=self._dns_nameservers)
 
@@ -2156,7 +2156,7 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
             ]
         }
         n1 = self.create_network(network_name=name + '-1',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
 
         msg = ("Bad request: The network is attached to nuage_l2bridge " +
@@ -2167,7 +2167,7 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
                                msg,
                                self.create_subnet,
                                n1, subnet_name=name + '-subnet-1',
-                               client=self.admin_manager,
+                               manager=self.admin_manager,
                                gateway=None, cidr=self._cidr,
                                mask_bits=self._mask_bits,
                                nuagenet=vsd_l2dom.id,
@@ -2200,7 +2200,7 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
             ]
         }
         n1 = self.create_network(network_name=name + '-1',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
         msg = ("Bad request: A network cannot be attached to an l2bridge"
                " when neutron-dhcp-agent is enabled'")
@@ -2209,18 +2209,18 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
                                    msg,
                                    self.create_subnet,
                                    n1, subnet_name=name + '-subnet-1',
-                                   client=self.admin_manager,
+                                   manager=self.admin_manager,
                                    cidr=self._cidr,
                                    mask_bits=self._mask_bits,
                                    ip_version=self._ip_version)
         else:
             s1 = self.create_subnet(n1, subnet_name=name + '-subnet-1',
-                                    client=self.admin_manager,
+                                    manager=self.admin_manager,
                                     cidr=self._cidr,
                                     mask_bits=self._mask_bits, cleanup=False,
                                     ip_version=self._ip_version)
 
-            self.delete_subnet(s1, client=self.admin_manager)
+            self.delete_subnet(s1, manager=self.admin_manager)
 
             bridge = self.get_l2bridge(bridge['id'])
 
@@ -2270,7 +2270,7 @@ class NuageL2BridgeV6Test(NuageL2BridgeV4Test):
             ]
         }
         n1 = self.create_network(network_name=name + '-1',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
         kwargs = {
             'segments': [
@@ -2284,7 +2284,7 @@ class NuageL2BridgeV6Test(NuageL2BridgeV4Test):
             ]
         }
         n2 = self.create_network(network_name=name + '-2',
-                                 client=self.admin_manager,
+                                 manager=self.admin_manager,
                                  **kwargs)
         msg = ("Bad request: A network cannot be attached to an l2bridge"
                " when neutron-dhcp-agent is enabled'")
@@ -2293,17 +2293,17 @@ class NuageL2BridgeV6Test(NuageL2BridgeV4Test):
                                    msg,
                                    self.create_subnet,
                                    n1, subnet_name=name + '-subnet-16',
-                                   client=self.admin_manager,
+                                   manager=self.admin_manager,
                                    cidr=self._cidr,
                                    mask_bits=self._mask_bits)
         else:
             self.create_subnet(n1, subnet_name=name + '-subnet-16',
-                               client=self.admin_manager,
+                               manager=self.admin_manager,
                                ip_version=6,
                                cidr=self._cidr,
                                mask_bits=self._mask_bits)
             self.create_subnet(n2, subnet_name=name + '-subnet-26',
-                               client=self.admin_manager,
+                               manager=self.admin_manager,
                                ip_version=6,
                                cidr=self._non_nomalized_cidr,
                                mask_bits=self._mask_bits)

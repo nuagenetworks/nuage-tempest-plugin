@@ -32,6 +32,8 @@ LOG = Topology.get_logger(__name__)
 class BaseOrchestrationTest(tempest.test.BaseTestCase):
     """Base test case class for all Orchestration API tests."""
 
+    ext_net_id = CONF.network.public_network_id
+
     credentials = ['admin', 'primary']
 
     @classmethod

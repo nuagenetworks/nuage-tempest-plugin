@@ -596,7 +596,7 @@ class NuageExtraDHCPOptionsNegativeTest(
         ext_network = self._create_network(external=True)
         # subnet is needed for trying port creation
         ext_subnet = self.create_subnet(ext_network,
-                                        client=self.admin_subnets_client)
+                                        manager=self.admin_manager)
         # check whether this subnet is not empty
         self.assertNotEmpty(ext_subnet)
         extra_dhcp_opts = [
@@ -606,7 +606,7 @@ class NuageExtraDHCPOptionsNegativeTest(
                           self._create_port_with_dhcp_opts,
                           ext_network['id'],
                           extra_dhcp_opts,
-                          client=self.admin_ports_client)
+                          manager=self.admin_manager)
 
     def test_nuage_create_port_with_dhcp_opts_nuage_l2_to_l3_migr_port_neg(
             self):

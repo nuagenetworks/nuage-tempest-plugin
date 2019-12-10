@@ -12,6 +12,8 @@ CONF = Topology.get_conf()
 
 class DualstackOsManagedConnectivityTest(nuage_test.NuageBaseTest):
 
+    default_prepare_for_connectivity = True
+
     def _test_icmp_connectivity_os_managed_dualstack(self, is_l3=False):
         # Provision OpenStack network
         network = self.create_network()
@@ -19,7 +21,7 @@ class DualstackOsManagedConnectivityTest(nuage_test.NuageBaseTest):
         self.create_subnet(network, ip_version=6)
 
         if is_l3:
-            router = self.create_test_router()
+            router = self.create_public_router()
             self.router_attach(router, ipv4_subnet)
 
         # create open-ssh security group
@@ -56,7 +58,7 @@ class DualstackOsManagedConnectivityTest(nuage_test.NuageBaseTest):
         ipv4_subnet = self.create_subnet(network)
         self.create_subnet(network, ip_version=6)
 
-        router = self.create_test_router()
+        router = self.create_public_router()
         self.router_attach(router, ipv4_subnet)
 
         # create sg with /128 rule
@@ -98,7 +100,7 @@ class DualstackOsManagedConnectivityTest(nuage_test.NuageBaseTest):
             prepare_for_connectivity=True)
 
         dest_addr = server3.get_server_ip_in_network(
-            network['name'], ip_type=6)
+            network['name'], ip_version=6)
 
         for i in range(1, 5):
             server3.send('nc -v -lk -p 8080 -s ' +
@@ -131,7 +133,7 @@ class DualstackOsManagedConnectivityTest(nuage_test.NuageBaseTest):
                          "TCP connection cannot be active")
 
         ipv6_ip_prefix = server1.get_server_ip_in_network(
-            network['name'], ip_type=6) + '/128'
+            network['name'], ip_version=6) + '/128'
         self.security_group_rules_client.create_security_group_rule(
             security_group_id=sg_id, direction='ingress',
             ethertype="IPv6", protocol='tcp',

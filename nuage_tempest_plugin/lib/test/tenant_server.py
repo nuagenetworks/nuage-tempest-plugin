@@ -22,15 +22,14 @@ LOG = Topology.get_logger(__name__)
 class FipAccessConsole(RemoteClient):
 
     def __init__(self, tenant_server):
-        assert tenant_server.associated_fip
+        tenant_server.assert_has_fip()
         super(FipAccessConsole, self).__init__(
-            ip_address=tenant_server.associated_fip,
+            ip_address=tenant_server.get_fip_ip(),
             username=tenant_server.username,
             password=tenant_server.password,
             pkey=tenant_server.keypair['private_key'],
-            servers_client=tenant_server.admin_client)
-        self.tenant_server = tenant_server
-        self.tag = self.tenant_server.tag
+            servers_client=tenant_server.parent.manager.servers_client)
+        self.tag = tenant_server.tag
 
     def exec_command(self, cmd, ssh_shell_prologue=None):
         # Shell options below add more clearness on failures,
@@ -103,40 +102,46 @@ class TenantServer(object):
     - a tenant VM on a KVM hypervisor
     - a baremetal server
     """
-    client = None
-    admin_client = None
 
-    def __init__(self, parent_test, client, admin_client,
-                 name=None, networks=None, ports=None, security_groups=None,
-                 flavor=None, keypair=None, volume_backed=False):
-        self.parent_test = parent_test
-        self.client = client
-        self.admin_client = admin_client
-
+    def __init__(self, parent, name=None, networks=None, ports=None,
+                 security_groups=None, flavor=None, keypair=None,
+                 volume_backed=False):
+        self.parent = parent
         self.name = name or data_utils.rand_name('Tenant-')
         self.tag = self.get_display_name()
+        self.username = CONF.validation.image_ssh_user
+        self.password = CONF.validation.image_ssh_password
+
         self.networks = networks or []
         self.ports = ports or []
         self.security_groups = security_groups or []
         self.flavor = flavor
         self.volume_backed = volume_backed
-
-        self._image_id = None
-        self._vm_console = None
-
-        self.username = CONF.validation.image_ssh_user
-        self.password = CONF.validation.image_ssh_password
         self.keypair = keypair
         self.openstack_data = None
         self.server_details = None
         self.force_dhcp = False
-        self.prepare_for_connectivity = False
-        self.needs_provisioning = False
-        self.associated_fip = None
+        self.set_to_prepare_for_connectivity = False
         self.cloudinit_complete = False
-        self.dhcp_validated = False
-        self.ips_validated = False
-        self.prepare_for_connectivity_complete = False
+        self.waiting_for_cloudinit_completion = False
+        self.needs_provisioning = False
+        self.is_being_provisioned = False
+        self.associated_fip = None
+
+        self._image_id = None
+        self._vm_console = None
+
+    def __repr__(self):
+        return 'TenantServer [{}]: {}'.format(
+            self.name,
+            {
+                'networks': self.networks,
+                'ports': self.ports,
+                'security_groups': self.security_groups,
+                'keypair': self.keypair,
+                'associated_fip': self.get_fip_ip()
+            }
+        )
 
     def get_display_name(self, shorten_to_x_chars=32,
                          pre_fill_with_spaces=True):
@@ -148,14 +153,21 @@ class TenantServer(object):
                 name = ' ' * (shorten_to_x_chars - len(name)) + name
         return name
 
+    def sleep(self, seconds=1, msg=None):
+        self.parent.sleep(seconds, msg, tag=self.tag)
+
+    def init_console(self):
+        self._vm_console = FipAccessConsole(self)
+
     def has_console(self):
         return bool(self._vm_console)
 
     def console(self):
         if not self._vm_console:
-            self._vm_console = FipAccessConsole(self)
+            self.init_console()
             self.validate_authentication()
             self.wait_for_cloudinit_to_complete()
+            self.provision()
         return self._vm_console
 
     @property
@@ -173,7 +185,7 @@ class TenantServer(object):
     def is_v6_ip(ip):
         return IPAddress(ip['ip_address']).version == 6
 
-    def boot(self, wait_until='ACTIVE', cleanup=True, **kwargs):
+    def boot(self, wait_until='ACTIVE', manager=None, cleanup=True, **kwargs):
         extra_nic_user_data = self.get_user_data_for_nic_prep(
             dhcp_client=CONF.scenario.dhcp_client)
         if extra_nic_user_data:
@@ -184,7 +196,8 @@ class TenantServer(object):
                 kwargs['user_data'] = extra_nic_user_data
 
         # mark the end of cloudinit
-        end_of_cloudinit = 'touch /tmp/cloudinit_completed\n'
+        end_of_cloudinit = "awk '{print $1*1000}' /proc/uptime > " \
+                           "/tmp/cloudinit_completed\n"
         if kwargs.get('user_data'):
             kwargs['user_data'] += ('\n' + end_of_cloudinit)
         else:
@@ -201,11 +214,12 @@ class TenantServer(object):
 
         # and boot the server
         LOG.info('[{}] Booting {}'.format(self.tag, self.name))
-        self.openstack_data = self.parent_test.osc_create_test_server(
-            self.tag, self.client, self.networks, self.ports,
+        # (calling  _create_server which is private method, which is intended)
+        self.openstack_data = self.parent._create_server(
+            self.tag, self.networks, self.ports,
             self.security_groups, wait_until, self.volume_backed,
-            self.name, self.flavor, self.image_id, self.keypair, cleanup,
-            **kwargs)
+            self.name, self.flavor, self.image_id, self.keypair,
+            manager, cleanup, **kwargs)
 
         LOG.info('[{}] Became {}'.format(self.tag, wait_until))
         LOG.info('[{}] IP\'s are {}'.format(
@@ -217,77 +231,73 @@ class TenantServer(object):
     def did_deploy(self):
         return bool(self.openstack_data)
 
-    def sync_with(self, osc_server_id):
+    def sync_with(self, osc_server_id, manager=None):
         self.openstack_data = \
-            self.admin_client.show_server(osc_server_id)['server']
+            self.parent.get_server(osc_server_id, manager)
 
-    def get_server_details(self):
+    def get_server_details(self, server_id=None, manager=None):
         if not self.server_details:
             self.server_details = \
-                self.admin_client.show_server(self.id)['server']
+                self.parent.get_server(server_id or self.id, manager)
         return self.server_details
 
-    def get_server_networks(self):
+    def get_server_networks(self, manager=None):
         if not self.networks:
             for port in self.ports:
                 self.networks.append(
-                    self.parent_test.osc_get_network(port['network_id']))
+                    self.parent.get_network(port['network_id'], manager))
         return self.networks
 
-    def get_server_interfaces(self, network_name=None):
+    def get_server_interfaces(self, network_name=None, manager=None):
         # returning a list of lists, per network
-        server_addresses = self.get_server_details()['addresses']
+        server_addresses = self.get_server_details(
+            manager=manager)['addresses']
         return ([server_addresses[network_name]] if network_name
                 else server_addresses.values())
 
-    def get_server_ips(self, network_name=None,
-                       filter_by_ip_type=None,
+    def get_server_ips(self, network_name=None, manager=None,
+                       filter_by_ip_version=None,
                        filter_by_os_ext_ips_type='fixed'):
         ips = []
-        for interfaces in self.get_server_interfaces(network_name):
+        for interfaces in self.get_server_interfaces(network_name, manager):
             addresses = []
             for interface in interfaces:
                 if ((filter_by_os_ext_ips_type is None or
                         interface['OS-EXT-IPS:type'] ==
                         filter_by_os_ext_ips_type) and
-                    (filter_by_ip_type is None or
-                        interface['version'] == filter_by_ip_type)):
+                    (filter_by_ip_version is None or
+                     interface['version'] == filter_by_ip_version)):
                     addresses.append(interface['addr'])
             ips.append(addresses)
         return ips
 
-    def get_server_ip_in_network(self, network_name, ip_type=4):
-        addresses = self.get_server_ips(network_name,
-                                        filter_by_ip_type=ip_type)[0]
+    def get_server_port_in_network(self, network, manager=None):
+        return self.parent.get_port_in_network(self.id, network, manager)
+
+    def get_server_ip_in_network(self, network_name, ip_version=4,
+                                 manager=None):
+        addresses = self.get_server_ips(network_name, manager,
+                                        filter_by_ip_version=ip_version)[0]
         return addresses[0] if addresses else None
-
-    def complete_prepare_for_connectivity(self):
-        if self.prepare_for_connectivity_complete:
-            return  # don't spend further cycles
-
-        if self.prepare_for_connectivity:
-            assert self.console()  # with that, enable it also, which includes
-            #                        polling for cloudinit to complete
-
-        # if interfaces need to be statically configured, by all means do
-        self.provision()
-
-        # if interfaces are dhcp provisioned, validate them, when we can
-        if self.has_console():
-            self.validate_dhcp()
-            # if not self.force_dhcp:
-            #     self.validate_ips()   # can't use for multiple v4 networks...
-        else:
-            # only thing we can do is estimate a time for this VM to be ready
-            # for testing
-            self.parent_test.sleep(10, 'Estimating time for {} to be ready '
-                                       'for action'.format(self.name),
-                                   tag=self.parent_test.test_name)
-
-        self.prepare_for_connectivity_complete = True
 
     def associate_fip(self, fip):
         self.associated_fip = fip
+
+        LOG.info('[{}] Obtained FIP = {}'.format(
+            self.tag, fip['floating_ip_address']))
+
+    def get_fip_ip(self):
+        return (self.associated_fip['floating_ip_address']
+                if self.associated_fip else None)
+
+    def assert_has_fip(self, assert_active_fip=False):
+        self.parent.assertIsNotNone(self.associated_fip)
+        if assert_active_fip:  # CAUTION: only works for OS managed FIPs...
+            self.parent.assertEqual(
+                'ACTIVE', self.parent.get_floatingip(
+                    self.associated_fip['id'])['status'],
+                '[{}] FIP is NOT active: {}'.format(
+                    self.tag, self.associated_fip))
 
     def send(self, cmd, timeout=CONF.validation.ssh_timeout,
              ssh_shell_prologue=None, as_sudo=True,
@@ -303,73 +313,89 @@ class TenantServer(object):
                                    on_failure_return=on_failure_return)
 
     def validate_authentication(self):
-        LOG.info('[{}] Validating authentication'.format(self.tag))
-        self.console().validate_authentication()
-        LOG.info('[{}] Authentication succeeded'.format(self.tag))
+        if self.has_console():
+            LOG.info('[{}] Validating authentication with {}'.format(
+                self.tag, self._vm_console.ip_address))
+            try:
+                self.console().validate_authentication()
+            except lib_exc.SSHTimeout as e:
+                self.parent.fail('[{}] SSH timeout: {}'.format(
+                    self.tag, e))
+            LOG.info('[{}] Authentication succeeded'.format(self.tag))
+        else:
+            self.console()  # doing more than authentication check alone
+            #                 (i.e. completing all steps), which is good
 
     def wait_for_cloudinit_to_complete(self):
-        if not self.cloudinit_complete:
+        if (not self.cloudinit_complete and
+                not self.waiting_for_cloudinit_completion):
             LOG.info('[{}] Waiting for cloudinit to complete'.format(self.tag))
-            count = 0
-            backoff_time = 2
+            self.waiting_for_cloudinit_completion = True
 
+            count = 0
+            backoff_time = 1.5
+            max_backoff_time = 10
             while not self.send('[ -f /tmp/cloudinit_completed ] && echo 1 '
                                 '|| true', as_sudo=False):
-                if backoff_time < 30:
-                    backoff_time *= 2
-                    if backoff_time > 30:
-                        backoff_time = 30
-                if backoff_time == 30:
+                if backoff_time < max_backoff_time:
+                    backoff_time = int(backoff_time * 2)  # 3, 6, 12, 24, ...
+                    if backoff_time > max_backoff_time:
+                        backoff_time = max_backoff_time  # 3, 6, 10, 10, ...
+                if backoff_time == max_backoff_time:
                     count += 1
-                    self.parent_test.assertTrue(count < 5)  # limit
-                    # (fail test when count is 5)
-                self.parent_test.sleep(
-                    backoff_time,
-                    'Waiting for cloudinit to complete', tag=self.tag)
+                    self.parent.assertTrue(count < 10)  # limit
+                self.sleep(backoff_time, 'Waiting for cloudinit to complete')
 
+            # check the cloudinit completion time and add up to 3 secs if no
+            # 3 secs elapsed yet
+            extra_elapse_time = 3  # this is the 3 seconds - adjust to need...
+            cloudinit_uptime = int(self.send('cat /tmp/cloudinit_completed'))
+            current_uptime = int(self.send(
+                "awk '{print $1*1000}' /proc/uptime"))
+            cloudinit_completion_time = int(
+                (current_uptime - cloudinit_uptime) / 1000)
+            LOG.debug('[{}] Cloudinit completed {} secs ago'.format(
+                self.tag, cloudinit_completion_time))
+
+            if cloudinit_completion_time < extra_elapse_time:
+                # give elapse time after cloudinit completed, to make sure the
+                # server got fully initialized and is now ready for ping test
+                extra_sleep = extra_elapse_time - cloudinit_completion_time
+                self.sleep(extra_sleep, 'Giving cloudinit some extra time')
+
+            self.waiting_for_cloudinit_completion = False
             self.cloudinit_complete = True
-            LOG.info('[{}] Cloudinit completed'.format(self.tag))
+            LOG.info('[{}] Ready for action'.format(self.tag))
 
-    def provision(self):
-        if self.needs_provisioning and not self.force_dhcp:
+    # TODO(Kris) this needs to go out, by provisioning entirely thru cloudinit
+    def provision(self, manager=None):
+        if self.needs_provisioning and not self.is_being_provisioned:
             LOG.info('[{}] Provisioning'.format(self.tag))
-            for eth_i, network in enumerate(self.get_server_networks()):
-                v4_subnet = self.parent_test.get_network_subnet(network, 4)
+
+            self.is_being_provisioned = True
+
+            for eth_i, network in enumerate(self.get_server_networks(manager)):
+                v4_subnet = self.parent.get_network_subnet(network, 4, manager)
                 if v4_subnet and not v4_subnet['enable_dhcp']:
                     server_ipv4 = self.get_server_ip_in_network(
-                        network['name'])
+                        network['name'], ip_version=4, manager=manager)
                     self.configure_static_interface(
                         server_ipv4, v4_subnet, ip_version=4, device=eth_i)
-                v6_subnet = self.parent_test.get_network_subnet(network, 6)
+                v6_subnet = self.parent.get_network_subnet(network, 6, manager)
                 if v6_subnet and not v6_subnet['enable_dhcp']:
                     server_ipv6 = self.get_server_ip_in_network(
-                        network['name'], ip_type=6)
+                        network['name'], ip_version=6, manager=manager)
                     self.configure_static_interface(
                         server_ipv6, v6_subnet, ip_version=6, device=eth_i)
 
+            self.is_being_provisioned = False
             self.needs_provisioning = False
             LOG.info('[{}] Provisioning complete'.format(self.tag))
-
-    def validate_dhcp(self):
-        is_validate_needed = CONF.scenario.dhcp_client != ''
-        if is_validate_needed and not self.dhcp_validated:
-            LOG.info('[{}] Validating DHCP'.format(self.tag))
-            for eth_i, network in enumerate(self.get_server_networks()):
-                v4_subnet = self.parent_test.get_network_subnet(network, 4)
-                if v4_subnet and v4_subnet['enable_dhcp']:
-                    self.device_served_by_dhclient(
-                        'eth{}'.format(eth_i), 4, assert_true=True)
-                v6_subnet = self.parent_test.get_network_subnet(network, 6)
-                if v6_subnet and v6_subnet['enable_dhcp']:
-                    self.device_served_by_dhclient(
-                        'eth{}'.format(eth_i), 6, assert_true=True)
-            self.dhcp_validated = True
-            LOG.info('[{}] Validation complete'.format(self.tag))
 
     def is_ip_configured(self, ip, assert_permanent=False,
                          assert_true=False):
         ip_configured = False
-        for cnt in range(5):
+        for cnt in range(10):
             if assert_permanent:
                 ip_configured = bool(self.send('ip a '
                                                '| grep "{}.* scope global" '
@@ -382,12 +408,10 @@ class TenantServer(object):
             if ip_configured:
                 break
             else:
-                self.parent_test.sleep(
-                    3, 'Waiting for ip address {} to show up'.format(ip),
-                    tag=self.tag)
+                self.sleep(3, 'Waiting for ip {} to show up'.format(ip))
 
         if assert_permanent or assert_true:
-            self.parent_test.assertTrue(ip_configured)
+            self.parent.assertTrue(ip_configured)
 
         if ip_configured:
             LOG.debug('[{}] {} confirmed as {}'.format(
@@ -422,12 +446,10 @@ class TenantServer(object):
             else:
                 LOG.warn('[{}] {} is NOT served by dhclient({})'.format(
                     self.tag, device, ip_version))
-                self.parent_test.sleep(
-                    3, 'Waiting for dhclient process to show up',
-                    tag=self.tag)
+                self.sleep(3, 'Waiting for dhclient process to show up')
 
         if assert_true:
-            self.parent_test.assertTrue(
+            self.parent.assertTrue(
                 served,
                 'DHCPv{} expected to be served on {}/{}!'.format(
                     ip_version, self.name, device))
@@ -473,7 +495,7 @@ class TenantServer(object):
                     ip_v, ip, mask_bits, device))
                 attempt += 1
 
-            self.parent_test.assertTrue(attempt <= 2)
+            self.parent.assertTrue(attempt <= 2)
 
             self.send('ip link set dev {} up || true'.format(device))
 
@@ -527,28 +549,30 @@ class TenantServer(object):
     def unmount_config_drive(self):
         self.send('umount /mnt')
 
-    def get_user_data_for_nic_prep(self, dhcp_client='udhcpc'):
+    def get_user_data_for_nic_prep(self, dhcp_client='udhcpc', manager=None):
+
         if not dhcp_client:
             # Not all images (e.g. RHEL 7-7) use DHCP client
             # they instead configure statically through cloudinit
             return
 
-        networks = self.get_server_networks()
+        networks = self.get_server_networks(manager)
         s = ''
         nbr_nics = len(networks)
         first_nic_prepared = True
         for nic, network in enumerate(networks):
             if nic == 0:
                 continue   # nic 0 is auto-served
+
             # TODO(Kris) check each subnet separately for dhcp seems more
             #            suited?
-            if self.force_dhcp or self.parent_test.is_dhcp_enabled(network):
+            if self.force_dhcp or self.parent.is_dhcp_enabled(network):
                 if first_nic_prepared:
                     LOG.info('[{}] Preparing user-data for {} nics'.format(
                         self.tag, nbr_nics))
                     supported_clients = ['udhcpc', 'dhclient']
                     if dhcp_client not in supported_clients:
-                        raise lib_exc.exceptions.InvalidConfiguration(
+                        raise lib_exc.InvalidConfiguration(
                             '%s DHCP client unsupported' % dhcp_client)
                     s = '#!/bin/sh\n'
                     first_nic_prepared = False
@@ -556,20 +580,17 @@ class TenantServer(object):
                     s += '/sbin/cirros-dhcpc up eth%s\n' % nic
                 else:
                     s += '/sbin/ip link set eth%s up\n' % nic
-                    if self.parent_test.get_network_subnet(network, 6):
+                    if self.parent.get_network_subnet(network, 6):
                         s += '/bin/sleep 2\n'  # TODO(OPENSTACK-2666) this is
-                        #                         current low-cost approach
-                        #                         for v6 DAD to complete, but
-                        #                         is platform-dependent
+                        #                           current low-cost approach
+                        #                              for v6 DAD to complete,
+                        #                           but is platform-dependent
                         s += '/sbin/dhclient -1 -6 eth%s\n' % nic
-                    if self.parent_test.get_network_subnet(network, 4):
+                    if self.parent.get_network_subnet(network, 4):
                         s += '/sbin/dhclient -1 eth%s\n' % nic
         return s
 
     def ping(self, destination, count=3, interface=None, should_pass=True):
-        self.complete_prepare_for_connectivity()
-        # destination readiness is invoker's responsibility!
-
         passed = self.console().ping(destination, count, interface)
         return should_pass == passed
 
@@ -586,10 +607,6 @@ class TenantServer(object):
         :param max_time_to_retry: retry until this timer expires
         :return: Output or False on failure
         """
-
-        self.complete_prepare_for_connectivity()
-        # destination readiness is invoker's responsibility!
-
         command = ('curl {ipv6} -g --max-time {max_wait} {source_port} '
                    'http://{destination_ip}:{destination_port}'
                    .format(ipv6='-6' if destination_ip.version == 6 else '',

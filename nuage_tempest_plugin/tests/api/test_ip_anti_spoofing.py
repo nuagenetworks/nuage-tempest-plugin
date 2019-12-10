@@ -16,7 +16,6 @@ from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.tests.api.external_id.external_id import ExternalId
 
 CONF = Topology.get_conf()
-LOG = Topology.get_logger(__name__)
 
 
 # Enum for the IP MAC anti spoofing or VIP creation actions
@@ -380,11 +379,9 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
         # port-security-enabled set to False
 
         if in_rule is None:
-            LOG.debug('getting ingress rules')
             in_rule = self.vsd.get_ingress_acl_entry(
                 vspk_filter='locationID == "{}"'.format(vsd_pg.id))
         if eg_rule is None:
-            LOG.debug('getting egress rules')
             eg_rule = self.vsd.get_egress_acl_entry(
                 vspk_filter='locationID == "{}"'.format(vsd_pg.id))
 

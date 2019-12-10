@@ -144,9 +144,9 @@ class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
         name = data_utils.rand_name('test-NuagePATAndRouteUnderlayDomain-')
 
         router = self.create_router(
-            client=self.admin_manager,
+            manager=self.admin_manager,
             router_name=name,
-            external_network_id=CONF.network.public_network_id,
+            external_network_id=self.ext_net_id,
             enable_snat=enable_snat,
             external_gateway_info_on=enable_snat is not None,
             nuage_underlay=nuage_underlay)
@@ -187,17 +187,17 @@ class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
                                  underlay_enabled):
         name = data_utils.rand_name('test-NuagePATAndRouteUnderlayDomain-')
         router = self.create_router(
-            client=self.admin_manager,
+            manager=self.admin_manager,
             router_name=name,
-            external_network_id=CONF.network.public_network_id,
+            external_network_id=self.ext_net_id,
             enable_snat=enable_snat,
             external_gateway_info_on=enable_snat is not None,
             nuage_underlay=nuage_underlay
         )
         self.assertIsNotNone(router, "Unable to create router.")
         updated = self.update_router(
-            router, client=self.admin_manager,
-            external_network_id=CONF.network.public_network_id,
+            router, manager=self.admin_manager,
+            external_network_id=self.ext_net_id,
             enable_snat=update_enable_snat,
             external_gateway_info_on=update_enable_snat is not None,
             nuage_underlay=update_nuage_underlay)
@@ -238,8 +238,8 @@ class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
         name = data_utils.rand_name('test-NuagePATAndRouteUnderlayDomain-')
         router = self.create_router(
             router_name=name,
-            client=self.admin_manager,
-            external_network_id=CONF.network.public_network_id,
+            manager=self.admin_manager,
+            external_network_id=self.ext_net_id,
             enable_snat=enable_snat,
             external_gateway_info_on=enable_snat is not None,
             nuage_underlay=nuage_underlay)
@@ -248,8 +248,8 @@ class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
             exceptions.BadRequest,
             self.update_router,
             router,
-            client=self.admin_manager,
-            external_network_id=CONF.network.public_network_id,
+            manager=self.admin_manager,
+            external_network_id=self.ext_net_id,
             enable_snat=update_enable_snat,
             external_gateway_info_on=update_enable_snat is not None,
             nuage_underlay=update_nuage_underlay)
@@ -261,16 +261,16 @@ class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
                                             pat_enabled, underlay_enabled):
         name = data_utils.rand_name('test-NuagePATAndRouteUnderlayDomain-')
         router = self.create_router(
-            client=self.admin_manager,
+            manager=self.admin_manager,
             router_name=name,
-            external_network_id=CONF.network.public_network_id,
+            external_network_id=self.ext_net_id,
             external_gateway_info_on=enable_snat is not None,
             enable_snat=enable_snat,
             nuage_underlay=nuage_underlay)
         self.assertIsNotNone(router, "Unable to create router.")
         name = data_utils.rand_name('test-NuagePATAndRouteUnderlayDomain2-')
         updated = self.update_router(
-            router, client=self.admin_manager,
+            router, manager=self.admin_manager,
             external_gateway_info_on=False,
             name=name)
         self.assertIsNotNone(updated,
@@ -311,16 +311,16 @@ class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
                                              no_op_enable_snat):
         name = data_utils.rand_name('test-NuagePATAndRouteUnderlayDomain-')
         router = self.create_router(
-            client=self.admin_manager,
+            manager=self.admin_manager,
             router_name=name,
-            external_network_id=CONF.network.public_network_id,
+            external_network_id=self.ext_net_id,
             external_gateway_info_on=enable_snat is not None,
             enable_snat=enable_snat,
             nuage_underlay=nuage_underlay)
         self.assertIsNotNone(router, "Unable to create router.")
         updated = self.update_router(
-            router, client=self.admin_manager,
-            external_network_id=CONF.network.public_network_id,
+            router, manager=self.admin_manager,
+            external_network_id=self.ext_net_id,
             external_gateway_info_on=no_op_enable_snat is not None,
             enable_snat=no_op_enable_snat,
             nuage_underlay=no_op_nuage_underlay)

@@ -15,6 +15,8 @@ LOG = Topology.get_logger(__name__)
 
 class Ipv4L2VsdManagedConnectivityTest(NuageBaseTest):
 
+    default_prepare_for_connectivity = True
+
     def _test_icmp_connectivity_l2_vsd_managed(self, stateful):
         # Provision VSD managed network resources
         l2domain_template = self.vsd_create_l2domain_template(
@@ -45,6 +47,8 @@ class Ipv4L2VsdManagedConnectivityTest(NuageBaseTest):
 
 class Ipv4L3VsdManagedConnectivityTest(NuageBaseTest):
 
+    default_prepare_for_connectivity = True
+
     @staticmethod
     def get_static_route_data(remote_cidr, local_gw, nic):
         # no static route needed if l3domain has aggregateflows disabled on vsd
@@ -62,7 +66,7 @@ class Ipv4L3VsdManagedConnectivityTest(NuageBaseTest):
 
         # Provision OpenStack network linked to VSD network resources
         network = self.create_network()
-        self.create_l3_vsd_managed_subnet(network, vsd_l3domain, vsd_subnet)
+        self.create_l3_vsd_managed_subnet(network, vsd_subnet)
         return vsd_l3domain, network
 
     def _test_icmp_connectivity_l3_vsd_managed(self, stateful):
@@ -150,7 +154,6 @@ class Ipv4L3VsdManagedConnectivityTest(NuageBaseTest):
 
         # Launch tenant servers in OpenStack network
         server2 = self.create_tenant_server([network2],
-                                            prepare_for_connectivity=True,
                                             user_data=user_data2)
         server1 = self.create_tenant_server([network1],
                                             prepare_for_connectivity=True,
@@ -166,10 +169,11 @@ class Ipv4L3VsdManagedConnectivityTest(NuageBaseTest):
         ingress_tpl, egress_tpl = self.vsd.create_acl_templates(vsd_l3domain)
 
         # Launch tenant servers in OpenStack network
-        client_server = self.create_tenant_server(
-            [network], prepare_for_connectivity=True)
         web_server = self.create_tenant_server(
             [network], prepare_for_connectivity=True)
+        client_server = self.create_tenant_server(
+            [network], prepare_for_connectivity=True)
+
         self.vsd.define_ssh_acl(ingress_tpl=ingress_tpl, egress_tpl=egress_tpl,
                                 stateful=True)
         self.start_web_server(web_server, port=80)
@@ -204,10 +208,11 @@ class Ipv4L3VsdManagedConnectivityTest(NuageBaseTest):
         ingress_tpl, egress_tpl = self.vsd.create_acl_templates(vsd_l3domain)
 
         # Launch tenant servers in OpenStack network
-        client_server = self.create_tenant_server(
-            [network], prepare_for_connectivity=True)
         web_server = self.create_tenant_server(
             [network], prepare_for_connectivity=True)
+        client_server = self.create_tenant_server(
+            [network], prepare_for_connectivity=True)
+
         self.vsd.define_ssh_acl(ingress_tpl=ingress_tpl, egress_tpl=egress_tpl,
                                 stateful=False)
         self.start_web_server(web_server, port=80)
@@ -218,10 +223,10 @@ class Ipv4L3VsdManagedConnectivityTest(NuageBaseTest):
                                      destination_port=80,
                                      ip_version=4,
                                      network_name=network['name'])
-        client_port = self.osc_get_server_port_in_network(client_server,
+        client_port = self.get_server_port_in_network(client_server,
+                                                      network)
+        web_server_port = self.get_server_port_in_network(web_server,
                                                           network)
-        web_server_port = self.osc_get_server_port_in_network(web_server,
-                                                              network)
         client_pg = self.vsd.create_policy_group(vsd_l3domain,
                                                  name="client_pg")
         web_server_pg = self.vsd.create_policy_group(vsd_l3domain,

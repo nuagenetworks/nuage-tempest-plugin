@@ -21,13 +21,15 @@ CONF = Topology.get_conf()
 
 class NuagePatToUnderlayScenarioTest(NuageBaseTest):
 
+    # leaving default_prepare_for_connectivity to False!
+
     def _test_pat_to_underlay_up_to_hv(self, nuage_underlay, should_succeed):
         # Provision OpenStack network resources
         network = self.create_network()
         subnet = self.create_subnet(network)
         router = self.create_router(
             nuage_underlay=nuage_underlay,
-            external_network_id=CONF.network.public_network_id)
+            external_network_id=self.ext_net_id)
         self.router_attach(router, subnet)
         security_group = self.create_open_ssh_security_group()
         port = self.create_port(network,

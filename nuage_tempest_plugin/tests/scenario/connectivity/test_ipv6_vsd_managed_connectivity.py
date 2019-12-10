@@ -15,6 +15,8 @@ CONF = Topology.get_conf()
 
 class Ipv6L2VsdManagedConnectivityTest(NuageBaseTest):
 
+    default_prepare_for_connectivity = True
+
     def _test_icmp_connectivity_l2_vsd_managed_pure_v6(self, stateful):
         # Provision VSD managed network resources
         l2domain_template = self.vsd_create_l2domain_template(
@@ -34,8 +36,7 @@ class Ipv6L2VsdManagedConnectivityTest(NuageBaseTest):
 
         # Launch tenant servers in OpenStack network
         server2 = self.create_tenant_server(
-            [network],
-            prepare_for_connectivity=True)
+            [network])
 
         server1 = self.create_tenant_server(
             [network],
@@ -87,6 +88,8 @@ class Ipv6L2VsdManagedConnectivityTest(NuageBaseTest):
 
 class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
 
+    default_prepare_for_connectivity = True
+
     @staticmethod
     def get_static_route_data(remote_cidr, local_gw, nic):
         # no static route needed if l3domain has aggregateflows disabled on vsd
@@ -108,7 +111,7 @@ class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
         # Provision OpenStack network linked to VSD network resources
         network = self.create_network()
         self.create_l3_vsd_managed_subnet(
-            network, vsd_l3domain, vsd_l3domain_subnet1, ip_version=6)
+            network, vsd_l3domain_subnet1, ip_version=6)
         return network, vsd_l3domain
 
     def _test_icmp_connectivity_l3_vsd_managed_pure_v6(self, stateful):
@@ -142,10 +145,10 @@ class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
         # Provision OpenStack network linked to VSD network resources
         network6_1 = self.create_network()
         self.create_l3_vsd_managed_subnet(
-            network6_1, vsd_l3domain, vsd_l3domain_subnet6_1, ip_version=6)
+            network6_1, vsd_l3domain_subnet6_1, ip_version=6)
         network6_2 = self.create_network()
         self.create_l3_vsd_managed_subnet(
-            network6_2, vsd_l3domain, vsd_l3domain_subnet6_2, ip_version=6)
+            network6_2, vsd_l3domain_subnet6_2, ip_version=6)
 
         jump_network = self.create_network()
         jump_subnet = self.create_subnet(jump_network)
@@ -168,8 +171,7 @@ class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
 
         # Launch tenant servers in OpenStack network
         server2 = self.create_tenant_server(
-            ports=[j_port_2, port6_2],
-            prepare_for_connectivity=True)
+            ports=[j_port_2, port6_2])
 
         server1 = self.create_tenant_server(
             ports=[j_port_1, port6_1],
@@ -213,7 +215,7 @@ class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
         # v4
         kwargs = {'allocation_pools': [pool4]} if pool4 else {}
         ipv4_subnet = self.create_l3_vsd_managed_subnet(
-            network, vsd_domain, vsd_subnet, gateway=gateway4, **kwargs)
+            network, vsd_subnet, gateway=gateway4, **kwargs)
         self.assertEqual(str(cidr4), ipv4_subnet['cidr'])
         if pool4:
             subnet_pool4 = ipv4_subnet['allocation_pools']
@@ -223,7 +225,7 @@ class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
         # v6
         kwargs = {'allocation_pools': [pool6]} if pool6 else {}
         ipv6_subnet = self.create_l3_vsd_managed_subnet(
-            network, vsd_domain, vsd_subnet, dhcp_managed=False, ip_version=6,
+            network, vsd_subnet, dhcp_managed=False, ip_version=6,
             gateway=gateway6, **kwargs)
         self.assertEqual(str(cidr6), ipv6_subnet['cidr'])
         if pool6:
@@ -404,7 +406,6 @@ class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
 
         # Launch tenant servers in OpenStack network
         server2 = self.create_tenant_server([network2],
-                                            prepare_for_connectivity=True,
                                             user_data=user_data2)
         server1 = self.create_tenant_server([network1],
                                             prepare_for_connectivity=True,
@@ -472,8 +473,7 @@ class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
             nuagenet=vsd_subnet2.id, ip_version=6)
 
         # Launch tenant servers in OpenStack network
-        server2 = self.create_tenant_server([network2],
-                                            prepare_for_connectivity=True)
+        server2 = self.create_tenant_server([network2])
         server1 = self.create_tenant_server([network1],
                                             prepare_for_connectivity=True)
 
@@ -487,10 +487,11 @@ class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
         ingress_tpl, egress_tpl = self.vsd.create_acl_templates(vsd_l3domain)
 
         # Launch tenant servers in OpenStack network
-        client_server = self.create_tenant_server(
-            [network], prepare_for_connectivity=True)
         web_server = self.create_tenant_server(
             [network], prepare_for_connectivity=True)
+        client_server = self.create_tenant_server(
+            [network], prepare_for_connectivity=True)
+
         self.vsd.define_ssh_acl(ingress_tpl=ingress_tpl, egress_tpl=egress_tpl)
         self.start_web_server(web_server, port=80)
 
@@ -525,11 +526,13 @@ class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
 
         client_port = self.create_port(network)
         web_server_port = self.create_port(network)
+
         # Launch tenant servers in OpenStack network
-        client_server = self.create_tenant_server(
-            ports=[client_port], prepare_for_connectivity=True)
         web_server = self.create_tenant_server(
             ports=[web_server_port], prepare_for_connectivity=True)
+        client_server = self.create_tenant_server(
+            ports=[client_port], prepare_for_connectivity=True)
+
         self.vsd.define_ssh_acl(ingress_tpl=ingress_tpl, egress_tpl=egress_tpl,
                                 stateful=False)
         self.start_web_server(web_server, port=80)

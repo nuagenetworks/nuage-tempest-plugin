@@ -11,6 +11,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 import random
 from tempest.lib.common.utils import data_utils
 
@@ -18,7 +19,6 @@ from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils.ovs import FlowQuery
 from nuage_tempest_plugin.tests.e2e.e2e_base_test import E2eTestBase
-
 
 CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
@@ -76,7 +76,7 @@ class BaseTestCase(object):
 
             if self.is_l3:
                 self.router = self.create_router(
-                    external_network_id=CONF.network.public_network_id)
+                    external_network_id=self.ext_net_id)
 
             for ip_version in self.ip_versions:
                 subnet = self.create_subnet(self.network,
@@ -85,19 +85,18 @@ class BaseTestCase(object):
                     self.router_attach(self.router, subnet)
 
             self.sg = self.create_open_ssh_security_group(
-                client=self.admin_manager)
-            sgr_client = self.admin_manager.security_group_rules_client
+                manager=self.admin_manager)
 
             for ip_version in self.ip_versions:
                 self.create_tcp_rule(self.sg, direction='ingress',
                                      ip_version=ip_version,
-                                     sec_group_rules_client=sgr_client)
+                                     manager=self.admin_manager)
                 self.create_tcp_rule(self.sg, direction='egress',
                                      ip_version=ip_version,
-                                     sec_group_rules_client=sgr_client)
+                                     manager=self.admin_manager)
 
             self.default_port_args = dict(network=self.network,
-                                          client=self.admin_manager,
+                                          manager=self.admin_manager,
                                           security_groups=[self.sg['id']])
             self.virtio_port_args = dict(VIRTIO_ARGS, **self.default_port_args)
 
@@ -261,7 +260,7 @@ class BaseTestCase(object):
                 ports=[to_port],
                 availability_zone='nova:' + hv,
                 prepare_for_connectivity=True,
-                client=self.admin_manager,
+                manager=self.admin_manager,
                 start_web_server=True,
                 name=data_utils.rand_name('test-server-offload'),
                 **self._get_server_extra_args())
@@ -270,7 +269,7 @@ class BaseTestCase(object):
                 ports=[from_port],
                 availability_zone='nova:' + hv,
                 prepare_for_connectivity=True,
-                client=self.admin_manager,
+                manager=self.admin_manager,
                 name=data_utils.rand_name('test-server-offload-fip'),
                 **self._get_server_extra_args())
 
@@ -295,7 +294,7 @@ class BaseTestCase(object):
                 ports=[to_port],
                 availability_zone='nova:' + hv1,
                 prepare_for_connectivity=True,
-                client=self.admin_manager,
+                manager=self.admin_manager,
                 start_web_server=True,
                 name=data_utils.rand_name('test-server-offload'),
                 **self._get_server_extra_args())
@@ -304,7 +303,7 @@ class BaseTestCase(object):
                 ports=[from_port],
                 availability_zone='nova:' + hv0,
                 prepare_for_connectivity=True,
-                client=self.admin_manager,
+                manager=self.admin_manager,
                 name=data_utils.rand_name('test-server-offload-fip'),
                 **self._get_server_extra_args())
 
@@ -325,7 +324,7 @@ class BaseTestCase(object):
                 ports=[to_port],
                 availability_zone='nova:' + hv,
                 prepare_for_connectivity=True,
-                client=self.admin_manager,
+                manager=self.admin_manager,
                 start_web_server=True,
                 name=data_utils.rand_name('test-server-offload'),
                 **self._get_server_extra_args())
@@ -334,7 +333,7 @@ class BaseTestCase(object):
                 ports=[from_port],
                 availability_zone='nova:' + hv,
                 prepare_for_connectivity=True,
-                client=self.admin_manager,
+                manager=self.admin_manager,
                 name=data_utils.rand_name('test-server-offload-fip'),
                 **self._get_server_extra_args())
 
@@ -360,7 +359,7 @@ class BaseTestCase(object):
                 ports=[to_port],
                 availability_zone='nova:' + hv1,
                 prepare_for_connectivity=True,
-                client=self.admin_manager,
+                manager=self.admin_manager,
                 start_web_server=True,
                 name=data_utils.rand_name('test-server-offload'),
                 **self._get_server_extra_args())
@@ -369,7 +368,7 @@ class BaseTestCase(object):
                 ports=[from_port],
                 availability_zone='nova:' + hv0,
                 prepare_for_connectivity=True,
-                client=self.admin_manager,
+                manager=self.admin_manager,
                 name=data_utils.rand_name('test-server-offload-fip'),
                 **self._get_server_extra_args())
 
@@ -390,7 +389,7 @@ class BaseTestCase(object):
                 ports=[to_port],
                 availability_zone='nova:' + hv,
                 prepare_for_connectivity=True,
-                client=self.admin_manager,
+                manager=self.admin_manager,
                 start_web_server=True,
                 name=data_utils.rand_name('test-server-offload'),
                 **self._get_server_extra_args())
@@ -399,7 +398,7 @@ class BaseTestCase(object):
                 ports=[from_port],
                 availability_zone='nova:' + hv,
                 prepare_for_connectivity=True,
-                client=self.admin_manager,
+                manager=self.admin_manager,
                 name=data_utils.rand_name('test-server-offload-fip'),
                 **self._get_server_extra_args())
 
@@ -425,7 +424,7 @@ class BaseTestCase(object):
                 ports=[to_port],
                 availability_zone='nova:' + hv1,
                 prepare_for_connectivity=True,
-                client=self.admin_manager,
+                manager=self.admin_manager,
                 start_web_server=True,
                 name=data_utils.rand_name('test-server-offload'),
                 **self._get_server_extra_args())
@@ -434,7 +433,7 @@ class BaseTestCase(object):
                 ports=[from_port],
                 availability_zone='nova:' + hv0,
                 prepare_for_connectivity=True,
-                client=self.admin_manager,
+                manager=self.admin_manager,
                 name=data_utils.rand_name('test-server-offload-fip'),
                 **self._get_server_extra_args())
 
@@ -461,7 +460,7 @@ class BaseTestCase(object):
                 ports=[to_port],
                 availability_zone='nova:' + hv1,
                 prepare_for_connectivity=True,
-                client=self.admin_manager,
+                manager=self.admin_manager,
                 start_web_server=True,
                 name=data_utils.rand_name('test-server-offload'),
                 **self._get_server_extra_args())
@@ -470,7 +469,7 @@ class BaseTestCase(object):
                 ports=[from_port],
                 availability_zone='nova:' + hv0,
                 prepare_for_connectivity=True,
-                client=self.admin_manager,
+                manager=self.admin_manager,
                 name=data_utils.rand_name('test-server-offload-fip'),
                 **self._get_server_extra_args())
 

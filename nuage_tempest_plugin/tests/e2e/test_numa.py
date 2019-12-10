@@ -119,8 +119,8 @@ class NUMATest(NuageBaseTest):
                                                             total=vm_count))
             self.create_tenant_server(
                 flavor=new_flavor['id'],
-                ports=[self.create_port(network, client=self.admin_manager)],
+                ports=[self.create_port(network, manager=self.admin_manager)],
                 availability_zone=(
                     'nova:{host}'.format(host=numa_hv['hypervisor_hostname'])),
                 wait_until='ACTIVE',
-                client=self.admin_manager)
+                manager=self.admin_manager)

@@ -16,7 +16,8 @@ LOG = Topology.get_logger(__name__)
 
 
 class VlanTransparentConnectivityTest(NuageBaseTest):
-    _interface = 'json'
+
+    default_prepare_for_connectivity = True
 
     @classmethod
     def setup_clients(cls):
@@ -67,7 +68,7 @@ class VlanTransparentConnectivityTest(NuageBaseTest):
         kwargs = {
             'vlan_transparent': 'true'
         }
-        router = self.create_test_router()
+        router = self.create_public_router()
         network = self.create_network(**kwargs)
         subnet = self.create_subnet(network)
         self.router_attach(router, subnet)
@@ -78,13 +79,11 @@ class VlanTransparentConnectivityTest(NuageBaseTest):
         vm1 = self.create_tenant_server(
             [network],
             security_groups=[ssh_security_group],
-            name='vm1',
             prepare_for_connectivity=True)
 
         vm2 = self.create_tenant_server(
             [network],
             security_groups=[ssh_security_group],
-            name='vm2',
             prepare_for_connectivity=True)
 
         vm1_ip = '13.13.13.13/24'

@@ -73,7 +73,7 @@ class BaseVSDManagedSRIOV(
             'mask_bits': cidr.prefixlen,
             'net_partition': Topology.def_netpartition,
             'nuagenet': vsd_subnet[0]['ID'],
-            'client': cls.os_admin
+            'manager': cls.os_admin
         }
         return cls.create_cls_subnet(**kwargs)
 
@@ -87,8 +87,7 @@ class BaseVSDManagedSRIOV(
         network_name = data_utils.rand_name(name)
         kwargs = {'description': 'sriov parent dummy network',
                   'segments': segments_req}
-        return cls.create_cls_network(network_name,
-                                      cls.os_admin.networks_client,
+        return cls.create_cls_network(network_name, manager=cls.os_admin,
                                       **kwargs)
 
     @classmethod
@@ -102,8 +101,7 @@ class BaseVSDManagedSRIOV(
         network_name = data_utils.rand_name(name)
         kwargs = {'description': 'sriov overlay vlan network',
                   'segments': segments_req}
-        return cls.create_cls_network(network_name,
-                                      cls.os_admin.networks_client,
+        return cls.create_cls_network(network_name, manager=cls.os_admin,
                                       **kwargs)
 
     def sriov_port_create(
@@ -111,7 +109,7 @@ class BaseVSDManagedSRIOV(
         kwargs = {
             'name': port_name,
             'binding:vnic_type': vnic_type,
-            'client': self.os_admin
+            'manager': self.os_admin
         }
         return self.create_port(network, **kwargs)
 

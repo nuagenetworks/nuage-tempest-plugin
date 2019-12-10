@@ -21,18 +21,18 @@ class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
         go into the same domain
         """
         kwargs = {'router:external': True}
-        n1 = self.create_network(client=self.admin_manager, **kwargs)
-        n2 = self.create_network(client=self.admin_manager, **kwargs)
+        n1 = self.create_network(manager=self.admin_manager, **kwargs)
+        n2 = self.create_network(manager=self.admin_manager, **kwargs)
         s1 = self.create_subnet(n1, cidr=IPNetwork('10.0.0.0/24'),
                                 mask_bits=24, underlay=False,
-                                client=self.admin_manager)
+                                manager=self.admin_manager)
         s2 = self.create_subnet(n2, cidr=IPNetwork('20.0.0.0/24'),
                                 mask_bits=24, underlay=False,
                                 nuage_uplink=s1['nuage_uplink'],
-                                client=self.admin_manager)
+                                manager=self.admin_manager)
         s3 = self.create_subnet(n2, cidr=IPNetwork('30.0.0.0/24'),
                                 mask_bits=24, underlay=False,
-                                client=self.admin_manager)
+                                manager=self.admin_manager)
         self.assertEqual(s1['nuage_uplink'], s2['nuage_uplink'],
                          "Subnet not created with provided nuage_uplink")
         self.assertEqual(s2['nuage_uplink'], s3['nuage_uplink'],
@@ -47,10 +47,10 @@ class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
         created where all subsequent subnets go into
         """
         kwargs = {'router:external': True}
-        n1 = self.create_network(client=self.admin_manager, **kwargs)
+        n1 = self.create_network(manager=self.admin_manager, **kwargs)
         s1 = self.create_subnet(n1, cidr=IPNetwork('10.0.0.0/24'),
                                 mask_bits=24, underlay=False,
-                                client=self.admin_manager)
+                                manager=self.admin_manager)
         # No more than one domain should be found in the zone
         # Make sure session is initialized
         self.vsd.session()
@@ -60,7 +60,7 @@ class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
                                           "should be exactly 1.")
         s2 = self.create_subnet(n1, cidr=IPNetwork('20.0.0.0/24'),
                                 mask_bits=24, underlay=False,
-                                client=self.admin_manager)
+                                manager=self.admin_manager)
         self.assertEqual(s1['nuage_uplink'], s2['nuage_uplink'],
                          "Subnet not created with implicit same nuage_uplink")
 
@@ -72,17 +72,17 @@ class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
         created using --underlay False
         """
         kwargs = {'router:external': True}
-        n1 = self.create_network(client=self.admin_manager, **kwargs)
+        n1 = self.create_network(manager=self.admin_manager, **kwargs)
         s1 = self.create_subnet(n1, cidr=data_utils.gimme_a_cidr(),
                                 mask_bits=24, underlay=True,
-                                client=self.admin_manager)
+                                manager=self.admin_manager)
         self.assertRaises(
             exceptions.BadRequest,
             self.create_subnet,
             n1, cidr=IPNetwork('20.0.0.0/24'),
             mask_bits=24, underlay=False,
             nuage_uplink=s1['nuage_uplink'],
-            client=self.admin_manager)
+            manager=self.admin_manager)
 
     @decorators.attr(type='smoke')
     def test_nuage_underlay_on(self):
@@ -92,17 +92,17 @@ class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
         go into the same domain.
         """
         kwargs = {'router:external': True}
-        n1 = self.create_network(client=self.admin_manager, **kwargs)
-        n2 = self.create_network(client=self.admin_manager, **kwargs)
+        n1 = self.create_network(manager=self.admin_manager, **kwargs)
+        n2 = self.create_network(manager=self.admin_manager, **kwargs)
         s1 = self.create_subnet(n1, cidr=data_utils.gimme_a_cidr(),
                                 mask_bits=24, underlay=True,
-                                client=self.admin_manager)
+                                manager=self.admin_manager)
         s2 = self.create_subnet(n1, cidr=data_utils.gimme_a_cidr(),
                                 mask_bits=24, underlay=True,
-                                client=self.admin_manager)
+                                manager=self.admin_manager)
         s3 = self.create_subnet(n2, cidr=data_utils.gimme_a_cidr(),
                                 mask_bits=24, underlay=True,
-                                client=self.admin_manager)
+                                manager=self.admin_manager)
         self.assertEqual(s1['nuage_uplink'], s2['nuage_uplink'],
                          "Subnet not going into same underlay domain")
         self.assertEqual(s2['nuage_uplink'], s3['nuage_uplink'],
@@ -117,14 +117,14 @@ class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
         of an existing subnet on the network an error is thrown
         """
         kwargs = {'router:external': True}
-        n1 = self.create_network(client=self.admin_manager, **kwargs)
-        n2 = self.create_network(client=self.admin_manager, **kwargs)
+        n1 = self.create_network(manager=self.admin_manager, **kwargs)
+        n2 = self.create_network(manager=self.admin_manager, **kwargs)
         s1 = self.create_subnet(n1, cidr=IPNetwork('10.0.0.0/24'),
                                 mask_bits=24, underlay=False,
-                                client=self.admin_manager)
+                                manager=self.admin_manager)
         self.create_subnet(n2, cidr=IPNetwork('20.0.0.0/24'),
                            mask_bits=24, underlay=False,
-                           client=self.admin_manager)
+                           manager=self.admin_manager)
         # Create subnet in n2 with nuage uplink of n1
         self.assertRaises(
             exceptions.BadRequest,
@@ -132,7 +132,7 @@ class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
             n2, cidr=IPNetwork('30.0.0.0/24'),
             nuage_uplink=s1['nuage_uplink'],
             mask_bits=24, underlay=False,
-            client=self.admin_manager)
+            manager=self.admin_manager)
 
     @decorators.attr(type='smoke')
     def test_nuage_uplink_provided_redundantly(self):
@@ -142,13 +142,13 @@ class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
         parent of an existing subnet on the network no error is thrown.
         """
         kwargs = {'router:external': True}
-        n1 = self.create_network(client=self.admin_manager, **kwargs)
+        n1 = self.create_network(manager=self.admin_manager, **kwargs)
         s1 = self.create_subnet(n1, cidr=IPNetwork('10.0.0.0/24'),
                                 mask_bits=24, underlay=False,
-                                client=self.admin_manager)
+                                manager=self.admin_manager)
         s2 = self.create_subnet(n1, cidr=IPNetwork('20.0.0.0/24'),
                                 mask_bits=24, underlay=False,
-                                client=self.admin_manager)
+                                manager=self.admin_manager)
         self.assertEqual(s1['nuage_uplink'], s2['nuage_uplink'],
                          "Subnet not created with provided nuage_uplink")
 
@@ -163,13 +163,13 @@ class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
             raise self.skipException(
                 'Multiple subnets in a network not supported when DHCP agent '
                 'is enabled.')
-        n1 = self.create_network(client=self.admin_manager)
+        n1 = self.create_network(manager=self.admin_manager)
         s1 = self.create_subnet(n1, cidr=data_utils.gimme_a_cidr(),
                                 mask_bits=24,
-                                client=self.admin_manager)
+                                manager=self.admin_manager)
         s2 = self.create_subnet(n1, cidr=data_utils.gimme_a_cidr(),
                                 mask_bits=24,
-                                client=self.admin_manager)
+                                manager=self.admin_manager)
         filters = {
             'device_owner': 'network:dhcp:nuage',
             'network_id': n1['id']
@@ -178,7 +178,7 @@ class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
         self.assertEqual(2, len(dhcp_ports))
 
         kwargs = {'router:external': True}
-        self.update_network(n1['id'], client=self.admin_manager, **kwargs)
+        self.update_network(n1['id'], manager=self.admin_manager, **kwargs)
 
         dhcp_ports = self.ports_client.list_ports(**filters)['ports']
         self.assertEqual(0, len(dhcp_ports))
@@ -189,8 +189,8 @@ class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
                          "Subnet not created with provided nuage_uplink")
 
     def test_update_network_to_external_with_port(self):
-        n1 = self.create_network(client=self.admin_manager)
-        self.create_port(n1, client=self.admin_manager)
+        n1 = self.create_network(manager=self.admin_manager)
+        self.create_port(n1, manager=self.admin_manager)
         kwargs = {'router:external': True}
         msg = ('Network {} cannot be updated. '
                'There are one or more ports still in '
@@ -200,7 +200,7 @@ class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
             msg,
             self.update_network,
             n1['id'],
-            client=self.admin_manager,
+            manager=self.admin_manager,
             **kwargs)
 
     @decorators.attr(type='smoke')
@@ -213,10 +213,10 @@ class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
         """
         if Topology.from_openstack('ROCKY'):
             kwargs = {'router:external': True}
-            n1 = self.create_network(client=self.admin_manager, **kwargs)
+            n1 = self.create_network(manager=self.admin_manager, **kwargs)
             self.create_subnet(n1, cidr=data_utils.gimme_a_cidr(),
                                mask_bits=24,
-                               client=self.admin_manager)
+                               manager=self.admin_manager)
             kwargs = {'router:external': False}
             msg = ('External network with subnets can not be '
                    'changed to non-external network')
@@ -236,18 +236,18 @@ class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
         in the same network.
         """
         kwargs = {'router:external': True}
-        n1 = self.create_network(client=self.admin_manager, **kwargs)
+        n1 = self.create_network(manager=self.admin_manager, **kwargs)
         s1 = self.create_subnet(n1, cidr=data_utils.gimme_a_cidr(),
                                 mask_bits=24,
-                                client=self.admin_manager)
+                                manager=self.admin_manager)
         s2 = self.create_subnet(n1, cidr=data_utils.gimme_a_cidr(),
                                 mask_bits=24,
-                                client=self.admin_manager)
+                                manager=self.admin_manager)
         self.assertEqual(s1['nuage_uplink'], s2['nuage_uplink'],
                          "Subnet not created in same domain")
         kwargs = {'external_gateway_info':
                   {'network_id': n1['id'],
                    'external_fixed_ips': [{'subnet_id': s1['id']},
                                           {'subnet_id': s2['id']}]}}
-        self.create_router(client=self.admin_manager,
+        self.create_router(manager=self.admin_manager,
                            external_gateway_info_on=False, **kwargs)

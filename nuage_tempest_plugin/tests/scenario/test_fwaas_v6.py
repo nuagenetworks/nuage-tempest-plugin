@@ -28,6 +28,8 @@ LOG = Topology.get_logger(__name__)
 
 class TestFWaaS(fwaas_mixins.FWaaSClientMixin, NuageBaseTest):
 
+    default_prepare_for_connectivity = True
+
     def setUp(self):
         super(TestFWaaS, self).setUp()
         required_exts = ['fwaas', 'security-group', 'router']
@@ -285,7 +287,7 @@ class TestFWaaS(fwaas_mixins.FWaaSClientMixin, NuageBaseTest):
                                     |
                                     | router interface port
                                +----+-----+
-                               | "router given " |
+                               | "router" |
                                +----+-----+
                                     | router gateway port
                                     |

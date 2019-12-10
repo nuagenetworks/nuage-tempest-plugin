@@ -38,6 +38,8 @@ CONFIGURE_VLAN_INTERFACE_COMMANDS = (
 
 
 class TrunkTest(NuageBaseTest):
+
+    default_prepare_for_connectivity = True
     force_tenant_isolation = False
 
     @classmethod

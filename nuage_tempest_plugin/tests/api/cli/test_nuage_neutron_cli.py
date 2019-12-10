@@ -9,8 +9,6 @@ from tempest.lib import decorators
 from nuage_tempest_plugin.lib.cli import client_testcase
 from nuage_tempest_plugin.lib.topology import Topology
 
-LOG = Topology.get_logger(__name__)
-
 
 class TestNuageNeutronCli(client_testcase.CLIClientTestCase):
     """Basic, read-only tests for Neutron CLI client.
@@ -24,14 +22,12 @@ class TestNuageNeutronCli(client_testcase.CLIClientTestCase):
     def test_neutron_debug_net_list(self):
         response = self.cli.neutron('net-list', flags='-v')
         items = self.parser.listing(response)
-        LOG.debug("List with %d items", items.__len__())
         self.assertNotEmpty(items)
 
     @decorators.attr(type='smoke')
     def test_neutron_quiet_net_list(self):
         response = self.cli.neutron('net-list', flags='--quiet')
         items = self.parser.listing(response)
-        LOG.debug("List with %d items", items.__len__())
         self.assertNotEmpty(items)
 
     def test_neutron_nuage_commands_help(self):

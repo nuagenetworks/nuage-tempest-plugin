@@ -27,8 +27,11 @@ Floating_IP_tuple = collections.namedtuple('Floating_IP_tuple',
                                            ['floating_ip', 'server'])
 
 
-# NOTE(KRIS) : This class is used for upgrade testing - leave it in for now
+# NOTE(KRIS) : This class is used in particular testing - leave it in for now
 class NuageNetworkScenarioTest(manager.NetworkScenarioTest):
+
+    default_prepare_for_connectivity = True
+
     def _create_loginable_secgroup_rule(self, security_group_rules_client=None,
                                         secgroup=None,
                                         security_groups_client=None):

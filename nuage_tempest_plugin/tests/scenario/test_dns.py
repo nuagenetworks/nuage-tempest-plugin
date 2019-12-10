@@ -22,6 +22,8 @@ CONF = Topology.get_conf()
 
 class DNSScenarioTest(nuage_test.NuageBaseTest):
 
+    default_prepare_for_connectivity = True
+
     def _test_dns_up_to_vm(self, ip_versions=None, is_l3=None):
         dns = {6: 'cafe:babe:cafe:babe:cafe:babe:cafe:babe',
                4: '1.1.1.1'}

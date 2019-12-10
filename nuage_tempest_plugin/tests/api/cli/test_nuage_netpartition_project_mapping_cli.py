@@ -23,7 +23,6 @@ class TestNuageNetpartitionProjectMappingCLI(CLIClientTestCase):
     @classmethod
     def resource_setup(cls):
         super(TestNuageNetpartitionProjectMappingCLI, cls).resource_setup()
-        cls.ext_net_id = CONF.network.public_network_id
         cls.me = Role.admin
 
     def _verify_mapping(self, mapping, netpartition, project_id):

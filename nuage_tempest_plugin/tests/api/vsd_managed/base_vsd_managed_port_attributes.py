@@ -621,7 +621,7 @@ class BaseVSDManagedPortAttributes(
         subnet = self.create_subnet(**kwargs)
         return network, subnet
 
-    def _create_server(self, name, network_id, port_id=None):
+    def _create_1nic_server(self, name, network_id, port_id=None):
 
         keypair = self.create_keypair()
         self.keypairs[keypair['name']] = keypair
@@ -736,7 +736,7 @@ class BaseVSDManagedPortAttributes(
         return server
         pass
 
-    def _create_vsdmgd_connectivity_VM(self, public_network_id,
+    def _create_vsdmgd_connectivity_vm(self, public_network_id,
                                        vsd_l2_subnet, vsd_l2_port):
         # Create an intermediate VM with FIP and a second nic in the
         # VSD network, so that we can ssh into this VM and check ping on the
@@ -828,9 +828,8 @@ class BaseVSDManagedPortAttributes(
         self.conn_subnet_id = subnet['id']
         self.conn_port_id = port['id']
         return server
-        pass
 
-    def _create_connectivity_VM_vsd_floatingip(self, public_network_id,
+    def _create_connectivity_vm_vsd_floatingip(self, public_network_id,
                                                os_l3_network, os_l3_port,
                                                vsd_l3_subnet, vsd_l3_port,
                                                floatingip):
@@ -873,7 +872,6 @@ class BaseVSDManagedPortAttributes(
         # self.conn_subnet_id = subnet['id']
         # self.conn_port_id = port['id']
         return server
-        pass
 
     def _clear_connectivity_vm_interfaces(self, router_id, subnet_id, port_id):
         # Clear router gateway
@@ -885,7 +883,6 @@ class BaseVSDManagedPortAttributes(
         # remove router-interface
         self.admin_routers_client.remove_router_interface(router_id=router_id,
                                                           subnet_id=subnet_id)
-        pass
 
     def _update_ingress_template_block_traffic(self, iacl_template_id):
         # update the ingress acl template to block all traffic
@@ -895,7 +892,6 @@ class BaseVSDManagedPortAttributes(
         }
         self.nuage_client.update_ingress_acl_template(
             iacl_template_id, extra_params=update_params)
-        pass
 
     def _update_ingress_template_allow_traffic(self, iacl_template_id):
         # update the ingress acl template to allow all traffic
@@ -905,7 +901,6 @@ class BaseVSDManagedPortAttributes(
         }
         self.nuage_client.update_ingress_acl_template(
             iacl_template_id, extra_params=update_params)
-        pass
 
     def _update_egress_template_block_traffic(self, eacl_template_id):
         # update the egress acl template to block all traffic
@@ -915,7 +910,6 @@ class BaseVSDManagedPortAttributes(
         }
         self.nuage_client.update_egress_acl_template(
             eacl_template_id, extra_params=update_params)
-        pass
 
     def _update_egress_template_allow_traffic(self, eacl_template_id):
         # update the egress acl template to allow all traffic
@@ -925,7 +919,6 @@ class BaseVSDManagedPortAttributes(
         }
         self.nuage_client.update_egress_acl_template(
             eacl_template_id, extra_params=update_params)
-        pass
 
     def _get_server_key(self, server):
         return self.keypairs[server['key_name']]['private_key']
@@ -1075,7 +1068,6 @@ class BaseVSDManagedPortAttributes(
             if show_port['port']['nuage_floatingip']['id'] == claimed_fip_id:
                 fip_found = True
         return fip_found
-
 
 ###############################################################################
 #

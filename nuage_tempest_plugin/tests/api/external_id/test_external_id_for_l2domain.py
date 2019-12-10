@@ -425,12 +425,10 @@ class ExternalIdForL2domainAdminTest(ExternalIdForL2domainTest):
         self.assertEqual('ACTIVE', network['status'])
 
         # Create a subnet
-        subnet = self.create_subnet(network,
-                                    client=self.os_admin.subnets_client)
+        subnet = self.create_subnet(network, manager=self.admin_manager)
 
         # Create a second subnet
-        subnet_b = self.create_subnet(
-            network, client=self.os_admin.subnets_client)
+        subnet_b = self.create_subnet(network, manager=self.admin_manager)
 
         vsd_l2domain_a = self.MatchingVsdL2domain(
             self, subnet).get_by_external_id()

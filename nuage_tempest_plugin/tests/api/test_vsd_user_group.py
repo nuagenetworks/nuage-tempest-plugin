@@ -51,13 +51,13 @@ class VSDUserGroup(nuage_test.NuageBaseTest):
                                                validate_equals=True):
         # Provision OpenStack network
         if reload_session:
-            network = self.create_network(client=self.get_client_manager())
+            network = self.create_network(manager=self.get_client_manager())
             ipv4_subnet = self.create_subnet(network,
-                                             client=self.get_client_manager())
+                                             manager=self.get_client_manager())
             value = self.manager.subnets_client.tenant_name + '-update'
         else:
-            network = self.create_network(client=self.manager)
-            ipv4_subnet = self.create_subnet(network, client=self.manager)
+            network = self.create_network(manager=self.manager)
+            ipv4_subnet = self.create_subnet(network, manager=self.manager)
             value = self.manager.subnets_client.tenant_name
         # When I create an IPv4 subnet
         self.assertIsNotNone(ipv4_subnet)
@@ -78,9 +78,9 @@ class VSDUserGroup(nuage_test.NuageBaseTest):
         # Provision OpenStack network
         if reload_session:
             value = self.manager.routers_client.tenant_name + '-update'
-            router = self.create_router(client=self.get_client_manager())
+            router = self.create_router(manager=self.get_client_manager())
         else:
-            router = self.create_router(client=self.manager)
+            router = self.create_router(manager=self.manager)
             value = self.manager.routers_client.tenant_name
         self.assertIsNotNone(router)
         vsd_l3_domain = self.vsd.get_l3domain(

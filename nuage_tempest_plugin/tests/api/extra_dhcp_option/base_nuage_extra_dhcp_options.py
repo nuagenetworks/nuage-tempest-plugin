@@ -238,10 +238,9 @@ class NuageExtraDHCPOptionsBase(base.BaseAdminNetworkTest, NuageBaseTest):
             pass
 
     def _create_port_with_dhcp_opts(self, network_id, extra_dhcp_opts,
-                                    client=None):
-        # allow tests to use admin client
-        if not client:
-            client = self.ports_client
+                                    manager=None):
+        manager = manager or self.manager
+        ports_client = manager.ports_client
 
         name = data_utils.rand_name('extra-dhcp-opt-port-name')
         kwargs = {'name': name,
@@ -252,8 +251,8 @@ class NuageExtraDHCPOptionsBase(base.BaseAdminNetworkTest, NuageBaseTest):
             kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
         if CONF.network.port_profile and 'binding:profile' not in kwargs:
             kwargs['binding:profile'] = CONF.network.port_profile
-        create_body = client.create_port(**kwargs)
-        self.addCleanup(client.delete_port, create_body['port']['id'])
+        create_body = ports_client.create_port(**kwargs)
+        self.addCleanup(ports_client.delete_port, create_body['port']['id'])
 
     def _update_port_with_dhcp_opts(self, port_id, extra_dhcp_opts,
                                     client=None):
@@ -309,9 +308,9 @@ class NuageExtraDHCPOptionsBase(base.BaseAdminNetworkTest, NuageBaseTest):
             vsd_network_id,
             'externalID',
             self.nuage_client.get_vsd_external_id(port_id))
-        vsd_dchp_options = self.nuage_client.get_dhcpoption(
+        vsd_dhcp_options = self.nuage_client.get_dhcpoption(
             constants.VPORT, vports[0]['ID'])
-        self._verify_vsd_extra_dhcp_options(vsd_dchp_options, extra_dhcp_opts)
+        self._verify_vsd_extra_dhcp_options(vsd_dhcp_options, extra_dhcp_opts)
         # update
         name = data_utils.rand_name('new-extra-dhcp-opt-port-name')
         update_body = self.ports_client.update_port(
@@ -323,9 +322,9 @@ class NuageExtraDHCPOptionsBase(base.BaseAdminNetworkTest, NuageBaseTest):
         upd_show_body = self.ports_client.show_port(port_id)
         self._confirm_extra_dhcp_options(upd_show_body['port'],
                                          new_extra_dhcp_opts)
-        vsd_dchp_options = self.nuage_client.get_dhcpoption(
+        vsd_dhcp_options = self.nuage_client.get_dhcpoption(
             constants.VPORT, vports[0]['ID'])
-        self._verify_vsd_extra_dhcp_options(vsd_dchp_options,
+        self._verify_vsd_extra_dhcp_options(vsd_dhcp_options,
                                             new_extra_dhcp_opts)
         pass
 
@@ -366,9 +365,9 @@ class NuageExtraDHCPOptionsBase(base.BaseAdminNetworkTest, NuageBaseTest):
             vsd_network_id,
             'externalID',
             self.nuage_client.get_vsd_external_id(port_id))
-        vsd_dchp_options = self.nuage_client.get_dhcpoption(
+        vsd_dhcp_options = self.nuage_client.get_dhcpoption(
             constants.VPORT, vports[0]['ID'])
-        self._verify_vsd_extra_dhcp_options(vsd_dchp_options, extra_dhcp_opts)
+        self._verify_vsd_extra_dhcp_options(vsd_dhcp_options, extra_dhcp_opts)
 
         # Delete DHCP port
         new_extra_dhcp_opts = [
@@ -383,9 +382,9 @@ class NuageExtraDHCPOptionsBase(base.BaseAdminNetworkTest, NuageBaseTest):
         upd_show_body = self.ports_client.show_port(port_id)
         self._confirm_extra_dhcp_options(upd_show_body['port'],
                                          [])
-        vsd_dchp_options = self.nuage_client.get_dhcpoption(
+        vsd_dhcp_options = self.nuage_client.get_dhcpoption(
             constants.VPORT, vports[0]['ID'])
-        self._verify_vsd_extra_dhcp_options(vsd_dchp_options,
+        self._verify_vsd_extra_dhcp_options(vsd_dhcp_options,
                                             [])
         pass
 
@@ -410,7 +409,8 @@ class NuageExtraDHCPOptionsBase(base.BaseAdminNetworkTest, NuageBaseTest):
                           str(retrieved_option))
 
     # function to be able to convert the value in to a VSD supported hex format
-    def _convert_to_hex(self, value):
+    @staticmethod
+    def _convert_to_hex(value):
         hex_val = str(value[2:])
         if len(hex_val) % 2 != 0:
             length = len(hex_val) + 1
@@ -419,7 +419,8 @@ class NuageExtraDHCPOptionsBase(base.BaseAdminNetworkTest, NuageBaseTest):
         hex_val = hex_val.zfill(length)
         return hex_val
 
-    def _convert_netbios_type(self, value):
+    @staticmethod
+    def _convert_netbios_type(value):
         if value == '0x1':
             result = 'B-node'
         elif value == '0x2':

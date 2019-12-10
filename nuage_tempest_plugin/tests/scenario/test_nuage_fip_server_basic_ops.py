@@ -86,6 +86,8 @@ class TestNetworkBasicOps(
        'public_network_id' as its gateway.
     """
 
+    default_prepare_for_connectivity = True
+
     @classmethod
     def skip_checks(cls):
         super(TestNetworkBasicOps, cls).skip_checks()
@@ -145,17 +147,7 @@ class TestNetworkBasicOps(
             port_id=self.port_id,
             nuage_fip_rate=FIP_RATE_LIMIT)
         self.floating_ips.append(result['floatingip'])
-
-        # QA REPO --  does NOT work on dev repo - no net_resources attr
-        # convert to format used throughout this file
-        # floating_ip = self.net_resources.DeletableFloatingIp(
-        #     client=self.os_primary.floating_ips_client,
-        #     **result['floatingip'])
-        # QA repo
-
-        # DEV REPO start
         floating_ip = result['floatingip']
-        # DEV REPO end
 
         self.floating_ip_tuple = Floating_IP_tuple(floating_ip, server)
 

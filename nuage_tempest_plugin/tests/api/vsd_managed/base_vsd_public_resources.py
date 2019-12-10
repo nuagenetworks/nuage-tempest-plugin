@@ -325,16 +325,11 @@ class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
             kwargs['gateway'] = gateway_ip
 
         if os_shared_network:
-            kwargs['client'] = self.os_admin
+            kwargs['manager'] = self.os_admin
 
         if must_fail:
-            if Topology.before_openstack('Newton'):
-                failure_type = exceptions.ServerFault
-            else:
-                failure_type = exceptions.BadRequest
-
             self.assertRaises(
-                failure_type,
+                exceptions.BadRequest,
                 self.create_subnet,
                 **kwargs)
         else:
@@ -376,8 +371,9 @@ class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
                                scenario)
 
         # When I spin a VM
-        vm = self._create_server(name=data_utils.rand_name('vm-l2um-l2shum'),
-                                 network=network)
+        vm = self.create_tenant_server(
+            [network],
+            name=data_utils.rand_name('vm-l2um-l2shum')).get_server_details()
         # Then the IP address is in the CIDR range
         vm_ip_addr = vm['addresses'][network['name']][0]['addr']
         self.assertEqual(IPAddress(vm_ip_addr) in cidr, True,
@@ -435,8 +431,9 @@ class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
                                scenario)
 
         # When I spin a VM
-        vm = self._create_server(name=data_utils.rand_name('vm-l2um-l2shum'),
-                                 network=network)
+        vm = self.create_tenant_server(
+            [network],
+            name=data_utils.rand_name('vm-l2um-l2shum')).get_server_details()
         # Then the IP address is in the CIDR range
         vm_ip_addr = vm['addresses'][network['name']][0]['addr']
         self.assertEqual(IPAddress(vm_ip_addr) in cidr, True,
@@ -478,7 +475,3 @@ class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
             self.assertEqual(tenant_id, rule['tenant_id'])
             self.assertEqual(secgroup['id'], rule['security_group_id'])
         return secgroup
-
-    def _create_server(self, name, network):
-        vm = self.create_tenant_server([network], name=name)
-        return vm.get_server_details()

@@ -40,14 +40,11 @@ class OrchestrationServerTest(nuage_base.NuageBaseOrchestrationTest):
 
     @decorators.attr(type=['smoke'])
     def test_servers_in_new_neutron_net_nokey(self):
-        # ext_net_id = self.public_net['id']
-        ext_net_id = CONF.network.public_network_id
-
         stack_file_name = 'servers_in_new_neutron_net_nokey'
         stack_parameters = {
             'image': CONF.compute.image_ref,
             'flavor': CONF.compute.flavor_ref,
-            'public_net': ext_net_id,
+            'public_net': self.ext_net_id,
             'private_net_name': "servers_in_new_neutron_net_nokey-net",
             'private_net_cidr': "8.7.6.0/24"}
         self.launch_stack(stack_file_name, stack_parameters)

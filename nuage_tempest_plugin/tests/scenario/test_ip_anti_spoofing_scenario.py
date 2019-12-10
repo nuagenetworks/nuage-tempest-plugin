@@ -10,6 +10,8 @@ class IpAntiSpoofingTestScenario(antispoof.IpAntiSpoofingTestBase,
                                  manager.NetworkScenarioTest,
                                  serv_base.BaseV2ComputeTest):
 
+    default_prepare_for_connectivity = True
+
     @classmethod
     def skip_checks(cls):
         super(IpAntiSpoofingTestScenario, cls).skip_checks()

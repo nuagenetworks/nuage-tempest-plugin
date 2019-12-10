@@ -46,7 +46,7 @@ class OrchestrationNeutronResourcesTest(nuage_base.NuageBaseOrchestrationTest):
         template = cls.read_template('nuage_neutron_basic')
         cls.keypair_name = (CONF.heat_plugin.keypair_name or
                             cls._create_keypair()['name'])
-        cls.external_network_id = CONF.network.public_network_id
+        cls.ext_net_id = CONF.network.public_network_id
 
         tenant_cidr = netaddr.IPNetwork(CONF.network.project_network_cidr)
         mask_bits = CONF.network.project_network_mask_bits
@@ -60,7 +60,7 @@ class OrchestrationNeutronResourcesTest(nuage_base.NuageBaseOrchestrationTest):
                 'KeyName': cls.keypair_name,
                 'Flavor': CONF.compute.flavor_ref,
                 'ImageId': CONF.compute.image_ref,
-                'ExternalNetworkId': cls.external_network_id,
+                'ExternalNetworkId': cls.ext_net_id,
                 'timeout': CONF.heat_plugin.build_timeout,
                 'DNSServers': CONF.network.dns_servers,
                 'SubNetCidr': str(cls.subnet_cidr)
@@ -143,7 +143,7 @@ class OrchestrationNeutronResourcesTest(nuage_base.NuageBaseOrchestrationTest):
         router = body['router']
         self.assertEqual(self.neutron_basic_template['resources'][
             'Router']['properties']['name'], router['name'])
-        self.assertEqual(self.external_network_id,
+        self.assertEqual(self.ext_net_id,
                          router['external_gateway_info']['network_id'])
         self.assertEqual(True, router['admin_state_up'])
 

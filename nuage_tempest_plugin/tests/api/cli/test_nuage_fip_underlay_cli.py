@@ -10,8 +10,6 @@ from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.tests.api.floating_ip.base_nuage_fip_underlay \
     import NuageFipUnderlayBase
 
-LOG = Topology.get_logger(__name__)
-
 
 class TestNuageFipUnderlayCli(client_testcase.CLIClientTestCase,
                               NuageFipUnderlayBase):
@@ -62,7 +60,6 @@ class TestNuageFipUnderlayCli(client_testcase.CLIClientTestCase,
 
         int_network = self.create_network_with_args(int_network_name)
         exp_message = "Cannot update read-only attribute underlay"
-        LOG.info("exp_message = " + exp_message)
         int_subnet = self.create_subnet_with_args(int_network['name'],
                                                   "100.99.98.0/24",
                                                   "--name ", int_subnet_name)
@@ -156,8 +153,8 @@ class TestNuageFipUnderlayCli(client_testcase.CLIClientTestCase,
         # Try to create subnet on OS with nuagenet param set to l2domain UUID
         # Must fails with message = exp+message
         network_name = data_utils.rand_name('ext-pat-network')
-        self.network = self.create_network_with_args(network_name,
-                                                     ' --router:external')
+        network = self.create_network_with_args(network_name,
+                                                ' --router:external')
         if Topology.from_openstack('Newton') and Topology.is_ml2:
             exp_message = "Bad request: " \
                           "router:external in network must be False"
@@ -166,10 +163,9 @@ class TestNuageFipUnderlayCli(client_testcase.CLIClientTestCase,
                           "VSD-Managed Subnet create not allowed on " \
                           "external network"
 
-        LOG.info("exp_message = " + exp_message)
         self.assertCommandFailed(exp_message,
                                  self.create_subnet_with_args,
-                                 self.network['name'],
+                                 network['name'],
                                  str(cidr.cidr),
                                  '--name subnet-VSD-managed '
                                  '--net-partition',
@@ -197,7 +193,6 @@ class TestNuageFipUnderlayCli(client_testcase.CLIClientTestCase,
             int_network = self.create_network_with_args(network_name)
             exp_message = "Bad request: underlay attribute can not be set " \
                           "for internal subnets"
-            LOG.info("exp_message = " + exp_message)
             underlay_str = "--underlay=" + str(underlay)
             self.assertCommandFailed(exp_message,
                                      self.create_subnet_with_args,

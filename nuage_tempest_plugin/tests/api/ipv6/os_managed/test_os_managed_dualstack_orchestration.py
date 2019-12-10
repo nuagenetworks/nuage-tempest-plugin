@@ -48,8 +48,7 @@ class OsManagedDualStackOrchestrationTest(NuageBaseOrchestrationTest):
     def get_resource_server(self, resource_name):
         resource = self.test_resources.get(resource_name)
         server_id = resource['physical_resource_id']
-        server = TenantServer(self, self.manager.servers_client,
-                              self.admin_manager.servers_client)
+        server = TenantServer(self)
         server.sync_with(server_id)
         return server
 
@@ -91,9 +90,9 @@ class OsManagedDualStackOrchestrationTest(NuageBaseOrchestrationTest):
         # Define IPv6 interface in the guest VMs
         # as VSP does not support DHCPv6 for IPv6 addresses
         server1_ipv6 = server1.get_server_ip_in_network(
-            network['name'], ip_type=6)
+            network['name'], ip_version=6)
         server2_ipv6 = server2.get_server_ip_in_network(
-            network['name'], ip_type=6)
+            network['name'], ip_version=6)
 
         server1.configure_static_interface(
             server1_ipv6, subnet=ipv6_subnet, ip_version=6)

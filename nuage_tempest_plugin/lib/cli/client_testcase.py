@@ -157,6 +157,8 @@ class CLIClientTestCase(test.BaseTestCase):
             creds_client=cls.creds_client)
         cls.me = Role.tenant
 
+        cls.ext_net_id = CONF.network.public_network_id
+
     @classmethod
     def resource_cleanup(cls):
         # TODO(team): security groups

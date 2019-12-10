@@ -12,13 +12,15 @@ from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import data_utils
 
 CONF = Topology.get_conf()
-LOG = Topology.get_logger(__name__)
 
 
 class BaseTestCase(object):
     """Wrapper around the base to avoid it being executed standalone"""
 
-    class SinglestackOsManagedConnectivityTest(NuageBaseTest):
+    class SingleStackOsManagedConnectivityTest(NuageBaseTest):
+
+        default_prepare_for_connectivity = True
+
         # default is IPv4
         _cidr1 = IPNetwork('10.10.1.1/24')
         _cidr2 = IPNetwork('10.10.2.1/24')
@@ -34,8 +36,7 @@ class BaseTestCase(object):
             # Launch tenant servers in OpenStack network
             server2 = self.create_tenant_server(
                 [network],
-                security_groups=[ssh_security_group],
-                prepare_for_connectivity=True)
+                security_groups=[ssh_security_group])
 
             server1 = self.create_tenant_server(
                 [network],
@@ -43,15 +44,14 @@ class BaseTestCase(object):
                 prepare_for_connectivity=True)
 
             # Test connectivity between peer servers
-            self.assert_ping(
-                server1, server2, network)
+            self.assert_ping(server1, server2, network)
 
         def _icmp_connectivity_l3_os_managed_by_name(self, name=None,
                                                      nova_friendly_name=None):
             # Provision OpenStack network resources
             router = self.create_router(
                 router_name=name,
-                external_network_id=CONF.network.public_network_id)
+                external_network_id=self.ext_net_id)
             network = self.create_network(network_name=name)
             subnet = self.create_subnet(network, subnet_name=name)
             self.router_attach(router, subnet)
@@ -72,8 +72,7 @@ class BaseTestCase(object):
             server2 = self.create_tenant_server(
                 [network],
                 name=nova_friendly_name + '-1',
-                security_groups=[ssh_security_group],
-                prepare_for_connectivity=True)
+                security_groups=[ssh_security_group])
 
             server1 = self.create_tenant_server(
                 [network],
@@ -82,8 +81,7 @@ class BaseTestCase(object):
                 prepare_for_connectivity=True)
 
             # Test connectivity between peer servers
-            self.assert_ping(
-                server1, server2, network)
+            self.assert_ping(server1, server2, network)
 
         @decorators.attr(type='smoke')
         def test_icmp_connectivity_l3_os_managed(self):
@@ -108,7 +106,7 @@ class BaseTestCase(object):
 
         def test_icmp_connectivity_l3_os_managed_neg(self):
             # Provision OpenStack network resources
-            router = self.create_test_router()
+            router = self.create_public_router()
             network = self.create_network()
             subnet = self.create_subnet(network)
             self.router_attach(router, subnet)
@@ -118,8 +116,9 @@ class BaseTestCase(object):
 
             # Launch tenant servers in OpenStack network
             server2 = self.create_tenant_server(
-                [network])  # in default sg - so not accessible!
-            #                 -- hence also can't set prepare_for_connectivity
+                [network],  # in default sg - so not accessible!
+                #             -- hence also can't set prepare_for_connectivity
+                prepare_for_connectivity=False)
 
             server1 = self.create_tenant_server(
                 [network],
@@ -131,7 +130,7 @@ class BaseTestCase(object):
 
         def test_icmp_connectivity_l3_os_managed_dual_nic(self):
             # Provision OpenStack network resources
-            router = self.create_test_router()
+            router = self.create_public_router()
             network1 = self.create_network()
             subnet1 = self.create_subnet(network1,
                                          gateway=self._cidr1.ip,
@@ -151,13 +150,11 @@ class BaseTestCase(object):
             # Launch tenant servers in OpenStack network
             server1 = self.create_tenant_server(
                 [network1],
-                security_groups=[ssh_security_group],
-                prepare_for_connectivity=True)
+                security_groups=[ssh_security_group])
 
             server2 = self.create_tenant_server(
                 [network2],
-                security_groups=[ssh_security_group],
-                prepare_for_connectivity=True)
+                security_groups=[ssh_security_group])
 
             # create server12 ports
             p1 = self.create_port(
@@ -173,10 +170,8 @@ class BaseTestCase(object):
                 prepare_for_connectivity=True)
 
             # Test connectivity between peer servers
-            self.assert_ping(
-                server12, server1, network1)
-            self.assert_ping(
-                server12, server2, network2)
+            self.assert_ping(server12, server1, network1)
+            self.assert_ping(server12, server2, network2)
 
         @decorators.attr(type='smoke')
         def test_icmp_connectivity_l2_os_managed_no_dhcp(self):
@@ -192,15 +187,13 @@ class BaseTestCase(object):
                 [network],
                 security_groups=[ssh_security_group],
                 prepare_for_connectivity=True)
-
             server1 = self.create_tenant_server(
                 [network],
                 security_groups=[ssh_security_group],
                 prepare_for_connectivity=True)
 
             # Test connectivity between peer servers
-            self.assert_ping(
-                server1, server2, network)
+            self.assert_ping(server1, server2, network)
 
         def test_icmp_connectivity_l2_os_managed_no_dhcp_neg(self):
             # Provision OpenStack network resources
@@ -216,8 +209,7 @@ class BaseTestCase(object):
             server2 = self.create_tenant_server(
                 [network],
                 security_groups=[ssh_security_group],
-                force_dhcp_config=True,
-                prepare_for_connectivity=True)
+                force_dhcp_config=True)
 
             server1 = self.create_tenant_server(
                 [network],
@@ -234,7 +226,7 @@ class BaseTestCase(object):
 
             # attach subnets to router
             router = self.create_router(
-                external_network_id=CONF.network.public_network_id)
+                external_network_id=self.ext_net_id)
             self.router_attach(router, subnet)
 
             # create open-ssh security group
@@ -243,8 +235,7 @@ class BaseTestCase(object):
             # Launch tenant servers in OpenStack network
             server2 = self.create_tenant_server(
                 [network],
-                security_groups=[ssh_security_group],
-                prepare_for_connectivity=True)
+                security_groups=[ssh_security_group])
 
             # to make it reachable via FIP, gateway also must be configured.
             server1 = self.create_tenant_server(
@@ -253,8 +244,7 @@ class BaseTestCase(object):
                 prepare_for_connectivity=True)
 
             # Test connectivity between peer servers
-            self.assert_ping(
-                server1, server2, network)
+            self.assert_ping(server1, server2, network)
 
         def test_icmp_connectivity_l3_os_managed_no_dhcp_neg(self):
             # Provision OpenStack network resources
@@ -263,7 +253,7 @@ class BaseTestCase(object):
 
             # attach subnets to router
             router = self.create_router(
-                external_network_id=CONF.network.public_network_id)
+                external_network_id=self.ext_net_id)
             self.router_attach(router, subnet)
 
             # create open-ssh security group
@@ -275,8 +265,7 @@ class BaseTestCase(object):
             server2 = self.create_tenant_server(
                 [network],
                 security_groups=[ssh_security_group],
-                force_dhcp_config=True,
-                prepare_for_connectivity=True)
+                force_dhcp_config=True)
 
             server1 = self.create_tenant_server(
                 [network],
@@ -299,7 +288,7 @@ class BaseTestCase(object):
                 subnet_fip = self.create_subnet(network_fip,
                                                 cidr=self._cidr2)
                 router = self.create_router(
-                    external_network_id=CONF.network.public_network_id)
+                    external_network_id=self.ext_net_id)
                 self.router_attach(router, subnet)
                 self.router_attach(router, subnet_fip)
                 ssh_sg = self.create_open_ssh_security_group()
@@ -405,7 +394,7 @@ class BaseTestCase(object):
 
             if is_l3:
                 router = self.create_router(
-                    external_network_id=CONF.network.public_network_id)
+                    external_network_id=self.ext_net_id)
                 self.router_attach(router, subnet)
 
             # create open-ssh security group
@@ -442,22 +431,20 @@ class BaseTestCase(object):
         def test_tcp_stateful_connectivity_l2_os_managed(self):
             # Provision OpenStack network resources
             network = self.create_network()
-            self.create_subnet(network, ip_version=self._ip_version)
-            self.validate_tcp_stateful_traffic(network,
-                                               ip_version=self._ip_version)
+            self.create_subnet(network)
+            self.validate_tcp_stateful_traffic(network)
 
         def test_tcp_stateful_connectivity_l3_os_managed(self):
             # Provision OpenStack network resources
-            router = self.create_test_router()
+            router = self.create_public_router()
             network = self.create_network()
-            subnet = self.create_subnet(network, ip_version=self._ip_version)
+            subnet = self.create_subnet(network)
             self.router_attach(router, subnet)
-            self.validate_tcp_stateful_traffic(network,
-                                               ip_version=self._ip_version)
+            self.validate_tcp_stateful_traffic(network)
 
 
 class Ipv4OsManagedConnectivityTest(
-        BaseTestCase.SinglestackOsManagedConnectivityTest):
+        BaseTestCase.SingleStackOsManagedConnectivityTest):
 
     def test_icmp_connectivity_multiple_subnets_in_shared_network(self):
         """test_icmp_connectivity_multiple_subnets_in_shared_network
@@ -469,11 +456,11 @@ class Ipv4OsManagedConnectivityTest(
         kwargs = {
             "router:external": True
         }
-        ext_network = self.create_network(client=self.admin_manager, **kwargs)
-        ext_s1 = self.create_subnet(ext_network, client=self.admin_manager,
+        ext_network = self.create_network(manager=self.admin_manager, **kwargs)
+        ext_s1 = self.create_subnet(ext_network, manager=self.admin_manager,
                                     cidr=data_utils.gimme_a_cidr(),
                                     underlay=True)
-        ext_s2 = self.create_subnet(ext_network, client=self.admin_manager,
+        ext_s2 = self.create_subnet(ext_network, manager=self.admin_manager,
                                     cidr=data_utils.gimme_a_cidr(),
                                     underlay=True)
 
@@ -499,23 +486,21 @@ class Ipv4OsManagedConnectivityTest(
             network=n2,
             security_groups=[ssh_security_group['id']])
 
-        fl1 = self.create_floatingip(external_network_id=ext_network['id'],
-                                     subnet_id=ext_s1['id'], port_id=p1['id'])
-        fl2 = self.create_floatingip(external_network_id=ext_network['id'],
-                                     subnet_id=ext_s2['id'], port_id=p2['id'])
+        fip1 = self.create_floatingip(external_network_id=ext_network['id'],
+                                      subnet_id=ext_s1['id'], port_id=p1['id'])
+        fip2 = self.create_floatingip(external_network_id=ext_network['id'],
+                                      subnet_id=ext_s2['id'], port_id=p2['id'])
 
-        server2 = self.create_tenant_server(ports=[p2])
-        server1 = self.create_tenant_server(ports=[p1])
+        server2 = self.create_tenant_server(ports=[p2], pre_prepared_fip=fip2)
+        server1 = self.create_tenant_server(ports=[p1], pre_prepared_fip=fip1)
 
-        server1.associate_fip(fl1['floating_ip_address'])
-
-        # Test IPv4 connectivity between peer servers
+        # Test connectivity between peer servers
         self.assert_ping(server1, server2, ext_network,
-                         address=fl2['floating_ip_address'])
+                         address=fip2['floating_ip_address'])
 
 
 class Ipv6OsManagedConnectivityTest(
-        BaseTestCase.SinglestackOsManagedConnectivityTest):
+        BaseTestCase.SingleStackOsManagedConnectivityTest):
     _ip_version = 6
     _cidr1 = IPNetwork('cafe:babb::1/64')
     _cidr2 = IPNetwork('cafe:babc::1/64')

@@ -20,7 +20,7 @@ from tempest.lib.common import rest_client
 from tempest.lib.common.utils import data_utils
 from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions as lib_exc
-from tempest.scenario import manager
+from tempest.scenario import manager as scenario_manager
 from tempest.services import orchestration
 
 from testtools.matchers import ContainsDict
@@ -48,12 +48,7 @@ def skip_because(*args, **kwargs):
     def decorator(f):
         @functools.wraps(f)
         def wrapper(self, *func_args, **func_kwargs):
-            skip = False
-            if 'condition' in kwargs:
-                if kwargs['condition'] is True:
-                    skip = True
-            else:
-                skip = True
+            skip = kwargs.get('condition', True)
 
             if 'bug' in kwargs and skip is True:
                 msg = 'Skipped until Bug: {} is resolved'.format(kwargs['bug'])
@@ -105,7 +100,7 @@ def unstable_test(*args, **kwargs):
     return decor
 
 
-class NuageBaseTest(manager.NetworkScenarioTest):
+class NuageBaseTest(scenario_manager.NetworkScenarioTest):
 
     """NuageBaseTest
 
@@ -113,19 +108,18 @@ class NuageBaseTest(manager.NetworkScenarioTest):
     This class will have all the common function and will initiate object
     of other class in setup_client rather then inheritance.
     """
-    # Default to ipv4.
     _ip_version = 4
 
     credentials = ['primary', 'admin']
     default_netpartition_name = Topology.def_netpartition
     shared_infrastructure = 'Shared Infrastructure'
+    ext_net_id = CONF.network.public_network_id
     image_name_to_id_cache = {}
     dhcp_agent_present = None
+
+    default_prepare_for_connectivity = False
     enable_aggregate_flows_on_vsd_managed = False
-
     ssh_security_group = None
-    ssh_keypair = None
-
     cls_name = None
 
     @classmethod
@@ -206,6 +200,15 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 name = name[:-len(tag)]
         return name
 
+    def fail(self, msg):
+        self.preFailTest(msg)
+        super(NuageBaseTest, self).fail(msg)
+
+    def preFailTest(self, msg):
+        # custom handling of a failed test
+        LOG.info('[{}] FATAL ERROR: {}'.format(self.test_name, msg))
+        # e.g. sleep statement can be added here, to pause the setup on failure
+
     @staticmethod
     # As reused by other classes, left as static and passing cls explicitly
     def setup_network_resources(cls):
@@ -284,7 +287,8 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         if network_name is None:
             network_name = to_server.get_server_networks()[0]['name']
 
-        to_server.complete_prepare_for_connectivity()
+        if to_server.needs_provisioning:
+            to_server.provision()
         to = IPAddress(to_server.get_server_ip_in_network(
             network_name, ip_version))
 
@@ -308,7 +312,8 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         if network_name is None:
             network_name = to_server.get_server_networks()[0]['name']
 
-        to_server.complete_prepare_for_connectivity()
+        if to_server.needs_provisioning:
+            to_server.provision()
         to_ip = IPAddress(to_server.get_server_ip_in_network(
             network_name, ip_version))
 
@@ -327,7 +332,8 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                          observed=has_connectivity,
                          message=error_msg)
 
-    def validate_tcp_stateful_traffic(self, network, ip_version=4):
+    def validate_tcp_stateful_traffic(self, network, ip_version=None):
+        ip_version = ip_version if ip_version is not None else self._ip_version
         # create open-ssh security group
         web_server_sg = self.create_open_ssh_security_group()
         client_sg = self.create_open_ssh_security_group()
@@ -403,8 +409,8 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             self.addCleanup(vsd_l2domain.delete)
         return vsd_l2domain
 
-    def vsd_create_l3domain_template(
-            self, name=None, enterprise=None, cleanup=True):
+    def vsd_create_l3domain_template(self, name=None, enterprise=None,
+                                     cleanup=True):
         l3domain_template = self.vsd.create_l3domain_template(
             name, enterprise)
         self.assertIsNotNone(l3domain_template)
@@ -450,83 +456,66 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         return vsd_subnet
 
     @classmethod
-    def create_cls_network(cls, network_name, client, cleanup=True, **kwargs):
-        body = client.create_network(name=network_name, **kwargs)
-        network = body['network']
-        if cleanup:
-            cls.addClassResourceCleanup(client.delete_network, network['id'])
-        return network
-
-    def create_network(self, network_name=None, client=None,
-                       cleanup=True, **kwargs):
-        """Wrapper utility that returns a test network."""
-        network_name = network_name or data_utils.rand_name('test-network')
-
-        if not client:
-            client = self.manager
-
-        body = client.networks_client.create_network(
+    def create_cls_network(cls, network_name, manager, cleanup=True, **kwargs):
+        body = manager.networks_client.create_network(
             name=network_name, **kwargs)
         network = body['network']
+        if cleanup:
+            cls.addClassResourceCleanup(manager.networks_client.delete_network,
+                                        network['id'])
+        return network
+
+    def create_network(self, network_name=None, manager=None,
+                       cleanup=True, **kwargs):
+        network_name = network_name or data_utils.rand_name('test-network')
+        manager = manager or self.manager
+        network = self.create_cls_network(
+            network_name, manager, cleanup=False, **kwargs)
         self.assertIsNotNone(network)
         if cleanup:
             self.addCleanup(
-                client.networks_client.delete_network, network['id'])
+                manager.networks_client.delete_network, network['id'])
         return network
 
-    def update_network(self, network_id, client=None,
-                       **kwargs):
-        """Wrapper utility that updates a test network."""
-        if not client:
-            client = self.manager
-
-        body = client.networks_client.update_network(network_id, **kwargs)
+    def update_network(self, network_id, manager=None, **kwargs):
+        manager = manager or self.manager
+        body = manager.networks_client.update_network(network_id, **kwargs)
         network = body['network']
         return network
 
-    def is_l2_subnet(self, subnet):
+    def is_l2_subnet(self, subnet, manager=None):
         if subnet['vsd_managed']:
             return self.vsd.get_l2domain(
                 self.vsd.get_enterprise_by_id(subnet['net_partition']),
                 by_id=subnet['nuagenet']) is not None
         else:
-            router_ports = self.osc_list_ports(
+            router_ports = self.list_ports(
                 device_owner='network:router_interface',
-                network_id=subnet['network_id'])
+                network_id=subnet['network_id'],
+                manager=manager)
             return len(router_ports) == 0
 
-    def is_l3_subnet(self, subnet):
-        return not self.is_l2_subnet(subnet)
+    def is_l3_subnet(self, subnet, manager=None):
+        return not self.is_l2_subnet(subnet, manager=manager)
 
-    def get_network(self, network_id, client=None, **kwargs):
-        """Wrapper utility that gets a test network."""
-        if not client:
-            client = self.manager
-
-        body = client.networks_client.show_network(network_id, **kwargs)
+    def get_network(self, network_id, manager=None, **kwargs):
+        manager = manager or self.manager
+        body = manager.networks_client.show_network(network_id, **kwargs)
         network = body['network']
         return network
 
-    def get_subnet(self, subnet_id, client=None, **kwargs):
-        """Wrapper utility that gets a test subnet."""
-        if not client:
-            client = self.manager
-
-        body = client.subnets_client.show_subnet(subnet_id, **kwargs)
+    def get_subnet(self, subnet_id, manager=None, **kwargs):
+        manager = manager or self.manager
+        body = manager.subnets_client.show_subnet(subnet_id, **kwargs)
         subnet = body['subnet']
         return subnet
 
     @classmethod
     def create_cls_subnet(cls, network, subnet_name=None,
                           gateway='', cidr=None, mask_bits=None,
-                          ip_version=None, client=None, cleanup=True,
-                          no_net_partition=False,
-                          **kwargs):
-        """Wrapper utility that returns a test subnet."""
-        # allow tests to use admin client
-        if not client:
-            client = cls.manager
-
+                          ip_version=None, manager=None, cleanup=True,
+                          no_net_partition=False, **kwargs):
+        manager = manager or cls.manager
         subnet_name = subnet_name or data_utils.rand_name('test-subnet-')
 
         # The cidr and mask_bits depend on the ip version.
@@ -559,7 +548,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 if not no_net_partition and 'net_partition' not in kwargs:
                     kwargs['net_partition'] = cls.default_netpartition_name
 
-                body = client.subnets_client.create_subnet(
+                body = manager.subnets_client.create_subnet(
                     name=subnet_name,
                     network_id=network['id'],
                     cidr=str(subnet_cidr),
@@ -593,7 +582,8 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                     'device_owner': 'network:dhcp',
                     'network_id': subnet['network_id']
                 }
-                dhcp_ports = client.ports_client.list_ports(**filters)['ports']
+                dhcp_ports = manager.ports_client.list_ports(
+                    **filters)['ports']
                 if not dhcp_ports:
                     continue
                 dhcp_port = dhcp_ports[0]
@@ -603,38 +593,34 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         assert subnet
         if cleanup:
             cls.addClassResourceCleanup(
-                client.subnets_client.delete_subnet, subnet['id'])
+                manager.subnets_client.delete_subnet, subnet['id'])
 
         return subnet
 
     def create_subnet(self, network, subnet_name=None, gateway='', cidr=None,
-                      mask_bits=None,
-                      ip_version=None, client=None, cleanup=True,
-                      no_net_partition=False,
-                      **kwargs):
-        """Wrapper utility that returns a test subnet."""
+                      mask_bits=None, ip_version=None, manager=None,
+                      cleanup=True, no_net_partition=False, **kwargs):
+        manager = manager or self.manager
         subnet = self.create_cls_subnet(
-            network, subnet_name, gateway, cidr, mask_bits, ip_version, client,
-            cleanup=False, no_net_partition=no_net_partition, **kwargs)
-
+            network, subnet_name, gateway, cidr, mask_bits, ip_version,
+            manager, cleanup=False, no_net_partition=no_net_partition,
+            **kwargs)
         if cleanup:
-            if not client:
-                client = self.manager
-            self.addCleanup(client.subnets_client.delete_subnet, subnet['id'])
-
+            self.addCleanup(
+                manager.subnets_client.delete_subnet, subnet['id'])
         return subnet
 
-    def update_subnet(self, subnet, client=None, **kwargs):
-        """Wrapper utility that updates a test subnet."""
-        if not client:
-            client = self.manager
-        body = client.subnets_client.update_subnet(subnet['id'],
-                                                   **kwargs)
+    def update_subnet(self, subnet, manager=None, **kwargs):
+        manager = manager or self.manager
+        body = manager.subnets_client.update_subnet(subnet['id'],
+                                                    **kwargs)
         return body['subnet']
 
-    def get_network_subnet(self, network, ip_version):
-        subnets = self.osc_list_subnets(network_id=network['id'],
-                                        ip_version=ip_version)
+    def get_network_subnet(self, network, ip_version, manager=None):
+        manager = manager or self.manager
+        subnets = self.list_subnets(manager,
+                                    network_id=network['id'],
+                                    ip_version=ip_version)
         if len(subnets) == 0:
             return None
         elif len(subnets) == 1:
@@ -645,7 +631,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                                                       len(subnets)))
 
     def is_dhcp_enabled(self, network, require_all_subnets_to_match=False):
-        subnets = self.osc_list_subnets(network_id=network['id'])
+        subnets = self.list_subnets(network_id=network['id'])
         if require_all_subnets_to_match:
             for subnet in subnets:
                 if not subnet['enable_dhcp']:
@@ -659,6 +645,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
     def create_l2_vsd_managed_subnet(self, network, vsd_l2domain, ip_version=4,
                                      dhcp_managed=True, dhcp_option_3=None,
+                                     manager=None, cleanup=True,
                                      **subnet_kwargs):
         if not isinstance(vsd_l2domain, self.vsd.vspk.NUL2Domain):
             self.fail("Must have an VSD L2 domain")
@@ -682,13 +669,16 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             gateway=gateway,
             nuagenet=vsd_l2domain.id,
             net_partition=vsd_l2domain.parent_object.name,
+            manager=manager,
+            cleanup=cleanup,
             **subnet_kwargs)
 
         return subnet
 
-    def create_l3_vsd_managed_subnet(self, network, vsd_domain, vsd_subnet,
+    def create_l3_vsd_managed_subnet(self, network, vsd_subnet,
                                      dhcp_managed=True, ip_version=4,
                                      gateway=None,
+                                     manager=None, cleanup=True,
                                      **subnet_kwargs):
         if not isinstance(vsd_subnet, self.vsd.vspk.NUSubnet):
             self.fail("Must have an VSD L3 subnet")
@@ -717,25 +707,25 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             gateway=gateway,
             nuagenet=vsd_subnet.id,
             net_partition=net_partition,
+            manager=manager,
+            cleanup=cleanup,
             **subnet_kwargs)
 
         return subnet
 
-    def create_port(self, network, client=None, cleanup=True, **kwargs):
-        """Wrapper utility that returns a test port."""
-        if not client:
-            client = self.manager
+    def create_port(self, network, manager=None, cleanup=True, **kwargs):
+        manager = manager or self.manager
 
         if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
             kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
         if CONF.network.port_profile and 'binding:profile' not in kwargs:
             kwargs['binding:profile'] = CONF.network.port_profile
 
-        body = client.ports_client.create_port(network_id=network['id'],
-                                               **kwargs)
+        body = manager.ports_client.create_port(network_id=network['id'],
+                                                **kwargs)
         port = body['port']
         if cleanup:
-            self.addCleanup(client.ports_client.delete_port, port['id'])
+            self.addCleanup(manager.ports_client.delete_port, port['id'])
 
         return port
 
@@ -744,19 +734,14 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         return (port['binding:vnic_type'] == 'direct' and
                 'switchdev' in port['binding:profile'].get('capabilities', []))
 
-    def update_port(self, port, client=None, **kwargs):
-        """Wrapper utility that updates a test port."""
-        if not client:
-            client = self.manager
-        body = client.ports_client.update_port(port['id'],
-                                               **kwargs)
+    def update_port(self, port, manager=None, **kwargs):
+        manager = manager or self.manager
+        body = manager.ports_client.update_port(port['id'], **kwargs)
         return body['port']
 
-    def delete_port(self, port, client=None):
-        """Wrapper utility that deletes a test port."""
-        if not client:
-            client = self.manager
-        client.ports_client.delete_port(port['id'])
+    def delete_port(self, port, manager=None):
+        manager = manager or self.manager
+        manager.ports_client.delete_port(port['id'])
 
     def _verify_port(self, port, subnet4=None, subnet6=None, **kwargs):
         testcase = kwargs.pop('testcase', 'unknown')
@@ -812,17 +797,79 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                                    by_port_id=port['id'])
         self.assertEqual(port['id'], vport.name)
 
-    def create_open_ssh_security_group(self, sg_name=None, client=None):
+    # --------- copy of upstream but added selective cleanup support ----------
+    def _create_security_group(self, security_group_rules_client=None,
+                               tenant_id=None,
+                               namestart='secgroup-smoke',
+                               security_groups_client=None,
+                               cleanup=True):
+        if security_group_rules_client is None:
+            security_group_rules_client = self.security_group_rules_client
+        if security_groups_client is None:
+            security_groups_client = self.security_groups_client
+        if tenant_id is None:
+            tenant_id = security_groups_client.tenant_id
+        secgroup = self._create_empty_security_group(
+            namestart=namestart, client=security_groups_client,
+            tenant_id=tenant_id, cleanup=cleanup)
+
+        # Add rules to the security group
+        rules = self._create_loginable_secgroup_rule(
+            security_group_rules_client=security_group_rules_client,
+            secgroup=secgroup,
+            security_groups_client=security_groups_client)
+        for rule in rules:
+            self.assertEqual(tenant_id, rule['tenant_id'])
+            self.assertEqual(secgroup['id'], rule['security_group_id'])
+        return secgroup
+
+    def _create_empty_security_group(self, client=None, tenant_id=None,
+                                     namestart='secgroup-smoke', cleanup=True):
+        """Create a security group without rules.
+
+        Default rules will be created:
+         - IPv4 egress to any
+         - IPv6 egress to any
+
+        :param tenant_id: secgroup will be created in this tenant
+        :returns: the created security group
+        """
+        if client is None:
+            client = self.security_groups_client
+        if not tenant_id:
+            tenant_id = client.tenant_id
+        sg_name = data_utils.rand_name(namestart)
+        sg_desc = sg_name + " description"
+        sg_dict = dict(name=sg_name,
+                       description=sg_desc)
+        sg_dict['tenant_id'] = tenant_id
+        result = client.create_security_group(**sg_dict)
+
+        secgroup = result['security_group']
+        self.assertEqual(secgroup['name'], sg_name)
+        self.assertEqual(tenant_id, secgroup['tenant_id'])
+        self.assertEqual(secgroup['description'], sg_desc)
+
+        if cleanup:
+            self.addCleanup(test_utils.call_and_ignore_notfound_exc,
+                            client.delete_security_group, secgroup['id'])
+        return secgroup
+    # -------------- copy of upstream but added cleanup support ---------------
+
+    def create_open_ssh_security_group(self, sg_name=None, manager=None,
+                                       cleanup=True):
+        manager = manager or self.manager
         if not self.ssh_security_group:
             self.ssh_security_group = self._create_security_group(
                 namestart=sg_name or 'tempest-open-ssh',
-                security_group_rules_client=(client.security_group_rules_client
-                                             if client else None),
-                security_groups_client=(client.security_groups_client
-                                        if client else None))
+                security_group_rules_client=(
+                    manager.security_group_rules_client),
+                security_groups_client=manager.security_groups_client,
+                cleanup=cleanup)
         return self.ssh_security_group
 
-    def create_security_group_rule(self, security_group=None, **kwargs):
+    def create_security_group_rule(self, security_group=None, manager=None,
+                                   **kwargs):
         if 'security_group_id' not in kwargs:
             security_group = security_group or self.ssh_security_group
         if security_group:
@@ -831,10 +878,12 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             if security_group_id != security_group['id']:
                 raise ValueError('Security group ID specified multiple times.')
 
-        return self._create_security_group_rule(security_group, **kwargs)
+        manager = manager or self.manager
+        security_group_rules_client = manager.security_group_rules_client
+        return self._create_security_group_rule(
+            security_group, security_group_rules_client, **kwargs)
 
-    def create_tcp_rule(self, sec_grp, direction, ip_version,
-                        sec_group_rules_client=None):
+    def create_tcp_rule(self, sec_grp, direction, ip_version, manager=None):
         if direction == 'egress':
             port_range_min = 1
             port_range_max = 65535
@@ -851,30 +900,24 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         }
         self.create_security_group_rule(
             security_group=sec_grp,
-            sec_group_rules_client=sec_group_rules_client,
+            manager=manager,
             **ruleset)
 
-    def create_test_router(self, client=None):
-        if Topology.access_to_l2_supported():
-            return self.create_router(client=client)  # can be isolated router
-        else:
-            return self.create_public_router(client=client)  # needs FIP access
-
-    def create_public_router(self, client=None):
+    def create_public_router(self, manager=None, cleanup=True):
         return self.create_router(
-            external_network_id=CONF.network.public_network_id, client=client)
+            external_network_id=self.ext_net_id,
+            manager=manager,
+            cleanup=cleanup)
 
     def create_router(self, router_name=None, admin_state_up=True,
                       external_network_id=None, enable_snat=None,
                       external_gateway_info_on=True,
-                      client=None, cleanup=True,
+                      manager=None, cleanup=True,
                       no_net_partition=False,
                       **kwargs):
-        """Wrapper utility that creates a router."""
         ext_gw_info = {}
         router_name = router_name or data_utils.rand_name('test-router-')
-        if not client:
-            client = self.manager
+        manager = manager or self.manager
         if not no_net_partition and 'net_partition' not in kwargs:
             kwargs['net_partition'] = self.default_netpartition_name
         if external_gateway_info_on:
@@ -882,76 +925,89 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 ext_gw_info['network_id'] = external_network_id
             if enable_snat is not None:
                 ext_gw_info['enable_snat'] = enable_snat
-            body = client.routers_client.create_router(
+            body = manager.routers_client.create_router(
                 name=router_name, external_gateway_info=ext_gw_info,
                 admin_state_up=admin_state_up, **kwargs)
         else:
-            body = client.routers_client.create_router(
+            body = manager.routers_client.create_router(
                 name=router_name, admin_state_up=admin_state_up, **kwargs)
 
         router = body['router']
         if cleanup:
-            self.addCleanup(self.delete_router, router, client)
+            self.addCleanup(self.delete_router, router, manager)
         return router
 
-    def delete_router(self, router, client=None):
-        if not client:
-            client = self.manager
-        client.routers_client.delete_router(router['id'])
+    def delete_router(self, router, manager=None):
+        manager = manager or self.manager
+        manager.routers_client.delete_router(router['id'])
 
     def update_router(self, router,
-                      external_network_id=None, enable_snat=None, client=None,
+                      external_network_id=None, enable_snat=None, manager=None,
                       external_gateway_info_on=True, **kwargs):
-        if not client:
-            client = self.manager
+        manager = manager or self.manager
         if external_gateway_info_on:
             ext_gw_info = {}
             if external_network_id:
                 ext_gw_info['network_id'] = external_network_id
             if enable_snat is not None:
                 ext_gw_info['enable_snat'] = enable_snat
-            body = client.routers_client.update_router(
+            body = manager.routers_client.update_router(
                 router["id"], external_gateway_info=ext_gw_info, **kwargs)
         else:
-            body = client.routers_client.update_router(
+            body = manager.routers_client.update_router(
                 router["id"], **kwargs)
         router = body["router"]
         return router
 
-    def create_floatingip(self, external_network_id=None,
-                          client=None, cleanup=True, **kwargs):
-        """Wrapper utility that creates a floating IP."""
-        if not external_network_id:
-            external_network_id = CONF.network.public_network_id
-        if not client:
-            client = self.manager
-        body = client.floating_ips_client.create_floatingip(
-            floating_network_id=external_network_id, **kwargs)
-        fip = body['floatingip']
-        if cleanup:
-            self.addCleanup(client.floating_ips_client.delete_floatingip,
-                            fip['id'])
-        return fip
+    def create_floatingip(self, server=None, external_network_id=None,
+                          port_id=None, manager=None, cleanup=True, **kwargs):
 
-    def delete_floatingip(self, floatingip_id=None,
-                          client=None):
-        """Wrapper utility that deletes a floating IP."""
-        if not client:
-            client = self.manager
-        client.floating_ips_client.delete_floatingip(
-            floatingip_id)
+        external_network_id = external_network_id or self.ext_net_id
+        manager = manager or self.manager
+
+        if server:
+            if not port_id:
+                port_id, ip4 = self._get_server_port_id_and_ip4(server)
+            else:
+                ip4 = None
+            result = manager.floating_ips_client.create_floatingip(
+                floating_network_id=external_network_id, port_id=port_id,
+                tenant_id=server['tenant_id'], fixed_ip_address=ip4,
+                **kwargs)
+        else:
+            result = manager.floating_ips_client.create_floatingip(
+                floating_network_id=external_network_id, port_id=port_id,
+                **kwargs)
+
+        floating_ip = result['floatingip']
+
+        if cleanup:
+            self.addCleanup(test_utils.call_and_ignore_notfound_exc,
+                            manager.floating_ips_client.delete_floatingip,
+                            floating_ip['id'])
+
+        return floating_ip
+
+    def get_floatingip(self, floatingip_id=None, manager=None):
+        manager = manager or self.manager
+        return manager.floating_ips_client.show_floatingip(
+            floatingip_id)['floatingip']
+
+    def delete_floatingip(self, floatingip_id=None, manager=None):
+        manager = manager or self.manager
+        manager.floating_ips_client.delete_floatingip(floatingip_id)
 
     def create_associate_vsd_managed_floating_ip(self, server, port_id=None,
                                                  vsd_domain=None,
                                                  vsd_subnet=None,
                                                  external_network_id=None,
-                                                 ip_address=None):
-        if not external_network_id:
-            external_network_id = CONF.network.public_network_id
+                                                 ip_address=None,
+                                                 cleanup=True):
+        external_network_id = external_network_id or self.ext_net_id
         if not port_id:
             port_id, ip4 = self._get_server_port_id_and_ip4(server)
 
-        floatingip_subnet_id = self.osc_list_networks(
+        floatingip_subnet_id = self.list_networks(
             id=external_network_id)[0]['subnets'][0]
         shared_network_resource_id = self.vsd.get_shared_network_resource(
             vspk_filter='name is "{}"'.format(
@@ -959,10 +1015,9 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
         # Create floating ip
         floating_ip = self.vsd.create_floating_ip(
-            vsd_domain,
-            shared_network_resource_id=shared_network_resource_id,
-            address=ip_address)
-        self.addCleanup(floating_ip.delete)
+            vsd_domain, shared_network_resource_id, address=ip_address)
+        if cleanup:
+            self.addCleanup(floating_ip.delete)
 
         # Associate floating ip
         vport = self.vsd.get_vport(subnet=vsd_subnet, by_port_id=port_id)
@@ -973,73 +1028,69 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             vport_.associated_floating_ip_id = None
             vport_.save()
 
-        self.addCleanup(cleanup_floatingip_vport, vport)
+        if cleanup:
+            self.addCleanup(cleanup_floatingip_vport, vport)
         return floating_ip
 
-    def update_floatingip(self, floatingip, client=None, **kwargs):
-        """Wrapper utility that updates a floating IP."""
-        if not client:
-            client = self.manager
-        body = client.floating_ips_client.update_floatingip(
+    def update_floatingip(self, floatingip, manager=None, **kwargs):
+        manager = manager or self.manager
+        body = manager.floating_ips_client.update_floatingip(
             floatingip['id'], **kwargs)
         fip = body['floatingip']
         return fip
 
-    def create_router_interface(self, router_id, subnet_id, client=None,
+    def create_router_interface(self, router_id, subnet_id, manager=None,
                                 cleanup=True):
-        """Wrapper utility that creates a router interface."""
-        if not client:
-            client = self.manager
-        interface = client.routers_client.add_router_interface(
+        manager = manager or self.manager
+        interface = manager.routers_client.add_router_interface(
             router_id, subnet_id=subnet_id)
         if cleanup:
             self.addCleanup(self.remove_router_interface, router_id, subnet_id,
-                            client)
+                            manager)
         return interface
 
-    def remove_router_interface(self, router_id, subnet_id, client=None):
-        """Wrapper utility that removes a router interface."""
-        if not client:
-            client = self.manager
-        client.routers_client.remove_router_interface(
+    def remove_router_interface(self, router_id, subnet_id, manager=None):
+        manager = manager or self.manager
+        manager.routers_client.remove_router_interface(
             router_id, subnet_id=subnet_id)
 
-    def router_attach(self, router, subnet, client=None, cleanup=True):
+    def router_attach(self, router, subnet, manager=None, cleanup=True):
         self.create_router_interface(router['id'], subnet['id'],
-                                     client=client, cleanup=cleanup)
+                                     manager=manager, cleanup=cleanup)
 
-    def router_detach(self, router, subnet):
-        self.remove_router_interface(router['id'], subnet['id'])
+    def router_detach(self, router, subnet, manager=None):
+        self.remove_router_interface(router['id'], subnet['id'],
+                                     manager=manager)
 
     def create_router_interface_with_port_id(self, router_id, port_id,
-                                             client=None, cleanup=True):
-        """Wrapper utility that creates a router interface."""
-        if not client:
-            client = self.manager
-        interface = client.routers_client.add_router_interface(
+                                             manager=None, cleanup=True):
+        manager = manager or self.manager
+        interface = manager.routers_client.add_router_interface(
             router_id, port_id=port_id)
         if cleanup:
             self.addCleanup(self.remove_router_interface_with_port_id,
-                            router_id, port_id, client)
+                            router_id, port_id, manager)
         return interface
 
     def remove_router_interface_with_port_id(self, router_id,
-                                             port_id, client=None):
-        """Wrapper utility that removes a router interface."""
-        if not client:
-            client = self.manager
-        client.routers_client.remove_router_interface(
+                                             port_id, manager=None):
+        manager = manager or self.manager
+        manager.routers_client.remove_router_interface(
             router_id, port_id=port_id)
 
-    def router_attach_with_port_id(self, router, port, cleanup=True):
+    def router_attach_with_port_id(self, router, port, manager=None,
+                                   cleanup=True):
         self.create_router_interface_with_port_id(router['id'], port['id'],
+                                                  manager=manager,
                                                   cleanup=cleanup)
 
-    def router_detach_with_port_id(self, router, port):
-        self.remove_router_interface_with_port_id(router['id'], port['id'])
+    def router_detach_with_port_id(self, router, port, manager=None):
+        self.remove_router_interface_with_port_id(router['id'], port['id'],
+                                                  manager=manager)
 
-    def get_router_interface(self, by_router_id, by_subnet_id):
-        ports = self.osc_list_ports(
+    def get_router_interface(self, by_router_id, by_subnet_id, manager=None):
+        ports = self.list_ports(
+            manager,
             device_owner="network:router_interface",
             device_id=by_router_id)
         ri_port = next((port for port in ports if
@@ -1094,79 +1145,99 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
         client.delete_trunk(trunk['id'])
 
-    def _create_keypair(self, client=None):
-        if not client:
-            client = self.manager.keypairs_client
-        name = data_utils.rand_name(self.__class__.__name__)
+    def create_keypair(self, name=None, manager=None, cleanup=True,
+                       **kwargs):
+        manager = manager or self.manager
+        name = name or data_utils.rand_name(self.__class__.__name__)
         # We don't need to create a keypair by pubkey in scenario
-        body = client.create_keypair(name=name)
-        self.addCleanup(client.delete_keypair, name)
+        body = manager.keypairs_client.create_keypair(name=name, **kwargs)
+        if cleanup:
+            self.addCleanup(manager.keypairs_client.delete_keypair, name)
         return body['keypair']
 
-    def create_keypair(self, client=None):
-        if not self.ssh_keypair:
-            self.ssh_keypair = self._create_keypair(client)
-        return self.ssh_keypair
+    def get_keypair(self, name=None, user_id=None, manager=None):
+        manager = manager or self.manager
+        keypair = manager.keypairs_client.show_keypair(
+            name, user_id=user_id)['keypair']
+        return keypair
 
-    def osc_get_network(self, network_id, client=None, **kwargs):
-        """List networks using admin creds else provide client """
-        if not client:
-            client = self.admin_manager
-        network = client.networks_client.show_network(network_id, **kwargs)
-        return network['network']
-
-    def osc_list_networks(self, client=None, *args, **kwargs):
-        """List networks using admin creds else provide client """
-        if not client:
-            client = self.admin_manager
-        networks_list = client.networks_client.list_networks(
+    def list_networks(self, manager=None, *args, **kwargs):
+        manager = manager or self.manager
+        networks_list = manager.networks_client.list_networks(
             *args, **kwargs)
         return networks_list['networks']
 
-    def osc_list_subnets(self, client=None, *args, **kwargs):
-        """List subnets using admin creds else provide client"""
-        if not client:
-            client = self.admin_manager
-        subnets_list = client.subnets_client.list_subnets(
+    def get_network_by_name(self, name, manager=None):
+        networks = self.list_networks(manager, name=name)
+        self.assertEqual(1, len(networks))  # assert uniqueness
+        return networks[0]
+
+    def list_subnets(self, manager=None, *args, **kwargs):
+        manager = manager or self.manager
+        subnets_list = manager.subnets_client.list_subnets(
             *args, **kwargs)
         return subnets_list['subnets']
 
-    def osc_list_routers(self, client=None, *args, **kwargs):
-        """List routers using admin creds else provide client"""
-        if not client:
-            client = self.admin_manager
-        routers_list = client.routers_client.list_routers(
-            *args, **kwargs)
+    def list_routers(self, manager=None, *args, **kwargs):
+        manager = manager or self.manager
+        routers_list = manager.routers_client.list_routers(*args, **kwargs)
         return routers_list['routers']
 
-    def osc_list_ports(self, client=None, *args, **kwargs):
-        """List ports using admin creds else provide client"""
-        if not client:
-            client = self.admin_manager
-        ports_list = client.ports_client.list_ports(
-            *args, **kwargs)
+    def list_ports(self, manager=None, *args, **kwargs):
+        manager = manager or self.manager
+        ports_list = manager.ports_client.list_ports(*args, **kwargs)
         return ports_list['ports']
 
-    def osc_get_server_port_in_network(self, server, network):
-        return self.osc_list_ports(
-            device_id=server.id,
-            network_id=network['id'])[0]
+    def get_port_in_network(self, owner_id, network, manager=None):
+        ports = self.list_ports(manager,
+                                device_id=owner_id,
+                                network_id=network['id'])
+        self.assertEqual(1, len(ports))  # assert uniqueness
+        return ports[0]
 
-    def osc_list_server(self, server_id, client=None):
-        """List server using admin creds else provide client"""
-        if not client:
-            client = self.admin_manager
-        server_list = client.servers_client.show_server(server_id)
-        return server_list['server']
+    def get_server_port_in_network(self, server, network, manager=None):
+        return self.get_port_in_network(server.id, network, manager)
 
-    def osc_get_image_id(self, image_name, client=None):
+    def list_servers(self, manager=None, **kwargs):
+        manager = manager or self.manager
+        servers = manager.servers_client.list_servers(all_tenants=True,
+                                                      **kwargs)
+        return servers['servers']
+
+    def get_server(self, server_id, manager=None):
+        manager = manager or self.manager
+        server = manager.servers_client.show_server(server_id)
+        return server['server']
+
+    def get_server_by_name(self, name, manager=None):
+        servers = self.list_servers(manager, name=name)
+        if len(servers) != 1:
+            LOG.warn('{} servers are present, got {}'.format(
+                self.list_servers(manager),
+                self.list_servers(manager, name=name)))
+        self.assertEqual(1, len(servers))  # assert uniqueness
+        return servers[0]
+
+    def list_floating_ips(self, manager, **kwargs):
+        manager = manager or self.manager
+        floating_ips = manager.floating_ips_client.list_floatingips(**kwargs)
+        return floating_ips['floatingips']
+
+    def get_floating_ip_by_port_id(self, port_id, assert_not_none=True,
+                                   manager=None):
+        floating_ips = self.list_floating_ips(manager, port_id=port_id)
+        if assert_not_none:
+            self.assertEqual(1, len(floating_ips))  # assert uniqueness
+            return floating_ips[0]
+        else:
+            return floating_ips[0] if floating_ips else None
+
+    def get_image_id(self, image_name, manager=None):
         # check cache first
         if image_name in self.image_name_to_id_cache:
             return self.image_name_to_id_cache[image_name]
-
-        if not client:
-            client = self.manager
-        images = client.image_client_v2.list_images()
+        manager = manager or self.manager
+        images = manager.image_client_v2.list_images()
         image_id = None
         for image in images['images']:
             # add them all
@@ -1175,32 +1246,39 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 image_id = image['id']
         return image_id
 
-    def osc_server_add_interface(self, server, port, client=None):
-        if not client:
-            client = self.manager
+    def server_add_interface(self, server, port, manager=None,
+                             cleanup=True):
+        manager = manager or self.manager
         port_id = port['id']
-        iface = client.interfaces_client.create_interface(
+        iface = manager.interfaces_client.create_interface(
             server.server_details['id'],
             port_id=port_id)['interfaceAttachment']
         iface = waiters.wait_for_interface_status(
-            client.interfaces_client, server.server_details['id'],
+            manager.interfaces_client, server.server_details['id'],
             iface['port_id'], 'ACTIVE')
-        self.addCleanup(
-            client.interfaces_client.delete_interface,
-            server.server_details['id'],
-            iface['port_id'])
+        if cleanup:
+            self.addCleanup(
+                manager.interfaces_client.delete_interface,
+                server.server_details['id'],
+                iface['port_id'])
 
-    def osc_create_test_server(self, tag, client=None, tenant_networks=None,
-                               ports=None, security_groups=None,
-                               wait_until='ACTIVE',
-                               volume_backed=False, name=None, flavor=None,
-                               image_id=None, keypair=None, cleanup=True,
-                               return_none_on_failure=False,
-                               **kwargs):
-        """Common wrapper utility returning a test server.
+    # TODO(Kris) refactor to eliminate this (or at least much reduce) in favor
+    #            of upstream create_server method
+    # This is the method called back from TenantServer 'boot' request, which
+    # on its turn is invoked from this class's 'create_tenant_server'.
+    #
+    # ---  This method is for internal use only, don't use from test case;  ---
+    #      use create_tenant_server instead                                 ---
+    def _create_server(self, tag, tenant_networks=None, ports=None,
+                       security_groups=None, wait_until='ACTIVE',
+                       volume_backed=False, name=None, flavor=None,
+                       image_id=None, keypair=None,
+                       manager=None, cleanup=True,
+                       return_none_on_failure=False,
+                       **kwargs):
+        """Common wrapper utility returning a server instance.
 
         :param tag: used for tagging at logging
-        :param client: Client manager which provides OpenStack Tempest clients.
         :param tenant_networks: Tenant networks used for creating the server.
         :param security_groups: Tenant security groups for the server.
         :param ports: Tenant ports used for creating the server.
@@ -1211,20 +1289,16 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         :param flavor: Instance flavor.
         :param image_id: Instance image ID.
         :param keypair: Nova keypair for ssh access
+        :param manager: Client manager providing OpenStack Tempest clients.
         :param cleanup: Flag for cleanup (leave True for auto-cleanup).
         :param return_none_on_failure: if True, return None on failure instead
         of failing the test case
         :returns: a tuple
         """
-        if not client:
-            client = self.manager
-
-        if name is None:
-            name = data_utils.rand_name(__name__ + "-instance")
-        if flavor is None:
-            flavor = CONF.compute.flavor_ref
-        if image_id is None:
-            image_id = CONF.compute.image_ref
+        manager = manager or self.manager
+        name = name or data_utils.rand_name(__name__ + "-instance")
+        flavor = flavor or CONF.compute.flavor_ref
+        image_id = image_id or CONF.compute.image_ref
 
         vnic_type = CONF.network.port_vnic_type
         profile = CONF.network.port_profile
@@ -1243,8 +1317,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             if net['id'] not in port_network_id_list:  # don't process it twice
                 networks.append(net)
 
-        # If vnic_type or profile are configured create port for
-        # every network
+        # If vnic_type or profile are configured create port for every network
         if vnic_type or profile:
             ports = []
             create_port_body = {}
@@ -1264,7 +1337,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                     ports.append({'port': network['port']['id']})
                 else:
                     port = self.create_port(network,
-                                            client=client,
+                                            manager=manager,
                                             **create_port_body)
                     ports.append({'port': port['id']})
             if ports:
@@ -1285,9 +1358,9 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
         if volume_backed:
             volume_name = data_utils.rand_name('volume')
-            volumes_client = client.volumes_v2_client
+            volumes_client = manager.volumes_v2_client
             if CONF.volume_feature_enabled.api_v1:
-                volumes_client = client.volumes_client
+                volumes_client = manager.volumes_client
             volume = volumes_client.create_volume(
                 display_name=volume_name,
                 imageRef=image_id)
@@ -1310,24 +1383,24 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         vm = None
 
         def cleanup_server():
-            client.servers_client.delete_server(vm['id'])
+            manager.servers_client.delete_server(vm['id'])
             waiters.wait_for_server_termination(
-                client.servers_client, vm['id'])
+                manager.servers_client, vm['id'])
 
-        body = client.servers_client.create_server(name=name,
-                                                   imageRef=image_id,
-                                                   flavorRef=flavor,
-                                                   **kwargs)
+        body = manager.servers_client.create_server(name=name,
+                                                    imageRef=image_id,
+                                                    flavorRef=flavor,
+                                                    **kwargs)
 
         vm = rest_client.ResponseBody(body.response, body['server'])
 
         LOG.info('[{}] ID is {}'.format(tag, vm['id']))
 
         if wait_until:
-            LOG.info('[{}] Waiting for becoming {}'.format(tag,
-                                                           wait_until))
+            LOG.info('[{}] Waiting for to become {}'.format(tag,
+                                                            wait_until))
             try:
-                waiters.wait_for_server_status(client.servers_client,
+                waiters.wait_for_server_status(manager.servers_client,
                                                vm['id'], wait_until)
 
             except Exception as e:
@@ -1371,39 +1444,39 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             else:
                 self.fail('Deploying server {} failed'.format(name))
 
-    def osc_create_floatingip(self, external_network_id=None, client=None):
-        if not external_network_id:
-            external_network_id = CONF.network.public_network_id
-        if not client:
-            client = self.floating_ips_client
-        result = client.create_floatingip(
-            floating_network_id=external_network_id
-        )
-        floating_ip = result['floatingip']
-        self.addCleanup(test_utils.call_and_ignore_notfound_exc,
-                        client.delete_floatingip,
-                        floating_ip['id'])
-        return floating_ip
-
+    # create_tenant_server : creating a tenant server (nova instance)
+    #
+    # -- This is the reference method to use in nuage api/connectivity tests --
+    #
     def create_tenant_server(self, networks=None, ports=None,
-                             security_groups=None, wait_until='ACTIVE',
+                             security_groups=None, keypair=None,
+                             wait_until='ACTIVE',
                              volume_backed=False, name=None, flavor=None,
-                             prepare_for_connectivity=False,
+                             prepare_for_connectivity=None,
+                             pre_prepared_fip=None,
                              start_web_server=False,
                              web_server_port=80,
                              force_dhcp_config=False,
-                             client=None, cleanup=True, **kwargs):
+                             manager=None, cleanup=True, **kwargs):
 
         assert not (networks and ports)  # one of both, not both
         assert networks or ports  # but one at least
         assert not (ports and security_groups)  # one of both, not both
 
         name = name or data_utils.rand_name('test-server')
+        manager = manager or self.manager
 
-        LOG.info('[{}] Creating tenant server {} ({})'.format(
-            self.test_name, name,
-            '{} networks'.format(len(networks)) if networks
-            else '{} ports'.format(len(ports))))
+        LOG.info('[{}] --- INITIATE:{} ---'.format(self.test_name, name))
+        LOG.info('[{}] Got {}'.format(
+            self.test_name,
+            '{} network(s)'.format(len(networks)) if networks
+            else '{} port(s)'.format(len(ports))))
+
+        if prepare_for_connectivity is None:
+            prepare_for_connectivity = self.default_prepare_for_connectivity
+            if prepare_for_connectivity:
+                LOG.info('[{}] prepare_for_connectivity is set as of test '
+                         'class default'.format(self.test_name))
 
         def needs_provisioning(server_networks=None, server_ports=None):
             # we configure through cloudinit the interfaces for DHCP;
@@ -1419,7 +1492,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             else:
                 server_networks = []
                 for port in server_ports:
-                    server_networks.append(self.osc_get_network(
+                    server_networks.append(self.get_network(
                         port['network_id']))
                 return needs_provisioning(server_networks)
 
@@ -1428,10 +1501,9 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                                else False)
 
         if prepare_for_connectivity:
-
             first_network = (
                 networks[0] if networks
-                else self.osc_get_network(ports[0]['network_id']))
+                else self.get_network(ports[0]['network_id']))
             first_v4_subnet = self.get_network_subnet(first_network, 4)
 
             # fip is only supported on L3 v4, so in L2 or L3 pure v6 cases,
@@ -1459,36 +1531,36 @@ class NuageBaseTest(manager.NetworkScenarioTest):
 
             if prepare:
                 ports = self.prepare_fip_topology(
-                    name, networks, ports, security_groups, client)
+                    name, networks, ports, security_groups, manager, cleanup)
                 networks = []
                 security_groups = []
                 provisioning_needed |= needs_provisioning(server_ports=ports)
 
-        keypairs_client = client.keypairs_client if client else None
-        keypair = self.create_keypair(client=keypairs_client)
+        keypair = keypair or self.create_keypair(manager=manager,
+                                                 cleanup=cleanup)
 
         LOG.info('[{}] Creating TenantServer {} ({})'.format(
             self.test_name, name,
-            '{} networks'.format(len(networks)) if networks
-            else '{} ports'.format(len(ports))))
+            '{} network(s)'.format(len(networks)) if networks
+            else '{} port(s)'.format(len(ports))))
 
-        server = TenantServer(self, client, self.admin_manager.servers_client,
-                              name, networks, ports, security_groups,
-                              flavor, keypair, volume_backed)
+        server = TenantServer(self, name, networks, ports,
+                              security_groups, flavor, keypair, volume_backed)
 
         if start_web_server:
             kwargs['user_data'] = (kwargs.get('user_data', '') +
                                    self._get_start_web_server_cmd(
                                        web_server_port))
 
-        server.boot(wait_until, cleanup, **kwargs)
+        server.boot(wait_until, manager, cleanup, **kwargs)
         server.force_dhcp = force_dhcp_config
-        server.prepare_for_connectivity = prepare_for_connectivity
+        server.set_to_prepare_for_connectivity = prepare_for_connectivity
+        server.needs_provisioning = provisioning_needed
 
         # Check need for provisioning interfaces statically ...
         if provisioning_needed:
             LOG.info('[{}] {} will need provisioning'.format(
-                self.test_name, name.capitalize()))
+                self.test_name, name))
             server.needs_provisioning = True
 
         # In both cases, the actual provisioning or the potential need for
@@ -1496,15 +1568,22 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         # of servers is maximized (and test execution minimized)
 
         LOG.info('[{}] {} deployed SUCCESSFULLY'.format(
-            self.test_name, name.capitalize()))
+            self.test_name, name))
 
         # If to be prepared for connectivity, create/associate FIP now
         if prepare_for_connectivity:
-            self.make_fip_reachable(server, client=client)
+            if pre_prepared_fip:
+                server.associate_fip(pre_prepared_fip)
+            else:
+                self.make_fip_reachable(server, manager, cleanup)
+
+        LOG.info('[{}] --- COMPLETE:{} ---'.format(
+            self.test_name, server.name))
+        LOG.info('[{}]'.format(self.test_name))
 
         return server
 
-    def make_fip_reachable(self, server, client=None):
+    def make_fip_reachable(self, server, manager=None, cleanup=True):
         LOG.info('[{}] Making {} FIP reachable'.format(
             self.test_name, server.name))
 
@@ -1514,16 +1593,18 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             if server.ports:
                 first_port = server.ports[0]
             else:
-                first_port = self.osc_get_server_port_in_network(server,
-                                                                 first_network)
+                first_port = self.get_server_port_in_network(
+                    server, first_network, manager=manager)
         else:
             assert server.ports
             first_port = server.ports[0]
-            first_network = self.osc_get_network(first_port['network_id'])
+            first_network = self.get_network(first_port['network_id'],
+                                             manager=manager)
 
-        v4_subnet = self.get_network_subnet(first_network, 4)
+        v4_subnet = self.get_network_subnet(first_network, 4,
+                                            manager=manager)
         if v4_subnet['vsd_managed']:
-            if self.is_l3_subnet(v4_subnet):
+            if self.is_l3_subnet(v4_subnet, manager=manager):
                 # vsd managed l3
                 vsd_l3_subnet = self.vsd.get_subnet(
                     by_id=v4_subnet['nuagenet'])
@@ -1531,23 +1612,19 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 _, domain = self.vsd.get_zone_and_domain_parent_of_subnet(
                     vsd_l3_subnet)
                 self.create_fip_to_server(
-                    server, first_port,
-                    vsd_domain=domain,
-                    vsd_subnet=vsd_l3_subnet,
-                    manager=client)
+                    server, first_port, domain, vsd_l3_subnet,
+                    manager=manager, cleanup=cleanup)
             else:
                 # vsd managed l2
                 raise NotImplementedError
         else:
             # OS managed
-            self.create_fip_to_server(server, first_port, manager=client)
-
-        LOG.info('[{}] {} is FIP reachable'.format(
-            self.test_name, server.name))
+            self.create_fip_to_server(server, first_port,
+                                      manager=manager, cleanup=cleanup)
 
     def prepare_fip_topology(
             self, server_name, networks, ports, security_groups=None,
-            client=None):
+            manager=None, cleanup=True):
 
         LOG.info('[{}] Preparing FIP topology for {}'.format(
             self.test_name, server_name))
@@ -1560,40 +1637,41 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 for sg in security_groups:
                     sgs.append(sg['id'])
             for network in networks:
-                port = self.create_port(network, client,
+                port = self.create_port(network,
                                         security_groups=sgs,
                                         # make sure this port does not
                                         # become the default port
                                         extra_dhcp_opts=[
                                             {'opt_name': 'router',
-                                             'opt_value': '0'}])
+                                             'opt_value': '0'}],
+                                        manager=manager,
+                                        cleanup=cleanup)
                 ports.append(port)
 
         # Create a jump (FIP) network (L3)
-        fip_network = self.create_network(client=client)
+        fip_network = self.create_network(manager=manager, cleanup=cleanup)
         fip_cidr = IPNetwork("192.168.0.0/24")
         subnet = self.create_subnet(
-            fip_network, cidr=fip_cidr,
-            client=client, mask_bits=fip_cidr.prefixlen,
-            ip_version=fip_cidr.version)
-        router = self.create_test_router(client=client)
-        self.router_attach(router, subnet, client=client)
+            fip_network, cidr=fip_cidr, mask_bits=fip_cidr.prefixlen,
+            ip_version=4, manager=manager, cleanup=cleanup)
+        router = self.create_public_router(manager=manager, cleanup=cleanup)
+        self.router_attach(router, subnet, manager=manager, cleanup=cleanup)
 
-        open_ssh_sg = self.create_open_ssh_security_group(client=client)
+        open_ssh_sg = self.create_open_ssh_security_group(manager=manager,
+                                                          cleanup=cleanup)
 
         # Avoid mixing virtio and switchdev port
         # On RHEL-7-7, interfaces are ordered. VIRTIO comes first, then
         # switchdev. We don't want this order to change since metadata
         # agent relies on DHCPv4 being executed on first interface and
         # this should be the fip_port interface.
-        fip_kwargs = {}
-        if ports:
-            fip_kwargs['binding:vnic_type'] = ports[0]['binding:vnic_type']
-            if 'binding:profile' in ports[0]:
-                fip_kwargs['binding:profile'] = ports[0]['binding:profile']
+        fip_kwargs = {'binding:vnic_type': ports[0]['binding:vnic_type']}
+        if 'binding:profile' in ports[0]:
+            fip_kwargs['binding:profile'] = ports[0]['binding:profile']
 
-        fip_port = self.create_port(fip_network, client,
+        fip_port = self.create_port(fip_network,
                                     security_groups=[open_ssh_sg['id']],
+                                    manager=manager, cleanup=cleanup,
                                     **fip_kwargs)
 
         LOG.info('[{}] FIP topology for {} set up'.format(
@@ -1602,59 +1680,57 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         return [fip_port] + ports
 
     def create_fip_to_server(self, server, port=None,
-                             vsd_domain=None, vsd_subnet=None, manager=None):
+                             vsd_domain=None, vsd_subnet=None, manager=None,
+                             cleanup=True):
         """Create a fip and connect it to the given server
 
         :param server: the tenant server
         :param port: its first port
         :param vsd_domain: L3Domain VSPK object
         :param vsd_subnet: L3Subnet VSPK object
-        :param manager: os client
+        :param manager: os manager
+        :param cleanup: add automated cleanup
         :return: the associated FIP
         """
-        fip_client = manager.floating_ips_client if manager else None
-
         if not server.associated_fip:
             if vsd_domain:
                 LOG.info('[{}] Creating FIP for {} using VSD domain'.format(
                     self.test_name, server.name))
-                ip = self.osc_create_floatingip(
-                    client=fip_client).get('floating_ip_address')
-                fip = self.create_associate_vsd_managed_floating_ip(
+                fip = self.create_floatingip(
+                    manager=manager,
+                    cleanup=cleanup)
+                self.create_associate_vsd_managed_floating_ip(
                     server.get_server_details(),
                     port_id=port['id'] if port else None,
                     vsd_domain=vsd_domain,
                     vsd_subnet=vsd_subnet,
-                    ip_address=ip
-                ).address
+                    ip_address=fip['floating_ip_address'],
+                    cleanup=cleanup)
             else:
                 LOG.info('[{}] Creating FIP for {}'.format(
                     self.test_name, server.name))
-                fip = self.create_floating_ip(
+                fip = self.create_floatingip(
                     server.get_server_details(),
-                    port_id=port['id'] if port else None, client=fip_client
-                )['floating_ip_address']
+                    port_id=port['id'] if port else None,
+                    manager=manager,
+                    cleanup=cleanup)
 
             server.associate_fip(fip)
-
-            LOG.info('[{}] {} obtained FIP = {}'.format(
-                self.test_name, server.name.capitalize(), str(fip)))
 
         return server.associated_fip
 
     def start_tenant_server(self, server, wait_until=None):
-        self.servers_client.start_server(server.openstack_data['id'])
+        self.servers_client.start_server(server.id)
         if wait_until:
             try:
                 waiters.wait_for_server_status(
-                    self.servers_client, server.openstack_data['id'],
-                    wait_until)
+                    self.servers_client, server.id, wait_until)
             except Exception as e:
                 LOG.exception('Starting server {} failed ({})'.format(
                     server.openstack_data['id'], e))
 
     def stop_tenant_server(self, server_id, wait_until='SHUTOFF'):
-        self.servers_client.stop_server(server_id)  # changed for dev ci
+        self.servers_client.stop_server(server_id)
         if wait_until:
             try:
                 waiters.wait_for_server_status(
@@ -1673,7 +1749,15 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         ip_version = ip_version if ip_version else self._ip_version
 
         if server2:
-            server2.complete_prepare_for_connectivity()
+            if server2.set_to_prepare_for_connectivity:
+                # this may be a reason alone to declare a server a to prepare
+                # fip connectivity : making sure it completed on cloudinit
+                server2.wait_for_cloudinit_to_complete()
+
+                # furthermore, if provisioning is needed, provision
+                if server2.needs_provisioning:
+                    server2.provision()
+
             if address:
                 dest = address
             else:
@@ -1684,7 +1768,8 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             assert address
             dest = address
 
-        server1.complete_prepare_for_connectivity()
+        if server1.needs_provisioning:
+            server1.provision()
 
         def ping():
 
@@ -1693,6 +1778,7 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             size = ping_size or CONF.validation.ping_size
 
             def ping_cmd(source, nic=None):
+
                 # Use 'ping6' for IPv6 addresses, 'ping' for IPv4 and hostnames
 
                 cmd = 'ping6' if ip_version == 6 else 'ping'
@@ -1703,15 +1789,16 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                                    assert_success=False) is not None
 
             def ping_address():
+
                 LOG.info('[{}] Pinging {} from {}'.format(
-                    self.test_name, dest, server1.associated_fip))
+                    self.test_name, dest, server1.get_fip_ip()))
 
                 if ping_cmd(server1, interface):
                     success = True
                 else:
                     msg = '[{}] Failed to ping IP {} from {} ({})'.format(
                         self.test_name, dest, server1.name,
-                        server1.associated_fip)
+                        server1.get_fip_ip())
                     if should_pass:
                         LOG.warning(msg)
                     else:
@@ -1733,10 +1820,11 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                                      '({})'.format(self.test_name, dest))
                     success = False
 
-                LOG.info('[{}] Ping {} {}'.format(
+                LOG.info('[{}] Ping -{}- {}'.format(
                     self.test_name,
                     'expected' if success == should_pass else 'unexpected',
                     'SUCCESS' if success else 'FAIL'))
+
                 return success
 
             return test_utils.call_until_true(ping_address, timeout, 1)
@@ -1777,31 +1865,23 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         cmd = NuageBaseTest._get_start_web_server_cmd(port)
         server.send(cmd)
 
-    def osc_delete_test_server(self, vm_id, client=None):
-        """Common wrapper utility delete a test server."""
-        if not client:
-            client = self.manager
-        client.servers_client.delete_server(vm_id)
-        waiters.wait_for_server_termination(client.servers_client, vm_id)
+    def delete_server(self, vm_id, manager=None):
+        manager = manager or self.manager
+        manager.servers_client.delete_server(vm_id)
+        waiters.wait_for_server_termination(manager.servers_client, vm_id)
 
-    def osc_delete_network(self, network, client=None):
-        """Common wrapper utility delete a Network."""
-        if not client:
-            client = self.manager
-        client.networks_client.delete_network(network['id'])
+    def delete_network(self, network, manager=None):
+        manager = manager or self.manager
+        manager.networks_client.delete_network(network['id'])
 
-    def delete_router_interface(self, router, subnet, client=None):
-        """Wrapper utility that returns a router interface."""
-        if not client:
-            client = self.manager
-        client.routers_client.remove_router_interface(router['id'],
-                                                      subnet_id=subnet['id'])
+    def delete_router_interface(self, router, subnet, manager=None):
+        manager = manager or self.manager
+        manager.routers_client.remove_router_interface(router['id'],
+                                                       subnet_id=subnet['id'])
 
-    def delete_subnet(self, subnet, client=None):
-        """Wrapper utility that delete subnet."""
-        if not client:
-            client = self.manager
-        client.subnets_client.delete_subnet(subnet['id'])
+    def delete_subnet(self, subnet, manager=None):
+        manager = manager or self.manager
+        manager.subnets_client.delete_subnet(subnet['id'])
 
     def verify_ip_in_allocation_pools(self, ip_address, allocation_pools):
         in_pool = False
@@ -1809,7 +1889,6 @@ class NuageBaseTest(manager.NetworkScenarioTest):
             start_ip_address = pool['start']
             end_ip_address = pool['end']
             ip_range = IPRange(start_ip_address, end_ip_address)
-
             if IPAddress(ip_address) in ip_range:
                 in_pool = True
         self.assertTrue(in_pool, msg="IP address not in allocation pools")
@@ -1855,17 +1934,21 @@ class NuageBaseTest(manager.NetworkScenarioTest):
                 else:
                     self.assertIsNone(vm_interface['IPAddress'])
 
-    def create_security_group(self, cleanup=True, **kwargs):
-        client = self.security_groups_client
+    def create_security_group(self, manager=None, cleanup=True, **kwargs):
+        manager = manager or self.manager
+        client = manager.security_groups_client
         sg = {'name': data_utils.rand_name('security-group')}
         sg.update(kwargs)
         sg = client.create_security_group(**sg)['security_group']
         if cleanup:
-            self.addCleanup(self.delete_security_group, sg['id'])
+            self.addCleanup(self.delete_security_group, sg['id'],
+                            manager=manager)
         return sg
 
-    def delete_security_group(self, sg_id, ignore_not_found=True):
-        client = self.security_groups_client
+    def delete_security_group(self, sg_id, ignore_not_found=True,
+                              manager=None):
+        manager = manager or self.manager
+        client = manager.security_groups_client
         try:
             client.delete_security_group(sg_id)
         except lib_exc.NotFound:
@@ -2060,6 +2143,7 @@ class NuageBaseOrchestrationTest(NuageBaseTest):
 class NuageAdminNetworksTest(base.BaseAdminNetworkTest):
 
     dhcp_agent_present = None
+    ext_net_id = CONF.network.public_network_id
 
     @classmethod
     def is_dhcp_agent_present(cls):

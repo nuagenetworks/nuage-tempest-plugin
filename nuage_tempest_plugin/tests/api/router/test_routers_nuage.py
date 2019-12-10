@@ -46,6 +46,8 @@ NUAGE_PAT_DISABLED = 'DISABLED'
 
 class NuageRoutersTest(base.BaseNetworkTest):
 
+    ext_net_id = CONF.network.public_network_id
+
     @classmethod
     def skip_checks(cls):
         super(NuageRoutersTest, cls).skip_checks()
@@ -95,7 +97,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
         name = data_utils.rand_name('router-')
         create_body = self.routers_client.create_router(
             name=name, external_gateway_info={
-                "network_id": CONF.network.public_network_id},
+                "network_id": self.ext_net_id},
             admin_state_up=False)
         self.addCleanup(self.routers_client.delete_router,
                         create_body['router']['id'])
@@ -183,7 +185,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
                          " Template on VSD For Router")
         self.assertEqual(
             create_body['router']['external_gateway_info']['network_id'],
-            CONF.network.public_network_id)
+            self.ext_net_id)
         self.assertEqual(create_body['router']['admin_state_up'], False)
         # Show details of the created router
         show_body = self.routers_client.show_router(
@@ -191,7 +193,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
         self.assertEqual(show_body['router']['name'], name)
         self.assertEqual(
             show_body['router']['external_gateway_info']['network_id'],
-            CONF.network.public_network_id)
+            self.ext_net_id)
         self.assertEqual(show_body['router']['admin_state_up'], False)
         # List routers and verify if created router is there in response
         list_body = self.routers_client.list_routers()
@@ -717,7 +719,7 @@ class NuageRoutersAdminTest(NuageAdminNetworksTest):
 
     def _verify_gateway_port(self, router_id):
         list_body = self.admin_ports_client.list_ports(
-            network_id=CONF.network.public_network_id,
+            network_id=self.ext_net_id,
             device_id=router_id)
         self.assertEqual(len(list_body['ports']), 1)
         gw_port = list_body['ports'][0]
@@ -726,7 +728,7 @@ class NuageRoutersAdminTest(NuageAdminNetworksTest):
         # Assert that all of the IPs from the router gateway port
         # are allocated from a valid public subnet.
         public_net_body = self.admin_networks_client.show_network(
-            CONF.network.public_network_id)
+            self.ext_net_id)
         public_subnet_ids = public_net_body['network']['subnets']
         for fixed_ip in fixed_ips:
             subnet_id = fixed_ip['subnet_id']
@@ -741,9 +743,9 @@ class NuageRoutersAdminTest(NuageAdminNetworksTest):
         # Start of copy from upstream
         # Create a router with default snat rule
         router = self._create_router(
-            external_network_id=CONF.network.public_network_id)
+            external_network_id=self.ext_net_id)
         self._verify_router_gateway(
-            router['id'], {'network_id': CONF.network.public_network_id,
+            router['id'], {'network_id': self.ext_net_id,
                            'enable_snat': True})
         # End of copy from upstream
 
@@ -759,11 +761,11 @@ class NuageRoutersAdminTest(NuageAdminNetworksTest):
         self.admin_routers_client.update_router(
             router['id'],
             external_gateway_info={
-                'network_id': CONF.network.public_network_id,
+                'network_id': self.ext_net_id,
                 'enable_snat': False})
         self._verify_router_gateway(
             router['id'],
-            {'network_id': CONF.network.public_network_id,
+            {'network_id': self.ext_net_id,
              'enable_snat': False})
         self._verify_gateway_port(router['id'])
         # End of copy from upstream
@@ -777,18 +779,18 @@ class NuageRoutersAdminTest(NuageAdminNetworksTest):
     def test_update_router_reset_gateway_without_snat(self):
         router = self._create_router(
             data_utils.rand_name('router-'),
-            external_network_id=CONF.network.public_network_id)
+            external_network_id=self.ext_net_id)
         nuage_domain = self.nuage_client.get_l3domain(
             filters='externalID', filter_value=router['id'])
         self.assertEqual(nuage_domain[0]['PATEnabled'], NUAGE_PAT_DISABLED)
         self.admin_routers_client.update_router(
             router['id'],
             external_gateway_info={
-                'network_id': CONF.network.public_network_id,
+                'network_id': self.ext_net_id,
                 'enable_snat': False})
         self._verify_router_gateway(
             router['id'],
-            {'network_id': CONF.network.public_network_id,
+            {'network_id': self.ext_net_id,
              'enable_snat': False})
         self._verify_gateway_port(router['id'])
         nuage_domain = self.nuage_client.get_l3domain(
@@ -802,7 +804,7 @@ class NuageRoutersAdminTest(NuageAdminNetworksTest):
         # Create a router enabling snat attributes
         enable_snat = False
         external_gateway_info = {
-            'network_id': CONF.network.public_network_id,
+            'network_id': self.ext_net_id,
             'enable_snat': enable_snat}
         create_body = self.admin_routers_client.create_router(
             name=name, external_gateway_info=external_gateway_info)

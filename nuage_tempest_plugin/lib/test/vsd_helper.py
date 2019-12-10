@@ -835,7 +835,7 @@ class VsdHelper(object):
             return None
         if not subnet:
             LOG.warning('could not fetch the subnet matching the filter "{}"'
-                        .format(filter))
+                        .format(vspk_filter))
         return subnet
 
     def get_zone_and_domain_parent_of_subnet(self, subnet):
@@ -887,7 +887,7 @@ class VsdHelper(object):
             return None
         if not subnet:
             LOG.warning('could not fetch the subnet matching the filter "{}"'
-                        .format(filter))
+                        .format(vspk_filter))
         return subnet
 
     def get_vm(self, subnet=None, vspk_filter=None, by_device_id=None):

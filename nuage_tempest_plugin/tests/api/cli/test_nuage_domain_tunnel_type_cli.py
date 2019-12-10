@@ -37,8 +37,6 @@ class TestNuageDomainTunnelTypeCli(CLIClientTestCase):
     @classmethod
     def resource_setup(cls):
         super(TestNuageDomainTunnelTypeCli, cls).resource_setup()
-
-        cls.ext_net_id = CONF.network.public_network_id
         cls.me = Role.admin
 
     @classmethod

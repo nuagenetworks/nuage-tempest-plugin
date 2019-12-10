@@ -51,11 +51,6 @@ class NuageSfc(NuageBaseTest):
             raise cls.skipException('sfc service is not enabled.'
                                     ' Skipping tests.')
 
-    def _create_server(self, ports, name='vm', cleanup=True):
-        return self.create_tenant_server(ports=ports,
-                                         name=name,
-                                         cleanup=cleanup)
-
     @classmethod
     def _create_security_disabled_network(self, network_name):
         kwargs = {'name': network_name,
@@ -262,8 +257,8 @@ class NuageSfc(NuageBaseTest):
         p3 = self.create_port(network, name='p3', port_security_enabled=False)
         p4 = self.create_port(network, name='p4', port_security_enabled=False)
 
-        self._create_server([p1, p2], 'sfc-vm1')
-        self._create_server([p3, p4], 'sfc-vm2')
+        self.create_tenant_server(ports=[p1, p2], name='sfc-vm1')
+        self.create_tenant_server(ports=[p3, p4], name='sfc-vm2')
 
         time.sleep(5)
         pp1 = self._create_port_pair('pp1', p1, p2)
@@ -493,7 +488,7 @@ class NuageSfc(NuageBaseTest):
                                      port_security_enabled=False)
             port2 = self.create_port(network, name='port2',
                                      port_security_enabled=False)
-            self._create_server([port1, port2])
+            self.create_tenant_server(ports=[port1, port2])
             port_pair1 = self._create_port_pair('pp1', port1, port2)
             self._create_port_pair_group('ppg1', port_pair1)
 
@@ -504,7 +499,7 @@ class NuageSfc(NuageBaseTest):
         self.create_router_interface(router['id'], subnet['id'])
         port1 = self.create_port(network, name='port1',
                                  port_security_enabled=False)
-        self._create_server([port1])
+        self.create_tenant_server(ports=[port1])
         port_pair1 = self._create_port_pair('pp1', port1, port1)
         self._create_port_pair_group('ppg1', port_pair1)
 
@@ -525,8 +520,8 @@ class NuageSfc(NuageBaseTest):
                                      port_security_enabled=False)
             port4 = self.create_port(network, name='port4',
                                      port_security_enabled=False)
-            self._create_server([port1, port2], 'vm1')
-            self._create_server([port3, port4], 'vm2')
+            self.create_tenant_server(ports=[port1, port2], name='vm1')
+            self.create_tenant_server(ports=[port3, port4], name='vm2')
             time.sleep(5)
             port_pair1 = self._create_port_pair('pp1', port1, port2)
             port_pair2 = self._create_port_pair('pp2', port3, port4)
@@ -605,8 +600,8 @@ class NuageSfc(NuageBaseTest):
         p3 = self.create_port(network, name='p3', port_security_enabled=False)
         p4 = self.create_port(network, name='p4', port_security_enabled=False)
 
-        self._create_server([p1, p2], 'sfc-vm1')
-        self._create_server([p3, p4], 'sfc-vm2')
+        self.create_tenant_server(ports=[p1, p2], name='sfc-vm1')
+        self.create_tenant_server(ports=[p3, p4], name='sfc-vm2')
 
         time.sleep(5)
         pp1 = self._create_port_pair('pp1', p1, p2)
@@ -695,7 +690,7 @@ class NuageSfc(NuageBaseTest):
             destination_port_range_min='100', destination_port_range_max='100')
         p1 = self.create_port(network, name='p1', port_security_enabled=False)
         p2 = self.create_port(network, name='p2', port_security_enabled=False)
-        self._create_server([p1, p2], 'sfc-vm1')
+        self.create_tenant_server(ports=[p1, p2], name='sfc-vm1')
         time.sleep(5)
         pp1 = self._create_port_pair('pp1', p1, p2)
         ppg1 = self._create_port_pair_group('ppg1', pp1)
@@ -754,7 +749,7 @@ class NuageSfc(NuageBaseTest):
         p1 = self.create_port(network, name='p1', port_security_enabled=False)
         p2 = self.create_port(network, name='p2', port_security_enabled=False)
 
-        self._create_server([src_port], 'srcvm')
+        self.create_tenant_server(ports=[src_port], name='srcvm')
         # srcvm_ip = srcvm.get_server_ip_in_network(network['name'])
 
         # Skipping following checks until we have image to support validation
@@ -762,7 +757,7 @@ class NuageSfc(NuageBaseTest):
         # srcvm.configure_vlan_interface(srcvm_ip, 'eth0', '10')
         # srcvm.bring_down_interface('eth0')  # Kris added
 
-        self._create_server([dest_port], 'destvm')
+        self.create_tenant_server(ports=[dest_port], name='destvm')
         # destvm_ip = destvm.get_server_ip_in_network(network['name'])
 
         # Skipping following checks until we have image to support validation
@@ -770,7 +765,7 @@ class NuageSfc(NuageBaseTest):
         # destvm.configure_vlan_interface(destvm_ip, 'eth0', '10')
         # destvm.bring_down_interface('eth0')
 
-        self._create_server([p1, p2], 'sfc-vm1')
+        self.create_tenant_server(ports=[p1, p2], name='sfc-vm1')
         # time.sleep(5)
         pp1 = self._create_port_pair('pp1', p1, p2)
         ppg1 = self._create_port_pair_group('ppg1', pp1)
@@ -803,7 +798,7 @@ class NuageSfc(NuageBaseTest):
             self._create_l3_port_chain(network, subnet, router)
         p5 = self.create_port(network, name='p5', port_security_enabled=False)
         p6 = self.create_port(network, name='p6', port_security_enabled=False)
-        self._create_server([p5, p6], 'sfc-vm3')
+        self.create_tenant_server(ports=[p5, p6], name='sfc-vm3')
         time.sleep(5)
         ppg1 = ppg_list[0]
         ppg2 = ppg_list[1]
@@ -866,7 +861,7 @@ class NuageSfc(NuageBaseTest):
             self._create_l3_port_chain(network, subnet, router)
         p5 = self.create_port(network, name='p5', port_security_enabled=False)
         p6 = self.create_port(network, name='p6', port_security_enabled=False)
-        self._create_server([p5, p6], 'sfc-vm3')
+        self.create_tenant_server(ports=[p5, p6], name='sfc-vm3')
 
         time.sleep(5)
         ppg1 = ppg_list[0]
@@ -927,7 +922,7 @@ class NuageSfc(NuageBaseTest):
         self.create_router_interface(router2['id'], subnet2['id'])
         p1 = self.create_port(network1, name='p1', port_security_enabled=False)
         p2 = self.create_port(network2, name='p2', port_security_enabled=False)
-        self._create_server([p1, p2], 'sfc-vm1')
+        self.create_tenant_server(ports=[p1, p2], name='sfc-vm1')
 
         time.sleep(5)
         pp1 = self._create_port_pair('pp1', p1, p2)
@@ -948,7 +943,7 @@ class NuageSfc(NuageBaseTest):
         p1 = self.create_port(network1, name='p1', port_security_enabled=False)
         p2 = self.create_port(network1, name='p2', port_security_enabled=False)
 
-        sfcvm1 = self._create_server([p1, p2], 'sfc-vm1')
+        sfcvm1 = self.create_tenant_server(ports=[p1, p2], name='sfc-vm1')
         time.sleep(5)
         self.stop_tenant_server(sfcvm1.openstack_data['id'])
         pp1 = self.nsfc_client.create_port_pair('pp1', p1['id'], p2['id'])
@@ -981,10 +976,10 @@ class NuageSfc(NuageBaseTest):
             'fc3', src_port2['id'], dest_port2['id'], '14')
 
         p1 = self.create_port(network, name='p1', port_security_enabled=False)
-        self._create_server([p1], 'sfc-vm1')
+        self.create_tenant_server(ports=[p1], name='sfc-vm1')
 
         p2 = self.create_port(network, name='p2', port_security_enabled=False)
-        self._create_server([p2], 'sfc-vm2')
+        self.create_tenant_server(ports=[p2], name='sfc-vm2')
         time.sleep(5)
 
         pp1 = self._create_port_pair('pp1', p1, p1)
@@ -1082,7 +1077,7 @@ class NuageSfc(NuageBaseTest):
         p2 = self.create_port(nondef_network, name='p2',
                               port_security_enabled=False)
 
-        self._create_server([p1, p2], 'sfc-vm1')
+        self.create_tenant_server(ports=[p1, p2], name='sfc-vm1')
         time.sleep(5)
         pp1 = self._create_port_pair('pp1', p1, p2)
         ppg1 = self._create_port_pair_group('ppg1', pp1)
@@ -1145,9 +1140,9 @@ class NuageSfc(NuageBaseTest):
         p5 = self.create_port(network, name='p5', port_security_enabled=False)
         p6 = self.create_port(network, name='p6', port_security_enabled=False)
 
-        self._create_server([p1, p2], 'sfc-vm1')
-        self._create_server([p3, p4], 'sfc-vm2')
-        self._create_server([p5, p6], 'sfc-vm3')
+        self.create_tenant_server(ports=[p1, p2], name='sfc-vm1')
+        self.create_tenant_server(ports=[p3, p4], name='sfc-vm2')
+        self.create_tenant_server(ports=[p5, p6], name='sfc-vm3')
 
         time.sleep(5)
         pp1 = self._create_port_pair('pp1', p1, p2)
@@ -1213,13 +1208,13 @@ class NuageSfc(NuageBaseTest):
         p1 = self.create_port(network, name='p1')
         p2 = self.create_port(network, name='p2')
 
-        self._create_server([src_port], 'srcvm')
+        self.create_tenant_server(ports=[src_port], name='srcvm')
         # self.prepare_for_nic_provisioning(srcvm, vsd_domain=vsd_l3domain,
         #                                  vsd_subnet=vsd_l3domain_subnet)
         # srcvm_ip = srcvm.get_server_ip_in_network(network['name'])
         # srcvm.configure_vlan_interface(srcvm_ip, interface='eth0', vlan='10')
 
-        self._create_server([dest_port], 'destvm')
+        self.create_tenant_server(ports=[dest_port], name='destvm')
         # self.prepare_for_nic_provisioning(destvm, vsd_domain=vsd_l3domain,
         #                                   vsd_subnet=vsd_l3domain_subnet)
         # destvm_ip = destvm.get_server_ip_in_network(network['name'])
@@ -1227,7 +1222,7 @@ class NuageSfc(NuageBaseTest):
         #  vlan='10')
         # destvm.bring_down_interface('eth0')
 
-        self._create_server([p1, p2], 'sfc-vm1')
+        self.create_tenant_server(ports=[p1, p2], name='sfc-vm1')
         # time.sleep(5)
         pp1 = self._create_port_pair('pp1', p1, p2)
         ppg1 = self._create_port_pair_group('ppg1', pp1)

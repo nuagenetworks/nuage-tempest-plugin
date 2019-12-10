@@ -34,6 +34,8 @@ CONFIGURE_MAC_CMD = (
 
 
 class PortSecAAPTest(NuageBaseTest):
+
+    default_prepare_for_connectivity = True
     force_tenant_isolation = False
 
     def _create_server_with_ports(self, is_l2=False):

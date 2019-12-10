@@ -30,7 +30,6 @@ from nuage_tempest_plugin.lib.mixins.network import NetworkMixin
 from nuage_tempest_plugin.lib.topology import Topology
 
 CONF = Topology.get_conf()
-LOG = Topology.get_logger(__name__)
 
 
 class BgpvpnBase(BGPVPNMixin):
@@ -407,12 +406,10 @@ class BgpvpnCliTests(BGPVPNMixin, base.BaseNetworkTest):
         params['route_distinguishers'] = rd
         params['route_targets'] = rt
         bgpvpn = self.bgpvpn_client.create_bgpvpn(**params)
-        LOG.debug("Verifying BGPVPN")
         self.assertEqual(bgpvpn['name'], params['name'])
         self.assertEqual(bgpvpn['route_distinguishers'],
                          params['route_distinguishers'])
         self.assertEqual(bgpvpn['route_targets'], params['route_targets'])
-        LOG.debug("List with %d items", bgpvpn.__len__())
         return bgpvpn
 
     @decorators.attr(type='smoke')

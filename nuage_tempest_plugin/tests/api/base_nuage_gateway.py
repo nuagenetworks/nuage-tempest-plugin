@@ -151,7 +151,6 @@ class BaseNuageGatewayTest(NuageAdminNetworksTest):
         cls.gatewayvports = []
         cls.router_interfaces = []
 
-        cls.ext_net_id = CONF.network.public_network_id
         cls.network = cls.create_network()
 
         cls.subnet = cls.create_subnet(cls.network)
