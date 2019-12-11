@@ -4,7 +4,7 @@ description: |
 parameters:
   KeyName:
     type: string
-  InstanceType:
+  Flavor:
     type: string
   ImageId:
     type: string
@@ -46,7 +46,7 @@ resources:
     depends_on: RouterInterface
     properties:
       image: {get_param: ImageId}
-      flavor: {get_param: InstanceType}
+      flavor: {get_param: Flavor}
       key_name: {get_param: KeyName}
       networks:
       - network: {get_resource: Network}
