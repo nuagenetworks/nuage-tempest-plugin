@@ -58,7 +58,7 @@ class OrchestrationNeutronResourcesTest(nuage_base.NuageBaseOrchestrationTest):
             template,
             parameters={
                 'KeyName': cls.keypair_name,
-                'InstanceType': CONF.heat_plugin.instance_type,
+                'Flavor': CONF.compute.flavor_ref,
                 'ImageId': CONF.compute.image_ref,
                 'ExternalNetworkId': cls.external_network_id,
                 'timeout': CONF.heat_plugin.build_timeout,
