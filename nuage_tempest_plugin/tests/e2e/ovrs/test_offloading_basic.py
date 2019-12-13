@@ -25,383 +25,479 @@ LOG = Topology.get_logger(__name__)
 VIRTIO_ARGS = {'binding:vnic_type': 'normal', 'binding:profile': {}}
 
 
-class BasicOffloadingL3Test(E2eTestBase):
-    """Basic offloading tests
+class BaseTestCase(object):
+    """Wrapper around the base to avoid it being executed standalone"""
 
-    Check the following behavior:
+    class BasicOffloadingTest(E2eTestBase):
+        """Basic offloading tests
 
-    | Offloading | VIRTIO-VIRTIO | VIRTIO-SWITCHDEV | SWITCHDEV-SWITCHDEV |
-    | :--------: | :-----------: | :--------------: | :-----------------: |
-    |  Same HV   |      no       |       no!        |         yes         |
-    |  Diff HV   |      no       | yes on switchdev |         yes         |
+        Check the following behavior:
 
-    """
-    router = None
-    network = None
-    default_port_args = None
-    virtio_port_args = None
-    sg = None
+        | Offloading | VIRTIO-VIRTIO | VIRTIO-SWITCHDEV | SWITCHDEV-SWITCHDEV |
+        | :--------: | :-----------: | :--------------: | :-----------------: |
+        |  Same HV   |      no       |       no!        |         yes         |
+        |  Diff HV   |      no       | yes on switchdev |         yes         |
 
-    @classmethod
-    def setup_clients(cls):
-        super(E2eTestBase, cls).setup_clients()
-        cls.hv_client = cls.admin_manager.hypervisor_client
+        Important note: ICMPv6 is NOT expected to offload due to limitations
+        on ConnectX-5 EN NIC.
 
-    @classmethod
-    def setUpClass(cls):
-        super(BasicOffloadingL3Test, cls).setUpClass()
-
-        hypervisors = cls.hv_client.list_hypervisors(
-            detail=True)['hypervisors']
-
-        cls.selected_hypervisors = random.sample(hypervisors,
-                                                 min(2, len(hypervisors)))
-        if len(cls.selected_hypervisors) < 1:
-            raise cls.skipException('at least 1 hypervisors required')
-
-    def setUp(self):
-        """Setup test topology"""
-        super(BasicOffloadingL3Test, self).setUp()
-
-        # TODO(glenn) remove restart openvswitch BUG VRS-31204
-        # for hv in self.selected_hypervisors:
-        #     self.restart_openvswitch(hv)
-
-        self.router = self.create_router(
-            external_network_id=CONF.network.public_network_id)
-        self.network = self.create_network()
-        self.router_attach(self.router, self.create_subnet(self.network))
-
-        self.sg = self.create_open_ssh_security_group(
-            client=self.admin_manager)
-        sec_grp_rules_client = self.admin_manager.security_group_rules_client
-        self.create_tcp_rule(self.sg, direction='ingress', ip_version=4,
-                             sec_group_rules_client=sec_grp_rules_client)
-        self.create_tcp_rule(self.sg, direction='egress', ip_version=4,
-                             sec_group_rules_client=sec_grp_rules_client)
-
-        self.default_port_args = dict(network=self.network,
-                                      client=self.admin_manager,
-                                      security_groups=[self.sg['id']])
-        self.virtio_port_args = dict(VIRTIO_ARGS, **self.default_port_args)
-
-    def dump_flows(self, both_hypervisors):
-        flows_hv_0 = (super(BasicOffloadingL3Test, self)
-                      .dump_flows(self.selected_hypervisors[0]))
-        LOG.debug("Flows hypervisor 0: {}".format(flows_hv_0))
-
-        flows_hv_1 = (super(BasicOffloadingL3Test, self)
-                      .dump_flows(self.selected_hypervisors[1])
-                      if both_hypervisors else None)
-        LOG.debug("Flows hypervisor 1: {}".format(flows_hv_1))
-
-        return flows_hv_0, flows_hv_1
-
-    def _offload_test(self, from_server, from_port, to_server, to_port):
-        """Send traffic between the servers and analyze ovs flows
-
-        :param from_server: Server initiating traffic
-        :param from_port: Port on that server used for initiating traffic
-        :param to_server: Server responding to incoming traffic
-        :param to_port: Port on that server used for the traffic
         """
+        ip_versions = ()
+        is_l3 = False
+        is_icmpv6_offload_supported = False  # limitation of CX-5 at the moment
 
-        server_0 = from_server.get_server_details()
-        server_1 = to_server.get_server_details()
-        is_different_hv = (server_0['OS-EXT-SRV-ATTR:hypervisor_hostname'] !=
-                           server_1['OS-EXT-SRV-ATTR:hypervisor_hostname'])
+        router = None
+        network = None
+        default_port_args = None
+        virtio_port_args = None
+        sg = None
 
-        self.assert_icmp_connectivity(from_server=from_server,
-                                      to_server=to_server,
-                                      network_name=self.network['name'],
-                                      ip_version=4)
-        flows_after_icmp = self.dump_flows(is_different_hv)
+        @classmethod
+        def setup_clients(cls):
+            super(E2eTestBase, cls).setup_clients()
+            cls.hv_client = cls.admin_manager.hypervisor_client
 
-        self.assert_tcp_connectivity(from_server=from_server,
-                                     to_server=to_server,
-                                     network_name=self.network['name'],
-                                     ip_version=4)
-        flows_after_tcp = self.dump_flows(is_different_hv)
+        @classmethod
+        def setUpClass(cls):
+            super(BaseTestCase.BasicOffloadingTest, cls).setUpClass()
 
-        LOG.info('Validating flows on hypervisor 0')
-        self._validate_hypervisor_flows(
-            flows_after_icmp[0], flows_after_tcp[0],
-            from_port, is_different_hv, to_port)
+            hypervisors = cls.get_hypervisors()
+            cls.selected_hypervisors = random.sample(hypervisors,
+                                                     min(2, len(hypervisors)))
+            if len(cls.selected_hypervisors) < 1:
+                raise cls.skipException('at least 1 hypervisors required')
 
-        if is_different_hv:
-            LOG.info('Validating flows on hypervisor 1')
+        def setUp(self):
+            """Setup test topology"""
+            super(BaseTestCase.BasicOffloadingTest, self).setUp()
 
-        # from_port and to_port are switched now since
-        # naming is from the perspective of the VM initiating traffic
-        index = 1 if is_different_hv else 0
-        self._validate_hypervisor_flows(
-            flows_after_icmp[index], flows_after_tcp[index], to_port,
-            is_different_hv, from_port)
+            self.network = self.create_network()
 
-    def _validate_hypervisor_flows(self, flows_after_icmp, flows_after_tcp,
-                                   from_port, is_different_hv, to_port):
-        # No offloading for VIRTIO-SWITCHDEV traffic on same hypervisor
-        is_offloading_possible = (is_different_hv or
-                                  self.is_offload_capable(from_port) ==
-                                  self.is_offload_capable(to_port))
-        is_offloading_expected = (is_offloading_possible and
-                                  self.is_offload_capable(from_port))
+            if self.is_l3:
+                self.router = self.create_router(
+                    external_network_id=CONF.network.public_network_id)
 
-        LOG.debug("Validating ICMP flows")
-        query_after_icmp = FlowQuery(flows_after_icmp)
-        flows = (query_after_icmp.icmp() if from_port['port_security_enabled']
-                 else query_after_icmp.wildcard_protocol())
-        self._validate_flow_pair(flows.result(),
-                                 from_port, to_port,
-                                 is_different_hv, is_offloading_expected)
+            for ip_version in self.ip_versions:
+                subnet = self.create_subnet(self.network,
+                                            ip_version=ip_version)
+                if self.is_l3:
+                    self.router_attach(self.router, subnet)
 
-        LOG.debug("Validating TCP flows")
-        query_after_tcp = FlowQuery(flows_after_tcp)
-        flows = (query_after_tcp.icmp() if from_port['port_security_enabled']
-                 else query_after_tcp.wildcard_protocol())
-        self._validate_flow_pair(flows.result(),
-                                 from_port, to_port,
-                                 is_different_hv, is_offloading_expected)
+            self.sg = self.create_open_ssh_security_group(
+                client=self.admin_manager)
+            sgr_client = self.admin_manager.security_group_rules_client
 
-    def _validate_flow_pair(self, flows, from_port, to_port,
-                            is_vxlan_tunneled, is_offloading_expected):
+            for ip_version in self.ip_versions:
+                self.create_tcp_rule(self.sg, direction='ingress',
+                                     ip_version=ip_version,
+                                     sec_group_rules_client=sgr_client)
+                self.create_tcp_rule(self.sg, direction='egress',
+                                     ip_version=ip_version,
+                                     sec_group_rules_client=sgr_client)
 
-        LOG.info('Validate flow originating from hypervisor')
-        self._validate_flow(flows,
-                            is_vxlan_tunneled,
-                            is_offloading_expected,
-                            to_port, is_originating_from_hv=True)
+            self.default_port_args = dict(network=self.network,
+                                          client=self.admin_manager,
+                                          security_groups=[self.sg['id']])
+            self.virtio_port_args = dict(VIRTIO_ARGS, **self.default_port_args)
 
-        LOG.info('Validate flow arriving at hypervisor')
-        self._validate_flow(flows,
-                            is_vxlan_tunneled,
-                            is_offloading_expected,
-                            from_port, is_originating_from_hv=False)
+        def assert_icmp_connectivity(self, *args, **kwargs):
+            LOG.info('Verify ICMP traffic')
 
-    def _validate_flow(self, flows, is_vxlan_tunneled,
-                       is_offloading_expected,
-                       to_port, is_originating_from_hv):
-        expected_flows = FlowQuery(flows).dst_mac(to_port['mac_address'])
+            self._assert_connectivity(
+                super(E2eTestBase, self).assert_icmp_connectivity,
+                self._validate_icmp_offloading, *args, **kwargs)
 
-        if is_vxlan_tunneled:
-            if is_originating_from_hv:
-                expected_flows.action_set_tunnel_vxlan()
+        def _validate_icmp_offloading(self, flows, from_port, is_cross_hv,
+                                      to_port, ip_version):
+
+            if ip_version == 6 and not self.is_icmpv6_offload_supported:
+                LOG.info('skipping ICMPv6 offloading checks as they are not '
+                         'supported by CX-5')
+                return
+
+            filtered_flows = FlowQuery(flows).ip_version(ip_version)
+
+            if from_port['port_security_enabled']:
+                filtered_flows.icmp()
             else:
-                expected_flows.vxlan()
+                filtered_flows.wildcard_protocol()
 
-        if is_offloading_expected:
-            expected_flows.offload()
-        else:
-            expected_flows.no_offload()
+            self._validate_offloading(
+                filtered_flows.result(), from_port, is_cross_hv, to_port)
 
-        msg = ("No traffic found with offload={offload} "
-               "and vxlan={vxlan} and dst_mac={dst_mac}"
-               .format(offload='yes' if is_offloading_expected else 'no',
-                       vxlan='yes' if is_vxlan_tunneled else 'no',
-                       dst_mac=to_port['mac_address']))
+        def _assert_connectivity(self, traffic_generator, flow_validator,
+                                 *args, **kwargs):
+            from_hv = self.get_hypervisor(kwargs.get('from_server'))
+            to_hv = self.get_hypervisor(kwargs.get('to_server'))
+            from_port = kwargs.pop('from_port')
+            to_port = kwargs.pop('to_port')
+            is_cross_hv = from_hv['id'] != to_hv['id']
 
-        self.assertNotEmpty(expected_flows.result(), msg)
+            # generate traffic
+            traffic_generator(*args, **kwargs)
 
-    def test_same_hv_switchdev_switchdev(self):
-        hv = self.selected_hypervisors[0]['hypervisor_hostname']
+            # verify offloading
+            flows = self.dump_flows(from_hv)
+            flow_validator(
+                flows, from_port, is_cross_hv,
+                to_port, kwargs.get('ip_version'))
 
-        from_port = self.create_port(**self.default_port_args)
-        to_port = self.create_port(**self.default_port_args)
+            if is_cross_hv:
+                flows = self.dump_flows(to_hv)
+                flow_validator(
+                    flows, to_port, is_cross_hv,
+                    from_port, kwargs.get('ip_version'))
 
-        self.assertTrue(self.is_offload_capable(from_port))
-        self.assertTrue(self.is_offload_capable(to_port))
+        def assert_tcp_connectivity(self, *args, **kwargs):
+            LOG.info('Verify TCP traffic')
 
-        to_server = self.create_tenant_server(
-            ports=[to_port],
-            availability_zone='nova:' + hv,
-            client=self.admin_manager,
-            start_web_server=True,
-            name=data_utils.rand_name('test-server-offload'))
+            self._assert_connectivity(
+                super(E2eTestBase, self).assert_tcp_connectivity,
+                self._validate_tcp_offloading, *args, **kwargs)
 
-        from_server = self.create_tenant_server(
-            ports=[from_port],
-            availability_zone='nova:' + hv,
-            prepare_for_connectivity=True,
-            client=self.admin_manager,
-            name=data_utils.rand_name('test-server-offload-fip'))
+        def _validate_tcp_offloading(self, flows, from_port, is_cross_hv,
+                                     to_port, ip_version):
 
-        self._offload_test(from_server=from_server, from_port=from_port,
-                           to_server=to_server, to_port=to_port)
+            filtered_flows = FlowQuery(flows).ip_version(ip_version)
 
-    def test_diff_hv_switchdev_switchdev(self):
+            if from_port['port_security_enabled']:
+                filtered_flows.tcp()
+            else:
+                filtered_flows.wildcard_protocol()
 
-        if len(self.selected_hypervisors) < 2:
-            raise self.skipException('at least 2 hypervisors required')
+            self._validate_offloading(
+                filtered_flows.result(), from_port, is_cross_hv, to_port)
 
-        hv0 = self.selected_hypervisors[0]['hypervisor_hostname']
-        hv1 = self.selected_hypervisors[1]['hypervisor_hostname']
+        def _offload_test(self, from_server, from_port, to_server, to_port):
+            """Send traffic between the servers and analyze ovs flows
 
-        from_port = self.create_port(**self.default_port_args)
-        to_port = self.create_port(**self.default_port_args)
+            :param from_server: Server initiating traffic
+            :param from_port: Port on that server used for initiating traffic
+            :param to_server: Server responding to incoming traffic
+            :param to_port: Port on that server used for the traffic
+            """
+            for ip_version in self.ip_versions:
+                LOG.info('Verify IPv{} traffic'.format(ip_version))
 
-        self.assertTrue(self.is_offload_capable(from_port))
-        self.assertTrue(self.is_offload_capable(to_port))
+                kwargs = dict(from_server=from_server, to_server=to_server,
+                              network_name=self.network['name'],
+                              ip_version=ip_version,
+                              from_port=from_port, to_port=to_port)
 
-        to_server = self.create_tenant_server(
-            ports=[to_port],
-            availability_zone='nova:' + hv1,
-            client=self.admin_manager,
-            start_web_server=True,
-            name=data_utils.rand_name('test-server-offload'))
+                self.assert_tcp_connectivity(**kwargs)
+                self.assert_icmp_connectivity(**kwargs)
 
-        from_server = self.create_tenant_server(
-            ports=[from_port],
-            availability_zone='nova:' + hv0,
-            prepare_for_connectivity=True,
-            client=self.admin_manager,
-            name=data_utils.rand_name('test-server-offload-fip'))
+        def _is_offloading_expected(self, from_port, to_port, is_different_hv):
+            """Whether flow should be offloaded on first hypervisor
 
-        self._offload_test(from_server=from_server, from_port=from_port,
-                           to_server=to_server, to_port=to_port)
+            | Offload | VIRTIO-VIRTIO | SWITCHDEV-VIRTIO | SWITCHDEV-SWITCHDEV|
+            | :-----: | :-----------: | :--------------: | :-----------------:|
+            | Same HV |      no       |       no!        |         yes        |
+            | Diff HV |      no       | yes on switchdev |         yes        |
+            """
+            if is_different_hv:
+                return self.is_offload_capable(from_port)
+            else:
+                return (self.is_offload_capable(from_port) and
+                        self.is_offload_capable(to_port))
 
-    def test_same_hv_virtio_switchdev(self):
-        hv = self.selected_hypervisors[0]['hypervisor_hostname']
+        def _validate_offloading(self, flows, from_port, is_different_hv,
+                                 to_port):
+            is_offloading_expected = self._is_offloading_expected(
+                from_port, to_port, is_different_hv)
 
-        from_port = self.create_port(**self.virtio_port_args)
-        to_port = self.create_port(**self.default_port_args)
+            LOG.info('Validate flow originating from hypervisor')
+            self._validate_offloaded_flow(
+                flows, is_different_hv, is_offloading_expected, to_port,
+                is_originating_from_hv=True)
 
-        self.assertFalse(self.is_offload_capable(from_port))
-        self.assertTrue(self.is_offload_capable(to_port))
+            LOG.info('Validate flow arriving at hypervisor')
+            self._validate_offloaded_flow(
+                flows, is_different_hv, is_offloading_expected, from_port,
+                is_originating_from_hv=False)
 
-        to_server = self.create_tenant_server(
-            ports=[to_port],
-            availability_zone='nova:' + hv,
-            client=self.admin_manager,
-            start_web_server=True,
-            name=data_utils.rand_name('test-server-offload'))
+        def _validate_offloaded_flow(self, flows, is_vxlan_tunneled,
+                                     is_offloading_expected,
+                                     to_port, is_originating_from_hv):
+            expected_flows = FlowQuery(flows).dst_mac(to_port['mac_address'])
 
-        from_server = self.create_tenant_server(
-            ports=[from_port],
-            availability_zone='nova:' + hv,
-            prepare_for_connectivity=True,
-            client=self.admin_manager,
-            name=data_utils.rand_name('test-server-offload-fip'))
+            if is_vxlan_tunneled:
+                if is_originating_from_hv:
+                    expected_flows.action_set_tunnel_vxlan()
+                else:
+                    expected_flows.vxlan()
 
-        self._offload_test(from_server=from_server, from_port=from_port,
-                           to_server=to_server, to_port=to_port)
+            if is_offloading_expected:
+                expected_flows.offload()
+            else:
+                expected_flows.no_offload()
 
-    def test_diff_hv_virtio_switchdev(self):
+            msg = ("No traffic found with offload={offload} "
+                   "and vxlan={vxlan} and dst_mac={dst_mac}"
+                   .format(offload='yes' if is_offloading_expected else 'no',
+                           vxlan='yes' if is_vxlan_tunneled else 'no',
+                           dst_mac=to_port['mac_address']))
 
-        if len(self.selected_hypervisors) < 2:
-            raise self.skipException('at least 2 hypervisors required')
+            self.assertNotEmpty(expected_flows.result(), msg)
 
-        hv0 = self.selected_hypervisors[0]['hypervisor_hostname']
-        hv1 = self.selected_hypervisors[1]['hypervisor_hostname']
+        def _get_server_extra_args(self):
+            """Force config drive for L2 to work around metadata agent issue"""
+            args = {}
+            if not self.is_l3:
+                args['config_drive'] = True
+            return args
 
-        from_port = self.create_port(**self.virtio_port_args)
-        to_port = self.create_port(**self.default_port_args)
+        def test_same_hv_switchdev_switchdev(self):
+            hv = self.selected_hypervisors[0]['hypervisor_hostname']
 
-        self.assertFalse(self.is_offload_capable(from_port))
-        self.assertTrue(self.is_offload_capable(to_port))
+            from_port = self.create_port(**self.default_port_args)
+            to_port = self.create_port(**self.default_port_args)
 
-        to_server = self.create_tenant_server(
-            ports=[to_port],
-            availability_zone='nova:' + hv1,
-            client=self.admin_manager,
-            start_web_server=True,
-            name=data_utils.rand_name('test-server-offload'))
+            self.assertTrue(self.is_offload_capable(from_port))
+            self.assertTrue(self.is_offload_capable(to_port))
 
-        from_server = self.create_tenant_server(
-            ports=[from_port],
-            availability_zone='nova:' + hv0,
-            prepare_for_connectivity=True,
-            client=self.admin_manager,
-            name=data_utils.rand_name('test-server-offload-fip'))
+            to_server = self.create_tenant_server(
+                ports=[to_port],
+                availability_zone='nova:' + hv,
+                prepare_for_connectivity=True,
+                client=self.admin_manager,
+                start_web_server=True,
+                name=data_utils.rand_name('test-server-offload'),
+                **self._get_server_extra_args())
 
-        self._offload_test(from_server=from_server, from_port=from_port,
-                           to_server=to_server, to_port=to_port)
+            from_server = self.create_tenant_server(
+                ports=[from_port],
+                availability_zone='nova:' + hv,
+                prepare_for_connectivity=True,
+                client=self.admin_manager,
+                name=data_utils.rand_name('test-server-offload-fip'),
+                **self._get_server_extra_args())
 
-    def test_same_hv_virtio_virtio(self):
-        hv = self.selected_hypervisors[0]['hypervisor_hostname']
+            self._offload_test(from_server=from_server, from_port=from_port,
+                               to_server=to_server, to_port=to_port)
 
-        from_port = self.create_port(**self.virtio_port_args)
-        to_port = self.create_port(**self.virtio_port_args)
+        def test_diff_hv_switchdev_switchdev(self):
 
-        self.assertFalse(self.is_offload_capable(from_port))
-        self.assertFalse(self.is_offload_capable(to_port))
+            if len(self.selected_hypervisors) < 2:
+                raise self.skipException('at least 2 hypervisors required')
 
-        to_server = self.create_tenant_server(
-            ports=[to_port],
-            availability_zone='nova:' + hv,
-            client=self.admin_manager,
-            start_web_server=True,
-            name=data_utils.rand_name('test-server-offload'))
+            hv0 = self.selected_hypervisors[0]['hypervisor_hostname']
+            hv1 = self.selected_hypervisors[1]['hypervisor_hostname']
 
-        from_server = self.create_tenant_server(
-            ports=[from_port],
-            availability_zone='nova:' + hv,
-            prepare_for_connectivity=True,
-            client=self.admin_manager,
-            name=data_utils.rand_name('test-server-offload-fip'))
+            from_port = self.create_port(**self.default_port_args)
+            to_port = self.create_port(**self.default_port_args)
 
-        self._offload_test(from_server=from_server, from_port=from_port,
-                           to_server=to_server, to_port=to_port)
+            self.assertTrue(self.is_offload_capable(from_port))
+            self.assertTrue(self.is_offload_capable(to_port))
 
-    def test_diff_hv_virtio_virtio(self):
+            to_server = self.create_tenant_server(
+                ports=[to_port],
+                availability_zone='nova:' + hv1,
+                prepare_for_connectivity=True,
+                client=self.admin_manager,
+                start_web_server=True,
+                name=data_utils.rand_name('test-server-offload'),
+                **self._get_server_extra_args())
 
-        if len(self.selected_hypervisors) < 2:
-            raise self.skipException('at least 2 hypervisors required')
+            from_server = self.create_tenant_server(
+                ports=[from_port],
+                availability_zone='nova:' + hv0,
+                prepare_for_connectivity=True,
+                client=self.admin_manager,
+                name=data_utils.rand_name('test-server-offload-fip'),
+                **self._get_server_extra_args())
 
-        hv0 = self.selected_hypervisors[0]['hypervisor_hostname']
-        hv1 = self.selected_hypervisors[1]['hypervisor_hostname']
+            self._offload_test(from_server=from_server, from_port=from_port,
+                               to_server=to_server, to_port=to_port)
 
-        from_port = self.create_port(**self.virtio_port_args)
-        to_port = self.create_port(**self.virtio_port_args)
+        def test_same_hv_virtio_switchdev(self):
+            hv = self.selected_hypervisors[0]['hypervisor_hostname']
 
-        self.assertFalse(self.is_offload_capable(from_port))
-        self.assertFalse(self.is_offload_capable(to_port))
+            from_port = self.create_port(**self.virtio_port_args)
+            to_port = self.create_port(**self.default_port_args)
 
-        to_server = self.create_tenant_server(
-            ports=[to_port],
-            availability_zone='nova:' + hv1,
-            client=self.admin_manager,
-            start_web_server=True,
-            name=data_utils.rand_name('test-server-offload'))
+            self.assertFalse(self.is_offload_capable(from_port))
+            self.assertTrue(self.is_offload_capable(to_port))
 
-        from_server = self.create_tenant_server(
-            ports=[from_port],
-            availability_zone='nova:' + hv0,
-            prepare_for_connectivity=True,
-            client=self.admin_manager,
-            name=data_utils.rand_name('test-server-offload-fip'))
+            to_server = self.create_tenant_server(
+                ports=[to_port],
+                availability_zone='nova:' + hv,
+                prepare_for_connectivity=True,
+                client=self.admin_manager,
+                start_web_server=True,
+                name=data_utils.rand_name('test-server-offload'),
+                **self._get_server_extra_args())
 
-        self._offload_test(from_server=from_server, from_port=from_port,
-                           to_server=to_server, to_port=to_port)
+            from_server = self.create_tenant_server(
+                ports=[from_port],
+                availability_zone='nova:' + hv,
+                prepare_for_connectivity=True,
+                client=self.admin_manager,
+                name=data_utils.rand_name('test-server-offload-fip'),
+                **self._get_server_extra_args())
 
-    def test_diff_hv_switchdev_switchdev_no_port_security(self):
+            self._offload_test(from_server=from_server, from_port=from_port,
+                               to_server=to_server, to_port=to_port)
 
-        if len(self.selected_hypervisors) < 2:
-            raise self.skipException('at least 2 hypervisors required')
+        def test_diff_hv_virtio_switchdev(self):
 
-        hv0 = self.selected_hypervisors[0]['hypervisor_hostname']
-        hv1 = self.selected_hypervisors[1]['hypervisor_hostname']
+            if len(self.selected_hypervisors) < 2:
+                raise self.skipException('at least 2 hypervisors required')
 
-        args = dict(self.default_port_args, port_security_enabled=False,
-                    security_groups=[])
-        from_port = self.create_port(**args)
-        to_port = self.create_port(**args)
+            hv0 = self.selected_hypervisors[0]['hypervisor_hostname']
+            hv1 = self.selected_hypervisors[1]['hypervisor_hostname']
 
-        self.assertTrue(self.is_offload_capable(from_port))
-        self.assertTrue(self.is_offload_capable(to_port))
+            from_port = self.create_port(**self.virtio_port_args)
+            to_port = self.create_port(**self.default_port_args)
 
-        to_server = self.create_tenant_server(
-            ports=[to_port],
-            availability_zone='nova:' + hv1,
-            client=self.admin_manager,
-            start_web_server=True,
-            name=data_utils.rand_name('test-server-offload'))
+            self.assertFalse(self.is_offload_capable(from_port))
+            self.assertTrue(self.is_offload_capable(to_port))
 
-        from_server = self.create_tenant_server(
-            ports=[from_port],
-            availability_zone='nova:' + hv0,
-            prepare_for_connectivity=True,
-            client=self.admin_manager,
-            name=data_utils.rand_name('test-server-offload-fip'))
+            to_server = self.create_tenant_server(
+                ports=[to_port],
+                availability_zone='nova:' + hv1,
+                prepare_for_connectivity=True,
+                client=self.admin_manager,
+                start_web_server=True,
+                name=data_utils.rand_name('test-server-offload'),
+                **self._get_server_extra_args())
 
-        self._offload_test(from_server=from_server, from_port=from_port,
-                           to_server=to_server, to_port=to_port)
+            from_server = self.create_tenant_server(
+                ports=[from_port],
+                availability_zone='nova:' + hv0,
+                prepare_for_connectivity=True,
+                client=self.admin_manager,
+                name=data_utils.rand_name('test-server-offload-fip'),
+                **self._get_server_extra_args())
+
+            self._offload_test(from_server=from_server, from_port=from_port,
+                               to_server=to_server, to_port=to_port)
+
+        def test_same_hv_virtio_virtio(self):
+            hv = self.selected_hypervisors[0]['hypervisor_hostname']
+
+            from_port = self.create_port(**self.virtio_port_args)
+            to_port = self.create_port(**self.virtio_port_args)
+
+            self.assertFalse(self.is_offload_capable(from_port))
+            self.assertFalse(self.is_offload_capable(to_port))
+
+            to_server = self.create_tenant_server(
+                ports=[to_port],
+                availability_zone='nova:' + hv,
+                prepare_for_connectivity=True,
+                client=self.admin_manager,
+                start_web_server=True,
+                name=data_utils.rand_name('test-server-offload'),
+                **self._get_server_extra_args())
+
+            from_server = self.create_tenant_server(
+                ports=[from_port],
+                availability_zone='nova:' + hv,
+                prepare_for_connectivity=True,
+                client=self.admin_manager,
+                name=data_utils.rand_name('test-server-offload-fip'),
+                **self._get_server_extra_args())
+
+            self._offload_test(from_server=from_server, from_port=from_port,
+                               to_server=to_server, to_port=to_port)
+
+        def test_diff_hv_virtio_virtio(self):
+
+            if len(self.selected_hypervisors) < 2:
+                raise self.skipException('at least 2 hypervisors required')
+
+            hv0 = self.selected_hypervisors[0]['hypervisor_hostname']
+            hv1 = self.selected_hypervisors[1]['hypervisor_hostname']
+
+            from_port = self.create_port(**self.virtio_port_args)
+            to_port = self.create_port(**self.virtio_port_args)
+
+            self.assertFalse(self.is_offload_capable(from_port))
+            self.assertFalse(self.is_offload_capable(to_port))
+
+            to_server = self.create_tenant_server(
+                ports=[to_port],
+                availability_zone='nova:' + hv1,
+                prepare_for_connectivity=True,
+                client=self.admin_manager,
+                start_web_server=True,
+                name=data_utils.rand_name('test-server-offload'),
+                **self._get_server_extra_args())
+
+            from_server = self.create_tenant_server(
+                ports=[from_port],
+                availability_zone='nova:' + hv0,
+                prepare_for_connectivity=True,
+                client=self.admin_manager,
+                name=data_utils.rand_name('test-server-offload-fip'),
+                **self._get_server_extra_args())
+
+            self._offload_test(from_server=from_server, from_port=from_port,
+                               to_server=to_server, to_port=to_port)
+
+        def test_diff_hv_switchdev_switchdev_no_port_security(self):
+
+            if len(self.selected_hypervisors) < 2:
+                raise self.skipException('at least 2 hypervisors required')
+
+            hv0 = self.selected_hypervisors[0]['hypervisor_hostname']
+            hv1 = self.selected_hypervisors[1]['hypervisor_hostname']
+
+            args = dict(self.default_port_args, port_security_enabled=False,
+                        security_groups=[])
+            from_port = self.create_port(**args)
+            to_port = self.create_port(**args)
+
+            self.assertTrue(self.is_offload_capable(from_port))
+            self.assertTrue(self.is_offload_capable(to_port))
+
+            to_server = self.create_tenant_server(
+                ports=[to_port],
+                availability_zone='nova:' + hv1,
+                prepare_for_connectivity=True,
+                client=self.admin_manager,
+                start_web_server=True,
+                name=data_utils.rand_name('test-server-offload'),
+                **self._get_server_extra_args())
+
+            from_server = self.create_tenant_server(
+                ports=[from_port],
+                availability_zone='nova:' + hv0,
+                prepare_for_connectivity=True,
+                client=self.admin_manager,
+                name=data_utils.rand_name('test-server-offload-fip'),
+                **self._get_server_extra_args())
+
+            self._offload_test(from_server=from_server, from_port=from_port,
+                               to_server=to_server, to_port=to_port)
+
+
+class L3IPv4Connectivity(BaseTestCase.BasicOffloadingTest):
+    ip_versions = (4,)
+    is_l3 = True
+
+
+class L3IPv6Connectivity(BaseTestCase.BasicOffloadingTest):
+    ip_versions = (6,)
+    is_l3 = True
+
+
+class L2IPv4Connectivity(BaseTestCase.BasicOffloadingTest):
+    ip_versions = (4,)
+    is_l3 = False
+
+
+class L2IPv6Connectivity(BaseTestCase.BasicOffloadingTest):
+    ip_versions = (6,)
+    is_l3 = False
+
+
+class L3DualStackConnectivity(BaseTestCase.BasicOffloadingTest):
+    ip_versions = (4, 6)
+    is_l3 = True
+
+
+class L2DualStackConnectivity(BaseTestCase.BasicOffloadingTest):
+    ip_versions = (4, 6)
+    is_l3 = False
