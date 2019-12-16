@@ -1502,8 +1502,21 @@ class NuageBaseTest(manager.NetworkScenarioTest):
         self.router_attach(router, subnet, client=client)
 
         open_ssh_sg = self.create_open_ssh_security_group(client=client)
+
+        # Avoid mixing virtio and switchdev port
+        # On RHEL-7-7, interfaces are ordered. VIRTIO comes first, then
+        # switchdev. We don't want this order to change since metadata
+        # agent relies on DHCPv4 being executed on first interface and
+        # this should be the fip_port interface.
+        fip_kwargs = {}
+        if ports:
+            fip_kwargs['binding:vnic_type'] = ports[0]['binding:vnic_type']
+            if 'binding:profile' in ports[0]:
+                fip_kwargs['binding:profile'] = ports[0]['binding:profile']
+
         fip_port = self.create_port(fip_network, client,
-                                    security_groups=[open_ssh_sg['id']])
+                                    security_groups=[open_ssh_sg['id']],
+                                    **fip_kwargs)
 
         LOG.info('[{}] FIP topology for {} set up'.format(
             self.test_name, server_name))
