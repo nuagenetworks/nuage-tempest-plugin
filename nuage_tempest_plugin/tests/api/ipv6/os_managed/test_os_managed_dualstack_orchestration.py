@@ -50,7 +50,7 @@ class OsManagedDualStackOrchestrationTest(NuageBaseOrchestrationTest):
         resource = self.test_resources.get(resource_name)
         server_id = resource['physical_resource_id']
         server = TenantServer(self)
-        server.sync_with(server_id)
+        server.sync_with_os(server_id)
         return server
 
     @decorators.attr(type='slow')

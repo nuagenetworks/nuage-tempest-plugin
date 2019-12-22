@@ -32,6 +32,29 @@ def get_cidr_attributes(ip_network):
     return address, netmask, gateway
 
 
+def chunk_str_to_dict(s, key_prefix, chunk_size):
+    chunked = {}
+    increment = 0
+    for chunk in [s[i:i + chunk_size]
+                  for i in range(0, len(s), chunk_size)]:
+        chunked['{}_{}'.format(key_prefix, increment)] = chunk
+        increment += 1
+    return chunked
+
+
+def reunite_chunk_to_str(chunked, key_prefix):
+    s = ''
+    chunks = {}
+    # make sure that we consider key_prefix items only (assume that
+    # chunked can hold other data on top)
+    for key in chunked:
+        if key.startswith(key_prefix):
+            chunks[key] = chunked[key]
+    for i in range(len(chunks)):
+        s += chunked['{}_{}'.format(key_prefix, i)]
+    return s
+
+
 # for py2 and py3 compatibility using next()
 class Iterable(object):
     def __init__(self, iterable):

@@ -30,7 +30,7 @@ class Topology(object):
     def_netpartition = CONF.nuage.nuage_default_netpartition
     cms_id = CONF.nuage.nuage_cms_id
 
-    is_v5 = nuage_release < Release('6.0')
+    is_v5 = nuage_release < Release('6.0.0')
 
     # - - - - - -
 

@@ -14,6 +14,7 @@ from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions as lib_exc
 
 from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import data_utils as utils
 
 CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
@@ -27,7 +28,7 @@ class FipAccessConsole(RemoteClient):
             ip_address=tenant_server.get_fip_ip(),
             username=tenant_server.username,
             password=tenant_server.password,
-            pkey=tenant_server.keypair['private_key'],
+            pkey=tenant_server.private_key,
             servers_client=tenant_server.parent.manager.servers_client)
         self.tag = tenant_server.tag
         self.parent = tenant_server.parent
@@ -107,7 +108,7 @@ class TenantServer(object):
                  security_groups=None, flavor=None, keypair=None,
                  volume_backed=False):
         self.parent = parent
-        self.name = name or data_utils.rand_name('Tenant-')
+        self.name = name or data_utils.rand_name('server')
         self.tag = self.get_display_name()
         self.username = CONF.validation.image_ssh_user
         self.password = CONF.validation.image_ssh_password
@@ -117,19 +118,26 @@ class TenantServer(object):
         self.security_groups = security_groups or []
         self.flavor = flavor
         self.volume_backed = volume_backed
-        self.keypair = keypair
+
+        # only needed pre-boot
+        self.key_name = keypair['name'] if keypair else None
+
+        # remaining needed for ssh login to the server
+        self.private_key = keypair['private_key'] if keypair else None
+
         self.openstack_data = None
         self.server_details = None
         self.force_dhcp = False
+        self.associated_fip = None
+
+        self._image_id = None
+        self._vm_console = None
+
         self.set_to_prepare_for_connectivity = False
         self.cloudinit_complete = False
         self.waiting_for_cloudinit_completion = False
         self.needs_provisioning = False
         self.is_being_provisioned = False
-        self.associated_fip = None
-
-        self._image_id = None
-        self._vm_console = None
 
     def __repr__(self):
         return 'TenantServer [{}]: {}'.format(
@@ -138,10 +146,23 @@ class TenantServer(object):
                 'networks': self.networks,
                 'ports': self.ports,
                 'security_groups': self.security_groups,
-                'keypair': self.keypair,
+                'private_key': self.private_key,
                 'associated_fip': self.get_fip_ip()
             }
         )
+
+    def set_internal_states(self,
+                            set_to_prepare_for_connectivity=False,
+                            cloudinit_complete=False,
+                            waiting_for_cloudinit_completion=False,
+                            needs_provisioning=False,
+                            is_being_provisioned=False):
+        self.set_to_prepare_for_connectivity = set_to_prepare_for_connectivity
+        self.cloudinit_complete = cloudinit_complete
+        self.waiting_for_cloudinit_completion = \
+            waiting_for_cloudinit_completion
+        self.needs_provisioning = needs_provisioning
+        self.is_being_provisioned = is_being_provisioned
 
     def get_display_name(self, shorten_to_x_chars=32,
                          pre_fill_with_spaces=True):
@@ -220,10 +241,9 @@ class TenantServer(object):
         LOG.info('[{}] Booting {}'.format(self.tag, self.name))
         # (calling  _create_server which is private method, which is intended)
         self.openstack_data = self.parent._create_server(
-            self.tag, self.networks, self.ports,
-            self.security_groups, wait_until, self.volume_backed,
-            self.name, self.flavor, self.image_id, self.keypair,
-            manager, cleanup, **kwargs)
+            self.name, self.tag, self.networks, self.ports,
+            self.security_groups, wait_until, self.volume_backed, self.flavor,
+            self.image_id, self.key_name, manager, cleanup, **kwargs)
 
         LOG.info('[{}] Became {}'.format(self.tag, wait_until))
         LOG.info('[{}] IP\'s are {}'.format(
@@ -236,15 +256,69 @@ class TenantServer(object):
     def did_deploy(self):
         return bool(self.openstack_data)
 
-    def sync_with(self, osc_server_id, manager=None):
-        self.openstack_data = \
-            self.parent.get_server(osc_server_id, manager)
+    def sync_with_os(self, server_id=None, manager=None):
+        manager = manager or self.parent.admin_manager
+        if not server_id:
+            servers = self.parent.list_servers(name=self.name, manager=manager)
+            self.parent.assertEqual(1, len(servers),  # assert uniqueness
+                                    'There are {} servers with name {}'.format(
+                                        len(servers), self.name)
+                                    if len(servers) else
+                                    'Could not find any server with '
+                                    'name {}'.format(self.name))
+            server_id = servers[0]['id']
+
+        # 1. sync openstack data
+        self.openstack_data = self.get_server_details(server_id, manager)
+        osc_server = self.openstack_data
+        LOG.info('sync_with_os: {}'.format(osc_server))
+
+        # 2. sync keypair
+        self.get_server_private_key()
+        self.parent.assertIsNotNone(self.private_key)
+        LOG.info('sync_with_os: resynced private_key = {}'.format(
+            self.private_key))
+
+        # 3. sync networks
+        self.networks = []
+        for network_name in osc_server['addresses']:
+            self.networks.append(self.parent.sync_network(network_name,
+                                                          cleanup=False))
+        LOG.info('sync_with_os: {} networks resynced'.format(len(
+            self.networks)))
+
+        # 4. sync ports
+        self.ports = []
+        for network in self.networks:
+            self.ports.append(
+                self.get_server_port_in_network(network, manager))
+        LOG.info('sync_with_os: {} ports resynced'.format(len(self.ports)))
+
+        # 5. sync fip
+        self.associated_fip = None
+        for port in self.ports:
+            fip = self.parent.get_floating_ip_by_port_id(
+                port['id'], False, manager)
+            if fip:
+                self.associated_fip = fip
+                break
+        if self.associated_fip:
+            LOG.info('sync_with_os: server FIP resynced ({})'.format(
+                self.associated_fip))
+        else:
+            LOG.info('sync_with_os: no server FIP resynced')
 
     def get_server_details(self, server_id=None, manager=None):
         if not self.server_details:
             self.server_details = \
                 self.parent.get_server(server_id or self.id, manager)
         return self.server_details
+
+    def get_server_private_key(self):
+        if not self.private_key:
+            self.private_key = utils.reunite_chunk_to_str(
+                self.openstack_data['metadata'], 'private_key')
+        return self.private_key
 
     def get_server_networks(self, manager=None):
         if not self.networks:

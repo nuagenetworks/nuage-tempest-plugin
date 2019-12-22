@@ -70,12 +70,9 @@ class NetworkMixin(base.BaseMixin):
     def show_network(self, network_id, as_admin=False):
         return self.get_network(network_id, as_admin=as_admin)
 
-    def get_networks(self, as_admin=False, **kwargs):
+    def list_networks(self, as_admin=False, **kwargs):
         client = self.net_client(as_admin)
         return client.list_networks(**kwargs)['networks']
-
-    def list_networks(self, as_admin=False, **kwargs):
-        return self.get_networks(as_admin=as_admin, **kwargs)
 
     def create_network(self, as_admin=False, cleanup=True, **kwargs):
         client = self.net_client(as_admin)
@@ -123,12 +120,9 @@ class NetworkMixin(base.BaseMixin):
     def show_subnet(self, subnet_id, as_admin=False):
         return self.get_subnet(subnet_id, as_admin=as_admin)
 
-    def get_subnets(self, as_admin=False, **kwargs):
+    def list_subnets(self, as_admin=False, **kwargs):
         client = self.subnet_client(as_admin=as_admin)
         return client.list_subnets(**kwargs)['subnets']
-
-    def list_subnets(self, as_admin=False, **kwargs):
-        return self.get_subnets(as_admin=as_admin, **kwargs)
 
     def create_subnet(self, cidr, network_id,
                       as_admin=False, cleanup=True, **kwargs):
