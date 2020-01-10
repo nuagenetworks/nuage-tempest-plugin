@@ -1,8 +1,8 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
-
 from netaddr import IPAddress
 from netaddr import IPNetwork
+import testtools
 
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
@@ -363,6 +363,9 @@ class VSDManagedL2DualStackDhcpDisabledTest(VSDManagedDualStackCommonBase):
         self._verify_vport_in_l2_domain(port_ipv4_only, vsd_l2_domain)
 
     @decorators.attr(type='smoke')
+    @testtools.skipUnless(Topology.up_to_openstack('train'),
+                          'Upstream bug in Ussuri: '
+                          'https://bugs.launchpad.net/neutron/+bug/1859163')
     def test_update_port_dhcp_disable_subnet_linked_to_vsd_l2domain_with_vm(
             self):
         _, vsd_l2_domain = self._given_vsd_l2_dhcp_disabled_domain()
