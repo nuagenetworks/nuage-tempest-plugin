@@ -2,6 +2,7 @@
 # All Rights Reserved.
 
 import json
+from netaddr import IPNetwork
 from netaddr import IPRange
 from six import iteritems
 
@@ -81,13 +82,19 @@ class BaseNuageNetworksCliTestCase(
         cidr6 = vsd_l3_subnet.ipv6_address
         subnet6 = None
         if cidr6:
+            if Topology.up_to_openstack('train'):
+                set_gateway = ''  # rely on OpenStack's default ::1 gateway
+            else:
+                # set gw explicitly to ::1, as Ussuri++ defaults to ::0
+                set_gateway = '--gateway {}'.format(IPNetwork(cidr6)[1])
             subnet6 = self.create_subnet_with_args(
                 network['name'], cidr6,
                 "--name ", subnet_name + "-6",
                 "--ip-version 6",
-                "--disable-dhcp ",
-                "--net-partition ", Topology.def_netpartition,
-                "--nuagenet ", vsd_l3_subnet.id)
+                set_gateway,
+                "--disable-dhcp",
+                "--net-partition", Topology.def_netpartition,
+                "--nuagenet", vsd_l3_subnet.id)
             self.addCleanup(self._delete_subnet, subnet6['id'])
             self.subnets.remove(subnet6)
         return network, subnet4, subnet6
