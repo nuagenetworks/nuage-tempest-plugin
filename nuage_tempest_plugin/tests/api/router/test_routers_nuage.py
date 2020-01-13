@@ -315,9 +315,9 @@ class NuageRoutersTest(base.BaseNetworkTest):
         cidr = netaddr.IPNetwork(self.subnet['cidr'])
         next_hop = str(cidr[2])
         destination = str(self.subnet['cidr'])
+        routes = [{'nexthop': next_hop, 'destination': destination}]
         extra_route = self.client.update_extra_routes(
-            self.router['id'],
-            next_hop, destination)
+            self.router['id'], routes)
         self.assertEqual(1, len(extra_route['router']['routes']))
         self.assertEqual(destination,
                          extra_route['router']['routes'][0]['destination'])
@@ -335,9 +335,96 @@ class NuageRoutersTest(base.BaseNetworkTest):
         self.assertEqual(
             nuage_static_route[0]['nextHopIp'], next_hop, "wrong nexthop")
 
-        if Topology.from_nuage('4.0R5'):
-            self.assertEqual(nuage_static_route[0]['externalID'],
-                             ExternalId(self.router['id']).at_cms_id())
+        self.assertEqual(nuage_static_route[0]['externalID'],
+                         ExternalId(self.router['id']).at_cms_id())
+
+    def test_extra_routes_neg(self):
+        # Test rollback when invalid extra route is added
+        self.network = self.create_network()
+        self.name = self.network['name']
+        self.subnet = self.create_subnet(self.network)
+        # Add router interface with subnet id
+        self.router = self._create_router(
+            data_utils.rand_name('router-'), True)
+        # VSD validation
+        # Verify Router is created in VSD
+        nuage_domain = self.nuage_client.get_l3domain(
+            filters='externalID', filter_value=self.router['id'])
+        self.assertEqual(
+            nuage_domain[0]['description'], self.router['name'])
+
+        self.create_router_interface(self.router['id'], self.subnet['id'])
+        self.addCleanup(
+            self._delete_extra_routes,
+            self.router['id'])
+        # Update router extra route, second ip of the range is used as next hop
+        cidr = netaddr.IPNetwork(self.subnet['cidr'])
+        next_hop = str(cidr[2])
+        destination = str(self.subnet['cidr'])
+        routes = [{'nexthop': next_hop, 'destination': destination}]
+        extra_route = self.client.update_extra_routes(
+            self.router['id'], routes)
+        self.assertEqual(1, len(extra_route['router']['routes']))
+        self.assertEqual(destination,
+                         extra_route['router']['routes'][0]['destination'])
+        self.assertEqual(next_hop,
+                         extra_route['router']['routes'][0]['nexthop'])
+        show_body = self.routers_client.show_router(self.router['id'])
+        self.assertEqual(destination,
+                         show_body['router']['routes'][0]['destination'])
+        self.assertEqual(next_hop,
+                         show_body['router']['routes'][0]['nexthop'])
+
+        # VSD validation
+        nuage_static_route = self.nuage_client.get_staticroute(
+            parent=n_constants.DOMAIN, parent_id=nuage_domain[0]['ID'])
+        self.assertEqual(
+            nuage_static_route[0]['nextHopIp'], next_hop, "wrong nexthop")
+
+        self.assertEqual(nuage_static_route[0]['externalID'],
+                         ExternalId(self.router['id']).at_cms_id())
+
+        # Add invalid extra route
+        wrong_destination = str(self.cidr[1]) + '/24'
+        if Topology.before_openstack('stein'):
+            expected_exception = exceptions.ServerFault
+            expected_error = ('Nuage API: Error in REST call to VSD: Network '
+                              'IP Address {} must have host bits set '
+                              'to 0.'.format(self.cidr[1]))
+        else:
+            expected_exception = exceptions.BadRequest
+            expected_error = ("Invalid input for routes. Reason: '{}' is not "
+                              "a recognized CIDR".format(wrong_destination))
+
+        bad_routes = [{'nexthop': next_hop, 'destination': destination},
+                      {'nexthop': next_hop, 'destination': wrong_destination}]
+        self.assertRaisesRegex(expected_exception,
+                               expected_error,
+                               self.client.update_extra_routes,
+                               self.router['id'], bad_routes)
+
+        # Validate state is rollbacked to previous state
+        self.assertEqual(1, len(extra_route['router']['routes']))
+        self.assertEqual(destination,
+                         extra_route['router']['routes'][0]['destination'])
+        self.assertEqual(next_hop,
+                         extra_route['router']['routes'][0]['nexthop'])
+        show_body = self.routers_client.show_router(self.router['id'])
+        self.assertEqual(destination,
+                         show_body['router']['routes'][0]['destination'])
+        self.assertEqual(next_hop,
+                         show_body['router']['routes'][0]['nexthop'])
+
+        # VSD validation
+        nuage_static_route = self.nuage_client.get_staticroute(
+            parent=n_constants.DOMAIN, parent_id=nuage_domain[0]['ID'])
+        self.assertEqual(1, len(nuage_static_route),
+                         'Found too many static routes on VSD')
+        self.assertEqual(
+            nuage_static_route[0]['nextHopIp'], next_hop, "wrong nexthop")
+
+        self.assertEqual(nuage_static_route[0]['externalID'],
+                         ExternalId(self.router['id']).at_cms_id())
 
     @decorators.attr(type='smoke')
     def test_add_router_interface_different_netpart(self):
@@ -1076,6 +1163,9 @@ class NuageRoutersV6Test(NuageRoutersTest):
         self.assertEmpty(show_body_after_deletion['router']['routes'])
 
     def test_add_router_interface_different_netpart(self):
+        self.skipTest('Test skipped for v6')
+
+    def test_extra_routes_neg(self):
         self.skipTest('Test skipped for v6')
 
     @decorators.attr(type='smoke')

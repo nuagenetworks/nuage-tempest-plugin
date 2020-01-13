@@ -506,12 +506,11 @@ class NuageNetworkClientJSON(service_client.RestClient):
         """
         return self._update_router(router_id, set_enable_snat=True, **kwargs)
 
-    def update_extra_routes(self, router_id, nexthop, destination):
+    def update_extra_routes(self, router_id, routes):
         uri = '%s/routers/%s' % (self.uri_prefix, router_id)
         put_body = {
             'router': {
-                'routes': [{'nexthop': nexthop,
-                            "destination": destination}]
+                'routes': routes
             }
         }
         body = json.dumps(put_body)
