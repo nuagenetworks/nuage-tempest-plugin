@@ -14,6 +14,7 @@
 import random
 from tempest.lib.common.utils import data_utils
 
+from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils.ovs import FlowQuery
 from nuage_tempest_plugin.tests.e2e.e2e_base_test import E2eTestBase
@@ -304,6 +305,7 @@ class BaseTestCase(object):
             self._offload_test(from_server=from_server, from_port=from_port,
                                to_server=to_server, to_port=to_port)
 
+        @nuage_test.skip_because(bug='VRS-31204')
         def test_same_hv_virtio_switchdev(self):
             hv = self.selected_hypervisors[0]['hypervisor_hostname']
 
@@ -333,6 +335,7 @@ class BaseTestCase(object):
             self._offload_test(from_server=from_server, from_port=from_port,
                                to_server=to_server, to_port=to_port)
 
+        @nuage_test.skip_because(bug='VRS-31204')
         def test_diff_hv_virtio_switchdev(self):
 
             if len(self.selected_hypervisors) < 2:
@@ -367,6 +370,7 @@ class BaseTestCase(object):
             self._offload_test(from_server=from_server, from_port=from_port,
                                to_server=to_server, to_port=to_port)
 
+        @nuage_test.skip_because(bug='VRS-31204')
         def test_same_hv_virtio_virtio(self):
             hv = self.selected_hypervisors[0]['hypervisor_hostname']
 
@@ -396,6 +400,7 @@ class BaseTestCase(object):
             self._offload_test(from_server=from_server, from_port=from_port,
                                to_server=to_server, to_port=to_port)
 
+        @nuage_test.skip_because(bug='VRS-31204')
         def test_diff_hv_virtio_virtio(self):
 
             if len(self.selected_hypervisors) < 2:
