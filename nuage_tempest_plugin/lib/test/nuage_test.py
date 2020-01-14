@@ -68,6 +68,43 @@ def skip_because(*args, **kwargs):
     return decorator
 
 
+def unstable_test(*args, **kwargs):
+    """A decorator useful to run tests hitting known bugs and skip it if fails
+
+    This decorator can be used in cases like:
+
+    * We have skipped tests with some bug and now bug is claimed to be fixed.
+      Now we want to check the test stability so we use this decorator.
+      The number of skipped cases with that bug can be counted to mark test
+      stable again.
+    * There is test which is failing often, but not always. If there is known
+      bug related to it, and someone is working on fix, this decorator can be
+      used instead of "skip_because". That will ensure that test is still run
+      so new debug data can be collected from jobs' logs but it will not make
+      life of other developers harder by forcing them to recheck jobs more
+      often.
+
+    :param bug: bug causing the test to skip (jira)
+    :raises: testtools.TestCase.skipException if test actually fails,
+        and ``bug`` is included
+    """
+    def decor(f):
+        @functools.wraps(f)
+        def inner(self, *func_args, **func_kwargs):
+            try:
+                return f(self, *func_args, **func_kwargs)
+            except Exception as e:
+                if "bug" in kwargs:
+                    bug = kwargs['bug']
+                    msg = ("Marked as unstable and skipped because of bug: "
+                           "%s, failure was: %s") % (bug, e)
+                    raise testtools.TestCase.skipException(msg)
+                else:
+                    raise e
+        return inner
+    return decor
+
+
 class NuageBaseTest(manager.NetworkScenarioTest):
 
     """NuageBaseTest

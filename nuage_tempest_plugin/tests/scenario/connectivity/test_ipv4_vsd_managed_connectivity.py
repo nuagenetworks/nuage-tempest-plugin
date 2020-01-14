@@ -5,6 +5,7 @@ from netaddr import IPAddress
 from netaddr import IPNetwork
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.test.nuage_test import unstable_test
 from nuage_tempest_plugin.lib.topology import Topology
 
 from tempest.lib import decorators
@@ -159,6 +160,7 @@ class Ipv4L3VsdManagedConnectivityTest(NuageBaseTest):
         self.assert_ping(server1, server2, network2)
 
     @decorators.attr(type='smoke')
+    @unstable_test(bug='OPENSTACK-2782')
     def test_tcp_connectivity_stateful_acl_l3_vsd_managed(self):
         vsd_l3domain, network = self._create_vsd_managed_resources()
         ingress_tpl, egress_tpl = self.vsd.create_acl_templates(vsd_l3domain)
@@ -196,6 +198,7 @@ class Ipv4L3VsdManagedConnectivityTest(NuageBaseTest):
                                      network_name=network['name'])
 
     @decorators.attr(type='smoke')
+    @unstable_test(bug='OPENSTACK-2782')
     def test_tcp_connectivity_stateless_acl_l3_vsd_managed(self):
         vsd_l3domain, network = self._create_vsd_managed_resources()
         ingress_tpl, egress_tpl = self.vsd.create_acl_templates(vsd_l3domain)
