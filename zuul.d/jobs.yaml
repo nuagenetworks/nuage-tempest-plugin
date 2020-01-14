@@ -66,7 +66,7 @@
       - ^vagrant/.*$
       - ^migration/.*$
     vars:
-      nuage_fip_range: "172.{{ 255 | random }}.{{ 255 | random }}"
+      nuage_fip_range: "{{ hostvars[inventory_hostname]['nodepool']['interface_ip'].split('.')  }}"
       vsp_release: "{{ nuage_vsp_release }}"
       tox_envlist: all
       tempest_concurrency: 4
@@ -76,8 +76,8 @@
         IMAGE_URLS: "{{ image_url }}"
         DEFAULT_IMAGE_FILE_NAME: cirros-ipv6.qcow2
         DOWNLOAD_DEFAULT_IMAGES: False
-        FLOATING_RANGE: "{{ nuage_fip_range }}.0/24"
-        PUBLIC_NETWORK_GATEWAY: "{{ nuage_fip_range }}.1"
+        FLOATING_RANGE: "10.{{ nuage_fip_range[2] | int + 40 }}.{{ nuage_fip_range[3] }}.0/24"
+        PUBLIC_NETWORK_GATEWAY: "10.{{ nuage_fip_range[2] | int + 40 }}.{{ nuage_fip_range[3] }}.1"
         Q_PLUGIN: ml2
         Q_USE_PROVIDERNET_FOR_PUBLIC: False
         Q_ML2_PLUGIN_EXT_DRIVERS: nuage_subnet,nuage_port,port_security,nuage_network
@@ -782,3 +782,71 @@
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.e2e\.ovs\.test_restart_openvswitch\..*'
       tempest_concurrency: 1
+
+- job:
+    name: networking-nuage-tempest-multinode-base
+    parent: networking-nuage-base
+    description: multinode job base
+    branches: ^(?!stable/(newton|ocata|pike)).*$
+    nodeset: openstack-two-node-centos-8
+    timeout: 18000
+    vars:
+      tempest_test_regex: 'test_nova_qos'
+      tempest_test_blacklist: "{{devstack_base_dir}}/nuage-tempest-plugin/tempest-blacklist.txt"
+      devstack_services:
+        tls-proxy: false
+        tempest: true
+        cinder: true
+      devstack_localrc:
+        NOVA_ALLOW_MOVE_TO_SAME_HOST: false
+        LIVE_MIGRATION_AVAILABLE: true
+        USE_BLOCK_MIGRATION_FOR_LIVE_MIGRATION: true
+    group-vars:
+      subnode:
+        devstack_services:
+          tls-proxy: false
+          q-agt: false
+          q-l3: false
+          q-dhcp: false
+          q-meta: false
+          q-dummy: true
+        devstack_localrc:
+          NUAGE_USE_METADATA: True
+          NUAGE_METADATA_SHARED_SECRET: sharedsecret
+          NOVA_ALLOW_MOVE_TO_SAME_HOST: false
+          LIVE_MIGRATION_AVAILABLE: true
+          USE_BLOCK_MIGRATION_FOR_LIVE_MIGRATION: true
+          OVS_BRIDGE: alubr0
+        devstack_local_conf:
+          post-config:
+            $NOVA_CONF:
+              neutron:
+                ovs_bridge: alubr0
+        devstack_plugins:
+          nuage-openstack-neutron: https://github.com/nuagenetworks/nuage-openstack-neutron.git
+
+- job:
+    name: networking-nuage-tempest-multinode
+    parent: networking-nuage-tempest-multinode-base
+    description: multinode job
+    branches: ^(?!(stable|20.5|5.4|6.0)/(pike|queens|rocky|stein|train)).*$
+    nodeset: openstack-two-node-centos-8
+
+- job:
+    name: networking-nuage-tempest-multinode
+    parent: networking-nuage-tempest-multinode-base
+    description: multinode job
+    branches: ^((20.5|6.0|stable)/(queens|rocky))
+    nodeset: openstack-two-node-centos-7
+    group-vars:
+      subnode:
+        devstack_localrc:
+          USE_PYTHON3: false
+
+- job:
+    name: networking-nuage-tempest-multinode
+    parent: networking-nuage-tempest-multinode-base
+    description: multinode job
+    branches: ^((20.5|6.0|stable)/(stein|train))
+    nodeset: openstack-two-node-centos-7
+

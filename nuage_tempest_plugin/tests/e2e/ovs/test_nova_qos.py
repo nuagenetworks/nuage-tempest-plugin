@@ -134,12 +134,16 @@ class NuageNovaQosTest(test_qos.QoSTestMixin,
 
     def _check_bw_ingress(self, ssh_client, host, port,
                           expected_bw=test_qos.QoSTestMixin.LIMIT_BYTES_SEC):
-        common_utils.kill_nc_process(ssh_client)
         self.ensure_nc_listen_ingress(ssh_client, port, "tcp")
         # Open TCP socket to remote VM and download big file
         start_time = time.time()
-        client_socket = test_qos._connect_socket(
-            host, port, constants.SOCKET_CONNECT_TIMEOUT)
+        try:
+            client_socket = test_qos._connect_socket(
+                host, port, constants.SOCKET_CONNECT_TIMEOUT)
+        except AttributeError:
+            client_socket = test_qos._connect_socket(
+                host, port)
+
         total_bytes_written = 0
         write_data = ('x' * (self.BUFFER_SIZE - 1) + '\n').encode()
         try:
@@ -164,7 +168,6 @@ class NuageNovaQosTest(test_qos.QoSTestMixin,
             LOG.warning(
                 'Socket timeout while reading the remote file, bytes '
                 'read: %s', total_bytes_written)
-            common_utils.kill_nc_process(ssh_client)
             return False
         finally:
             client_socket.close()
@@ -247,7 +250,7 @@ class NuageNovaQosTest(test_qos.QoSTestMixin,
                 self.fip['floating_ip_address'],
                 port=self.NC_PORT,
                 expected_bw=limit_bytes_sec),
-            timeout=120,
+            timeout=200,
             sleep=1)
         common_utils.wait_until_true(
             lambda: self._check_bw_ingress(
@@ -255,7 +258,7 @@ class NuageNovaQosTest(test_qos.QoSTestMixin,
                 self.fip['floating_ip_address'],
                 port=self.NC_PORT + 1,
                 expected_bw=limit_bytes_sec),
-            timeout=120,
+            timeout=200,
             sleep=1)
         # Migrate
         original_host = self.os_primary.servers_client.show_server(
@@ -277,7 +280,7 @@ class NuageNovaQosTest(test_qos.QoSTestMixin,
                 self.fip['floating_ip_address'],
                 port=self.NC_PORT,
                 expected_bw=limit_bytes_sec),
-            timeout=120,
+            timeout=200,
             sleep=1)
         common_utils.wait_until_true(
             lambda: self._check_bw_ingress(
@@ -285,5 +288,5 @@ class NuageNovaQosTest(test_qos.QoSTestMixin,
                 self.fip['floating_ip_address'],
                 port=self.NC_PORT + 1,
                 expected_bw=limit_bytes_sec),
-            timeout=120,
+            timeout=200,
             sleep=1)

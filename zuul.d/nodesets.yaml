@@ -1,0 +1,51 @@
+- nodeset:
+    name: openstack-two-node-centos-7
+    nodes:
+      - name: controller
+        label: centos-7
+      - name: compute1
+        label: centos-7
+    groups:
+      # Node where tests are executed and test results collected
+      - name: tempest
+        nodes:
+          - controller
+      # Nodes running openstack services
+      - name: controller
+        nodes:
+          - controller
+      # Nodes running the compute service
+      - name: compute
+        nodes:
+          - controller
+          - compute1
+      # Nodes that are not the controller
+      - name: subnode
+        nodes:
+          - compute1
+- nodeset:
+    name: openstack-two-node-centos-8
+    nodes:
+      - name: controller
+        label: centos-8
+      - name: compute1
+        label: centos-8
+    groups:
+      # Node where tests are executed and test results collected
+      - name: tempest
+        nodes:
+          - controller
+      # Nodes running openstack services
+      - name: controller
+        nodes:
+          - controller
+      # Nodes running the compute service
+      - name: compute
+        nodes:
+          - controller
+          - compute1
+      # Nodes that are not the controller
+      - name: subnode
+        nodes:
+          - compute1
+

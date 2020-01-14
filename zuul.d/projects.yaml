@@ -7,6 +7,9 @@
       jobs:
         - openstack-tox-pep8
         - networking-nuage-tempest-smoke
+    experimental:
+      jobs:
+        - networking-nuage-tempest-multinode
     full:
       jobs:
         - networking-nuage-tempest-virtio
