@@ -8,6 +8,7 @@ import testtools
 from tempest.lib import decorators
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.test.nuage_test import unstable_test
 from nuage_tempest_plugin.lib.topology import Topology
 
 CONF = Topology.get_conf()
@@ -496,6 +497,7 @@ class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
     @testtools.skipUnless(Topology.up_to_openstack('train'),
                           'Upstream bug in Ussuri: '
                           'https://bugs.launchpad.net/neutron/+bug/1859163')
+    @unstable_test(bug='OPENSTACK-2782')
     def test_tcp_connectivity_stateful_acl_l3_vsd_managed_ipv6(self):
         network, vsd_l3domain = self._create_vsd_managed_resources()
         ingress_tpl, egress_tpl = self.vsd.create_acl_templates(vsd_l3domain)
