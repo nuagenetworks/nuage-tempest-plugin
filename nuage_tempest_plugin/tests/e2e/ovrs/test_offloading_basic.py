@@ -116,9 +116,12 @@ class BaseTestCase(object):
                          'supported by CX-5')
                 return
 
-            filtered_flows = FlowQuery(flows)
-            filtered_flows.ip_version(ip_version)
-            filtered_flows.icmp()
+            filtered_flows = FlowQuery(flows).ip_version(ip_version)
+
+            if from_port['port_security_enabled']:
+                filtered_flows.icmp()
+            else:
+                filtered_flows.wildcard_protocol()
 
             self._validate_offloading(
                 filtered_flows.result(), from_port, is_cross_hv, to_port)
@@ -156,9 +159,12 @@ class BaseTestCase(object):
         def _validate_tcp_offloading(self, flows, from_port, is_cross_hv,
                                      to_port, ip_version):
 
-            filtered_flows = FlowQuery(flows)
-            filtered_flows.ip_version(ip_version)
-            filtered_flows.tcp()
+            filtered_flows = FlowQuery(flows).ip_version(ip_version)
+
+            if from_port['port_security_enabled']:
+                filtered_flows.tcp()
+            else:
+                filtered_flows.wildcard_protocol()
 
             self._validate_offloading(
                 filtered_flows.result(), from_port, is_cross_hv, to_port)
