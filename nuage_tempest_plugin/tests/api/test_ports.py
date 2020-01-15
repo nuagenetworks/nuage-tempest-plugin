@@ -1,7 +1,7 @@
 # Copyright 2017 NOKIA
 # All Rights Reserved.
+
 from netaddr import IPNetwork
-import testtools
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageAdminNetworksTest
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
@@ -419,9 +419,6 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         self._nuage_port_update_fixed_ips_dual_subnets_with_vm(is_l2=True)
 
     @decorators.attr(type='smoke')
-    @testtools.skipUnless(Topology.up_to_openstack('train'),
-                          'Upstream bug in Ussuri: '
-                          'https://bugs.launchpad.net/neutron/+bug/1859163')
     def test_nuage_port_update_fixed_ips_dual_subnets_with_vm_l3(self):
         self._nuage_port_update_fixed_ips_dual_subnets_with_vm(is_l2=False)
 
@@ -784,9 +781,6 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         self.assertEqual(mac_mismatch, False)
 
     @decorators.attr(type='smoke')
-    @testtools.skipUnless(Topology.up_to_openstack('train'),
-                          'Upstream bug in Ussuri: '
-                          'https://bugs.launchpad.net/neutron/+bug/1859163')
     def test_nuage_port_fixed_ips_update_dhcp_disabled_subnet_with_vm(self):
         network = self.create_network()
         self.assertIsNotNone(network, "Unable to create network")

@@ -3,7 +3,6 @@
 
 from netaddr import IPAddress
 from netaddr import IPNetwork
-import testtools
 
 from tempest.lib import decorators
 
@@ -14,9 +13,6 @@ from nuage_tempest_plugin.lib.topology import Topology
 CONF = Topology.get_conf()
 
 
-@testtools.skipUnless(Topology.up_to_openstack('train'),
-                      'Upstream bug in Ussuri: '
-                      'https://bugs.launchpad.net/neutron/+bug/1859163')
 class Ipv6L2VsdManagedConnectivityTest(NuageBaseTest):
 
     def _test_icmp_connectivity_l2_vsd_managed_pure_v6(self, stateful):
@@ -302,15 +298,9 @@ class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
             vsd_domain=vsd_domain, vsd_subnet=vsd_subnet,
             server2_pre_set_up=server)
 
-    @testtools.skipUnless(Topology.up_to_openstack('train'),
-                          'Upstream bug in Ussuri: '
-                          'https://bugs.launchpad.net/neutron/+bug/1859163')
     def test_icmp_connectivity_stateful_acl_l3_vsd_managed_pure_v6(self):
         self._test_icmp_connectivity_l3_vsd_managed_pure_v6(stateful=True)
 
-    @testtools.skipUnless(Topology.up_to_openstack('train'),
-                          'Upstream bug in Ussuri: '
-                          'https://bugs.launchpad.net/neutron/+bug/1859163')
     def test_icmp_connectivity_stateless_acl_l3_vsd_managed_pure_v6(self):
         self._test_icmp_connectivity_l3_vsd_managed_pure_v6(stateful=False)
 
@@ -423,9 +413,6 @@ class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
         # Test dualstack connectivity between peer servers
         self.assert_ping(server1, server2, network2)
 
-    @testtools.skipUnless(Topology.up_to_openstack('train'),
-                          'Upstream bug in Ussuri: '
-                          'https://bugs.launchpad.net/neutron/+bug/1859163')
     def test_icmp_connectivity_l3_vsd_managed_link_shared_subnet_pure_v6(self):
         # Provision shared v6 subnet in shared infrastructure
         shared_vsd_l3domain_template = self.vsd_create_l3domain_template(
@@ -494,9 +481,6 @@ class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
         self.assert_ping(server1, server2, network2, ip_version=6)
 
     @decorators.attr(type='smoke')
-    @testtools.skipUnless(Topology.up_to_openstack('train'),
-                          'Upstream bug in Ussuri: '
-                          'https://bugs.launchpad.net/neutron/+bug/1859163')
     @unstable_test(bug='OPENSTACK-2782')
     def test_tcp_connectivity_stateful_acl_l3_vsd_managed_ipv6(self):
         network, vsd_l3domain = self._create_vsd_managed_resources()
@@ -534,9 +518,6 @@ class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
                                      network_name=network['name'])
 
     @decorators.attr(type='smoke')
-    @testtools.skipUnless(Topology.up_to_openstack('train'),
-                          'Upstream bug in Ussuri: '
-                          'https://bugs.launchpad.net/neutron/+bug/1859163')
     @unstable_test(bug='OPENSTACK-2782')
     def test_tcp_connectivity_stateless_acl_l3_vsd_managed_ipv6(self):
         network, vsd_l3domain = self._create_vsd_managed_resources()

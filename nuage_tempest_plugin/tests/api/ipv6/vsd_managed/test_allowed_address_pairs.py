@@ -1,7 +1,7 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
+
 from six import iteritems
-import testtools
 
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as nuage_constants
@@ -49,9 +49,6 @@ class VSDManagedAllowedAddressPairsTest(BaseAllowedAddressPair,
                                   vsd_l2_subnet, nuage_constants.L2_DOMAIN)
 
     @decorators.attr(type='smoke')
-    @testtools.skipUnless(Topology.up_to_openstack('train'),
-                          'Upstream bug in Ussuri: '
-                          'https://bugs.launchpad.net/neutron/+bug/1859163')
     def test_provision_ports_with_address_pairs_in_l3_subnet(self):
         # Given I have a VSD-L3-Managed subnet - dhcp-managed
         vsd_l3_domain, vsd_l3_subnet = self._given_vsd_l3subnet(
