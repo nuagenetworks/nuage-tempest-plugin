@@ -109,7 +109,7 @@
       - OpenStack/nuage-openstack-neutron
       - OpenStack/nuage-openstack-neutronclient
       - OpenStack/nuage-tempest-plugin
-    pre-run: playbooks/devstack-py3.yaml
+    pre-run: playbooks/pre.yaml
     irrelevant-files:
       - ^(test-|)requirements.txt$
       - ^.*\.rst$
@@ -221,7 +221,6 @@
     branches: ^(?!stable/(newton|ocata)).*$
     # xenial version of python-openssl is too low
     # once moved bionic this should go
-    pre-run: playbooks/devstack-py3.yaml
     vars:
       devstack_localrc:
         USE_PYTHON3: True

@@ -1,0 +1,20 @@
+# xenial version of python-openssl is too low
+# once moved bionic this should go
+- hosts: all
+  tasks:
+    - name: Install pyOpenSSL
+      become: yes
+      pip:
+        name: pyOpenSSL
+    - name: Uninstall tox
+      become: yes
+      pip:
+        name: tox
+        state: absent
+    - name: Install tox with pip3
+      become: yes
+      pip:
+        name: tox
+        state: present
+        executable: pip3
+  environment: '{{ proxy_env }}'
