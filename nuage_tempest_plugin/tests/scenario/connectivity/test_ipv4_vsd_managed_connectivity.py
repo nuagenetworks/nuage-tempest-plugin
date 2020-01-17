@@ -1,8 +1,9 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
-
 from netaddr import IPAddress
 from netaddr import IPNetwork
+
+import testtools
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.test.nuage_test import unstable_test
@@ -83,6 +84,8 @@ class Ipv4L3VsdManagedConnectivityTest(NuageBaseTest):
         self.assert_ping(server1, server2, network)
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.has_default_switchdev_port_profile,
+                      reason='OPENSTACK-2787')
     def test_icmp_connectivity_stateful_acl_l3_vsd_managed(self):
         self._test_icmp_connectivity_l3_vsd_managed(stateful=True)
 

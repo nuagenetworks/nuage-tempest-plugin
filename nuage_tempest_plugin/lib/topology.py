@@ -134,3 +134,10 @@ class Topology(object):
         See neutron setting [nuage_sriov] allow_existing_flat_vlan
         """
         return bool(CONF.nuage_sut.nuage_sriov_allow_existing_flat_vlan)
+
+    @staticmethod
+    def has_default_switchdev_port_profile():
+        """This condition is True for OVRS setups"""
+        return (CONF.network.port_vnic_type == 'direct' and
+                'switchdev' in CONF.network.port_profile.get('capabilities',
+                                                             []))

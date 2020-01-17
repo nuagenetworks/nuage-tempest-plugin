@@ -1493,7 +1493,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                 server_networks = []
                 for port in server_ports:
                     server_networks.append(self.get_network(
-                        port['network_id']))
+                        port['network_id'], manager=manager))
                 return needs_provisioning(server_networks)
 
         provisioning_needed = (needs_provisioning(networks, ports)
@@ -1503,8 +1503,9 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         if prepare_for_connectivity:
             first_network = (
                 networks[0] if networks
-                else self.get_network(ports[0]['network_id']))
-            first_v4_subnet = self.get_network_subnet(first_network, 4)
+                else self.get_network(ports[0]['network_id'], manager=manager))
+            first_v4_subnet = self.get_network_subnet(first_network, 4,
+                                                      manager=manager)
 
             # fip is only supported on L3 v4, so in L2 or L3 pure v6 cases,
             # another L3 domain with v4 subnet will be created to associate FIP
@@ -1524,7 +1525,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                 prepare = True
             # ----------------------- aggregate flows -------------------------
 
-            elif self.is_l2_subnet(first_v4_subnet):
+            elif self.is_l2_subnet(first_v4_subnet, manager=manager):
                 prepare = True
             else:
                 prepare = not first_v4_subnet['enable_dhcp']

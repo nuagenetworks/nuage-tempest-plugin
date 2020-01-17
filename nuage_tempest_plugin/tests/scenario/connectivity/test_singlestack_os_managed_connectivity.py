@@ -174,6 +174,8 @@ class BaseTestCase(object):
             self.assert_ping(server12, server2, network2)
 
         @decorators.attr(type='smoke')
+        @testtools.skipIf(Topology.has_default_switchdev_port_profile,
+                          reason='OPENSTACK-2786')
         def test_icmp_connectivity_l2_os_managed_no_dhcp(self):
             # Provision OpenStack network resources
             network = self.create_network()

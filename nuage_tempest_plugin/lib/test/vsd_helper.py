@@ -3,6 +3,8 @@
 
 import importlib
 from netaddr import IPAddress
+from netaddr import IPNetwork
+
 import re
 from six import iteritems
 
@@ -788,8 +790,7 @@ class VsdHelper(object):
         return zone
 
     def get_subnet(self, zone=None, vspk_filter=None, by_id=None,
-                   by_subnet_id=None, by_network_id=None, cidr=None,
-                   ip_type=4):
+                   by_subnet_id=None, by_network_id=None, cidr=None):
         """get_subnet
 
         @params: zone object or zone id
@@ -819,7 +820,7 @@ class VsdHelper(object):
                 zone, self.get_external_id_filter(by_subnet_id))
 
         elif by_network_id and cidr:
-            if ip_type == 6:
+            if IPNetwork(cidr).version == 6:
                 vspk_filter = self.filter_str(
                     ['externalID', 'IPv6Address'],
                     [self.external_id(by_network_id), cidr])

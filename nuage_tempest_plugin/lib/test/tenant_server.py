@@ -224,8 +224,9 @@ class TenantServer(object):
         LOG.info('[{}] Became {}'.format(self.tag, wait_until))
         LOG.info('[{}] IP\'s are {}'.format(
             self.tag,
-            ' and '.join(('/'.join(address for address in addresses))
-                         for addresses in self.get_server_ips())))
+            ' and '.join(
+                ('/'.join(address for address in addresses))
+                for addresses in self.get_server_ips(manager=manager))))
         return self.openstack_data
 
     def did_deploy(self):
@@ -580,13 +581,15 @@ class TenantServer(object):
                     s += '/sbin/cirros-dhcpc up eth%s\n' % nic
                 else:
                     s += '/sbin/ip link set eth%s up\n' % nic
-                    if self.parent.get_network_subnet(network, 6):
+                    if self.parent.get_network_subnet(network, 6,
+                                                      manager=manager):
                         s += '/bin/sleep 2\n'  # TODO(OPENSTACK-2666) this is
                         #                           current low-cost approach
                         #                              for v6 DAD to complete,
                         #                           but is platform-dependent
                         s += '/sbin/dhclient -1 -6 eth%s\n' % nic
-                    if self.parent.get_network_subnet(network, 4):
+                    if self.parent.get_network_subnet(network, 4,
+                                                      manager=manager):
                         s += '/sbin/dhclient -1 eth%s\n' % nic
         return s
 
