@@ -1,8 +1,8 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
+
 from netaddr import IPAddress
 from netaddr import IPNetwork
-import testtools
 from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
 
@@ -382,9 +382,6 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
     ###########################################################################
     # From base class
     ###########################################################################
-    @testtools.skipUnless(Topology.up_to_openstack('train'),
-                          'Upstream bug in Ussuri: '
-                          'https://bugs.launchpad.net/neutron/+bug/1859163')
     def test_create_vsd_l2domain_template_dualstack_valid(self):
         self._create_vsd_l2domain_template_dualstack_valid()
 
@@ -466,9 +463,6 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
                                                ipv6_gateway=ipv6_gateway)
 
     @decorators.attr(type='smoke')
-    @testtools.skipUnless(Topology.up_to_openstack('train'),
-                          'Upstream bug in Ussuri: '
-                          'https://bugs.launchpad.net/neutron/+bug/1859163')
     def test_create_fixed_ipv6_ports_in_vsd_managed_l2domain(self):
         """test_create_fixed_ipv6_ports_in_vsd_managed_l2domain
 
@@ -868,9 +862,6 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
 
     # Telenor scenario with multiple vsd managed subnets in a network
     @decorators.attr(type='smoke')
-    @testtools.skipUnless(Topology.up_to_openstack('train'),
-                          'Upstream bug in Ussuri: '
-                          'https://bugs.launchpad.net/neutron/+bug/1859163')
     def test_link_multi_l2domain_to_network_dualstack(self):
         net_name = data_utils.rand_name('multi-vsd-mgd-dualstack')
         network = self.create_network(network_name=net_name)
@@ -1006,9 +997,6 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
 
     # Telenor scenario with multiple vsd managed subnets in a network
     @decorators.attr(type='smoke')
-    @testtools.skipUnless(Topology.up_to_openstack('train'),
-                          'Upstream bug in Ussuri: '
-                          'https://bugs.launchpad.net/neutron/+bug/1859163')
     def test_link_multi_l2domain_to_network_mix_dualstack(self):
         if self.is_dhcp_agent_present():
             raise self.skipException(

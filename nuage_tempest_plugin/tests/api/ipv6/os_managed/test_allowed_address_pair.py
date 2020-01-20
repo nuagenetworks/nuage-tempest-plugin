@@ -15,7 +15,6 @@
 
 from netaddr import IPAddress
 from six import iteritems
-import testtools
 
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.tests.api.ipv6.test_allowed_address_pair \
@@ -240,9 +239,6 @@ class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
                                    self.create_port, network, **port_args)
 
     @decorators.attr(type='smoke')
-    @testtools.skipUnless(Topology.up_to_openstack('train'),
-                          'Upstream bug in Ussuri: '
-                          'https://bugs.launchpad.net/neutron/+bug/1859163')
     def test_fip2ipv6vip(self):
         # Base resources
         network = self.create_network()

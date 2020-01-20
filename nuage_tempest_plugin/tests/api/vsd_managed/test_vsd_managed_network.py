@@ -12,9 +12,9 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 from netaddr import IPAddress
 from netaddr import IPNetwork
-import testtools
 
 from tempest.api.network import base
 from tempest.lib.common.utils import data_utils
@@ -426,9 +426,6 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
             vsd_unmanaged_shared_l2dom['DHCPManaged'])
 
     @decorators.attr(type='smoke')
-    @testtools.skipUnless(Topology.up_to_openstack('train'),
-                          'Upstream bug in Ussuri: '
-                          'https://bugs.launchpad.net/neutron/+bug/1859163')
     def test_port_update_link_vsd_unmanaged_shared_subnet_l2_with_vm(self):
         vsd_unmanaged_shared_l2dom, vsd_l2dom_with_shared_unmanaged = \
             self._create_unmgd_link_unmanaged_shared_subnet_l2()
@@ -505,9 +502,6 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
         self.assertIsNone(ipv6_ip)
 
     @decorators.attr(type='smoke')
-    @testtools.skipUnless(Topology.up_to_openstack('train'),
-                          'Upstream bug in Ussuri: '
-                          'https://bugs.launchpad.net/neutron/+bug/1859163')
     def test_port_update_link_vsd_managed_shared_subnet_l2_with_vm(self):
         vsd_managed_shared_l2dom, vsd_l2dom_with_shared_unmanaged = \
             self._create_link_managed_no_dhcp_shared_subnet_l2()
