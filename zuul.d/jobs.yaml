@@ -172,7 +172,7 @@
         q-svc: true
         c-bak: false
         etcd: false
-        peakmem_tracker: true
+        peakmem_tracker: false
         q-agt: false
         q-dhcp: false
         q-l3: false
