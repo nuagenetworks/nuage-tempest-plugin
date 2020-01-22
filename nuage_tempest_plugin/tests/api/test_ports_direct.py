@@ -80,11 +80,15 @@ class SriovTopology(object):
     @property
     def vsd_vport_parent(self):
         if not getattr(self, '_vsd_vport_parent', False):
+            subnet = self.subnet or self.subnetv6
+            filters = (['externalID', 'address'] if self.subnet else
+                       ['externalID', 'IPv6Address'])
+
             self._vsd_vport_parent = self.vsd_client.get_global_resource(
                 self.vsd_vport_parent_resource,
-                filters=['externalID', 'address'],
-                filter_value=[self.subnet['network_id'],
-                              self.subnet['cidr']])[0]
+                filters=filters,
+                filter_value=[subnet['network_id'],
+                              subnet['cidr']])[0]
         return self._vsd_vport_parent
 
     @property
@@ -103,11 +107,12 @@ class SriovTopology(object):
         :return: The vport or None if not found
         """
         if not getattr(self, '_vsd_direct_vport', False):
+            subnet = self.subnet or self.subnetv6
             vsd_vports = self.vsd_client.get_vport(
                 self.vsd_vport_parent_resource,
                 self.vsd_vport_parent['ID'],
                 filters='externalID',
-                filter_value=self.subnet['network_id'])
+                filter_value=subnet['network_id'])
             self._vsd_direct_vport = vsd_vports[0] if vsd_vports else None
         return self._vsd_direct_vport
 
@@ -391,6 +396,10 @@ class PortsDirectTest(network_mixin.NetworkMixin,
 
     def test_direct_port_l2_create(self):
         topology = self._create_topology(with_router=False)
+        self._test_direct_port(topology, update=False)
+
+    def test_direct_port_l2_single_ipv6(self):
+        topology = self._create_topology(with_router=False, ip_version=6)
         self._test_direct_port(topology, update=False)
 
     @utils.requires_ext(extension='trunk', service='network')
@@ -761,13 +770,13 @@ class PortsDirectTest(network_mixin.NetworkMixin,
         self._validate_os(topology)
 
     def _create_topology(self, with_router=False,
-                         with_port=False, dualstack=False,
+                         with_port=False, ip_version=4, dualstack=False,
                          vsd_managed=False, for_trunk=False,
                          is_flat_vlan_in_use=False):
         assert (not with_router or not vsd_managed)  # but not both
         assert (not dualstack or not vsd_managed)  # initially not both (later)
 
-        vsd_l2dom = trunk = router = port = subnetv6 = None
+        vsd_l2dom = trunk = router = port = subnet = subnetv6 = None
         cidr = IPNetwork('10.20.30.0/24')
 
         if vsd_managed:
@@ -808,10 +817,12 @@ class PortsDirectTest(network_mixin.NetworkMixin,
             'nuagenet': vsd_l2dom['ID'],
             'net_partition': Topology.def_netpartition
         } if vsd_managed else {}
-        subnet = self.create_subnet('10.20.30.0/24', network['id'], **kwargs)
-        assert subnet
+        if ip_version == 4 or dualstack:
+            subnet = self.create_subnet('10.20.30.0/24', network['id'],
+                                        **kwargs)
+            assert subnet
 
-        if dualstack:
+        if ip_version == 6 or dualstack:
             kwargs = {'ipv6_ra_mode': 'dhcpv6-stateful',
                       'ipv6_address_mode': 'dhcpv6-stateful'}
             subnetv6 = self.create_subnet('a1ca:c10d:1111:1111::/64',
