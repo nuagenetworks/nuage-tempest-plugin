@@ -116,7 +116,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         self.assertEqual('DOWN', port['status'])
 
     @decorators.attr(type='smoke')
-    def test_nuage_port_with_vm_create_delete_check_status(self):
+    def test_nuage_port_with_vm_create_delete_check_status_with_vm(self):
         network = self.create_network()
         self.create_subnet(network, cidr=IPNetwork("10.0.0.0/24"),
                            mask_bits=24)

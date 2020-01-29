@@ -157,7 +157,7 @@ class VSDPublicResourcesML2Test(
             expect_vm_ip_addresses_equal=''
         )
 
-    def test_vsd_l2_shared_mgd_l2_unmgd_without_gateway(self):
+    def test_vsd_l2_shared_mgd_l2_unmgd_without_gateway_with_vm(self):
         # Given I have a VSD-L2-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L2-Shared-domain without IPAM (i.e. UnManaged)
         # And these are linked
@@ -186,7 +186,7 @@ class VSDPublicResourcesML2Test(
         )
 
     @decorators.attr(type=['negative'])
-    def test_vsd_l2_shared_mgd_l2_unmgd_with_gw_neg(self):
+    def test_vsd_l2_shared_mgd_l2_unmgd_with_gw_neg_with_vm(self):
         # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # And these are linked
@@ -215,7 +215,7 @@ class VSDPublicResourcesML2Test(
             expect_vm_ip_addresses_equal=True
         )
 
-    def test_vsd_l2_shared_mgd_l2_unmgd_no_gateway(self):
+    def test_vsd_l2_shared_mgd_l2_unmgd_no_gateway_with_vm(self):
         # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # And these are linked
@@ -262,7 +262,7 @@ class VSDPublicResourcesML2Test(
             gateway_ip='',  # bad, must be VSD_L2_SHARED_MGD_OPT3
             must_fail=True)
 
-    def test_vsd_l2_shared_mgd_opt3_l2_unmgd_with_gateway(self):
+    def test_vsd_l2_shared_mgd_opt3_l2_unmgd_with_gateway_with_vm(self):
         # Given I have a VSD-L2-domain without IPAM (i.e. unmanaged)
         # And I have a VSD-L2-Shared-domain with IPAM (i.e. managed)
         # with DHCP-option 3 set
@@ -315,7 +315,7 @@ class VSDPublicResourcesML2Test(
             gateway_ip=None,  # bad, must be VSD_L2_SHARED_MGD_OPT3
             must_fail=True)
 
-    def test_vsd_l3_shared_mgd_l3_unmgd_without_gateway(self):
+    def test_vsd_l3_shared_mgd_l3_unmgd_without_gateway_with_vm(self):
         # Given I have a VSD-L3-domain in a public zone
         # (i.e. without IPAM (/ UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
@@ -350,7 +350,7 @@ class VSDPublicResourcesML2Test(
         )
 
     @decorators.attr(type='smoke')
-    def test_vsd_l3_shared_mgd_l3_unmgd_with_gateway(self):
+    def test_vsd_l3_shared_mgd_l3_unmgd_with_gateway_with_vm(self):
         # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # and these are linked
@@ -398,7 +398,7 @@ class VSDPublicResourcesML2Test(
             gateway_ip=None,  # bad, must be <base>.VSD_L3_SHARED_MGD_GW
             must_fail=True)
 
-    def test_vsd_l3_shared_mgd_opt3_l2_unmgd_with_gateway(self):
+    def test_vsd_l3_shared_mgd_opt3_l2_unmgd_with_gateway_with_vm(self):
         # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # with DHCP-options-3
@@ -436,7 +436,7 @@ class VSDPublicResourcesML2Test(
             expect_vm_ip_addresses_equal=True
         )
 
-    def test_vsd_l3_shared_mgd_opt3_0000_l2_unmgd_with_gateway(self):
+    def test_vsd_l3_shared_mgd_opt3_0000_l2_unmgd_with_gateway_with_vm(self):
         # Given I have a VSD-L3-domain without IPAM (i.e. UnManaged)
         # And I have a VSD-L3-Shared-domain with IPAM (i.e. Managed)
         # with DHCP-options-3 0.0.0.0

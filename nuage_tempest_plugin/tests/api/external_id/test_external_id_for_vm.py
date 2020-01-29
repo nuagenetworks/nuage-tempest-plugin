@@ -115,7 +115,7 @@ class ExternalIdForVmTest(
             wait_until='ACTIVE')
         return server
 
-    def test_server_on_neutron_port_matching_vsd_vm(self):
+    def test_with_vm_on_neutron_port_matching_vsd(self):
         # Create a network
         network = self._create_network(namestart='network-')
         subnet = self.create_subnet(network, namestart='subnet-')
@@ -132,7 +132,7 @@ class ExternalIdForVmTest(
         # Delete
         vsd_vm.verify_cannot_delete()
 
-    def test_server_on_neutron_network_matching_vsd_vm(self):
+    def test_with_vm_on_neutron_network_matching_vsd(self):
         # Create a network
         network = self._create_network(namestart='network-')
         subnet = self.create_subnet(network, namestart='subnet-')
@@ -167,7 +167,7 @@ class ExternalIdForVmTest(
                         vsd_l2dom_tmplt[0]['ID'])
         return vsd_l2dom_tmplt
 
-    def test_server_on_vsd_managed_network_matching_vsd_vm(self):
+    def test_with_vm_on_vsd_managed_network_matching_vsd(self):
         net_name = data_utils.rand_name()
         cidr = IPNetwork('10.10.100.0/24')
         vsd_l2domain_templates = self.create_vsd_dhcpmanaged_l2dom_template(
@@ -215,7 +215,7 @@ class ExternalIdForVmTest(
         # Delete
         vsd_vm.verify_cannot_delete()
 
-    def test_server_on_neutron_port_in_vsd_managed_network_matching_vsd_vm(
+    def test_with_vm_on_neutron_port_in_vsd_managed_network_matching_vsd(
             self):
         net_name = data_utils.rand_name()
         cidr = IPNetwork('10.10.100.0/24')

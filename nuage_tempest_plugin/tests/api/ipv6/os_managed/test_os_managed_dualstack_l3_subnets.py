@@ -62,7 +62,7 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
     # Typical
     ###########################################################################
     @decorators.attr(type='smoke')
-    def test_os_managed_dual_stack_l3_subnet(self):
+    def test_os_managed_dual_stack_l3_subnet_with_vm(self):
         # Provision OpenStack network
         network = self.create_network()
 

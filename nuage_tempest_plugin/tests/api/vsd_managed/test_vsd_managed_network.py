@@ -237,14 +237,14 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
         return vsd_l2dom, subnet
 
     @decorators.attr(type='smoke')
-    def test_link_subnet_l2_no_gw(self):
+    def test_link_subnet_l2_no_gw_with_vm(self):
         self.link_subnet_l2(create_server=True)
 
         # test recreating a new (identical) vsd mgd sub
         self.link_subnet_l2()
 
     @decorators.attr(type='smoke')
-    def test_link_subnet_l2_with_gw(self):
+    def test_link_subnet_l2_with_gw_with_vm(self):
         self.link_subnet_l2(dhcp_option_3='10.10.100.2', create_server=True)
 
     @decorators.attr(type='smoke')
@@ -357,7 +357,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
             should_pass=True)
 
     @decorators.attr(type='smoke')
-    def test_link_vsd_managed_shared_subnet_l2(self):
+    def test_link_vsd_managed_shared_subnet_l2_with_vm(self):
         cidr = IPNetwork('10.10.100.0/24')
         gateway = str(IPAddress(cidr) + 1)
         vsd_managed_shared_l2dom_tmplt = \
@@ -825,7 +825,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
         self.assertTrue(self._create_and_verify_vm(network))
 
     @decorators.attr(type='smoke')
-    def test_link_subnet_l3(self):
+    def test_link_subnet_l3_with_vm(self):
         self.link_subnet_l3()
 
     @decorators.attr(type='smoke')
@@ -1107,7 +1107,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
 
     # HP - Unica scenario with DHCP-options defined in VSD
     @decorators.attr(type='smoke')
-    def test_link_vsd_shared_subnet_l3_with_dhcp_option(self):
+    def test_link_vsd_shared_subnet_l3_with_dhcp_option_with_vm(self):
         shared_vsd_l3dom_tmplt = self.create_vsd_l3dom_template(
             netpart_name=self.shared_infrastructure)[0]
         shared_vsd_l3dom = self.create_vsd_l3domain(
