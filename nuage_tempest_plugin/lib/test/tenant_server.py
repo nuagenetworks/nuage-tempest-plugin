@@ -430,9 +430,9 @@ class TenantServer(object):
 
         served = None
         for attempt in range(10 if assert_true else 1):
-            served = bool(self.send('ps -ef '
+            served = bool(self.send('ps -e '
                                     '| grep "dhclient.{}.*{}" {} '
-                                    '| grep -v grep || true'.format(
+                                    '|| true'.format(
                                         wildcard, device, extra_filter)))
             if served:
                 if attempt > 0:
