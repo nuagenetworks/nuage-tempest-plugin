@@ -194,13 +194,13 @@
               vlan_transparent: true
             quotas:
               # A negative value means unlimited. (integer value)
-              quota_network: -1
-              quota_subnet: -1
-              quota_port: -1
-              quota_router: -1
-              quota_floatingip: -1
-              quota_security_group: -1
-              quota_security_group_rule: -1
+              quota_network: 1000
+              quota_subnet: 1000
+              quota_port: 1000
+              quota_router: 1000
+              quota_floatingip: 1000
+              quota_security_group: 1000
+              quota_security_group_rule: 1000
         test-config:
           $TEMPEST_CONFIG:
             scenario:
