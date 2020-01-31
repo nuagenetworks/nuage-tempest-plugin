@@ -1960,7 +1960,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
     def execute_from_shell(command, success_expected=True, pause=None):
         output = None
         try:
-            output = subprocess.check_output(command, shell=True)
+            output = str(subprocess.check_output(command, shell=True))
         except subprocess.CalledProcessError:
             if success_expected:
                 raise
