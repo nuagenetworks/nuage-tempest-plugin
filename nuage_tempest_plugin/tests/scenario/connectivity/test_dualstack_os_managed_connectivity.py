@@ -53,7 +53,6 @@ class DualstackOsManagedConnectivityTest(nuage_test.NuageBaseTest):
         self._test_icmp_connectivity_os_managed_dualstack(is_l3=False)
 
     def test_icmp_connectivity_os_managed_dualstack_128_sg_prefix(self):
-        # Provision OpenStack network
         network = self.create_network()
         ipv4_subnet = self.create_subnet(network)
         self.create_subnet(network, ip_version=6)
@@ -61,18 +60,8 @@ class DualstackOsManagedConnectivityTest(nuage_test.NuageBaseTest):
         router = self.create_public_router()
         self.router_attach(router, ipv4_subnet)
 
-        # create sg with /128 rule
-        sg_name = nuage_test.data_utils.rand_name('secgroup-smoke')
-        sg_desc = sg_name + " description"
-        sg_dict = dict(name=sg_name,
-                       description=sg_desc)
-        sg_dict['tenant_id'] = self.security_groups_client.tenant_id
-        sg1 = self.security_groups_client.create_security_group(
-            **sg_dict)['security_group']
+        sg1 = self.create_security_group()
         sg_id = sg1['id']
-        self.addCleanup(nuage_test.test_utils.call_and_ignore_notfound_exc,
-                        self.security_groups_client.delete_security_group,
-                        sg_id)
         for sg_rule in sg1['security_group_rules']:
             self.security_group_rules_client.delete_security_group_rule(
                 sg_rule['id'])
@@ -81,6 +70,15 @@ class DualstackOsManagedConnectivityTest(nuage_test.NuageBaseTest):
         ssh_security_group = self.create_open_ssh_security_group()
 
         # Launch tenant servers in OpenStack network
+        server3_port = self.create_port(
+            network,
+            security_groups=[ssh_security_group['id']])
+
+        server3 = self.create_tenant_server(
+            ports=[server3_port],
+            prepare_for_connectivity=True,
+            start_web_server=True)
+
         server1 = self.create_tenant_server(
             [network],
             security_groups=[ssh_security_group],
@@ -91,47 +89,15 @@ class DualstackOsManagedConnectivityTest(nuage_test.NuageBaseTest):
             security_groups=[ssh_security_group],
             prepare_for_connectivity=True)
 
-        server3_port = self.create_port(
-            network,
-            security_groups=[ssh_security_group['id']])
-
-        server3 = self.create_tenant_server(
-            ports=[server3_port],
-            prepare_for_connectivity=True)
-
-        dest_addr = server3.get_server_ip_in_network(
-            network['name'], ip_version=6)
-
-        for i in range(1, 5):
-            server3.send('nc -v -lk -p 8080 -s ' +
-                         dest_addr + ' > server.log 2>&1 &')
-            netcat_server_log = server3.send('cat server.log')
-            self.assertNotEmpty(netcat_server_log,
-                                "Couldn't start server")
-            if 'bind: Cannot assign requested address' in netcat_server_log:
-                if i == 4:
-                    self.assertNotEmpty(
-                        None,
-                        msg='Failed: bind: Cannot assign requested address')
-                else:
-                    self.sleep(1, "Retry to bind the requested address")
-            else:
-                break
-
         self.update_port(server3_port, security_groups=[sg_id])
-        server1.send(
-            'echo "Do you see this from server1" |'
-            ' nc -v ' + dest_addr + ' 8080 > server1.log 2>&1 &')
-        server2.send(
-            'echo "Do you see this from server2" |'
-            ' nc -v ' + dest_addr + ' 8080 > server2.log 2>&1 &')
 
         # validate if the tcp connection is not yet active.
-        self.assertEmpty(server2.send('cat server2.log'),
-                         "TCP connection cannot be active")
-        self.assertEmpty(server1.send('cat server1.log'),
-                         "TCP connection cannot be active")
+        for from_server in (server1, server2):
+            self.assert_tcp_connectivity(
+                from_server=from_server, to_server=server3, ip_version=6,
+                network_name=network['name'], is_connectivity_expected=False)
 
+        # Add a rule to allow IPv6 traffic from server 1
         ipv6_ip_prefix = server1.get_server_ip_in_network(
             network['name'], ip_version=6) + '/128'
         self.security_group_rules_client.create_security_group_rule(
@@ -141,19 +107,9 @@ class DualstackOsManagedConnectivityTest(nuage_test.NuageBaseTest):
 
         # now validate that TCP will work from server1 with ingress
         # itself although there is no egress rule.
-        for i in range(1, 5):
-            # now validate that TCP will only work from server1
-            self.assertEmpty(server2.send('cat server2.log'),
-                             "TCP connection should not work as it does not"
-                             " have ingress or egress rules")
-            contents_in_file = server1.send('cat server1.log')
-            if contents_in_file:
-                break
-            else:
-                LOG.info("Retry to see if the TCP connection is active.")
-                self.sleep(1, msg="Retry to see if the TCP"
-                                  " connection is active.")
-
-        self.assertNotEmpty(server1.send('cat server1.log'),
-                            "TCP connection is not active although"
-                            " stateful ingress rule is present.")
+        self.assert_tcp_connectivity(
+            from_server=server1, to_server=server3, ip_version=6,
+            network_name=network['name'], is_connectivity_expected=True)
+        self.assert_tcp_connectivity(
+            from_server=server2, to_server=server3, ip_version=6,
+            network_name=network['name'], is_connectivity_expected=False)
