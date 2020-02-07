@@ -380,13 +380,19 @@ class BaseTestCase(object):
             self.assert_ping(vm_actor, vm_hollywood, network,
                              should_pass=False)
 
+        @testtools.skipIf(Topology.has_default_switchdev_port_profile(),
+                          reason='VRS-35482')
         def test_icmp_connectivity_stateful_acl_os_managed_l2(self):
             self._test_icmp_connectivity_stateful_acl_os_managed(is_l3=False)
 
+        @testtools.skipIf(Topology.has_default_switchdev_port_profile(),
+                          reason='VRS-35478')
         def test_icmp_connectivity_stateless_acl_os_managed_l2_neg(self):
             self._test_icmp_connectivity_stateful_acl_os_managed(
                 is_l3=False, stateful=False)
 
+        @testtools.skipIf(Topology.has_default_switchdev_port_profile(),
+                          reason='VRS-35482')
         def test_icmp_connectivity_stateful_acl_os_managed_l3(self):
             self._test_icmp_connectivity_stateful_acl_os_managed(is_l3=True)
 
