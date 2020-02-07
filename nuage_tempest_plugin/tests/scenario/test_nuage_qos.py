@@ -20,6 +20,7 @@ from neutron_lib import constants as neutron_lib_constants
 from tempest.common import utils
 from tempest.lib import exceptions as tempest_exc
 
+from neutron_tempest_plugin.common import ssh
 from neutron_tempest_plugin.common import utils as common_utils
 from neutron_tempest_plugin.scenario import base as neutron_base
 from neutron_tempest_plugin.scenario import constants
@@ -102,3 +103,50 @@ class NuageFloatingIPProprietaryQosTest(
                 port=self.NC_PORT),
             timeout=120,
             sleep=1)
+
+
+class RateLimitingNuageQosScenarioTest(test_qos.QoSTest):
+    BUFFER_SIZE = 1024
+    DOWNLOAD_DURATION = 10
+    CHECK_TIMEOUT = DOWNLOAD_DURATION * 10
+
+    @staticmethod
+    def get_ncat_server_cmd(port, protocol):
+        udp = ''
+        if protocol.lower() == neutron_lib_constants.PROTO_NAME_UDP:
+            udp = '-u'
+        return ("screen -d -m sh -c '"
+                "while true; do nc {udp} -p {port} -lk < /dev/zero; "
+                "done;'".format(port=port, udp=udp))
+
+    def ensure_nc_listen(self, ssh_client, port, protocol, echo_msg=None,
+                         servers=None):
+        """Ensure that nc server listening on the given TCP/UDP port is up.
+
+        Listener is created always on remote host.
+        """
+        try:
+            value = ssh_client.exec_command(
+                self.get_ncat_server_cmd(port, protocol))
+            LOG.debug(str(ssh_client.exec_command("sudo netstat -tln")))
+            return value
+        except tempest_exc.SSHTimeout as ssh_e:
+            LOG.debug(ssh_e)
+            self._log_console_output(servers)
+            raise
+
+    def check_connectivity(self, host, ssh_user, ssh_key,
+                           servers=None, ssh_timeout=None):
+        # Set MTU on cirros VM for QOS
+        # VRS-35132
+        ssh_client = ssh.Client(host, ssh_user,
+                                pkey=ssh_key, timeout=ssh_timeout)
+        try:
+            ssh_client.test_connection_auth()
+            ssh_client.exec_command("set -eu -o pipefail; PATH=$PATH:/sbin; "
+                                    "sudo ip link set dev eth0 mtu 1450")
+        except tempest_exc.SSHTimeout as ssh_e:
+            LOG.debug(ssh_e)
+            self._log_console_output(servers)
+            self._log_local_network_status()
+            raise
