@@ -32,8 +32,13 @@ MSG_GATEWAY_NOT_VALID_ON_SUBNET = 'Gateway is not valid on subnet'
 MSG_GATEWAY_INVALID_IP_ADDRESS = ("Invalid input for gateway_ip. "
                                   "Reason: '%s' is not a valid IP address.")
 
-MSG_INVALID_IPV6_NETMASK = ('Invalid IPv6 prefix length. '
-                            'Only prefix length 64 is supported.')
+MSG_INVALID_IPV6_NETMASK = ('Bad request: Error in REST call to VSD:'
+                            ' Invalid IPv6 netmask. Netmask can only be'
+                            ' between a minimum 64 and maximum 64 length.')
+
+MSG_RESERVED_IPV6_ADDRESS = ('Bad request: Error in REST call to VSD: '
+                             'IP Address %s is not valid or cannot be in '
+                             'reserved address space.')
 
 MSG_INVALID_GATEWAY_FOR_IP_TYPE = ("Invalid input for operation: gateway_ip "
                                    "'%s' does not match the ip_version '6'")
@@ -987,7 +992,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
                 # iana-ipv6-special-registry/iana-ipv6-special-registry.xhtml
                 "fe80:5f74:c4a5:b82e::/120",
                 "fe80:5f74:c4a5:b82e::1",
-                MSG_INVALID_IPV6_NETMASK),
+                MSG_RESERVED_IPV6_ADDRESS % "fe80:5f74:c4a5:b82e::/120"),
             (   # Reserved addresses: 6to4
                 "2002:5f74:c4a5:b82e::/120",
                 "2002:5f74:c4a5:b82e::1",
