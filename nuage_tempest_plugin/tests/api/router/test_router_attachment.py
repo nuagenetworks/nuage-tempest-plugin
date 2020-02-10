@@ -26,7 +26,7 @@ class RouterAttachmentTest(NuageBaseTest):
         self._validate_is_attached_to_router(subnet, router)
 
     @decorators.attr(type='smoke')
-    def test_router_attachment(self):
+    def test_router_attachment_with_vm(self):
         router = self.create_router()
         network = self.create_network()
         subnet = self.create_subnet(network)
@@ -34,7 +34,7 @@ class RouterAttachmentTest(NuageBaseTest):
         self.router_attach(router, subnet)
 
     @decorators.attr(type='smoke')
-    def test_router_attachment_add_server_before_attach(self):
+    def test_router_attachment_with_vm_before_attach(self):
         network = self.create_network()
         subnet = self.create_subnet(network)
         self.create_tenant_server([network])

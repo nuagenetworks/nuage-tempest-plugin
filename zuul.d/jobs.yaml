@@ -336,6 +336,21 @@
       tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway).*))'
 
 - job:
+    name: networking-nuage-tempest-api-switchdev
+    parent: networking-nuage-tempest-virtio-py3
+    branches: ^(?!stable/(newton|ocata)).*$
+    vars:
+      devstack_localrc:
+        NUAGE_USE_SWITCHDEV: true
+      devstack_local_conf:
+        test-config:
+          $TEMPEST_CONFIG:
+            network:
+              port_profile: capabilities:[switchdev]
+              port_vnic_type: direct
+      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway|.*_with_vm.*)))'
+
+- job:
     name: networking-nuage-tempest-sriov
     parent: networking-nuage-base-py3
     description: job running api tests against nuage sriov mech driver

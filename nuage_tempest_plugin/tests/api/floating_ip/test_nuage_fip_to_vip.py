@@ -330,7 +330,7 @@ class NuageFipToVip(NuageBaseTest):
             "Floating ip not correctly attached to the vport.")
 
     @decorators.attr(type='smoke')
-    def test_fip_to_vip_vm(self):
+    def test_fip_to_vip_with_vm(self):
         network = self.create_network()
         self.assertIsNotNone(network, "Unable to create network")
         subnet = self.create_subnet(network)
