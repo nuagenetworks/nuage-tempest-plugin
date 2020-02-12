@@ -464,7 +464,10 @@ class Ipv4OsManagedConnectivityTest(
         """test_icmp_connectivity_multiple_subnets_in_shared_network
 
         Check that there is connectivity between VM's with floatingip's
-        in different subnets of the same network
+        in different subnets of the same network. These subnets have
+        underlay=False so they end up in a new L3 domain on VSD instead of the
+        existing shared FIP to underlay domain.
+
         """
         # Provision OpenStack network resources
         kwargs = {
@@ -473,13 +476,14 @@ class Ipv4OsManagedConnectivityTest(
         ext_network = self.create_network(manager=self.admin_manager, **kwargs)
         ext_s1 = self.create_subnet(ext_network, manager=self.admin_manager,
                                     cidr=data_utils.gimme_a_cidr(),
-                                    underlay=True)
+                                    underlay=False)
         ext_s2 = self.create_subnet(ext_network, manager=self.admin_manager,
                                     cidr=data_utils.gimme_a_cidr(),
-                                    underlay=True)
+                                    underlay=False)
 
         r1 = self.create_router(external_network_id=ext_network['id'])
         r2 = self.create_router(external_network_id=ext_network['id'])
+        r_access = self.create_router(external_network_id=self.ext_net_id)
 
         n1 = self.create_network()
         s1 = self.create_subnet(n1, cidr=IPNetwork('52.0.0.0/24'))
@@ -489,24 +493,39 @@ class Ipv4OsManagedConnectivityTest(
         s2 = self.create_subnet(n2, cidr=IPNetwork('53.0.0.0/24'))
         self.router_attach(r2, s2)
 
+        # create resources in order to ssh into server 1
+        n_access = self.create_network()
+        s_access = self.create_subnet(n_access, cidr=data_utils.gimme_a_cidr())
+        self.router_attach(r_access, s_access)
+
         # create open-ssh security group
         ssh_security_group = self.create_open_ssh_security_group()
 
         # Launch tenant servers in OpenStack network
         p1 = self.create_port(
             network=n1,
-            security_groups=[ssh_security_group['id']])
+            security_groups=[ssh_security_group['id']],
+            extra_dhcp_opts=[{'opt_name': 'router', 'opt_value': '0'}]
+        )
         p2 = self.create_port(
             network=n2,
             security_groups=[ssh_security_group['id']])
+        p_access = self.create_port(
+            network=n_access,
+            security_groups=[ssh_security_group['id']])
 
-        fip1 = self.create_floatingip(external_network_id=ext_network['id'],
-                                      subnet_id=ext_s1['id'], port_id=p1['id'])
+        self.create_floatingip(external_network_id=ext_network['id'],
+                               subnet_id=ext_s1['id'], port_id=p1['id'])
         fip2 = self.create_floatingip(external_network_id=ext_network['id'],
                                       subnet_id=ext_s2['id'], port_id=p2['id'])
-
-        server2 = self.create_tenant_server(ports=[p2], pre_prepared_fip=fip2)
-        server1 = self.create_tenant_server(ports=[p1], pre_prepared_fip=fip1)
+        server2 = self.create_tenant_server(
+            ports=[p2], pre_prepared_fip=fip2,
+            prepare_for_connectivity=False)
+        server1 = self.create_tenant_server(
+            ports=[p_access, p1],
+            prepare_for_connectivity=True,
+            user_data='ip route add {} via {}'.format(ext_s2['cidr'],
+                                                      s1['gateway_ip']))
 
         # Test connectivity between peer servers
         self.assert_ping(server1, server2, ext_network,
