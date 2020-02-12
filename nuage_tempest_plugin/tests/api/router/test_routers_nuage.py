@@ -384,9 +384,8 @@ class NuageRoutersTest(base.BaseNetworkTest):
         wrong_destination = str(self.cidr[1]) + '/24'
         if Topology.before_openstack('stein'):
             expected_exception = exceptions.ServerFault
-            expected_error = ('Nuage API: Error in REST call to VSD: Network '
-                              'IP Address {} must have host bits set '
-                              'to 0.'.format(self.cidr[1]))
+            expected_error = ('Nuage API: Network IP Address {} must have '
+                              'host bits set to 0.'.format(self.cidr[1]))
         else:
             expected_exception = exceptions.BadRequest
             expected_error = ("Invalid input for routes. Reason: '{}' is not "
