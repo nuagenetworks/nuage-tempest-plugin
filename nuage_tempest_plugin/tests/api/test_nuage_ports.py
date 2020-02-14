@@ -1749,3 +1749,46 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             filter_value=port['id'])
         self.assertEqual(constants.ENABLED,
                          nuage_vport[0]['addressSpoofing'])
+
+    def test_delete_unbound_port_with_hanging_vminterface(self):
+        # OPENSTACK-2797
+        network = self.create_network()
+        self.assertIsNotNone(network, "Unable to create network")
+
+        subnet = self.create_subnet(network, cidr=IPNetwork("10.0.0.0/24"),
+                                    mask_bits=28)
+        self.assertIsNotNone(subnet, "Unable to create subnet")
+        port = self.create_port(network=network, cleanup=False)
+        self.addCleanup(self._try_delete,
+                        self.manager.ports_client.delete_port,
+                        port['id'])
+
+        # Find vport
+        l2domain = self.vsd.get_l2domain(by_network_id=network['id'],
+                                         cidr='10.0.0.0')
+        vport = self.vsd.get_vport(l2domain=l2domain, by_port_id=port['id'])
+
+        # Create "Fake" VM interface to simulate following behavior:
+        # -> Port is being bound -> VM created -> port deleted ->
+        # Port not bound but leftover VM on VSD
+        vminterface = self.vsd.vspk.NUVMInterface(
+            name='test-fip-vm', vport_id=vport.id,
+            external_id=self.vsd.external_id(port['id']),
+            mac='E6:04:AA:7A:AA:86', ip_address='10.0.0.10')
+        vm = self.vsd.vspk.NUVM(name='test-port-delete-vm',
+                                uuid='1339f7f4-f7a0-445f-b257-8dbfaf0d6fc8',
+                                external_id=self.vsd.external_id(
+                                    '1339f7f4-f7a0-445f-b257-8dbfaf0d6fc8'),
+                                interfaces=[vminterface])
+        # Impersonate tenant user for appropriate permissions on VM
+        self.vsd.session().impersonate(port['tenant_id'],
+                                       self.default_netpartition_name)
+        self.vsd.session().user.create_child(vm)
+        self.vsd.session().stop_impersonate()
+
+        # Delete port, VM should be deleted in this request
+        self.delete_port(port)
+
+        # Verify that vport is deleted
+        vport = self.vsd.get_vport(l2domain=l2domain, by_port_id=port['id'])
+        self.assertIsNone(vport, 'Vport not deleted by Port delete statement')
