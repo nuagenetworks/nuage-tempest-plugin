@@ -393,10 +393,10 @@ class TenantServer(object):
             self.needs_provisioning = False
             LOG.info('[{}] Provisioning complete'.format(self.tag))
 
-    def is_ip_configured(self, ip, assert_permanent=False,
-                         assert_true=False):
+    def wait_until_ip_configured(self, ip, assert_permanent=False,
+                                 assert_true=False):
         ip_configured = False
-        for cnt in range(10):
+        for _ in range(15):
             if assert_permanent:
                 ip_configured = bool(self.send('ip a '
                                                '| grep "{}.* scope global" '
@@ -476,7 +476,7 @@ class TenantServer(object):
             if not self.force_dhcp:
                 LOG.info('[{}] Validating {}/{} is set'.format(
                     self.tag, ip, device))
-                self.is_ip_configured(ip, assert_true=True)
+                self.wait_until_ip_configured(ip, assert_true=True)
 
         else:
             # else, configure statically
@@ -491,7 +491,7 @@ class TenantServer(object):
                         '{} addr add {}/{} dev {}'.format(
                             ip_v, ip, mask_bits, device),
                         one_off_attempt=True) is None or
-                    not self.is_ip_configured(ip)):
+                    not self.wait_until_ip_configured(ip)):
                 self.send('{} addr del {}/{} dev {} || true'.format(
                     ip_v, ip, mask_bits, device))
                 attempt += 1
@@ -505,7 +505,7 @@ class TenantServer(object):
                     ip_v, gateway_ip))
 
         # with all config up now, validate for non-tentative
-        self.is_ip_configured(ip, assert_permanent=True)
+        self.wait_until_ip_configured(ip, assert_permanent=True)
 
         LOG.info('[{}] Successfully set {}/{}'.format(self.tag, ip, device))
 
