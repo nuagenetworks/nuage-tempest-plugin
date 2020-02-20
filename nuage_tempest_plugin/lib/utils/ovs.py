@@ -11,9 +11,12 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 
+import abc
 import re
+import six
 
 
+@six.add_metaclass(abc.ABCMeta)
 class FlowQuery(object):
     """Filter flows based on criteria"""
 
@@ -23,6 +26,71 @@ class FlowQuery(object):
         :param flows: A list of strings
         """
         self.flows = flows
+        # Keep the original state of the flows
+        self.orig_flows = flows
+
+    @abc.abstractmethod
+    def src_mac(self, mac):
+        """Flows must have src mac equal to input"""
+        pass
+
+    @abc.abstractmethod
+    def dst_mac(self, mac):
+        """Flows must have dst mac equal to input"""
+        pass
+
+    @abc.abstractmethod
+    def action_set_tunnel_vxlan(self):
+        """Flows with action tunnel"""
+        pass
+
+    @abc.abstractmethod
+    def vxlan(self):
+        """Flows from vxlan tunnel"""
+        pass
+
+    @abc.abstractmethod
+    def icmp(self):
+        """Flows must be icmp"""
+        pass
+
+    @abc.abstractmethod
+    def tcp(self):
+        """Flows must be tcp"""
+        pass
+
+    @abc.abstractmethod
+    def wildcard_protocol(self):
+        """Flow allows any protocol"""
+        pass
+
+    @abc.abstractmethod
+    def ip_version(self, version):
+        """Flow with specific ip version"""
+        pass
+
+    @abc.abstractmethod
+    def offload(self):
+        """Flows must be offloaded"""
+        pass
+
+    @abc.abstractmethod
+    def no_offload(self):
+        """Flows must not be offloaded"""
+        pass
+
+    def reset(self):
+        """Reset the flows to the original state"""
+        self.flows = self.orig_flows
+        return self
+
+    def result(self):
+        """Get the resulting flows"""
+        return self.flows
+
+
+class OvrsFlowQuery(FlowQuery):
+    """Filter flows based on criteria"""
 
     def _matches(self, regex):
         matcher = re.compile(regex)
@@ -92,7 +160,60 @@ class FlowQuery(object):
         self._not_matches('.*offloaded:yes.*')
         return self
 
-    def result(self):
-        """Get the resulting flows"""
 
-        return list(self.flows)
+class AvrsFlowQuery(FlowQuery):
+
+    def src_mac(self, mac):
+        """Flows must have src mac equal to input"""
+
+        self.flows = [flow for flow in self.flows
+                      if flow['flow.key']['eth']['src'] == mac.lower()]
+        return self
+
+    def dst_mac(self, mac):
+        """Flows must have dst mac equal to input"""
+        self.flows = [flow for flow in self.flows
+                      if flow['flow.key']['eth']['dst'] == mac.lower()]
+        return self
+
+    def action_set_tunnel_vxlan(self):
+        """Flows with action tunnel"""
+        return self
+
+    def vxlan(self):
+        """Flows from vxlan tunnel"""
+        return self
+
+    def icmp(self):
+        """Flows must be icmp"""
+        self.flows = [flow for flow in self.flows if 'ip' in flow['flow.key']
+                      and flow['flow.key']['ip']['proto'] == 1]
+        return self
+
+    def tcp(self):
+        """Flows must be tcp"""
+        self.flows = [flow for flow in self.flows if 'ip' in flow['flow.key']
+                      and flow['flow.key']['ip']['proto'] == 6]
+        return self
+
+    def wildcard_protocol(self):
+        """Flow allows any protocol"""
+        return self
+
+    def ip_version(self, version):
+        """Flow with specific ip version"""
+        if version == 4:
+            self.flows = [flow for flow in self.flows if
+                          'ip' in flow['flow.key']]
+        else:
+            self.flows = [flow for flow in self.flows if
+                          'ipv6' in flow['flow.key']]
+        return self
+
+    def offload(self):
+        """Flows must be offloaded"""
+        return self
+
+    def no_offload(self):
+        """Flows must not be offloaded"""
+        return self

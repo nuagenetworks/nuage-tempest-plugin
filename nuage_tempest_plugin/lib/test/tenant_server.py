@@ -187,7 +187,7 @@ class TenantServer(object):
 
     def boot(self, wait_until='ACTIVE', manager=None, cleanup=True, **kwargs):
         extra_nic_user_data = self.get_user_data_for_nic_prep(
-            dhcp_client=CONF.scenario.dhcp_client)
+            dhcp_client=CONF.scenario.dhcp_client, manager=manager)
         if extra_nic_user_data:
             # concat both scripts
             if kwargs.get('user_data'):
