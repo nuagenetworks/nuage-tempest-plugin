@@ -110,3 +110,6 @@ tempest\.api\.network\.test_allowed_address_pair\.AllowedAddressPairIpV6TestJSON
 tempest\.api\.network\.test_dhcp_ipv6\.NetworksTestDHCPv6
 tempest\.api\.network\.test_ports\.PortsIpV6TestJSON
 tempest\.api\.network\.test_routers\.RoutersIpV6Test
+
+# Neutron Security Group Qouata test can only run in isolation
+neutron_tempest_plugin\.api\.test_security_groups\.SecGroupQuotaTest
