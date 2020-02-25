@@ -1792,3 +1792,39 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         # Verify that vport is deleted
         vport = self.vsd.get_vport(l2domain=l2domain, by_port_id=port['id'])
         self.assertIsNone(vport, 'Vport not deleted by Port delete statement')
+
+    def test_delete_ips_from_port_with_vm(self):
+        # OPENSTACK-2808
+        network = self.create_network()
+        self.assertIsNotNone(network, "Unable to create network")
+
+        subnet = self.create_subnet(network, cidr=IPNetwork("10.0.0.0/24"),
+                                    mask_bits=28)
+        self.assertIsNotNone(subnet, "Unable to create subnet")
+        port = self.create_port(network=network, cleanup=False)
+        self.addCleanup(self._try_delete,
+                        self.manager.ports_client.delete_port,
+                        port['id'])
+
+        self._create_a_server(name='vm-' + network['name'],
+                              network=network, port_id=port['id'])
+        # update port to not have ip
+        self.update_port(port=port, fixed_ips=[])
+        l2domain = self.vsd.get_l2domain(by_network_id=network['id'],
+                                         cidr='10.0.0.0')
+        vport = self.vsd.get_vport(l2domain=l2domain, by_port_id=port['id'])
+        self.assertIsNone(vport, "vport should be deleted by setting "
+                                 "# fixed ips to 0.")
+
+        # Re-add ip to port
+        port = self.update_port(port=port, fixed_ips=port['fixed_ips'])
+        vport = self.vsd.get_vport(l2domain=l2domain, by_port_id=port['id'])
+        self.assertIsNotNone(vport, "Port updated to have ip,"
+                                    "vport should exist.")
+        vm_interfaces = vport.vm_interfaces.get()
+        self.assertNotEmpty(vm_interfaces, "vm_interface not created.")
+        vm_interface = vm_interfaces[0]
+
+        self.assertEqual(port['device_id'], vm_interface.vmuuid,
+                         "Port device id should be equal to vm_interface "
+                         "attached VM uuid")
