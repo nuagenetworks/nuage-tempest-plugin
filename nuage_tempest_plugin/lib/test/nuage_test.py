@@ -2169,3 +2169,12 @@ class NuageAdminNetworksTest(base.BaseAdminNetworkTest):
         else:
             LOG.warning("Sleeping for {}s. {}.".format(seconds, msg))
         time.sleep(seconds)
+
+    @classmethod
+    def create_port(cls, network, **kwargs):
+        if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
+            kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
+        if CONF.network.port_profile and 'binding:profile' not in kwargs:
+            kwargs['binding:profile'] = CONF.network.port_profile
+        return super(NuageAdminNetworksTest, cls).create_port(network,
+                                                              **kwargs)

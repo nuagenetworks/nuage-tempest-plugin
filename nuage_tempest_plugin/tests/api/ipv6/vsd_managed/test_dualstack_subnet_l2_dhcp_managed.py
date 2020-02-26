@@ -208,7 +208,7 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
         self.assertEqual(ipv4_subnet['cidr'], str(self.cidr4))
 
         # create a port in the network
-        port_ipv4_only = self.create_and_forget_port(network)
+        port_ipv4_only = self.create_port(network, cleanup=False)
         self._verify_port(port_ipv4_only, subnet4=ipv4_subnet, subnet6=None,
                           status='DOWN',
                           nuage_policy_groups=None,
@@ -1055,53 +1055,3 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
                 self.assertEqual(
                     dhcp_port['fixed_ips'][0]['ip_address'],
                     vsd_l2domain2.ipv6_gateway)
-
-    # TODO(team): shared VSD networks use case?
-    # def test_create_vsd_shared_l2domain_dualstack_neg(self):
-    #     # create l2domain on VSD
-    #     vsd_l2domain_template = self.vsd_create_l2domain_template(
-    #         ip_type="DUALSTACK",
-    #         dhcp_managed=False)
-    #
-    #     vsd_l2domain = self.vsd_create_l2domain(
-    #             template=vsd_l2domain_template)
-    #     self._verify_vsd_l2domain_with_template(
-    #         vsd_l2domain, vsd_l2domain_template)
-    #
-    #     name = data_utils.rand_name('vsd-l2domain-shared-unmgd')
-    #     vsd_l2_shared_domains = \
-    #          self.nuage_client.create_vsd_shared_resource(
-    #              name=name, type='L2DOMAIN')
-    #     vsd_l2_shared_domain = vsd_l2_shared_domains[0]
-    #     self.link_l2domain_to_shared_domain(
-    #         vsd_l2domain.id, vsd_l2_shared_domain['ID'])
-    #
-    #     # create OpenStack IPv4 subnet on OpenStack based on VSD l2domain
-    #     net_name = data_utils.rand_name('network-')
-    #     network = self.create_network(network_name=net_name)
-    #     ipv4_subnet = self.create_subnet(
-    #         network,
-    #         gateway=self.gateway4,
-    #         cidr=self.cidr4,
-    #         enable_dhcp=False,
-    #         mask_bits=self.mask_bits4,
-    #         nuagenet=vsd_l2domain.id,
-    #         net_partition=Topology.def_netpartition)
-    #
-    #     ipv6_subnet = self.create_subnet(
-    #         network,
-    #         ip_version=6,
-    #         gateway=self.gateway6,
-    #         cidr=self.cidr6,
-    #         mask_bits=self.mask_bits6,
-    #         enable_dhcp=False,
-    #         nuagenet=vsd_l2domain.id,
-    #         net_partition=Topology.def_netpartition)
-    #
-    #     # shall not create port with IP already in use
-    #     port_args = {'fixed_ips': [{'subnet_id': ipv4_subnet['id'],
-    #                       'ip_address': IPAddress(self.cidr4.first + 10)}, \
-    #                                {'subnet_id': ipv6_subnet['id'],
-    #                       'ip_address': IPAddress(self.cidr6.first + 10)}]}
-    #
-    #     valid_port = self.create_port(network, **port_args)

@@ -25,6 +25,7 @@ from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.lib.utils import exceptions as n_exceptions
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
+CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
 
 extra_dhcp_opts = [
@@ -233,6 +234,15 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
         super(ExternalIdForVPortTest, cls).setup_clients()
         cls.nuage_client = NuageRestClient()
 
+    @classmethod
+    def create_port(cls, network, **kwargs):
+        if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
+            kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
+        if CONF.network.port_profile and 'binding:profile' not in kwargs:
+            kwargs['binding:profile'] = CONF.network.port_profile
+        return super(ExternalIdForVPortTest, cls).create_port(network,
+                                                              **kwargs)
+
     def create_vsd_dhcpmanaged_l2dom_template(self, **kwargs):
         params = {
             'DHCPManaged': True,
@@ -281,11 +291,10 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
         self.assertIsNotNone(subnet)  # dummy check to use local variable
 
         name = data_utils.rand_name('extra-dhcp-opt-port-name')
-        create_body = self.ports_client.create_port(
+        port = self.create_port(
             name=name,
-            network_id=network['id'],
+            network=network,
             extra_dhcp_opts=extra_dhcp_opts)
-        port = create_body['port']
         self.addCleanup(self.ports_client.delete_port, port['id'])
 
         vsd_vport = self.MatchingVsdVPort(

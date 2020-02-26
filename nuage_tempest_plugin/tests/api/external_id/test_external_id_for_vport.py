@@ -267,11 +267,10 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
         subnet = self.create_subnet(network)
 
         name = data_utils.rand_name('extra-dhcp-opt-port-name')
-        create_body = self.ports_client.create_port(
+        port = self.create_port(
             name=name,
-            network_id=network['id'],
+            network=network,
             extra_dhcp_opts=extra_dhcp_opts)
-        port = create_body['port']
         self.addCleanup(self.ports_client.delete_port, port['id'])
 
         vsd_vport = self.MatchingVsdVPort(
@@ -293,11 +292,10 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
         subnet = self.create_subnet(network)
 
         name = data_utils.rand_name('port-nosec')
-        create_body = self.ports_client.create_port(
+        port = self.create_port(
             name=name,
-            network_id=network['id'],
+            network=network,
             port_security_enabled=False)
-        port = create_body['port']
         self.addCleanup(self.ports_client.delete_port, port['id'])
 
         vsd_vport = self.MatchingVsdVPort(
@@ -325,11 +323,10 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
         subnet = self.create_subnet(network)
 
         name = data_utils.rand_name('port-nosec')
-        create_body = self.ports_client.create_port(
+        port = self.create_port(
             name=name,
-            network_id=network['id'],
+            network=network,
             port_security_enabled=False)
-        port = create_body['port']
         self.addCleanup(self.ports_client.delete_port, port['id'])
 
         # switch port security to true/false
@@ -361,11 +358,10 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
         subnet = self.create_subnet(network)
 
         name = data_utils.rand_name('port-nosec')
-        create_body = self.ports_client.create_port(
+        port = self.create_port(
             name=name,
-            network_id=network['id'],
+            network=network,
             port_security_enabled=False)
-        port = create_body['port']
         self.addCleanup(self.ports_client.delete_port, port['id'])
 
         # switch port security to true/false

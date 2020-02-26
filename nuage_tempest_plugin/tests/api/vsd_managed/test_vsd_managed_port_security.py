@@ -60,13 +60,10 @@ class VSDManagedPortSecurity(
                            nuagenet=vsd_subnet[0]['ID'],
                            net_partition=np)
 
-        post_body = {'network_id': net['id'],
+        post_body = {'network': net,
                      'port_security_enabled': 'False'}
-        self._configure_smart_nic_attributes(post_body)
-        body = self.ports_client.create_port(**post_body)
-        port = body['port']
+        port = self.create_port(**post_body)
 
-        self.addCleanup(self.ports_client.delete_port, port['id'])
         nuage_vport = self.nuage_client.get_vport(
             constants.SUBNETWORK,
             vsd_subnet[0]['ID'],
@@ -92,13 +89,10 @@ class VSDManagedPortSecurity(
             cidr=cidr, mask_bits=24, nuagenet=vsd_l2dom[0]['ID'],
             net_partition=CONF.nuage.nuage_default_netpartition,
             enable_dhcp=True)
-        post_body = {'network_id': net['id'],
+        post_body = {'network': net,
                      'port_security_enabled': 'False'}
-        self._configure_smart_nic_attributes(post_body)
-        body = self.ports_client.create_port(**post_body)
-        port = body['port']
+        port = self.create_port(**post_body)
 
-        self.addCleanup(self.ports_client.delete_port, port['id'])
         nuage_vport = self.nuage_client.get_vport(
             constants.L2_DOMAIN,
             vsd_l2dom[0]['ID'],
@@ -127,13 +121,10 @@ class VSDManagedPortSecurity(
             mask_bits=24, nuagenet=vsd_l2dom[0]['ID'],
             net_partition=CONF.nuage.nuage_default_netpartition,
             enable_dhcp=False)
-        post_body = {'network_id': net['id'],
+        post_body = {'network': net,
                      'port_security_enabled': 'False'}
-        self._configure_smart_nic_attributes(post_body)
-        body = self.ports_client.create_port(**post_body)
-        port = body['port']
+        port = self.create_port(**post_body)
 
-        self.addCleanup(self.ports_client.delete_port, port['id'])
         nuage_vport = self.nuage_client.get_vport(
             constants.L2_DOMAIN,
             vsd_l2dom[0]['ID'],
@@ -170,12 +161,9 @@ class VSDManagedPortSecurity(
                            nuagenet=vsd_subnet[0]['ID'],
                            net_partition=np)
 
-        post_body = {'network_id': net['id']}
-        self._configure_smart_nic_attributes(post_body)
-        body = self.ports_client.create_port(**post_body)
-        port = body['port']
+        post_body = {'network': net}
+        port = self.create_port(**post_body)
 
-        self.addCleanup(self.ports_client.delete_port, port['id'])
         nuage_vport = self.nuage_client.get_vport(
             constants.SUBNETWORK,
             vsd_subnet[0]['ID'],
@@ -223,12 +211,9 @@ class VSDManagedPortSecurity(
             net_partition=CONF.nuage.nuage_default_netpartition,
             enable_dhcp=True)
 
-        post_body = {'network_id': net['id']}
-        self._configure_smart_nic_attributes(post_body)
-        body = self.ports_client.create_port(**post_body)
-        port = body['port']
+        post_body = {'network': net}
+        port = self.create_port(**post_body)
 
-        self.addCleanup(self.ports_client.delete_port, port['id'])
         nuage_vport = self.nuage_client.get_vport(
             constants.L2_DOMAIN,
             vsd_l2dom[0]['ID'],
@@ -278,12 +263,9 @@ class VSDManagedPortSecurity(
             mask_bits=24, nuagenet=vsd_l2dom[0]['ID'],
             net_partition=CONF.nuage.nuage_default_netpartition,
             enable_dhcp=False)
-        post_body = {'network_id': net['id']}
-        self._configure_smart_nic_attributes(post_body)
-        body = self.ports_client.create_port(**post_body)
-        port = body['port']
+        post_body = {'network': net}
+        port = self.create_port(**post_body)
 
-        self.addCleanup(self.ports_client.delete_port, port['id'])
         nuage_vport = self.nuage_client.get_vport(
             constants.L2_DOMAIN,
             vsd_l2dom[0]['ID'],

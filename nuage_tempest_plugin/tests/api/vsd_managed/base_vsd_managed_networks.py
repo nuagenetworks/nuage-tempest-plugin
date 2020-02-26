@@ -310,10 +310,3 @@ class BaseVSDManagedNetwork(NuageBaseTest):
             return vm_details.get('interfaces')[0]['IPAddress']
         else:
             return vm_details.get('interfaces')[0]['IPv6Address']
-
-    @staticmethod
-    def _configure_smart_nic_attributes(kwargs):
-        if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
-            kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
-        if CONF.network.port_profile and 'binding:profile' not in kwargs:
-            kwargs['binding:profile'] = CONF.network.port_profile

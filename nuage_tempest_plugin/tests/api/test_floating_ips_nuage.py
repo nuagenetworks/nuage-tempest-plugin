@@ -42,6 +42,15 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
         cls.nuage_client = NuageRestClient()
 
     @classmethod
+    def create_port(cls, network, **kwargs):
+        if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
+            kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
+        if CONF.network.port_profile and 'binding:profile' not in kwargs:
+            kwargs['binding:profile'] = CONF.network.port_profile
+        return super(
+            FloatingIPTestJSONNuage, cls).create_port(network, **kwargs)
+
+    @classmethod
     def resource_setup(cls):
         super(FloatingIPTestJSONNuage, cls).resource_setup()
 
@@ -246,9 +255,8 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
         # Create a port
         post_body = {
             "device_owner": "compute:None", "device_id": str(uuid.uuid1())}
-        port = self.ports_client.create_port(
-            network_id=self.network['id'], **post_body)
-        created_port = port['port']
+        created_port = self.create_port(
+            network=self.network, **post_body)
         floating_ip = self.floating_ips_client.update_floatingip(
             created_floating_ip['id'],
             port_id=created_port['id'])
@@ -398,10 +406,8 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
             2)
         fixed_ips = [{'ip_address': list_ips[0]}, {'ip_address': list_ips[1]}]
         # Create port
-        body = self.ports_client.create_port(network_id=self.network['id'],
-                                             fixed_ips=fixed_ips)
-        port = body['port']
-        self.addCleanup(self.ports_client.delete_port, port['id'])
+        port = self.create_port(network=self.network,
+                                fixed_ips=fixed_ips)
         # Create floating ip
         self.assertRaises(exceptions.BadRequest,
                           self.floating_ips_client.create_floatingip,
@@ -413,11 +419,7 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
     def test_create_floatingip_with_rate_limiting(self):
         rate_limit = 10000
         # Create port
-        post_body = {"network_id": self.network['id']}
-        body = self.ports_client.create_port(**post_body)
-        port = body['port']
-
-        self.addCleanup(self.ports_client.delete_port, port['id'])
+        port = self.create_port(network=self.network)
 
         # Associate a fip to the port
         body = self.floating_ips_client.create_floatingip(
@@ -476,11 +478,7 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
     @decorators.attr(type='smoke')
     def test_create_floatingip_without_rate_limiting(self):
         # Create port
-        post_body = {"network_id": self.network['id']}
-        body = self.ports_client.create_port(**post_body)
-        port = body['port']
-
-        self.addCleanup(self.ports_client.delete_port, port['id'])
+        port = self.create_port(network=self.network)
 
         # Associate a fip to the port
         body = self.floating_ips_client.create_floatingip(

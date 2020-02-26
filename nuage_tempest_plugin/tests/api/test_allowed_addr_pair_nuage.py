@@ -53,20 +53,6 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
                                        external_network_id=cls.ext_net_id)
         cls.create_router_interface(cls.router['id'], cls.l3subnet['id'])
 
-    def _create_port_with_allowed_address_pair(self, allowed_address_pairs,
-                                               net_id, **kwargs):
-
-        if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
-            kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
-        if CONF.network.port_profile and 'binding:profile' not in kwargs:
-            kwargs['binding:profile'] = CONF.network.port_profile
-
-        body = self.ports_client.create_port(
-            network_id=net_id,
-            allowed_address_pairs=allowed_address_pairs, **kwargs)
-        self.addCleanup(self.ports_client.delete_port, body['port']['id'])
-        return body
-
     def _verify_port_by_id(self, port_id):
         body = self.ports_client.list_ports()
         ports = body['ports']
@@ -82,6 +68,10 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         self.assertEqual(mac_address, addrpair_mac)
 
     def create_port(self, network, cleanup=True, **kwargs):
+        if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
+            kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
+        if CONF.network.port_profile and 'binding:profile' not in kwargs:
+            kwargs['binding:profile'] = CONF.network.port_profile
         port = super(AllowedAddressPairTest, self).create_port(network,
                                                                **kwargs)
         if cleanup:
@@ -94,9 +84,8 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         addrpair_port = self.create_port(self.network)
         allowed_address_pairs = [{'ip_address':
                                   addrpair_port['fixed_ips'][0]['ip_address']}]
-        body = self._create_port_with_allowed_address_pair(
-            allowed_address_pairs, self.network['id'])
-        port = body['port']
+        port = self.create_port(network=self.network,
+                                allowed_address_pairs=allowed_address_pairs)
 
         # routersubnetbind
         new_router = self.create_router('r')
@@ -179,9 +168,8 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
                                   addrpair_port['fixed_ips'][0]['ip_address'],
                                   'mac_address':
                                   addrpair_port['mac_address']}]
-        body = self._create_port_with_allowed_address_pair(
-            allowed_address_pairs, self.network['id'])
-        port = body['port']
+        port = self.create_port(network=self.network,
+                                allowed_address_pairs=allowed_address_pairs)
 
         # routersubnetbind
         new_router = self.create_router('r')
@@ -221,9 +209,8 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         mac_address = 'fe:a0:36:4b:c8:70'
         allowed_address_pairs = [{'ip_address': ip_address,
                                   'mac_address': mac_address}]
-        body = self._create_port_with_allowed_address_pair(
-            allowed_address_pairs, self.network['id'])
-        port = body['port']
+        port = self.create_port(network=self.network,
+                                allowed_address_pairs=allowed_address_pairs)
         self._verify_port_by_id(port['id'])
         # Confirm port was created with allowed address pair attribute
         self._verify_port_allowed_address_fields(
@@ -248,9 +235,8 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         mac_address = 'fe:a0:36:4b:c8:70'
         allowed_address_pairs = [{'ip_address': ip_address,
                                   'mac_address': mac_address}]
-        body = self._create_port_with_allowed_address_pair(
-            allowed_address_pairs, self.network['id'])
-        port = body['port']
+        port = self.create_port(network=self.network,
+                                allowed_address_pairs=allowed_address_pairs)
 
         # routersubnetbind
         new_router = self.create_router('r')
@@ -288,9 +274,8 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
                                   addrpair_port['fixed_ips'][0]['ip_address'],
                                   'mac_address':
                                   addrpair_port['mac_address']}]
-        body = self._create_port_with_allowed_address_pair(
-            allowed_address_pairs, self.l3network['id'])
-        port = body['port']
+        port = self.create_port(network=self.l3network,
+                                allowed_address_pairs=allowed_address_pairs)
 
         # routersubnetbind
         self.routers_client.remove_router_interface(
@@ -346,10 +331,8 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
                                   addrpair_port['fixed_ips'][0]['ip_address'],
                                   'mac_address':
                                   addrpair_port['mac_address']}]
-        body = self._create_port_with_allowed_address_pair(
-            allowed_address_pairs, self.l3network['id'])
-        port = body['port']
-
+        port = self.create_port(network=self.l3network,
+                                allowed_address_pairs=allowed_address_pairs)
         # routersubnetbind
         self.routers_client.remove_router_interface(
             self.router['id'], subnet_id=port['fixed_ips'][0]['subnet_id'])
@@ -400,9 +383,8 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         addrpair_port = self.create_port(self.l3network)
         allowed_address_pairs = [{'ip_address':
                                   addrpair_port['fixed_ips'][0]['ip_address']}]
-        body = self._create_port_with_allowed_address_pair(
-            allowed_address_pairs, self.l3network['id'])
-        port = body['port']
+        port = self.create_port(network=self.l3network,
+                                allowed_address_pairs=allowed_address_pairs)
         self._verify_port_by_id(port['id'])
         # Confirm port was created with allowed address pair attribute
         self._verify_port_by_id(port['id'])
@@ -445,9 +427,8 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         mac_address = 'fe:a0:36:4b:c8:70'
         allowed_address_pairs = [{'ip_address':
                                   ip_address, 'mac_address': mac_address}]
-        body = self._create_port_with_allowed_address_pair(
-            allowed_address_pairs, self.l3network['id'])
-        port = body['port']
+        port = self.create_port(network=self.l3network,
+                                allowed_address_pairs=allowed_address_pairs)
         self._verify_port_by_id(port['id'])
         # Confirm port was created with allowed address pair attribute
         self._verify_port_allowed_address_fields(
@@ -480,9 +461,8 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         mac_address = 'fe:a0:36:4b:c8:70'
         allowed_address_pairs = [{'ip_address':
                                  ip_address, 'mac_address': mac_address}]
-        body = self._create_port_with_allowed_address_pair(
-            allowed_address_pairs, self.l3network['id'])
-        port = body['port']
+        port = self.create_port(network=self.l3network,
+                                allowed_address_pairs=allowed_address_pairs)
 
         # routersubnetbind
         self.routers_client.remove_router_interface(
@@ -525,9 +505,8 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         allowed_address_pairs = [
             {'ip_address': addrpair_port_1['fixed_ips'][0]['ip_address'],
              'mac_address': addrpair_port_1['mac_address']}]
-        body = self._create_port_with_allowed_address_pair(
-            allowed_address_pairs, self.l3network['id'])
-        port = body['port']
+        port = self.create_port(network=self.l3network,
+                                allowed_address_pairs=allowed_address_pairs)
         self._verify_port_by_id(port['id'])
         # Confirm port was created with allowed address pair attribute
         self._verify_port_allowed_address_fields(
@@ -617,12 +596,12 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         allowed_address_pairs = [
             {'ip_address': addrpair_port_1['fixed_ips'][0]['ip_address'],
              'mac_address': addrpair_port_1['mac_address']}]
-        body = self._create_port_with_allowed_address_pair(
-            allowed_address_pairs, self.l3network['id'],
+        port = self.create_port(
+            network=self.l3network,
+            allowed_address_pairs=allowed_address_pairs,
             fixed_ips=[{'subnet_id': self.l3subnet['id'],
                         'ip_address': str(ip)}]
         )
-        port = body['port']
         ip += 1
 
         # routersubnetbind
@@ -793,9 +772,8 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
                                   addrpair_port['fixed_ips'][0]['ip_address'],
                                   'mac_address':
                                   addrpair_port['mac_address']}]
-        body = self._create_port_with_allowed_address_pair(
-            allowed_address_pairs, self.l3network['id'])
-        port = body['port']
+        port = self.create_port(network=self.l3network,
+                                allowed_address_pairs=allowed_address_pairs)
         self._verify_port_by_id(port['id'])
         # Confirm port was created with allowed address pair attribute
         self._verify_port_allowed_address_fields(

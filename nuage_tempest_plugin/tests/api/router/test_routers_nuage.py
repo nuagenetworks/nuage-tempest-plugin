@@ -49,6 +49,14 @@ class NuageRoutersTest(base.BaseNetworkTest):
     ext_net_id = CONF.network.public_network_id
 
     @classmethod
+    def create_port(cls, network, **kwargs):
+        if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
+            kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
+        if CONF.network.port_profile and 'binding:profile' not in kwargs:
+            kwargs['binding:profile'] = CONF.network.port_profile
+        return super(NuageRoutersTest, cls).create_port(network, **kwargs)
+
+    @classmethod
     def skip_checks(cls):
         super(NuageRoutersTest, cls).skip_checks()
         if not utils.is_extension_enabled('router', 'network'):
@@ -262,18 +270,13 @@ class NuageRoutersTest(base.BaseNetworkTest):
         router = self._create_router(data_utils.rand_name('router-'))
         nuage_domain = self.nuage_client.get_l3domain(
             filters='externalID', filter_value=router['id'])
-        kwargs = {}
-        if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
-            kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
-        if CONF.network.port_profile and 'binding:profile' not in kwargs:
-            kwargs['binding:profile'] = CONF.network.port_profile
-        port_body = self.ports_client.create_port(
-            network_id=network['id'], **kwargs)
+        port = self.create_port(
+            network=network)
         # add router interface to port created above
         interface = self.routers_client.add_router_interface(
-            router['id'], port_id=port_body['port']['id'])
+            router['id'], port_id=port['id'])
         self.addCleanup(self.routers_client.remove_router_interface,
-                        router['id'], port_id=port_body['port']['id'])
+                        router['id'], port_id=port['id'])
         self.assertIn('subnet_id', interface)
         self.assertIn('port_id', interface)
         # Verify router id is equal to device id in port details
@@ -1083,20 +1086,14 @@ class NuageRoutersV6Test(NuageRoutersTest):
 
         self.create_subnet(network)
         router = self._create_router()
-        kwargs = {}
-        if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
-            kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
-        if CONF.network.port_profile and 'binding:profile' not in kwargs:
-            kwargs['binding:profile'] = CONF.network.port_profile
-
-        port_body = self.ports_client.create_port(
-            network_id=network['id'], **kwargs)
+        port = self.create_port(
+            network=network)
         # add router interface to port created above
         interface = self.routers_client.add_router_interface(
             router['id'],
-            port_id=port_body['port']['id'])
+            port_id=port['id'])
         self.addCleanup(self.routers_client.remove_router_interface,
-                        router['id'], port_id=port_body['port']['id'])
+                        router['id'], port_id=port['id'])
         self.assertIn('subnet_id', interface)
         self.assertIn('port_id', interface)
         # Verify router id is equal to device id in port details

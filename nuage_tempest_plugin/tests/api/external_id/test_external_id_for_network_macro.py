@@ -29,6 +29,7 @@ from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
+CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
 
 
@@ -84,6 +85,15 @@ class ExternalIdForNetworkMacroTest(base.BaseAdminNetworkTest):
                 self.vsd_network_macro['ID'])
 
     @classmethod
+    def create_port(cls, network, **kwargs):
+        if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
+            kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
+        if CONF.network.port_profile and 'binding:profile' not in kwargs:
+            kwargs['binding:profile'] = CONF.network.port_profile
+        return super(ExternalIdForNetworkMacroTest, cls).create_port(network,
+                                                                     **kwargs)
+
+    @classmethod
     def setup_clients(cls):
         super(ExternalIdForNetworkMacroTest, cls).setup_clients()
         cls.nuage_client = NuageRestClient()
@@ -119,11 +129,9 @@ class ExternalIdForNetworkMacroTest(base.BaseAdminNetworkTest):
         self.assertEqual(
             0, len(network_macros), "should not have network macros")
 
-        create_body = self.ports_client.create_port(
+        self.create_port(
             name=name,
-            network_id=network_a1['id'])
-        port = create_body['port']
-        self.addCleanup(self.ports_client.delete_port, port['id'])
+            network=network_a1)
 
         vsd_network_macro = self.MatchingVsdNetworkMacro(
             self, netpartition_b).get_by_external_id()

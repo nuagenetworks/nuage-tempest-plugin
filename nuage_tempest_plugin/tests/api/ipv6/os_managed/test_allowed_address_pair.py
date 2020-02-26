@@ -41,6 +41,16 @@ class AllowedAddressPairIpV6NuageTest(
     _ip_version = 6
 
     @classmethod
+    def create_port(cls, network, **kwargs):
+        if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
+            kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
+        if CONF.network.port_profile and 'binding:profile' not in kwargs:
+            kwargs['binding:profile'] = CONF.network.port_profile
+        return super(
+            AllowedAddressPairIpV6NuageTest, cls).create_port(network,
+                                                              **kwargs)
+
+    @classmethod
     def resource_setup(cls):
         super(base_tempest.AllowedAddressPairTestJSON, cls).resource_setup()
         cls.network = cls.create_network()

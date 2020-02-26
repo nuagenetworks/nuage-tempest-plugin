@@ -50,7 +50,6 @@ class TestTrunkDetailsJSON(test_trunk.TrunkTestJSONBase):
     def test_port_resource_empty_trunk_details(self):
         network = self.create_network()
         port_data = {}
-        self._configure_smart_nic_attributes(port_data)
         port = self.create_port(network, **port_data)
         port = self.client.show_port(port['id'])
         observed_trunk_details = port['port'].get('trunk_details')
