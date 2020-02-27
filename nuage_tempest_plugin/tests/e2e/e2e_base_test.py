@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 import abc
+import copy
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
@@ -217,17 +218,15 @@ class E2eTestBase(NuageBaseTest):
             from_port, to_port, is_different_hv)
 
         LOG.info('Validate flow originating from hypervisor')
-        flows.reset()
         self._validate_offloaded_flow(
-            flows, is_different_hv, is_offloading_expected,
+            copy.deepcopy(flows), is_different_hv, is_offloading_expected,
             dst_mac=(to_port['mac_address'] if self.is_same_subnet
                      else gateway_mac_src_subnet),
             is_originating_from_hv=True)
 
         LOG.info('Validate flow arriving at hypervisor')
-        flows.reset()
         self._validate_offloaded_flow(
-            flows, is_different_hv, is_offloading_expected,
+            copy.deepcopy(flows), is_different_hv, is_offloading_expected,
             dst_mac=from_port['mac_address'], is_originating_from_hv=False)
 
     def _validate_icmp_offloading(self, flows, from_port, is_cross_hv,
@@ -277,25 +276,15 @@ class E2eTestBase(NuageBaseTest):
         else:
             expected_flows.no_offload()
 
-        msg = ("No traffic found with with offload={offload} and "
-               "dst_mac={dst_mac}"
-               .format(offload='yes' if is_offloading_expected else 'no',
-                       dst_mac=dst_mac))
-        self.assertNotEmpty(expected_flows.result(), msg)
-
         if is_vxlan_tunneled:
             if is_originating_from_hv:
                 expected_flows.action_set_tunnel_vxlan()
             else:
                 expected_flows.vxlan()
 
-        msg = ("No traffic found with offload={offload} "
-               "and vxlan={vxlan} and dst_mac={dst_mac}"
-               .format(offload='yes' if is_offloading_expected else 'no',
-                       vxlan='yes' if is_vxlan_tunneled else 'no',
-                       dst_mac=dst_mac))
-
-        self.assertNotEmpty(expected_flows.result(), msg)
+        self.assertNotEmpty(expected_flows.result(),
+                            ("Expected flows not found. Trace: {}"
+                             .format(expected_flows.trace())))
 
     def _test_same_hv_virtio_virtio(self):
         hv = self.selected_hypervisors[0]['hypervisor_hostname']

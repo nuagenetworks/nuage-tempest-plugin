@@ -83,9 +83,6 @@ class BasicOffloadingTest(E2eTestBase):
         cmd = ('ssh heat-admin@{host_ip} "sudo ovs-dpctl dump-flows -m"'
                .format(host_ip=hypervisor['host_ip']))
         flows = self.execute_from_shell(cmd).splitlines()
-        for flow in flows:
-            LOG.debug("{}: {}".format(hypervisor['hypervisor_hostname'],
-                                      flow))
         return OvrsFlowQuery(flows)
 
     def test_same_hv_switchdev_switchdev(self):
