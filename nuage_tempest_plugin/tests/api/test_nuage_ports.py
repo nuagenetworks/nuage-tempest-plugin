@@ -1527,8 +1527,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                         port['id'])
 
         # Find vport
-        l2domain = self.vsd.get_l2domain(by_network_id=network['id'],
-                                         cidr='10.0.0.0')
+        l2domain = self.vsd.get_l2domain(by_subnet_id=subnet['id'])
         vport = self.vsd.get_vport(l2domain=l2domain, by_port_id=port['id'])
 
         # Create "Fake" VM interface to simulate following behavior:
