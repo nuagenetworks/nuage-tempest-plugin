@@ -34,12 +34,12 @@ class TestSecGroupScaleBase(SecGroupTestNuageBase):
             group_create_body, name = self._create_security_group()
             sg_ids.append(group_create_body['security_group']['id'])
         post_body = {
-            "network_id": self.network['id'],
+            "network": self.network,
             "name": data_utils.rand_name('port-'),
             "security_groups": sg_ids
         }
         if sg_num <= n_constants.MAX_SG_PER_PORT:
-            port = self._create_port(**post_body)
+            port = self.create_port(**post_body)
             vport = self.nuage_client.get_vport(
                 self.nuage_domain_type,
                 nuage_domain[0]['ID'],
@@ -57,7 +57,7 @@ class TestSecGroupScaleBase(SecGroupTestNuageBase):
             self.assertRaisesRegex(
                 exceptions.BadRequest,
                 msg,
-                self._create_port,
+                self.create_port,
                 **post_body)
 
     def _test_update_port_with_security_groups(self, sg_num,
@@ -66,11 +66,11 @@ class TestSecGroupScaleBase(SecGroupTestNuageBase):
         nuage_domain = nuage_domain or self.nuage_any_domain
         group_create_body, name = self._create_security_group()
         post_body = {
-            "network_id": self.network['id'],
+            "network": self.network,
             "name": data_utils.rand_name('port-'),
             "security_groups": [group_create_body['security_group']['id']]
         }
-        port = self._create_port(**post_body)
+        port = self.create_port(**post_body)
 
         sg_ids = []
         for _ in range(sg_num):

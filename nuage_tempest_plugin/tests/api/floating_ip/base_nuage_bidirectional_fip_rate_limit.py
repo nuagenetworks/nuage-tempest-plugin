@@ -28,6 +28,16 @@ class NuageBidirectionalFipRateLimitBase(base.BaseNetworkTest):
         cls.nuage_client = nuage_client.NuageRestClient()
 
     @classmethod
+    def create_port(cls, network, **kwargs):
+        if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
+            kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
+        if CONF.network.port_profile and 'binding:profile' not in kwargs:
+            kwargs['binding:profile'] = CONF.network.port_profile
+        return super(
+            NuageBidirectionalFipRateLimitBase, cls).create_port(network,
+                                                                 **kwargs)
+
+    @classmethod
     def resource_setup(cls):
         super(NuageBidirectionalFipRateLimitBase, cls).resource_setup()
         if not utils.is_extension_enabled('router', 'network'):

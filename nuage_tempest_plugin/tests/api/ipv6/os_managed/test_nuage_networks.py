@@ -59,6 +59,16 @@ class NuageNetworksIpV6TestAttrs(tempest_test_networks.NetworksIpV6TestAttrs):
             raise cls.skipException(
                 'OS Managed Dual Stack is not supported in this release')
 
+    @classmethod
+    def create_port(cls, network, **kwargs):
+        if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
+            kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
+        if CONF.network.port_profile and 'binding:profile' not in kwargs:
+            kwargs['binding:profile'] = CONF.network.port_profile
+        return super(
+            NuageNetworksIpV6TestAttrs, cls).create_port(network,
+                                                         **kwargs)
+
     def test_create_delete_subnet_with_v6_attributes_stateful(self):
         self.assertRaisesRegex(
             lib_exc.BadRequest,

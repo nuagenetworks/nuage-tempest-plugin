@@ -97,7 +97,7 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
                                        net_partition=netpart, cidr=cidr)
         self.addCleanup(self.subnets_client.delete_subnet, l2domain['id'])
         port_ip = str(IPNetwork(l2domain['cidr']).network + 10)
-        kwargs = {'name': port_name, 'network_id': network['id'],
+        kwargs = {'name': port_name, 'network': network,
                   'fixed_ips': [{'ip_address': port_ip}]}
         if allowed_address_pairs:
             kwargs.update({'allowed_address_pairs': allowed_address_pairs})
@@ -108,9 +108,7 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
             # else:
             #     kwargs.update({'port_security_enabled': 'True'})
 
-        self._configure_smart_nic_attributes(kwargs)
-
-        port = self.ports_client.create_port(**kwargs)['port']
+        port = self.create_port(**kwargs)
         self.addCleanup(self.ports_client.delete_port, port['id'])
         return network, l2domain, port
 
@@ -148,7 +146,7 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
         self.addCleanup(self.routers_client.remove_router_interface,
                         router['id'], subnet_id=subnet['id'])
         port_ip = str(IPNetwork(subnet['cidr']).network + 10)
-        kwargs = {'name': port_name, 'network_id': network['id'],
+        kwargs = {'name': port_name, 'network': network,
                   'fixed_ips': [{'ip_address': port_ip}]}
         if allowed_address_pairs:
             kwargs.update({'allowed_address_pairs': allowed_address_pairs})
@@ -159,9 +157,7 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
             # else:
             #    kwargs.update({'port_security_enabled': 'True'})
 
-        self._configure_smart_nic_attributes(kwargs)
-
-        port = self.ports_client.create_port(**kwargs)['port']
+        port = self.create_port(**kwargs)
         self.addCleanup(self.ports_client.delete_port, port['id'])
         return network, router, subnet, port
 
@@ -199,7 +195,7 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
             net_partition=netpart)
         self.addCleanup(self.subnets_client.delete_subnet, subnet['id'])
 
-        kwargs = {'name': port_name, 'network_id': network['id']}
+        kwargs = {'name': port_name, 'network': network}
         if allowed_address_pairs:
             kwargs.update({'allowed_address_pairs': allowed_address_pairs})
         if port_security is not None:
@@ -209,9 +205,7 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
             # else:
             #     kwargs.update({'port_security_enabled': 'True'})
 
-        self._configure_smart_nic_attributes(kwargs)
-
-        port = self.ports_client.create_port(**kwargs)['port']
+        port = self.create_port(**kwargs)
         self.addCleanup(self.ports_client.delete_port, port['id'])
         return network, subnet, port, vsd_l2dom
 
@@ -260,7 +254,7 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
                                     net_partition=netpart)
         self.addCleanup(self.subnets_client.delete_subnet, subnet['id'])
 
-        kwargs = {'name': port_name, 'network_id': network['id']}
+        kwargs = {'name': port_name, 'network': network}
         if allowed_address_pairs:
             kwargs.update({'allowed_address_pairs': allowed_address_pairs})
         if port_security is not None:
@@ -270,18 +264,9 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
             # else:
             #     kwargs.update({'port_security_enabled': 'True'})
 
-        self._configure_smart_nic_attributes(kwargs)
-
-        port = self.ports_client.create_port(**kwargs)['port']
+        port = self.create_port(**kwargs)
         self.addCleanup(self.ports_client.delete_port, port['id'])
         return network, subnet, port, vsd_l3dom, vsd_subnet
-
-    @staticmethod
-    def _configure_smart_nic_attributes(kwargs):
-        if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
-            kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
-        if CONF.network.port_profile and 'binding:profile' not in kwargs:
-            kwargs['binding:profile'] = CONF.network.port_profile
 
     def get_vip_action(self, key):
         return self.vip_action_map.get(key)
@@ -540,10 +525,8 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         # Update the network and create a new port
         self.networks_client.update_network(network['id'],
                                             port_security_enabled='True')
-        kwargs = {'name': 'port7-2', 'network_id': network['id']}
-        self._configure_smart_nic_attributes(kwargs)
-        body = self.ports_client.create_port(**kwargs)
-        port_2 = body['port']
+        kwargs = {'name': 'port7-2', 'network': network}
+        port_2 = self.create_port(**kwargs)
         self.addCleanup(self.ports_client.delete_port, port_2['id'])
 
     def test_update_ntw_from_sec_enabled_to_disabled_l2domain(self):
@@ -567,10 +550,8 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         # Update the network and create a new port
         self.networks_client.update_network(
             network['id'], port_security_enabled='False')
-        kwargs = {'name': 'port8-2', 'network_id': network['id']}
-        self._configure_smart_nic_attributes(kwargs)
-        body = self.ports_client.create_port(**kwargs)
-        port_2 = body['port']
+        kwargs = {'name': 'port8-2', 'network': network}
+        port_2 = self.create_port(**kwargs)
         self.addCleanup(self.ports_client.delete_port, port_2['id'])
         vsd_l2domain, vsd_port_2 = self._get_vsd_l2dom_port(l2domain, port_2)
         self.assertEqual(vsd_port_1.address_spoofing, 'DISABLED')
@@ -655,10 +636,8 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         # Update the network and create a new port
         self.networks_client.update_network(network['id'],
                                             port_security_enabled='True')
-        kwargs = {'name': 'port11-2', 'network_id': network['id']}
-        self._configure_smart_nic_attributes(kwargs)
-        body = self.ports_client.create_port(**kwargs)
-        port_2 = body['port']
+        kwargs = {'name': 'port11-2', 'network': network}
+        port_2 = self.create_port(**kwargs)
         self.addCleanup(self.ports_client.delete_port, port_2['id'])
         vsd_l3dom, vsd_sub, vsd_port_2 = self._get_vsd_router_subnet_port(
             router, subnet, port_2)
@@ -697,10 +676,8 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         # Update the network and create a new port
         self.networks_client.update_network(network['id'],
                                             port_security_enabled='False')
-        kwargs = {'name': 'port12-2', 'network_id': network['id']}
-        self._configure_smart_nic_attributes(kwargs)
-        body = self.ports_client.create_port(**kwargs)
-        port_2 = body['port']
+        kwargs = {'name': 'port12-2', 'network': network}
+        port_2 = self.create_port(**kwargs)
         self.addCleanup(self.ports_client.delete_port, port_2['id'])
         vsd_l3dom, vsd_sub, vsd_port_2 = self._get_vsd_router_subnet_port(
             router, subnet, port_2)
@@ -786,10 +763,10 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         self.create_router_interface(router['id'], l2domain1['id'])
         # Create the second port on L3
         create_data = {
-            'network_id': network1['id'],
+            'network': network1,
             'port_security_enabled': False
         }
-        port2 = self.ports_client.create_port(**create_data)['port']
+        port2 = self.create_port(**create_data)
         self.addCleanup(self.ports_client.delete_port, port2['id'])
         # Check the two ports have the same PG
         vsd_l3dom, vsd_sub1, vsd_port1 = self._get_vsd_router_subnet_port(
@@ -1463,7 +1440,6 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         self.assertEqual(network['name'], ntw_name)
         self.assertEqual(network['port_security_enabled'], ntw_security)
         port_kwargs = {'name': port_name}
-        self._configure_smart_nic_attributes(port_kwargs)
         if port_security is None:
             port = self.create_port(network, **port_kwargs)
             port_security = ntw_security
@@ -1488,7 +1464,6 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
                   'fixed_ips': [{'ip_address': port_ip}]}
         if addr_pr:
             kwargs.update({'allowed_address_pairs': addr_pr})
-        self._configure_smart_nic_attributes(kwargs)
 
         port = self.create_port(network, **kwargs)
         return subnet, port
@@ -1510,7 +1485,6 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
                   'fixed_ips': [{'ip_address': port_ip}]}
         if addr_pr:
             kwargs.update({'allowed_address_pairs': addr_pr})
-        self._configure_smart_nic_attributes(kwargs)
         port = self.create_port(network, **kwargs)
         return router, subnet, port
 

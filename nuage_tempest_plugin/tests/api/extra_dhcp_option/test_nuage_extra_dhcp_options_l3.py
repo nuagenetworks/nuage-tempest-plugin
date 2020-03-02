@@ -39,7 +39,7 @@ class NuageExtraDHCPOptionsBaseL3(
                                           extra_dhcp_opts):
         if nuage_network_type == NUAGE_NETWORK_TYPE['OS_Managed_L3']:
             self._nuage_create_list_show_delete_layer_x_port_with_dhcp_opts(
-                self.osmgd_l3_network['id'], self.nuage_domain[0]['ID'],
+                self.osmgd_l3_network, self.nuage_domain[0]['ID'],
                 nuage_network_type, extra_dhcp_opts)
 
 

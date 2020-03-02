@@ -70,24 +70,24 @@ class TrunkTestJSONBase(base.BaseAdminNetworkTest):
         if create_subnet:
             self.create_subnet(network)
         port_data = {}
-        self._configure_smart_nic_attributes(port_data)
         parent_port = self.create_port(network, **port_data)
         trunk = self.client.create_trunk(parent_port['id'], subports, **kwargs)
         self.trunks.append(trunk['trunk'])
         return trunk
 
-    @staticmethod
-    def _configure_smart_nic_attributes(kwargs):
+    @classmethod
+    def create_port(cls, network, **kwargs):
         if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
             kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
         if CONF.network.port_profile and 'binding:profile' not in kwargs:
             kwargs['binding:profile'] = CONF.network.port_profile
+        return super(TrunkTestJSONBase, cls).create_port(network,
+                                                         **kwargs)
 
     def _create_port_for_trunk(self):
         network = self.create_network()
         self.create_subnet(network)
         port_data = {}
-        self._configure_smart_nic_attributes(port_data)
         port = self.create_port(network, **port_data)
         return port
 

@@ -51,14 +51,6 @@ class BaseNuageNetworksIpv6TestCase(NuageBaseTest):
         matcher = _FlippedEquals(expected)
         self.expectThat(observed, matcher, message)
 
-    def create_and_forget_port(self, network, **kwargs):
-        """Wrapper utility that returns a test port."""
-        body = self.ports_client.create_port(network_id=network['id'],
-                                             **kwargs)
-        port = body['port']
-        # no cleanup !
-        return port
-
     def _given_network_linked_to_vsd_subnet(self, vsd_subnet, cidr4=None,
                                             cidr6=None, enable_dhcp=True):
         # create OpenStack IPv4 subnet on OpenStack based on VSD l3dom subnet

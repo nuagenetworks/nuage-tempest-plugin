@@ -179,6 +179,7 @@ NUAGE_NETWORK_TYPE = {
     'VSD_Managed_L3': 4
 }
 
+CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
 
 
@@ -187,6 +188,15 @@ class NuageExtraDHCPOptionsBase(base.BaseAdminNetworkTest, NuageBaseTest):
     def __init__(self, *args, **kwargs):
         super(NuageExtraDHCPOptionsBase, self).__init__(*args, **kwargs)
         self.nuage_network_type = NUAGE_NETWORK_TYPE['OS_Managed_L2']
+
+    @classmethod
+    def create_port(cls, network, **kwargs):
+        if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
+            kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
+        if CONF.network.port_profile and 'binding:profile' not in kwargs:
+            kwargs['binding:profile'] = CONF.network.port_profile
+        return super(NuageExtraDHCPOptionsBase, cls).create_port(network,
+                                                                 **kwargs)
 
     @classmethod
     def skip_checks(cls):
@@ -329,21 +339,21 @@ class NuageExtraDHCPOptionsBase(base.BaseAdminNetworkTest, NuageBaseTest):
         pass
 
     def _nuage_create_list_show_delete_layer_x_port_with_dhcp_opts(
-            self, network_id,
+            self, network,
             vsd_network_id,
             nuage_network_type,
             extra_dhcp_opts):
         # Create a port with given extra DHCP Options on an Openstack layer X
         # managed network
         name = data_utils.rand_name('extra-dhcp-opt-port-name')
-        create_body = self.ports_client.create_port(
+        created_port = NuageBaseTest.create_port(
+            self,
             name=name,
-            network_id=network_id,
+            network=network,
             extra_dhcp_opts=extra_dhcp_opts)
-        port_id = create_body['port']['id']
-        self.addCleanup(self.ports_client.delete_port, port_id)
+        port_id = created_port['id']
         # Does the response contain the dhcp options we passed in the request
-        self._confirm_extra_dhcp_options(create_body['port'], extra_dhcp_opts)
+        self._confirm_extra_dhcp_options(created_port, extra_dhcp_opts)
         # Confirm port created has Extra DHCP Options via show
         show_body = self.ports_client.show_port(port_id)
         self._confirm_extra_dhcp_options(show_body['port'], extra_dhcp_opts)
