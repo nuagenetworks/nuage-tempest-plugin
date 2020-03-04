@@ -15,10 +15,6 @@ import abc
 import re
 import six
 
-from nuage_tempest_plugin.lib.topology import Topology
-
-LOG = Topology.get_logger(__name__)
-
 
 def filter(input_func):
     def wrapper(*args, **kwargs):
@@ -112,7 +108,6 @@ class FlowQuery(object):
 
     def result(self):
         """Get the resulting flows"""
-        LOG.debug(self.trace())
         return list(self.flows)
 
 

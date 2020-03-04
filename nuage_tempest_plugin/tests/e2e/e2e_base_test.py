@@ -165,15 +165,18 @@ class E2eTestBase(NuageBaseTest):
 
             LOG.info('Verify TCP/IPv{} traffic'.format(ip_version))
             self.assert_tcp_connectivity(**kwargs)
-            self.validate_flows(self._validate_tcp_offloading, from_hv, to_hv,
-                                from_port, to_port, ip_version)
+            self.validate_flows(from_hv, to_hv, from_port, to_port, ip_version)
 
             LOG.info('Verify ICMP/IPv{} traffic'.format(ip_version))
             self.assert_icmp_connectivity(**kwargs)
-            self.validate_flows(self._validate_icmp_offloading, from_hv, to_hv,
-                                from_port, to_port, ip_version)
+            if ip_version == 6 and not self.is_icmpv6_offload_supported:
+                LOG.info('skipping ICMPv6 offloading checks as they are not '
+                         'supported by CX-5')
+            else:
+                self.validate_flows(from_hv, to_hv, from_port, to_port,
+                                    ip_version)
 
-    def validate_flows(self, flow_validator, from_hv, to_hv, from_port,
+    def validate_flows(self, from_hv, to_hv, from_port,
                        to_port, ip_version):
         # Note that flows will expire after some time, don't add any
         # api calls other other time intensive operations here
@@ -182,75 +185,34 @@ class E2eTestBase(NuageBaseTest):
         gateway_mac_src_subnet = self.networks[0][1]
         gateway_mac_dst_subnet = self.networks[1][1]
 
-        flows = self.dump_flows(from_hv)
-        flow_validator(
-            flows, from_port, is_cross_hv, to_port, ip_version,
+        flows = self.dump_flows(from_hv).ip_version(ip_version)
+        self._validate_offloading(
+            flows, from_port, is_cross_hv, to_port,
             gateway_mac_src_subnet)
 
         if is_cross_hv:
             flows = self.dump_flows(to_hv)
-            flow_validator(
+            self._validate_offloading(
                 flows, to_port, is_cross_hv, from_port,
-                ip_version, gateway_mac_dst_subnet)
-
-    def _validate_tcp_offloading(self, flows, from_port, is_cross_hv,
-                                 to_port, ip_version, gateway_mac_src_subnet):
-
-        filtered_flows = flows.ip_version(ip_version)
-
-        if from_port['port_security_enabled']:
-            filtered_flows.tcp()
-        else:
-            # VRS-33651: VRS is is wildly inconsistent
-            if (self.is_l3 and self.ip_versions != self.IP_VERSIONS_V6 and
-                    self.is_same_subnet):
-                filtered_flows.wildcard_protocol()
-            else:
-                filtered_flows.tcp()
-
-        self._validate_offloading(
-            filtered_flows, from_port, is_cross_hv, to_port,
-            gateway_mac_src_subnet)
+                gateway_mac_dst_subnet)
 
     def _validate_offloading(self, flows, from_port, is_different_hv,
                              to_port, gateway_mac_src_subnet):
         is_offloading_expected = self._is_offloading_expected(
             from_port, to_port, is_different_hv)
+        src_mac = from_port['mac_address']
+        dst_mac = (to_port['mac_address'] if self.is_same_subnet
+                   else gateway_mac_src_subnet)
 
         LOG.info('Validate flow originating from hypervisor')
         self._validate_offloaded_flow(
             copy.deepcopy(flows), is_different_hv, is_offloading_expected,
-            dst_mac=(to_port['mac_address'] if self.is_same_subnet
-                     else gateway_mac_src_subnet),
-            is_originating_from_hv=True)
+            src_mac=src_mac, dst_mac=dst_mac, is_originating_from_hv=True)
 
         LOG.info('Validate flow arriving at hypervisor')
         self._validate_offloaded_flow(
             copy.deepcopy(flows), is_different_hv, is_offloading_expected,
-            dst_mac=from_port['mac_address'], is_originating_from_hv=False)
-
-    def _validate_icmp_offloading(self, flows, from_port, is_cross_hv,
-                                  to_port, ip_version, gateway_mac_src_subnet):
-
-        if ip_version == 6 and not self.is_icmpv6_offload_supported:
-            LOG.info('skipping ICMPv6 offloading checks as they are not '
-                     'supported by CX-5')
-            return
-
-        filtered_flows = flows.ip_version(ip_version)
-
-        if from_port['port_security_enabled']:
-            filtered_flows.icmp()
-        else:
-            # VRS-33651: VRS is wildly inconsistent
-            if (self.is_l3 and self.ip_versions != self.IP_VERSIONS_V6 and
-                    self.is_same_subnet):
-                filtered_flows.wildcard_protocol()
-            else:
-                filtered_flows.icmp()
-        self._validate_offloading(
-            filtered_flows, from_port, is_cross_hv, to_port,
-            gateway_mac_src_subnet)
+            src_mac=dst_mac, dst_mac=src_mac, is_originating_from_hv=False)
 
     def _is_offloading_expected(self, from_port, to_port, is_different_hv):
         """Whether flow should be offloaded on first hypervisor
@@ -267,14 +229,9 @@ class E2eTestBase(NuageBaseTest):
                     self.is_offload_capable(to_port))
 
     def _validate_offloaded_flow(self, flows, is_vxlan_tunneled,
-                                 is_offloading_expected,
+                                 is_offloading_expected, src_mac,
                                  dst_mac, is_originating_from_hv):
-        expected_flows = flows.dst_mac(dst_mac)
-
-        if is_offloading_expected:
-            expected_flows.offload()
-        else:
-            expected_flows.no_offload()
+        expected_flows = flows.src_mac(src_mac).dst_mac(dst_mac)
 
         if is_vxlan_tunneled:
             if is_originating_from_hv:
@@ -282,9 +239,23 @@ class E2eTestBase(NuageBaseTest):
             else:
                 expected_flows.vxlan()
 
-        self.assertNotEmpty(expected_flows.result(),
+        # Check that there are matching flows and that these are
+        # offloading as expected
+        flows_before_offloading = expected_flows.result()
+        if is_offloading_expected:
+            expected_flows.offload()
+        else:
+            expected_flows.no_offload()
+        flows_after_offloading = expected_flows.result()
+
+        self.assertNotEmpty(flows_after_offloading,
                             ("Expected flows not found. Trace: {}"
                              .format(expected_flows.trace())))
+        self.assertEqual(len(flows_before_offloading),
+                         len(flows_before_offloading),
+                         ("Not all relevant flows between source and "
+                          "destination port are offloaded. Trace: {}"
+                          .format(expected_flows.trace())))
 
     def _test_same_hv_virtio_virtio(self):
         hv = self.selected_hypervisors[0]['hypervisor_hostname']
