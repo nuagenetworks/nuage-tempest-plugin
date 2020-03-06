@@ -376,12 +376,23 @@ class BaseTestCase(object):
             # vm_hollywood can ping vm_actor if the acl is stateful
             self.assert_ping(vm_hollywood, vm_actor, network,
                              should_pass=stateful)
+
+            if stateful:
+                self.sleep(seconds=6,
+                           msg="The OVS flows take some time to expire, e.g."
+                               "for OVRS this is around 5 seconds. For "
+                               "stateful ping traffic this means that when "
+                               "A->B then the reverse flow B->A will also"
+                               "exist for a while. So if B sends ping to A, "
+                               "the traffic will be 'unexpectedly' allowed. "
+                               "This is obviously not the case for connection "
+                               "based traffic like TCP. See also VRS-35482"
+                               "where this was determined to be not a BUG.")
+
             # vm_actor is not supposed to ping vm_hollywood in any case
             self.assert_ping(vm_actor, vm_hollywood, network,
                              should_pass=False)
 
-        @testtools.skipIf(Topology.has_default_switchdev_port_profile(),
-                          reason='VRS-35482')
         def test_icmp_connectivity_stateful_acl_os_managed_l2(self):
             self._test_icmp_connectivity_stateful_acl_os_managed(is_l3=False)
 
@@ -391,8 +402,6 @@ class BaseTestCase(object):
             self._test_icmp_connectivity_stateful_acl_os_managed(
                 is_l3=False, stateful=False)
 
-        @testtools.skipIf(Topology.has_default_switchdev_port_profile(),
-                          reason='VRS-35482')
         def test_icmp_connectivity_stateful_acl_os_managed_l3(self):
             self._test_icmp_connectivity_stateful_acl_os_managed(is_l3=True)
 
