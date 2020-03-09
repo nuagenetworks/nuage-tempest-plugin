@@ -69,13 +69,13 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
             self._verify_nuage_acl(sec_group_rule.get('security_group_rule'),
                                    expected_stateful=expected_stateful)
 
-    def _create_nuage_port_with_security_group(self, sg_id, nw):
+    def _create_nuage_port_with_security_group(self, sg_ids, nw):
         post_body = {"network": nw,
                      "device_owner": "compute:None",
                      "device_id": str(uuid.uuid1()),
-                     "security_groups": [sg_id]}
-        port = self.create_port(**post_body)
-        self.addCleanup(self.ports_client.delete_port, port['id'])
+                     "security_groups": sg_ids}
+        self.port = self.create_port(**post_body)
+        self.addCleanup(self.ports_client.delete_port, self.port['id'])
 
     def _verify_vsd_policy_grp(self, remote_group_id, nuage_domain=None,
                                name=None):
@@ -282,7 +282,7 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
         # Update the security group
         # create a nuage port to create sg on VSD.
         self._create_nuage_port_with_security_group(
-            group_create_body['security_group']['id'], self.network)
+            [group_create_body['security_group']['id']], self.network)
         # Verify vsd.
         self._verify_vsd_policy_grp(
             group_create_body['security_group']['id'],
@@ -311,7 +311,7 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
         group_create_body, _ = self._create_security_group()
         security_group_id = group_create_body['security_group']['id']
         # create a nuage port to create sg on VSD.
-        self._create_nuage_port_with_security_group(security_group_id,
+        self._create_nuage_port_with_security_group([security_group_id],
                                                     self.network)
         if ipv6:
             if Topology.up_to_openstack('stein'):
@@ -361,7 +361,7 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
         """
         group_create_body, _ = self._create_security_group()
         self._create_nuage_port_with_security_group(
-            group_create_body['security_group']['id'], self.network)
+            [group_create_body['security_group']['id']], self.network)
         sg_id = group_create_body['security_group']['id']
         direction = 'ingress'
         protocol = 'tcp'
@@ -385,7 +385,7 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
         """
         group_create_body, _ = self._create_security_group()
         self._create_nuage_port_with_security_group(
-            group_create_body['security_group']['id'], self.network)
+            [group_create_body['security_group']['id']], self.network)
         sg_id = group_create_body['security_group']['id']
         direction = 'ingress'
         for icmp_type, icmp_code, stateful in icmp_type_codes:
@@ -406,9 +406,9 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
         sg1_body, _ = self._create_security_group()
         sg2_body, _ = self._create_security_group()
         self._create_nuage_port_with_security_group(
-            sg1_body['security_group']['id'], self.network)
+            [sg1_body['security_group']['id']], self.network)
         self._create_nuage_port_with_security_group(
-            sg2_body['security_group']['id'], self.network)
+            [sg2_body['security_group']['id']], self.network)
         sg_id = sg1_body['security_group']['id']
         direction = 'ingress'
         protocol = 'udp'
@@ -426,7 +426,7 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
         # Verify creating security group rule with remote_ip_prefix works
         sg1_body, _ = self._create_security_group()
         self._create_nuage_port_with_security_group(
-            sg1_body['security_group']['id'], self.network)
+            [sg1_body['security_group']['id']], self.network)
         sg_id = sg1_body['security_group']['id']
         direction = 'ingress'
         protocol = 'tcp'
@@ -463,9 +463,9 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
             self.create_router_interface(r2['id'], s2['id'])
 
         self._create_nuage_port_with_security_group(
-            sg1_body['security_group']['id'], n1)
+            [sg1_body['security_group']['id']], n1)
         self._create_nuage_port_with_security_group(
-            sg1_body['security_group']['id'], n2)
+            [sg1_body['security_group']['id']], n2)
         if l3:
             nuage_d1 = self.nuage_client.get_l3domain(
                 filters='externalID',
@@ -493,12 +493,6 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
             port_range_min=port_range_min,
             port_range_max=port_range_max,
             remote_ip_prefix=ip_prefix, nuage_domains=nuage_domains)
-
-    def _delete_security_group(self, secgroup_id):
-        self.security_groups_client.delete_security_group(secgroup_id)
-
-    def _delete_security_group_rule(self, rule_id):
-        self.security_group_rules_client.delete_security_group_rule(rule_id)
 
 
 class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
@@ -568,7 +562,7 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
         self.assertRaisesRegex(exceptions.BadRequest,
                                msg,
                                self._create_nuage_port_with_security_group,
-                               sg_id, self.network)
+                               [sg_id], self.network)
 
     @decorators.attr(type='smoke')
     def test_create_security_group_rule_ipv6_ip_prefix(self):
@@ -592,7 +586,7 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
                     port_range_max=port_range_max,
                     remote_ip_prefix=ip_prefix))
             sg_rule_list.append(sg_rule)
-        self._create_nuage_port_with_security_group(sg_id, self.network)
+        self._create_nuage_port_with_security_group([sg_id], self.network)
         self._verify_vsd_policy_grp(
             sg_id,
             name=sg1_body['security_group']['name'])
@@ -619,7 +613,7 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
         self.assertRaisesRegex(exceptions.BadRequest,
                                msg,
                                self._create_nuage_port_with_security_group,
-                               sg_id, self.network)
+                               [sg_id], self.network)
 
     def test_security_group_rule_invalid_ip_prefix_update_port_negative(self):
         sg1_body, _ = self._create_security_group()
