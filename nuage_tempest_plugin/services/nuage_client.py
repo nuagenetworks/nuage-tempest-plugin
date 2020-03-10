@@ -1043,7 +1043,8 @@ class NuageRestClient(object):
         return self.post(res_path, data)
 
     def delete_gateway(self, gw_id):
-        return self.delete_resource(constants.GATEWAY, gw_id)
+        return self.delete_resource(constants.GATEWAY, gw_id,
+                                    responseChoice=True)
 
     def get_global_gateways(self, filters=None, filter_value=None):
         res_path = self.build_resource_path(constants.GATEWAY)

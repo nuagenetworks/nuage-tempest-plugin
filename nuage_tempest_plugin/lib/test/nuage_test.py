@@ -526,11 +526,11 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         # not optional when cidr is set !  ( ~ upstream method behavior )
         if ip_version == 4:
             cidr = cidr or cls.cidr4
-            if mask_bits is None:
+            if mask_bits is None:  # mind, can be 0
                 mask_bits = cls.mask_bits4
         elif ip_version == 6:
             cidr = cidr or cls.cidr6
-            if mask_bits is None:
+            if mask_bits is None:  # mind, can be 0
                 mask_bits = cls.mask_bits6
 
         if mask_bits < cidr.prefixlen:
@@ -742,6 +742,11 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
     def delete_port(self, port, manager=None):
         manager = manager or self.manager
         manager.ports_client.delete_port(port['id'])
+
+    def get_ports(self, manager=None, **kwargs):
+        manager = manager or self.manager
+        body = manager.ports_client.list_ports(**kwargs)
+        return body['ports']
 
     def _verify_port(self, port, subnet4=None, subnet6=None, **kwargs):
         testcase = kwargs.pop('testcase', 'unknown')
@@ -1906,6 +1911,17 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             s.close()
         LOG.debug("Local IP: {}".format(ip))
         return ip
+
+    def create_redirection_target(self, **post_body):
+        return self.plugin_network_client.create_redirection_target(
+            **post_body)
+
+    def delete_redirection_target(self, rt_id):
+        return self.plugin_network_client.delete_redirection_target(rt_id)
+
+    def create_redirection_target_rule(self, **post_body):
+        return self.plugin_network_client.create_redirection_target_rule(
+            **post_body)
 
     def check_dhcp_port(self, network_id, ip_types):
         if self.is_dhcp_agent_present():
