@@ -34,6 +34,7 @@ from nuage_tempest_plugin.lib.utils import data_utils as utils
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
+
 CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
 
@@ -402,8 +403,9 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         return l2domain_template
 
     def vsd_create_l2domain(self, name=None, enterprise=None, template=None,
-                            cleanup=True):
-        vsd_l2domain = self.vsd.create_l2domain(name, enterprise, template)
+                            cleanup=True, **kwargs):
+        vsd_l2domain = self.vsd.create_l2domain(name, enterprise,
+                                                template, **kwargs)
         self.assertIsNotNone(vsd_l2domain)
         if cleanup:
             self.addCleanup(vsd_l2domain.delete)
@@ -1984,6 +1986,20 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         if pause:
             time.sleep(pause)
         return output
+
+    def create_segment(self, segment_name=None, cleanup=True,
+                       manager=None, **kwargs):
+        manager = manager or self.admin_manager
+        segment_name = segment_name or data_utils.rand_name('test-segment')
+        body = manager.segments_client.create_segment(
+            name=segment_name, **kwargs)
+        segment = body['segment']
+        self.assertIsNotNone(segment)
+        if cleanup:
+            self.addCleanup(
+                self.admin_manager.segments_client.delete_segment,
+                segment['id'])
+        return segment
 
 
 class NuageBaseOrchestrationTest(NuageBaseTest):

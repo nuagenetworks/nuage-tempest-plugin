@@ -311,8 +311,15 @@
     branches: ^(?!stable/(newton|ocata)).*$
     timeout: 18000
     vars:
+      devstack_localrc:
+        Q_ML2_PLUGIN_TYPE_DRIVERS: vxlan,vlan,flat,nuage_hybrid_mpls
+      devstack_local_conf:
+        test-config:
+          $TEMPEST_CONFIG:
+            neutron_plugin_options:
+              available_type_drivers: flat,vlan,local,vxlan,nuage_hybrid_mpls
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\..*'
-      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway).*))'
+      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway|nuage_hybrid_mpls\.test_nuage_hybrid_mpls_sriov).*))'
 
 - job:
     name: networking-nuage-tempest-virtio-5.4
@@ -322,7 +329,7 @@
     branches: ^(5.4/(pike|queens|rocky)).*$
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\..*'
-      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway).*))'
+      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway|nuage_hybrid_mpls).*))'
 
 - job:
     name: networking-nuage-tempest-virtio-py3
@@ -332,8 +339,15 @@
     branches: ^(?!stable/(newton|ocata)).*$
     timeout: 18000
     vars:
+      devstack_localrc:
+        Q_ML2_PLUGIN_TYPE_DRIVERS: vxlan,vlan,flat,nuage_hybrid_mpls
+      devstack_local_conf:
+        test-config:
+          $TEMPEST_CONFIG:
+            neutron_plugin_options:
+              available_type_drivers: flat,vlan,local,vxlan,nuage_hybrid_mpls
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\..*'
-      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway).*))'
+      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway|nuage_hybrid_mpls\.test_nuage_hybrid_mpls_sriov).*))'
 
 - job:
     name: networking-nuage-tempest-api-switchdev
@@ -348,7 +362,7 @@
             network:
               port_profile: capabilities:[switchdev]
               port_vnic_type: direct
-      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway|.*_with_vm.*)))'
+      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway|nuage_hybrid_mpls\.test_nuage_hybrid_mpls_sriov|.*_with_vm.*).*))'
 
 - job:
     name: networking-nuage-tempest-sriov
@@ -359,8 +373,9 @@
     required-projects:
       - OpenStack/networking-testsriov
     vars:
-      tempest_test_regex: '^(nuage_tempest_plugin\.tests\.api\.(test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway)).*'
+      tempest_test_regex: '^(nuage_tempest_plugin\.tests\.api\.(test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway|nuage_hybrid_mpls\.test_nuage_hybrid_mpls_sriov)).*'
       devstack_localrc:
+        Q_ML2_PLUGIN_TYPE_DRIVERS: vxlan,vlan,flat,nuage_hybrid_mpls
         Q_ML2_PLUGIN_MECHANISM_DRIVERS: nuage,nuage_sriov,testsriov
         ML2_VLAN_RANGES: physnet1:200:300,physnet2:200:300
       devstack_plugins:
@@ -370,6 +385,8 @@
           $TEMPEST_CONFIG:
             network:
               port_vnic_type: direct
+            neutron_plugin_options:
+              available_type_drivers: flat,vlan,local,vxlan,nuage_hybrid_mpls
 
 - job:
     name: networking-nuage-tempest-sriov-5.4
