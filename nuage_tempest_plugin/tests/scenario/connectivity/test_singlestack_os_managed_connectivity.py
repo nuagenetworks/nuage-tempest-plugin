@@ -396,8 +396,6 @@ class BaseTestCase(object):
         def test_icmp_connectivity_stateful_acl_os_managed_l2(self):
             self._test_icmp_connectivity_stateful_acl_os_managed(is_l3=False)
 
-        @testtools.skipIf(Topology.has_default_switchdev_port_profile(),
-                          reason='VRS-35478')
         def test_icmp_connectivity_stateless_acl_os_managed_l2_neg(self):
             self._test_icmp_connectivity_stateful_acl_os_managed(
                 is_l3=False, stateful=False)
@@ -546,3 +544,15 @@ class Ipv6OsManagedConnectivityTest(
     _ip_version = 6
     _cidr1 = IPNetwork('cafe:babb::1/64')
     _cidr2 = IPNetwork('cafe:babc::1/64')
+
+    @testtools.skipIf(Topology.has_default_switchdev_port_profile(),
+                      reason='VRS-35478')
+    def test_icmp_connectivity_stateless_acl_os_managed_l2_neg(self):
+        super(Ipv6OsManagedConnectivityTest, self)\
+            .test_icmp_connectivity_stateless_acl_os_managed_l2_neg()
+
+    @testtools.skipIf(Topology.has_default_switchdev_port_profile(),
+                      reason='VRS-36467')
+    def test_icmp_connectivity_stateful_acl_os_managed_l2(self):
+        super(Ipv6OsManagedConnectivityTest, self)\
+            .test_icmp_connectivity_stateful_acl_os_managed_l2()
