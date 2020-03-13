@@ -33,18 +33,13 @@ class TestSecGroupScaleBase(SecGroupTestNuageBase):
         for _ in range(sg_num):
             group_create_body, name = self._create_security_group()
             sg_ids.append(group_create_body['security_group']['id'])
-        post_body = {
-            "network": self.network,
-            "name": data_utils.rand_name('port-'),
-            "security_groups": sg_ids
-        }
         if sg_num <= n_constants.MAX_SG_PER_PORT:
-            port = self.create_port(**post_body)
+            self._create_nuage_port_with_security_group(sg_ids, self.network)
             vport = self.nuage_client.get_vport(
                 self.nuage_domain_type,
                 nuage_domain[0]['ID'],
                 filters='externalID',
-                filter_value=port['id'])
+                filter_value=self.port['id'])
             nuage_policy_grps = self.nuage_client.get_policygroup(
                 n_constants.VPORT,
                 vport[0]['ID'])
@@ -57,32 +52,28 @@ class TestSecGroupScaleBase(SecGroupTestNuageBase):
             self.assertRaisesRegex(
                 exceptions.BadRequest,
                 msg,
-                self.create_port,
-                **post_body)
+                self._create_nuage_port_with_security_group,
+                sg_ids,
+                self.network)
 
     def _test_update_port_with_security_groups(self, sg_num,
                                                nuage_domain=None):
         # Test the maximal number of security groups when updating a port
         nuage_domain = nuage_domain or self.nuage_any_domain
         group_create_body, name = self._create_security_group()
-        post_body = {
-            "network": self.network,
-            "name": data_utils.rand_name('port-'),
-            "security_groups": [group_create_body['security_group']['id']]
-        }
-        port = self.create_port(**post_body)
-
+        self._create_nuage_port_with_security_group(
+            [group_create_body['security_group']['id']], self.network)
         sg_ids = []
         for _ in range(sg_num):
             group_create_body, name = self._create_security_group()
             sg_ids.append(group_create_body['security_group']['id'])
         sg_body = {"security_groups": sg_ids}
         if sg_num <= n_constants.MAX_SG_PER_PORT:
-            self.update_port(port, **sg_body)
+            self.update_port(self.port, **sg_body)
             vport = self.nuage_client.get_vport(self.nuage_domain_type,
                                                 nuage_domain[0]['ID'],
                                                 filters='externalID',
-                                                filter_value=port['id'])
+                                                filter_value=self.port['id'])
             nuage_policy_grps = self.nuage_client.get_policygroup(
                 n_constants.VPORT,
                 vport[0]['ID'])
@@ -90,7 +81,7 @@ class TestSecGroupScaleBase(SecGroupTestNuageBase):
 
             # clear sgs such that cleanup will work fine
             sg_body = {"security_groups": []}
-            self.ports_client.update_port(port['id'], **sg_body)
+            self.ports_client.update_port(self.port['id'], **sg_body)
         else:
             msg = (("Number of %s specified security groups exceeds the "
                     "maximum of %s security groups on a port "
@@ -100,7 +91,7 @@ class TestSecGroupScaleBase(SecGroupTestNuageBase):
                 exceptions.BadRequest,
                 msg,
                 self.ports_client.update_port,
-                port['id'],
+                self.port['id'],
                 **sg_body)
 
 
