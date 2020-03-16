@@ -62,7 +62,7 @@ class UpgradeTo60Test(NuageBaseTest, L3Mixin,
     _neutron_conf = '/etc/neutron/neutron.conf'
     _plugin_conf = '/etc/neutron/plugins/nuage/plugin.ini'
     _user = getpass.getuser()
-    _is_running_in_ci = _user == 'tempest'
+    _run_upgrade_tests = False  # enable manually...
     _home = '/home/' + _user
     _log_dir = _home + '/nuageupgrade'
 
@@ -75,9 +75,12 @@ class UpgradeTo60Test(NuageBaseTest, L3Mixin,
     @classmethod
     def skip_checks(cls):
         super(UpgradeTo60Test, cls).skip_checks()
-        if cls._is_running_in_ci:
-            msg = ("UpgradeTo60Test tests are to be manually run. "
-                   "Skipping in CI.")
+        if not Topology.at_nuage('6.0'):
+            msg = 'UpgradeTo60Test tests are applicable to 6.0 release only'
+            raise cls.skipException(msg)
+        elif not cls._run_upgrade_tests:
+            msg = ('UpgradeTo60Test tests are to be manually run. '
+                   'Please define cls._run_upgrade_tests as True')
             raise cls.skipException(msg)
 
     @classmethod
