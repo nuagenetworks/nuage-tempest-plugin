@@ -12,7 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import testtools
 from testtools import matchers
 
 from tempest.lib import decorators
@@ -197,8 +196,6 @@ class StatelessSecuritygroupTest(network_mixin.NetworkMixin,
                               **create_data)
 
     @decorators.attr(type=['smoke'])
-    @testtools.skipUnless(Topology.up_to_openstack('train'),
-                          'Need to fix Ussuri for upstream statelessness')
     def test_stateless_update_securitygroup_in_use_with_same_data(self):
         topology = self._create_topology(with_router=False,
                                          stateless_sg=False)
