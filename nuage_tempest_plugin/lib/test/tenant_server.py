@@ -253,7 +253,7 @@ class TenantServer(object):
         if nbr_nics > 1:
             supported_clients = ['udhcpc', 'dhclient']
             if dhcp_client not in supported_clients:
-                raise lib_exc.exceptions.InvalidConfiguration(
+                LOG.error(
                     '%s DHCP client unsupported' % dhcp_client)
             s = '#!/bin/sh\n'
             for nic in range(1, nbr_nics):

@@ -3,7 +3,7 @@
 
 import os
 
-from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 
 CONF = Topology.get_conf()
@@ -13,7 +13,7 @@ LOG = Topology.get_logger(__name__)
 class BaseTestCase(object):
     """Wrapper around the base to avoid it being executed standalone"""
 
-    class AvrsOsManagedConnectivityTest(NuageBaseTest):
+    class AvrsOsManagedConnectivityTest(nuage_test.NuageBaseTest):
 
         def _test_restart_avrs(self, is_l3=None):
             # Provision OpenStack network resources.
@@ -30,12 +30,12 @@ class BaseTestCase(object):
 
             # Launch tenant servers in OpenStack network.
             server2 = self.create_tenant_server(
-                [network],
+                networks=[network],
                 security_groups=[ssh_security_group],
                 make_reachable=True)
 
             server1 = self.create_tenant_server(
-                [network],
+                networks=[network],
                 security_groups=[ssh_security_group],
                 make_reachable=True)
 
@@ -51,9 +51,11 @@ class BaseTestCase(object):
             # Test connectivity between peer servers again.
             self.assert_ping(server1, server2, network)
 
+        @nuage_test.skip_because(bug='VRS-31019')
         def test_restart_avrs_l2(self):
             self._test_restart_avrs(is_l3=False)
 
+        @nuage_test.skip_because(bug='VRS-31019')
         def test_restart_avrs_l3(self):
             self._test_restart_avrs(is_l3=True)
 
