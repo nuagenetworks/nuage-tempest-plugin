@@ -149,8 +149,9 @@ class FWaaSExtensionTestJSON(BaseFWaaSTest):
 
         ip_version = firewall_rule_os.get('ip_version')
         self.assertIn(needle=ip_version, haystack=[4, 6])
-        vsd_source_ip_field_name = ('addressOverride' if ip_version == 4
-                                    else 'IPv6AddressOverride')
+        vsd_source_ip_field_name = (
+            'addressOverride' if ip_version == 4 or Topology.is_v5
+            else 'IPv6AddressOverride')
         self.assertEqual(firewall_rule_os['source_ip_address'],
                          firewall_rule_vsd[vsd_source_ip_field_name])
 

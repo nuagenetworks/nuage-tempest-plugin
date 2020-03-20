@@ -34,10 +34,10 @@ class BaremetalTrunkTest(network_mixin.NetworkMixin,
     @classmethod
     def setUpClass(cls):
         super(BaremetalTrunkTest, cls).setUpClass()
-        if (Topology.nuage_baremetal_driver ==
+        if (CONF.nuage_sut.nuage_baremetal_driver ==
                 constants.BAREMETAL_DRIVER_BRIDGE):
             cls.expected_vport_type = constants.VPORT_TYPE_BRIDGE
-        elif (Topology.nuage_baremetal_driver ==
+        elif (CONF.nuage_sut.nuage_baremetal_driver ==
               constants.BAREMETAL_DRIVER_HOST):
             cls.expected_vport_type = constants.VPORT_TYPE_HOST
         else:
@@ -101,16 +101,16 @@ class BaremetalTrunkTest(network_mixin.NetworkMixin,
             parent_resource = constants.SUBNETWORK
         else:
             parent_resource = constants.L2_DOMAIN
+        filters, filter_values = self.vsd_client.get_subnet_filters(subnet)
         vsd_vport_parent = self.vsd_client.get_global_resource(
             parent_resource,
-            filters=['externalID', 'address'],
-            filter_value=[subnet['network_id'],
-                          subnet['cidr']])[0]
+            filters=filters,
+            filter_values=filter_values)[0]
         vsd_vports = self.vsd_client.get_vport(
             parent_resource,
             vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=port['id'])
+            filter_values=port['id'])
         if vsd_vports:
             return vsd_vports[0]
         else:

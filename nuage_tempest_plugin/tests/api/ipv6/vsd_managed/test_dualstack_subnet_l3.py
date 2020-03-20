@@ -1,16 +1,18 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
 
+import testtools
+
 from netaddr import IPAddress
 from netaddr import IPNetwork
-
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
-    import BaseVSDManagedNetworksIPv6Test
 
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions as tempest_exceptions
+
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
+    import BaseVSDManagedNetworksIPv6Test
 
 MSG_INVALID_GATEWAY = "Invalid IPv6 network gateway"
 MSG_INVALID_IPV6_ADDRESS = "Invalid network IPv6 address"
@@ -260,6 +262,8 @@ class VSDManagedDualStackSubnetL3Test(BaseVSDManagedNetworksIPv6Test):
             nuagenet=vsd_l3domain_subnet.id,
             net_partition=Topology.def_netpartition)
 
+    @testtools.skipIf(not Topology.has_single_stack_v6_support(),
+                      'No singe-stack v6 supported')
     @decorators.attr(type='smoke')
     def test_os_managed_v6_conversions_l2_l3_v6_dualstack(self):
         # Provision OpenStack network/subnet/router
@@ -267,9 +271,7 @@ class VSDManagedDualStackSubnetL3Test(BaseVSDManagedNetworksIPv6Test):
         ipv6_subnet = self.create_subnet(network, ip_version=6)
 
         # verify l2 dom
-        vsd_l2_domain = self.vsd.get_l2domain(
-            by_network_id=ipv6_subnet['network_id'],
-            cidr=ipv6_subnet['cidr'], ip_type=6)
+        vsd_l2_domain = self.vsd.get_l2domain(by_subnet=ipv6_subnet)
         self.assertEqual(vsd_l2_domain.ip_type, 'IPV6')
 
         router = self.create_router()
@@ -278,8 +280,7 @@ class VSDManagedDualStackSubnetL3Test(BaseVSDManagedNetworksIPv6Test):
         # attach v6 subnet to router / verify l3 dom
         self.router_attach(router, ipv6_subnet, cleanup=False)
         vsd_l3_subnet = self.vsd.get_subnet_from_domain(
-            domain=vsd_l3_domain, by_network_id=ipv6_subnet['network_id'],
-            cidr=ipv6_subnet['cidr'], ip_type=6)
+            domain=vsd_l3_domain, by_subnet=ipv6_subnet)
         self.assertEqual(vsd_l3_subnet.ip_type, 'IPV6')
 
         # create/verify port
@@ -290,20 +291,16 @@ class VSDManagedDualStackSubnetL3Test(BaseVSDManagedNetworksIPv6Test):
         # pure ipv6 to dualstack
         ipv4_subnet = self.create_subnet(network, cleanup=False)
         vsd_l3_subnet = self.vsd.get_subnet_from_domain(
-            domain=vsd_l3_domain, by_network_id=ipv6_subnet['network_id'],
-            cidr=ipv6_subnet['cidr'], ip_type=6)
+            domain=vsd_l3_domain, by_subnet=ipv6_subnet)
         self.assertEqual(vsd_l3_subnet.ip_type, 'DUALSTACK')
 
         # dualstack to ipv6
         self.delete_subnet(ipv4_subnet)
         vsd_l3_subnet = self.vsd.get_subnet_from_domain(
-            domain=vsd_l3_domain, by_network_id=ipv6_subnet['network_id'],
-            cidr=ipv6_subnet['cidr'], ip_type=6)
+            domain=vsd_l3_domain, by_subnet=ipv6_subnet)
         self.assertEqual(vsd_l3_subnet.ip_type, 'IPV6')
 
         # v6L3 to v6L2
         self.router_detach(router, ipv6_subnet)
-        vsd_l2_domain = self.vsd.get_l2domain(
-            by_network_id=ipv6_subnet['network_id'],
-            cidr=ipv6_subnet['cidr'], ip_type=6)
+        vsd_l2_domain = self.vsd.get_l2domain(by_subnet=ipv6_subnet)
         self.assertEqual(vsd_l2_domain.ip_type, 'IPV6')

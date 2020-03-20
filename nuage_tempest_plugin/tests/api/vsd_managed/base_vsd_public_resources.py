@@ -259,7 +259,7 @@ class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
         vm_interface = self.nuage_client.get_vm_iface(
             constants.L2_DOMAIN,
             vsd_domain_id,
-            filters='externalID', filter_value=ext_id)
+            filters='externalID', filter_values=ext_id)
         return vm_interface[0]['IPAddress']
 
     def _get_l3_subnet_vm_interface_ip_address(self, vm, vsd_subnet_id):
@@ -269,7 +269,7 @@ class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
         vm_interface = self.nuage_client.get_vm_iface(
             constants.SUBNETWORK,
             vsd_subnet_id,
-            filters='externalID', filter_value=ext_id)
+            filters='externalID', filter_values=ext_id)
         return vm_interface[0]['IPAddress']
 
     def _create_shared_network(self, name=None, shared=False):

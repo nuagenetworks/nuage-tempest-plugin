@@ -63,8 +63,7 @@ class NuageHybridMplsTest(NuageBaseTest):
                                     ip_version=4,
                                     manager=self.admin_manager)
 
-        l2domain = self.vsd.get_l2domain(by_network_id=network['id'],
-                                         cidr=subnet['cidr'])
+        l2domain = self.vsd.get_l2domain(by_subnet=subnet)
         self.assertEqual('MPLS', l2domain.l2_encap_type)
 
         # Nuage Hybrid MPLS Segment
@@ -80,8 +79,7 @@ class NuageHybridMplsTest(NuageBaseTest):
                                     manager=self.admin_manager)
         self.assertIsNotNone(subnet)
 
-        l2domain = self.vsd.get_l2domain(by_network_id=network['id'],
-                                         cidr=subnet['cidr'])
+        l2domain = self.vsd.get_l2domain(by_subnet=subnet)
         self.assertEqual('MPLS', l2domain.l2_encap_type)
 
     @decorators.attr(type='smoke')

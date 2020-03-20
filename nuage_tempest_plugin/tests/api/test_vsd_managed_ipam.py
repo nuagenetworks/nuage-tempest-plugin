@@ -47,13 +47,9 @@ class VSDManagedIPAMTest(nuage_test.NuageBaseTest):
 
         # Verify reservations
         if is_ipv4:
-            l2domain = self.vsd.get_l2domain(by_network_id=network['id'],
-                                             cidr=ipv4_subnet['cidr'],
-                                             ip_type=4)
+            l2domain = self.vsd.get_l2domain(by_subnet=ipv4_subnet)
         else:
-            l2domain = self.vsd.get_l2domain(by_network_id=network['id'],
-                                             cidr=ipv6_subnet['cidr'],
-                                             ip_type=6)
+            l2domain = self.vsd.get_l2domain(by_subnet=ipv6_subnet)
 
         ipreservations = l2domain.vmip_reservations.get()
         self._verify_vmipreservations(ipreservations, ipv4_subnet, ipv6_subnet,
@@ -65,11 +61,9 @@ class VSDManagedIPAMTest(nuage_test.NuageBaseTest):
             self.router_attach(router, ipv6_subnet)
 
         if is_ipv4:
-            vsd_subnet = self.vsd.get_subnet(by_network_id=network['id'],
-                                             cidr=ipv4_subnet['cidr'])
+            vsd_subnet = self.vsd.get_subnet(by_subnet=ipv4_subnet)
         else:
-            vsd_subnet = self.vsd.get_subnet(by_network_id=network['id'],
-                                             cidr=ipv6_subnet['cidr'])
+            vsd_subnet = self.vsd.get_subnet(by_subnet=ipv6_subnet)
         ipreservations = vsd_subnet.vmip_reservations.get()
         self._verify_vmipreservations(ipreservations, ipv4_subnet, ipv6_subnet,
                                       network, port, vm)
@@ -86,13 +80,9 @@ class VSDManagedIPAMTest(nuage_test.NuageBaseTest):
         if is_ipv6:
             self.router_detach(router, ipv6_subnet)
         if is_ipv4:
-            l2domain = self.vsd.get_l2domain(by_network_id=network['id'],
-                                             cidr=ipv4_subnet['cidr'],
-                                             ip_type=4)
+            l2domain = self.vsd.get_l2domain(by_subnet=ipv4_subnet)
         else:
-            l2domain = self.vsd.get_l2domain(by_network_id=network['id'],
-                                             cidr=ipv6_subnet['cidr'],
-                                             ip_type=6)
+            l2domain = self.vsd.get_l2domain(by_subnet=ipv6_subnet)
 
         ipreservations = l2domain.vmip_reservations.get()
         self._verify_vmipreservations(ipreservations, ipv4_subnet, ipv6_subnet,
@@ -154,9 +144,7 @@ class VSDManagedIPAMTest(nuage_test.NuageBaseTest):
 
         router = self.create_router()
         # l2domain verify
-        l2domain = self.vsd.get_l2domain(by_network_id=network['id'],
-                                         cidr=ipv4_subnet['cidr'],
-                                         ip_type=4)
+        l2domain = self.vsd.get_l2domain(by_subnet=ipv4_subnet)
         # Simulate other OS cloud by doing reservations
         vmipreservation = self.vsd.vspk.NUVMIPReservation(
             ip_type='IPV4', ipv4_address='10.0.0.10')
@@ -222,9 +210,7 @@ class VSDManagedIPAMTest(nuage_test.NuageBaseTest):
 
         router = self.create_router()
         # l2domain verify
-        l2domain = self.vsd.get_l2domain(by_network_id=network['id'],
-                                         cidr=ipv4_subnet['cidr'],
-                                         ip_type=4)
+        l2domain = self.vsd.get_l2domain(by_subnet=ipv4_subnet)
         for ip in IPRange('10.0.0.3', '10.0.0.6'):
             vmipreservation = self.vsd.vspk.NUVMIPReservation(
                 ip_type='IPV4', ipv4_address=str(ip))
@@ -244,8 +230,7 @@ class VSDManagedIPAMTest(nuage_test.NuageBaseTest):
         self.router_attach(router, ipv4_subnet)
         self.router_attach(router, ipv6_subnet)
         # After router attach nuage:dhcp ports are freed up
-        vsd_subnet = self.vsd.get_subnet(by_network_id=network['id'],
-                                         cidr=ipv4_subnet['cidr'])
+        vsd_subnet = self.vsd.get_subnet(by_subnet=ipv4_subnet)
         vmipreservation = self.vsd.vspk.NUVMIPReservation(
             ip_type='IPV4', ipv4_address='10.0.0.2')
         vsd_subnet.create_child(vmipreservation)
@@ -274,8 +259,7 @@ class VSDManagedIPAMTest(nuage_test.NuageBaseTest):
                                          cidr=IPNetwork('cafe:babe::/64'),
                                          mask_bits=64, **kwargs)
         # Create non-overlapping address ranges
-        l2dom_template = self.vsd.get_l2domain_template(
-            by_network_id=network['id'], cidr=ipv4_subnet['cidr'], ip_type=4)
+        l2dom_template = self.vsd.get_l2domain_template(by_subnet=ipv4_subnet)
         address_range = self.vsd.vspk.NUAddressRange(
             ip_type='IPV4', min_address='10.0.0.7', max_address='10.0.0.10',
             dhcp_pool_type='HOST')
@@ -308,8 +292,7 @@ class VSDManagedIPAMTest(nuage_test.NuageBaseTest):
         self.router_attach(router, ipv6_subnet)
 
         # Address ranges are not transferred to l3
-        l3subnet = self.vsd.get_subnet(
-            by_network_id=network['id'], cidr=ipv4_subnet['cidr'])
+        l3subnet = self.vsd.get_subnet(by_subnet=ipv4_subnet)
         address_range = self.vsd.vspk.NUAddressRange(
             ip_type='IPV4', min_address='10.0.0.7', max_address='10.0.0.10',
             dhcp_pool_type='HOST')
@@ -368,9 +351,7 @@ class VSDManagedIPAMTest(nuage_test.NuageBaseTest):
                                self.update_port, port1, **port_args)
 
         # l2domain verify
-        l2domain = self.vsd.get_l2domain(by_network_id=network['id'],
-                                         cidr=ipv4_subnet['cidr'],
-                                         ip_type=4)
+        l2domain = self.vsd.get_l2domain(by_subnet=ipv4_subnet)
         ipreservations = l2domain.vmip_reservations.get()
         self._verify_vmipreservations(ipreservations, ipv4_subnet, ipv6_subnet,
                                       network, port2, vm)
@@ -392,8 +373,7 @@ class VSDManagedIPAMTest(nuage_test.NuageBaseTest):
                                expected_errormsg,
                                self.update_port, port1, **port_args)
 
-        vsd_subnet = self.vsd.get_subnet(by_network_id=network['id'],
-                                         cidr=ipv4_subnet['cidr'])
+        vsd_subnet = self.vsd.get_subnet(by_subnet=ipv4_subnet)
         ipreservations = vsd_subnet.vmip_reservations.get()
         self._verify_vmipreservations(ipreservations, ipv4_subnet, ipv6_subnet,
                                       network, port2, vm)
@@ -413,8 +393,7 @@ class VSDManagedIPAMTest(nuage_test.NuageBaseTest):
         fip2 = self.create_floatingip(manager=self.admin_manager,
                                       external_network_id=network['id'])
 
-        vsd_subnet = self.vsd.get_subnet(by_network_id=network['id'],
-                                         cidr=ipv4_subnet['cidr'])
+        vsd_subnet = self.vsd.get_subnet(by_subnet=ipv4_subnet)
         ipreservations = vsd_subnet.vmip_reservations.get()
         reserved_ips = [ipreservation.ipv4_address for ipreservation in
                         ipreservations]

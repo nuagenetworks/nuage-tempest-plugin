@@ -3,6 +3,7 @@
 
 from netaddr import IPAddress
 from netaddr import IPNetwork
+import testtools
 
 from tempest.lib import decorators
 
@@ -45,9 +46,13 @@ class Ipv6L2VsdManagedConnectivityTest(NuageBaseTest):
         # Test IPv6 connectivity between peer servers
         self.assert_ping(server1, server2, network, ip_version=6)
 
+    @testtools.skipIf(not Topology.has_single_stack_v6_support(),
+                      'No singe-stack v6 supported')
     def test_icmp_connectivity_stateful_acl_l2_vsd_managed_pure_v6(self):
         self._test_icmp_connectivity_l2_vsd_managed_pure_v6(stateful=True)
 
+    @testtools.skipIf(not Topology.has_single_stack_v6_support(),
+                      'No singe-stack v6 supported')
     def test_icmp_connectivity_stateless_acl_l2_vsd_managed_pure_v6(self):
         self._test_icmp_connectivity_l2_vsd_managed_pure_v6(stateful=False)
 
@@ -68,7 +73,7 @@ class Ipv6L2VsdManagedConnectivityTest(NuageBaseTest):
         network = self.create_network()
         self.create_l2_vsd_managed_subnet(network, vsd_l2domain)
         self.create_l2_vsd_managed_subnet(
-            network, vsd_l2domain, ip_version=6)
+            network, vsd_l2domain, ip_version=6, dhcp_managed=True)
 
         # Launch tenant servers in OpenStack network
         server2 = self.create_tenant_server(
@@ -89,6 +94,13 @@ class Ipv6L2VsdManagedConnectivityTest(NuageBaseTest):
 class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
 
     default_prepare_for_connectivity = True
+
+    @classmethod
+    def skip_checks(cls):
+        super(Ipv6L3VsdManagedConnectivityTest, cls).skip_checks()
+        if not Topology.has_single_stack_v6_support():
+            msg = 'No single-stack v6 support.'
+            raise cls.skipException(msg)
 
     @staticmethod
     def get_static_route_data(remote_cidr, local_gw, nic):

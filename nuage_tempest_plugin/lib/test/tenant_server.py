@@ -212,6 +212,10 @@ class TenantServer(object):
         kwargs['user_data'] = b64encode(textwrap.dedent(
             kwargs['user_data']).lstrip().encode('utf8'))
 
+        # force use of config drive if no metadata agent is configured
+        if not CONF.compute_feature_enabled.metadata_service:
+            kwargs['config_drive'] = True
+
         # and boot the server
         LOG.info('[{}] Booting {}'.format(self.tag, self.name))
         # (calling  _create_server which is private method, which is intended)
@@ -368,22 +372,26 @@ class TenantServer(object):
             self.cloudinit_complete = True
             LOG.info('[{}] Ready for action'.format(self.tag))
 
+    @staticmethod
+    def is_dhcp_enabled_on_subnet(subnet):
+        return (subnet['enable_dhcp'] and
+                (subnet['ip_version'] == 4 or Topology.has_dhcp_v6_support()))
+
     # TODO(Kris) this needs to go out, by provisioning entirely thru cloudinit
     def provision(self, manager=None):
         if self.needs_provisioning and not self.is_being_provisioned:
             LOG.info('[{}] Provisioning'.format(self.tag))
-
             self.is_being_provisioned = True
 
             for eth_i, network in enumerate(self.get_server_networks(manager)):
                 v4_subnet = self.parent.get_network_subnet(network, 4, manager)
-                if v4_subnet and not v4_subnet['enable_dhcp']:
+                if v4_subnet and not self.is_dhcp_enabled_on_subnet(v4_subnet):
                     server_ipv4 = self.get_server_ip_in_network(
                         network['name'], ip_version=4, manager=manager)
                     self.configure_static_interface(
                         server_ipv4, v4_subnet, ip_version=4, device=eth_i)
                 v6_subnet = self.parent.get_network_subnet(network, 6, manager)
-                if v6_subnet and not v6_subnet['enable_dhcp']:
+                if v6_subnet and not self.is_dhcp_enabled_on_subnet(v6_subnet):
                     server_ipv6 = self.get_server_ip_in_network(
                         network['name'], ip_version=6, manager=manager)
                     self.configure_static_interface(
@@ -463,7 +471,7 @@ class TenantServer(object):
         LOG.info('[{}] Configuring interface {}/{}'.format(
             self.tag, ip, device))
 
-        if ((subnet['enable_dhcp'] or self.force_dhcp) and
+        if ((self.is_dhcp_enabled_on_subnet(subnet) or self.force_dhcp) and
                 # there is no point in checking for the itf to be served by the
                 # dhcp client if the subnet has no dhcp enabled
 
@@ -559,7 +567,8 @@ class TenantServer(object):
             # TODO(Kris) check each subnet separately for dhcp seems more
             #            suited?
             if self.force_dhcp or self.parent.is_dhcp_enabled(
-                    network, manager=manager):
+                    network, require_all_subnets_to_match=False,
+                    manager=manager):
                 if first_nic_prepared:
                     LOG.info('[{}] Preparing user-data for {} nics'.format(
                         self.tag, nbr_nics))

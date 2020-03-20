@@ -3,6 +3,7 @@
 
 from netaddr import IPAddress
 from netaddr import IPNetwork
+import testtools
 from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
 
@@ -280,6 +281,8 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
                           nuage_floatingip=None)
         self._verify_vport_in_l2_domain(port, vsd_l2domain)
 
+    @testtools.skipIf(not Topology.has_single_stack_v6_support(),
+                      'No singe-stack v6 supported')
     @decorators.attr(type='smoke')
     def test_create_ipv6_subnet_in_vsd_mgd_l2domain_with_ipv6_network_first(
             self):
@@ -521,7 +524,7 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
             nuage_constants.L2_DOMAIN,
             vsd_l2domain.id,
             filters='externalID',
-            filter_value=port_ipv4_only['id'])
+            filter_values=port_ipv4_only['id'])
         self.assertEqual(
             len(nuage_vports), 1,
             "Must find one VPort matching port: %s" % port_ipv4_only['name'])
@@ -555,7 +558,7 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
             nuage_constants.L2_DOMAIN,
             vsd_l2domain.id,
             filters='externalID',
-            filter_value=port['id'])
+            filter_values=port['id'])
         self.assertEqual(
             len(nuage_vports), 1,
             "Must find one VPort matching port: %s" % port['name'])
@@ -707,6 +710,9 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
             self.create_port,
             network,
             **port_args)
+
+        if not Topology.has_single_stack_v6_support():
+            return  # remainder of test needs single-stack v6
 
         # shall not a port with no ip in the IPv4 subnet but only fixed-ip IPv6
         port_args = {'fixed_ips': [{'subnet_id': ipv6_subnet['id'],
@@ -894,12 +900,13 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
             mask_bits=self.mask_bits6,
             nuagenet=vsd_l2domain1.id,
             net_partition=Topology.def_netpartition)
-        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
-        self.assertEqual(1, len(dhcp_ports))
-        self.assertEqual(dhcp_ports[0]['fixed_ips'][1]['subnet_id'],
-                         v6_1['id'])
-        self.assertEqual(dhcp_ports[0]['fixed_ips'][1]['ip_address'],
-                         vsd_l2domain1.ipv6_gateway)
+        if Topology.has_dhcp_v6_support():
+            dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+            self.assertEqual(1, len(dhcp_ports))
+            self.assertEqual(dhcp_ports[0]['fixed_ips'][1]['subnet_id'],
+                             v6_1['id'])
+            self.assertEqual(dhcp_ports[0]['fixed_ips'][1]['ip_address'],
+                             vsd_l2domain1.ipv6_gateway)
         if self.is_dhcp_agent_present():
             self.assertRaises(
                 exceptions.BadRequest,
@@ -927,12 +934,14 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
                 gateway=None,
                 nuagenet=vsd_l2domain2.id,
                 net_partition=Topology.def_netpartition)
-            dhcp_ports = self.ports_client.list_ports(**filters)['ports']
-            self.assertEqual(2, len(dhcp_ports))
-            for dhcp_port in dhcp_ports:
-                if dhcp_port['fixed_ips'][0]['subnet_id'] == v4_2['id']:
-                    self.assertEqual(dhcp_port['fixed_ips'][0]['ip_address'],
-                                     vsd_l2domain2.gateway)
+            if Topology.has_dhcp_v6_support():
+                dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+                self.assertEqual(2, len(dhcp_ports))
+                for dhcp_port in dhcp_ports:
+                    if dhcp_port['fixed_ips'][0]['subnet_id'] == v4_2['id']:
+                        self.assertEqual(
+                            dhcp_port['fixed_ips'][0]['ip_address'],
+                            vsd_l2domain2.gateway)
             v6_2 = self.create_subnet(
                 network,
                 ip_version=6,
@@ -940,12 +949,14 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
                 mask_bits=self.mask_bits6,
                 nuagenet=vsd_l2domain2.id,
                 net_partition=Topology.def_netpartition)
-            dhcp_ports = self.ports_client.list_ports(**filters)['ports']
-            self.assertEqual(2, len(dhcp_ports))
-            for dhcp_port in dhcp_ports:
-                if dhcp_port['fixed_ips'][1]['subnet_id'] == v6_2['id']:
-                    self.assertEqual(dhcp_port['fixed_ips'][1]['ip_address'],
-                                     vsd_l2domain2.ipv6_gateway)
+            if Topology.has_dhcp_v6_support():
+                dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+                self.assertEqual(2, len(dhcp_ports))
+                for dhcp_port in dhcp_ports:
+                    if dhcp_port['fixed_ips'][1]['subnet_id'] == v6_2['id']:
+                        self.assertEqual(
+                            dhcp_port['fixed_ips'][1]['ip_address'],
+                            vsd_l2domain2.ipv6_gateway)
 
             # check ports
             # dualstack port of same l2domain
@@ -1033,10 +1044,11 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
             mask_bits=64,
             nuagenet=vsd_l2domain2.id,
             net_partition=Topology.def_netpartition)
-        dhcp_ports = self.ports_client.list_ports(**filters)['ports']
-        self.assertEqual(2, len(dhcp_ports))
-        for dhcp_port in dhcp_ports:
-            if dhcp_port['fixed_ips'][0]['subnet_id'] == v6_subnet['id']:
-                self.assertEqual(
-                    dhcp_port['fixed_ips'][0]['ip_address'],
-                    vsd_l2domain2.ipv6_gateway)
+        if Topology.has_dhcp_v6_support():
+            dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+            self.assertEqual(2, len(dhcp_ports))
+            for dhcp_port in dhcp_ports:
+                if dhcp_port['fixed_ips'][0]['subnet_id'] == v6_subnet['id']:
+                    self.assertEqual(
+                        dhcp_port['fixed_ips'][0]['ip_address'],
+                        vsd_l2domain2.ipv6_gateway)

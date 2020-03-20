@@ -36,7 +36,7 @@ class OrchestrationRouterTest(nuage_base.NuageBaseOrchestrationTest):
     def _get_vsd_l3domain(self, external_id):
         nuage_domain = self.vsd_client.get_l3domain(
             filters='externalID',
-            filter_value=external_id)
+            filter_values=external_id)
         return nuage_domain[0]
 
     def _verify_router_with_vsd_l3domain(self, router):

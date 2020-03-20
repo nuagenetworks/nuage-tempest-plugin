@@ -192,7 +192,7 @@ class NuageBidirectionalFipRateLimitBase(base.BaseNetworkTest):
             created_floating_ip['router_id'])
         nuage_domain = self.nuage_client.get_l3domain(
             filters='externalID',
-            filter_value=external_id)
+            filter_values=external_id)
         nuage_domain_fip = self.nuage_client.get_floatingip(
             constants.DOMAIN, nuage_domain[0]['ID'])
 
@@ -209,8 +209,7 @@ class NuageBidirectionalFipRateLimitBase(base.BaseNetworkTest):
 
         # Check vsd
         vsd_subnets = self.nuage_client.get_domain_subnet(
-            None, None, 'externalID',
-            self.nuage_client.get_vsd_external_id(self.subnet['network_id']))
+            None, None, by_subnet=self.subnet)
         self.assertEqual(1, len(vsd_subnets))
         vports = self.nuage_client.get_vport(
             constants.SUBNETWORK,

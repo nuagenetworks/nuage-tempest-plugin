@@ -88,14 +88,13 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest):
         subnet = body['subnet']
         self.assertEqual(str(subnet['underlay']), str(default_underlay))
         nuage_fippool = self.nuage_client.get_sharedresource(
-            filters=['externalID', 'address'],
-            filter_value=[subnet['network_id'], subnet['cidr']])
+            by_subnet=subnet)
         self.assertEqual(str(nuage_fippool[0]['underlay']),
                          str(default_underlay))
         self.admin_subnets_client.delete_subnet(subnet['id'])
         nuage_fippool = self.nuage_client.get_sharedresource(
             filters='externalID',
-            filter_value=self.nuage_client.get_vsd_external_id(
+            filter_values=self.nuage_client.get_vsd_external_id(
                 subnet['id']))
         self.assertEqual(nuage_fippool, '')
 
@@ -122,14 +121,13 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest):
                              "underlay while it must: OPENSTACK-659")
             # Check value on VSD
             nuage_fippool = self.nuage_client.get_sharedresource(
-                filters=['externalID', 'address'],
-                filter_value=[subnet['network_id'], subnet['cidr']])
+                by_subnet=subnet)
             self.assertEqual(nuage_fippool[0]['underlay'], underlay)
             # delete and check externalIDagain on VSD
             self.admin_subnets_client.delete_subnet(subnet['id'])
             nuage_fippool = self.nuage_client.get_sharedresource(
                 filters='externalID',
-                filter_value=self.nuage_client.get_vsd_external_id(
+                filter_values=self.nuage_client.get_vsd_external_id(
                     subnet['id']))
             self.assertEqual(nuage_fippool, '')
 
@@ -305,14 +303,13 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest):
         compare_str = str(underlay_default)
         self.assertIn(compare_str.lower(), str(subnet['underlay']).lower())
         nuage_fippool = self.nuage_client.get_sharedresource(
-            filters=['externalID', 'address'],
-            filter_value=[subnet['network_id'], subnet['cidr']])
+            by_subnet=subnet)
         self.assertEqual(str(nuage_fippool[0]['underlay']),
                          str(underlay_default))
         self.admin_subnets_client.delete_subnet(subnet['id'])
         nuage_fippool = self.nuage_client.get_sharedresource(
             filters='externalID',
-            filter_value=self.nuage_client.get_vsd_external_id(
+            filter_values=self.nuage_client.get_vsd_external_id(
                 subnet['id']))
         self.assertEqual(nuage_fippool, '')
         # Remove subnet from the cleanup list,
@@ -348,15 +345,13 @@ class NuageFipUnderlayBase(base.BaseAdminNetworkTest):
                           str(subnet['underlay']).lower())
             # Check value on VSD
             nuage_fippool = self.nuage_client.get_sharedresource(
-                filters='externalID',
-                filter_value=self.nuage_client.get_vsd_external_id(
-                    subnet['id']))
+                by_subnet=subnet)
             self.assertEqual(nuage_fippool[0]['underlay'], underlay)
             # delete and check again on VSD
             self.admin_subnets_client.delete_subnet(subnet['id'])
             nuage_fippool = self.nuage_client.get_sharedresource(
                 filters='externalID',
-                filter_value=self.nuage_client.get_vsd_external_id(
+                filter_values=self.nuage_client.get_vsd_external_id(
                     subnet['id']))
             self.assertEqual(nuage_fippool, '')
             # Remove subnet from the cleanup list, as we deleted it ourselves

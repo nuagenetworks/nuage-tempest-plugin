@@ -55,7 +55,7 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
                 parent=n_constants.L2_DOMAIN,
                 parent_id=self.vsd_l2domain['ID'],
                 filters='externalID',
-                filter_value=ExternalId(self.port['id']).at_cms_id())
+                filter_values=ExternalId(self.port['id']).at_cms_id())
 
             # should have exact 1 match
             self.test.assertEqual(len(vsd_vports), 1)
@@ -83,7 +83,7 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
                         resource_id=self.vsd_vport['ID'],
                         child_resource=n_constants.DHCPOPTION,
                         filters='externalID',
-                        filter_value=with_external_id)
+                        filter_values=with_external_id)
 
                 self.test.assertEqual(len(vsd_dhcp_options),
                                       len(extra_dhcp_opts),
@@ -120,7 +120,7 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
                         resource_id=self.vsd_vport['parentID'],
                         child_resource=n_constants.POLICYGROUP,
                         filters='externalID',
-                        filter_value=with_external_id)
+                        filter_values=with_external_id)
 
                 self.test.assertEqual(1, len(vsd_security_policy_groups),
                                       "policy group not found by ExternalID")
@@ -147,7 +147,7 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
                     resource_id=vsd_ingress_acl_templates[0]['ID'],
                     child_resource=n_constants.INGRESS_ACL_ENTRY_TEMPLATE,
                     filters='locationID',
-                    filter_value=self.vsd_security_policy_group['ID'])
+                    filter_values=self.vsd_security_policy_group['ID'])
 
             self.test.assertEqual(
                 1, len(vsd_ingress_security_policy_entries),
@@ -163,7 +163,7 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
                         resource_id=vsd_ingress_acl_templates[0]['ID'],
                         child_resource=n_constants.INGRESS_ACL_ENTRY_TEMPLATE,
                         filters='externalID',
-                        filter_value=with_external_id)
+                        filter_values=with_external_id)
 
                 self.test.assertEqual(
                     1, len(vsd_ingress_security_policy_entries),
@@ -192,7 +192,7 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
                     resource_id=vsd_egress_acl_templates[0]['ID'],
                     child_resource=n_constants.EGRESS_ACL_ENTRY_TEMPLATE,
                     filters='locationID',
-                    filter_value=self.vsd_security_policy_group['ID'])
+                    filter_values=self.vsd_security_policy_group['ID'])
 
             self.test.assertEqual(
                 1, len(vsd_egress_security_policy_entries),
@@ -208,7 +208,7 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
                         resource_id=vsd_egress_acl_templates[0]['ID'],
                         child_resource=n_constants.EGRESS_ACL_ENTRY_TEMPLATE,
                         filters='externalID',
-                        filter_value=with_external_id)
+                        filter_values=with_external_id)
 
                 self.test.assertEqual(
                     1, len(vsd_egress_security_policy_entries),

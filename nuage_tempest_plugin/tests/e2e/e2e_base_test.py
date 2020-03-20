@@ -120,10 +120,12 @@ class E2eTestBase(NuageBaseTest):
                 cidr=utils.gimme_a_cidr(ip_version),
                 ip_version=ip_version,
                 manager=self.admin_manager)
-            if router:
+            # pre-6.0 i.e. no SS v6 support yet, do the below for v4 only:
+            if router and (Topology.has_single_stack_v6_support() or
+                           ip_version == 4):
                 self.router_attach(router, subnet, manager=self.admin_manager)
                 vspk_subnet = self.vsd.get_subnet(
-                    by_network_id=network['id'], cidr=subnet['cidr'])
+                    by_subnet=subnet)
                 # gateway mac is the same for IPv4/6 in dualstack network
                 gateway_mac_address = vspk_subnet.gateway_mac_address
         return network, gateway_mac_address

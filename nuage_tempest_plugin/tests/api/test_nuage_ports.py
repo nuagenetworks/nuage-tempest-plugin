@@ -4,12 +4,6 @@
 from netaddr import IPNetwork
 import testtools
 
-from nuage_tempest_plugin.lib.test.nuage_test import NuageAdminNetworksTest
-from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants
-from nuage_tempest_plugin.services.nuage_client import NuageRestClient
-
 from tempest.common import custom_matchers
 from tempest.common import waiters
 from tempest.lib.common.utils import test_utils
@@ -17,12 +11,28 @@ from tempest.lib import exceptions
 from tempest.scenario import manager
 from tempest.test import decorators
 
+from nuage_tempest_plugin.lib.test.nuage_test import NuageAdminNetworksTest
+from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import constants
+from nuage_tempest_plugin.services.nuage_client import NuageRestClient
+
 CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
+
+SPOOFING_ENABLED = constants.ENABLED
+SPOOFING_DISABLED = (constants.INHERITED if Topology.is_v5
+                     else constants.DISABLED)
 
 
 class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                 manager.NetworkScenarioTest):
+
+    if Topology.is_v5:
+        msg_base = 'Bad request: '
+    else:
+        msg_base = 'Bad request: Error in REST call to VSD: '
+
     @classmethod
     def setup_clients(cls):
         super(PortsTest, cls).setup_clients()
@@ -283,6 +293,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                                       ip_version=6, cleanup=False)
         if is_l2:
             resource = constants.L2_DOMAIN
+            router = None
         else:
             router = self.create_router(
                 admin_state_up=True,
@@ -293,10 +304,11 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                                          subnet_id=subnetv6["id"],
                                          cleanup=False)
             resource = constants.SUBNETWORK
+        filters, filter_values = self.vsd_client.get_subnet_filters(subnetv4)
         vsd_vport_parent = self.vsd_client.get_global_resource(
             resource,
-            filters='externalID',
-            filter_value=network['id'])[0]
+            filters=filters,
+            filter_values=filter_values)[0]
         fixed_ips = [
             {
                 "ip_address": "10.0.0.4",
@@ -314,7 +326,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                               network=network, port_id=port['id'])
         vm_interface = self.vsd_client.get_vm_iface(
             resource, vsd_vport_parent['ID'],
-            filters='externalID', filter_value=port['id'])[0]
+            filters='externalID', filter_values=port['id'])[0]
         self.assertEqual(vm_interface['IPAddress'], "10.0.0.5")
         self.assertIsNone(vm_interface.get('IPv6Address'))
         # Fixed ips from pure ipv4 ips to dual ips
@@ -342,9 +354,20 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                          message="The port did not update properly.")
         vm_interface = self.vsd_client.get_vm_iface(
             resource, vsd_vport_parent['ID'],
-            filters='externalID', filter_value=port['id'])[0]
+            filters='externalID', filter_values=port['id'])[0]
         self.assertEqual(vm_interface['IPAddress'], "10.0.0.7")
         self.assertEqual(vm_interface['IPv6Address'], "cafe:babe::5/64")
+
+        if not Topology.has_single_stack_v6_support():
+            self.delete_port(port)
+            if not is_l2:
+                self.remove_router_interface(router_id=router["id"],
+                                             subnet_id=subnetv6["id"])
+            self.delete_subnet(subnetv6)
+            self.delete_subnet(subnetv4)
+
+            return  # halt here - rest requires single-stack v6 support
+
         # Fixed ips from dual ips to pure ipv6 ips
         fixed_ips = [
             {
@@ -362,16 +385,17 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                          message="The port did not update properly.")
         vm_interface = self.vsd_client.get_vm_iface(
             resource, vsd_vport_parent['ID'],
-            filters='externalID', filter_value=port['id'])[0]
+            filters='externalID', filter_values=port['id'])[0]
         self.assertEqual(vm_interface['IPv6Address'], "cafe:babe::7/64")
         self.assertIsNone(vm_interface.get('IPAddress'))
 
         # Delete ipv4 subnet to changing dualstack to pure ipv6 stack with vm
         self.delete_subnet(subnetv4)
+        filters, filter_values = self.vsd_client.get_subnet_filters(subnetv6)
         vsd_vport_parent = self.vsd_client.get_global_resource(
             resource,
-            filters='externalID',
-            filter_value=network['id'])[0]
+            filters=filters,
+            filter_values=filter_values)[0]
         self.assertEqual(vsd_vport_parent['IPType'], 'IPV6')
         # Create ipv6 subnet to changing pure ipv6 stack to dualstack with vm
         subnetv4 = self.create_subnet(network, cidr=IPNetwork("10.0.0.0/24"))
@@ -393,7 +417,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                          message="The port did not update properly.")
         vm_interface = self.vsd_client.get_vm_iface(
             resource, vsd_vport_parent['ID'],
-            filters='externalID', filter_value=port['id'])[0]
+            filters='externalID', filter_values=port['id'])[0]
         self.assertEqual(vm_interface['IPAddress'], "10.0.0.9")
         self.assertIsNone(vm_interface.get('IPv6Address'))
 
@@ -407,7 +431,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         vsd_vport_parent = self.vsd_client.get_global_resource(
             resource,
             filters='externalID',
-            filter_value=network['id'])[0]
+            filter_values=network['id'])[0]
         self.assertEqual(vsd_vport_parent['IPType'], 'IPV4')
         # Create ipv6 subnet to changing pure ipv4 stack to dualstack with vm
         self.create_subnet(network, cidr=IPNetwork("cafe:babe::/64"),
@@ -442,21 +466,20 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                 "ip_address": "10.0.0.5",
                 "subnet_id": subnet["id"]
             }
-
         ]
-
         port = self.create_port(network=network, fixed_ips=fixed_ips)
         self.assertIsNotNone(port, "Unable to create port on network")
+        filters, filter_values = self.vsd_client.get_subnet_filters(subnet)
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.L2_DOMAIN,
-            filters='externalID',
-            filter_value=subnet['network_id'])[0]
+            filters=filters,
+            filter_values=filter_values)[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.L2_DOMAIN,
             vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.DISABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_DISABLED,
                          nuage_vport[0]['addressSpoofing'])
 
     @decorators.attr(type='smoke')
@@ -477,16 +500,17 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         ]
         port = self.create_port(network=network, fixed_ips=fixed_ips)
         self.assertIsNotNone(port, "Unable to create port on network")
+        filters, filter_values = self.vsd_client.get_subnet_filters(subnet)
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.L2_DOMAIN,
-            filters='externalID',
-            filter_value=subnet['network_id'])[0]
+            filters=filters,
+            filter_values=filter_values)[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.L2_DOMAIN,
             vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.DISABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_DISABLED,
                          nuage_vport[0]['addressSpoofing'])
 
         # update within subnet should succeed
@@ -499,7 +523,6 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                 "ip_address": "10.0.0.5",
                 "subnet_id": subnet["id"]
             }
-
         ]
         port = self.update_port(port=port, fixed_ips=fixed_ips)
         self.assertIsNotNone(port, "Unable to update port")
@@ -507,8 +530,8 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             constants.L2_DOMAIN,
             vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.DISABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_DISABLED,
                          nuage_vport[0]['addressSpoofing'])
 
     @decorators.attr(type='smoke')
@@ -537,20 +560,20 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                 "ip_address": "10.0.0.5",
                 "subnet_id": subnet["id"]
             }
-
         ]
         port = self.create_port(network=network, fixed_ips=fixed_ips)
         self.assertIsNotNone(port, "Unable to create port on network")
+        filters, filter_values = self.vsd_client.get_subnet_filters(subnet)
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.SUBNETWORK,
-            filters='externalID',
-            filter_value=subnet['network_id'])[0]
+            filters=filters,
+            filter_values=filter_values)[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.DISABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
@@ -599,16 +622,17 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         port = self.create_port(network=network, fixed_ips=fixed_ips,
                                 port_security_enabled=False)
         self.assertIsNotNone(port, "Unable to create port on network")
+        filters, filter_values = self.vsd_client.get_subnet_filters(subnet)
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.SUBNETWORK,
-            filters='externalID',
-            filter_value=subnet['network_id'])[0]
+            filters=filters,
+            filter_values=filter_values)[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.ENABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_ENABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
@@ -657,16 +681,17 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                                 fixed_ips=fixed_ips,
                                 allowed_address_pairs=allowed_address_pairs)
         self.assertIsNotNone(port, "Unable to create port on network")
+        filters, filter_values = self.vsd_client.get_subnet_filters(subnet)
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.SUBNETWORK,
-            filters='externalID',
-            filter_value=subnet['network_id'])[0]
+            filters=filters,
+            filter_values=filter_values)[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.DISABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_DISABLED,
                          nuage_vport[0]['addressSpoofing'])
 
         # update within subnet should succeed
@@ -689,8 +714,8 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.ENABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_ENABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
@@ -733,16 +758,17 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         ]
         port = self.create_port(network=network, fixed_ips=fixed_ips)
         self.assertIsNotNone(port, "Unable to create port on network")
+        filters, filter_values = self.vsd_client.get_subnet_filters(subnet)
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.SUBNETWORK,
-            filters='externalID',
-            filter_value=subnet['network_id'])[0]
+            filters=filters,
+            filter_values=filter_values)[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.DISABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_DISABLED,
                          nuage_vport[0]['addressSpoofing'])
 
         # update within subnet should succeed
@@ -763,8 +789,8 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.DISABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
@@ -782,6 +808,8 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         self.assertEqual(vip_mismatch, False)
         self.assertEqual(mac_mismatch, False)
 
+    @testtools.skipIf(not Topology.has_single_stack_v6_support(),
+                      'No singe-stack v6 supported')
     @decorators.attr(type='smoke')
     def test_nuage_port_fixed_ips_update_dhcp_disabled_subnet_with_vm(self):
         network = self.create_network()
@@ -792,10 +820,11 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         subnetv6 = self.create_subnet(network,
                                       cidr=IPNetwork("cafe:babe::/64"),
                                       ip_version=6, enable_dhcp=False)
+        filters, filter_values = self.vsd_client.get_subnet_filters(subnetv4)
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.L2_DOMAIN,
-            filters='externalID',
-            filter_value=network['id'])[0]
+            filters=filters,
+            filter_values=filter_values)[0]
         fixed_ips = [
             {
                 "ip_address": "10.0.0.3",
@@ -820,8 +849,8 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                               network=network, port_id=port['id'])
         vm_interface = self.vsd_client.get_vm_iface(
             constants.L2_DOMAIN, vsd_vport_parent['ID'],
-            filters='externalID', filter_value=port['id'])[0]
-        self.assertEqual(vm_interface['IPAddress'], "10.0.0.4")
+            filters='externalID', filter_values=port['id'])[0]
+        self.assertEqual('10.0.0.4', vm_interface['IPAddress'])
         self.assertEqual(vm_interface['IPv6Address'], "cafe:babe::4/64")
         fixed_ips = [
             {
@@ -847,7 +876,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                          message="The port did not update properly.")
         vm_interface = self.vsd_client.get_vm_iface(
             constants.L2_DOMAIN, vsd_vport_parent['ID'],
-            filters='externalID', filter_value=port['id'])[0]
+            filters='externalID', filter_values=port['id'])[0]
         self.assertEqual(vm_interface['IPAddress'], "10.0.0.6")
         self.assertEqual(vm_interface['IPv6Address'], "cafe:babe::6/64")
 
@@ -878,16 +907,17 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         port = self.create_port(network=network, fixed_ips=fixed_ips,
                                 allowed_address_pairs=allowed_address_pairs)
         self.assertIsNotNone(port, "Unable to create port on network")
+        filters, filter_values = self.vsd_client.get_subnet_filters(subnet)
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.L2_DOMAIN,
-            filters='externalID',
-            filter_value=subnet['network_id'])[0]
+            filters=filters,
+            filter_values=filter_values)[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.L2_DOMAIN,
             vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.ENABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_ENABLED,
                          nuage_vport[0]['addressSpoofing'])
 
     @decorators.attr(type='smoke')
@@ -908,16 +938,17 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         ]
         port = self.create_port(network=network, fixed_ips=fixed_ips)
         self.assertIsNotNone(port, "Unable to create port on network")
+        filters, filter_values = self.vsd_client.get_subnet_filters(subnet)
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.L2_DOMAIN,
-            filters='externalID',
-            filter_value=subnet['network_id'])[0]
+            filters=filters,
+            filter_values=filter_values)[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.L2_DOMAIN,
             vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.DISABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_DISABLED,
                          nuage_vport[0]['addressSpoofing'])
 
         # update within subnet should succeed
@@ -942,8 +973,8 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             constants.L2_DOMAIN,
             vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.ENABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_ENABLED,
                          nuage_vport[0]['addressSpoofing'])
 
     @decorators.attr(type='smoke')
@@ -984,16 +1015,17 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         port = self.create_port(network=network, fixed_ips=fixed_ips,
                                 allowed_address_pairs=allowed_address_pairs)
         self.assertIsNotNone(port, "Unable to create port on network")
+        filters, filter_values = self.vsd_client.get_subnet_filters(subnet)
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.SUBNETWORK,
-            filters='externalID',
-            filter_value=subnet['network_id'])[0]
+            filters=filters,
+            filter_values=filter_values)[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.DISABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
@@ -1040,16 +1072,17 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         port = self.create_port(network=network, fixed_ips=fixed_ips,
                                 allowed_address_pairs=allowed_address_pairs)
         self.assertIsNotNone(port, "Unable to create port on network")
+        filters, filter_values = self.vsd_client.get_subnet_filters(subnet)
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.SUBNETWORK,
-            filters='externalID',
-            filter_value=subnet['network_id'])[0]
+            filters=filters,
+            filter_values=filter_values)[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.ENABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_ENABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
@@ -1088,16 +1121,17 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         ]
         port = self.create_port(network=network, fixed_ips=fixed_ips)
         self.assertIsNotNone(port, "Unable to create port on network")
+        filters, filter_values = self.vsd_client.get_subnet_filters(subnet)
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.SUBNETWORK,
-            filters='externalID',
-            filter_value=subnet['network_id'])[0]
+            filters=filters,
+            filter_values=filter_values)[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.DISABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_DISABLED,
                          nuage_vport[0]['addressSpoofing'])
 
         if CONF.nuage_sut.ipam_driver == 'nuage_vsd_managed':
@@ -1127,8 +1161,8 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.DISABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
@@ -1176,16 +1210,17 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         port = self.create_port(network=network, fixed_ips=fixed_ips,
                                 allowed_address_pairs=allowed_address_pairs)
         self.assertIsNotNone(port, "Unable to create port on network")
+        filters, filter_values = self.vsd_client.get_subnet_filters(subnet)
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.SUBNETWORK,
-            filters='externalID',
-            filter_value=subnet['network_id'])[0]
+            filters=filters,
+            filter_values=filter_values)[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.DISABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
@@ -1225,8 +1260,8 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.DISABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
@@ -1276,16 +1311,17 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         port = self.create_port(network=network, fixed_ips=fixed_ips,
                                 allowed_address_pairs=allowed_address_pairs)
         self.assertIsNotNone(port, "Unable to create port on network")
+        filters, filter_values = self.vsd_client.get_subnet_filters(subnet)
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.SUBNETWORK,
-            filters='externalID',
-            filter_value=subnet['network_id'])[0]
+            filters=filters,
+            filter_values=filter_values)[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.DISABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
@@ -1325,8 +1361,8 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.DISABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
@@ -1377,16 +1413,17 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         port = self.create_port(network=network, fixed_ips=fixed_ips,
                                 allowed_address_pairs=allowed_address_pairs)
         self.assertIsNotNone(port, "Unable to create port on network")
+        filters, filter_values = self.vsd_client.get_subnet_filters(subnet)
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.SUBNETWORK,
-            filters='externalID',
-            filter_value=subnet['network_id'])[0]
+            filters=filters,
+            filter_values=filter_values)[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.DISABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
@@ -1431,19 +1468,20 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             self.fail("Exception expected when updating to"
                       " a different subnet!")
         except exceptions.BadRequest as e:
-            self.assertIn('Bad request: Error in REST call to VSD: '
+            self.assertIn(self.msg_base +
                           'The IP Address 10.0.0.6 is currently in use '
                           'by subnet', str(e))
+            filters, filter_values = self.vsd_client.get_subnet_filters(subnet)
             vsd_vport_parent = self.vsd_client.get_global_resource(
                 constants.SUBNETWORK,
-                filters='externalID',
-                filter_value=subnet['network_id'])[0]
+                filters=filters,
+                filter_values=filter_values)[0]
             nuage_vport = self.vsd_client.get_vport(
                 constants.SUBNETWORK,
                 vsd_vport_parent['ID'],
                 filters='externalID',
-                filter_value=port['id'])
-            self.assertEqual(constants.DISABLED,
+                filter_values=port['id'])
+            self.assertEqual(SPOOFING_DISABLED,
                              nuage_vport[0]['addressSpoofing'])
             nuage_vport_vips = self.vsd_client.get_virtual_ip(
                 constants.VPORT,
@@ -1488,16 +1526,17 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         port = self.create_port(network=network, fixed_ips=fixed_ips,
                                 allowed_address_pairs=allowed_address_pairs)
         self.assertIsNotNone(port, "Unable to create port on network")
+        filters, filter_values = self.vsd_client.get_subnet_filters(subnet)
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.SUBNETWORK,
-            filters='externalID',
-            filter_value=subnet['network_id'])[0]
+            filters=filters,
+            filter_values=filter_values)[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.ENABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_ENABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
@@ -1550,16 +1589,17 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         port = self.create_port(network=network, fixed_ips=fixed_ips,
                                 allowed_address_pairs=allowed_address_pairs)
         self.assertIsNotNone(port, "Unable to create port on network")
+        filters, filter_values = self.vsd_client.get_subnet_filters(subnet)
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.SUBNETWORK,
-            filters='externalID',
-            filter_value=subnet['network_id'])[0]
+            filters=filters,
+            filter_values=filter_values)[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.DISABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
@@ -1590,8 +1630,8 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.ENABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_ENABLED,
                          nuage_vport[0]['addressSpoofing'])
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
@@ -1648,26 +1688,25 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         port = self.create_port(network=network, fixed_ips=fixed_ips,
                                 allowed_address_pairs=allowed_address_pairs)
         self.assertIsNotNone(port, "Unable to create port on network")
-
+        filters, filter_values = self.vsd_client.get_subnet_filters(subnet)
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.L2_DOMAIN,
-            filters='externalID',
-            filter_value=subnet['network_id'])[0]
+            filters=filters,
+            filter_values=filter_values)[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.L2_DOMAIN,
             vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.ENABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_ENABLED,
                          nuage_vport[0]['addressSpoofing'])
         # Attach subnet
         self.create_router_interface(router_id=router["id"],
                                      subnet_id=subnet["id"])
-
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.SUBNETWORK,
-            filters='externalID',
-            filter_value=subnet['network_id'])[0]
+            filters=filters,
+            filter_values=filter_values)[0]
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
             constants.VPORT,
             nuage_vport[0]['ID'])
@@ -1683,8 +1722,8 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.DISABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_DISABLED,
                          nuage_vport[0]['addressSpoofing'])
 
     @decorators.attr(type='smoke')
@@ -1713,16 +1752,17 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         ]
         port = self.create_port(network=network, fixed_ips=fixed_ips)
         self.assertIsNotNone(port, "Unable to create port on network")
+        filters, filter_values = self.vsd_client.get_subnet_filters(subnet)
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.SUBNETWORK,
-            filters='externalID',
-            filter_value=subnet['network_id'])[0]
+            filters=filters,
+            filter_values=filter_values)[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.DISABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_DISABLED,
                          nuage_vport[0]['addressSpoofing'])
 
         if CONF.nuage_sut.ipam_driver == 'nuage_vsd_managed':
@@ -1752,8 +1792,8 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             constants.SUBNETWORK,
             vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.DISABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         valid_vips = ['10.0.0.4', allowed_address_pairs[0]['ip_address']]
         nuage_vport_vips = self.vsd_client.get_virtual_ip(
@@ -1770,18 +1810,20 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         self.admin_routers_client.remove_router_interface(
             router['id'],
             subnet_id=subnet['id'])
+        filters, filter_values = self.vsd_client.get_subnet_filters(subnet)
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.L2_DOMAIN,
-            filters='externalID',
-            filter_value=subnet['network_id'])[0]
+            filters=filters,
+            filter_values=filter_values)[0]
         nuage_vport = self.vsd_client.get_vport(
             constants.L2_DOMAIN,
             vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.ENABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_ENABLED,
                          nuage_vport[0]['addressSpoofing'])
 
+    @decorators.attr(type='smoke')
     def test_delete_unbound_port_with_hanging_vminterface(self):
         # OPENSTACK-2797
         network = self.create_network()
@@ -1796,8 +1838,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                         port['id'])
 
         # Find vport
-        l2domain = self.vsd.get_l2domain(by_network_id=network['id'],
-                                         cidr='10.0.0.0')
+        l2domain = self.vsd.get_l2domain(by_subnet=subnet)
         vport = self.vsd.get_vport(l2domain=l2domain, by_port_id=port['id'])
 
         # Create "Fake" VM interface to simulate following behavior:
@@ -1825,6 +1866,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         vport = self.vsd.get_vport(l2domain=l2domain, by_port_id=port['id'])
         self.assertIsNone(vport, 'Vport not deleted by Port delete statement')
 
+    @testtools.skipIf(Topology.is_v5, 'Unsupported pre-6.0')
     def test_delete_ips_from_port_with_vm(self):
         # OPENSTACK-2808
         network = self.create_network()
@@ -1844,8 +1886,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                               network=network, port_id=port['id'])
         # update port to not have ip
         self.update_port(port=port, fixed_ips=[])
-        l2domain = self.vsd.get_l2domain(by_network_id=network['id'],
-                                         cidr='10.0.0.0')
+        l2domain = self.vsd.get_l2domain(by_subnet=subnet)
         vport = self.vsd.get_vport(l2domain=l2domain, by_port_id=port['id'])
         self.assertIsNone(vport, "vport should be deleted by setting "
                                  "# fixed ips to 0.")
@@ -1892,8 +1933,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                                 fixed_ips=[{'ip_address': '10.0.0.9'},
                                            {'ip_address': '10.0.0.10'}])
 
-        l3subnet = self.vsd.get_subnet_from_domain(
-            by_network_id=network['id'], cidr='10.0.0.0/24')
+        l3subnet = self.vsd.get_subnet_from_domain(by_subnet=subnet)
         vport = self.vsd.get_vport(subnet=l3subnet, by_port_id=port['id'])
         self.assertIsNotNone(vport, "Port updated to have two ips,"
                                     "vport should exist.")

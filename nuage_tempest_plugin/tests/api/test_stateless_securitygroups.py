@@ -42,10 +42,12 @@ class SecurityGroupsTopology(object):
     @property
     def vsd_vport_parent(self):
         if not getattr(self, '_vsd_vport_parent', False):
+            filters, filter_values = self.vsd_client.get_subnet_filters(
+                self.subnet)
             self._vsd_vport_parent = self.vsd_client.get_global_resource(
                 self.vsd_vport_parent_resource,
-                filters='externalID',
-                filter_value=self.subnet['network_id'])[0]
+                filters=filters,
+                filter_values=filter_values)[0]
         return self._vsd_vport_parent
 
     @property
@@ -364,3 +366,10 @@ class StatelessSecuritygroupTest(network_mixin.NetworkMixin,
 class StatelessSecuritygroupTestV6(StatelessSecuritygroupTest):
     _ether_type = 'ipv6'
     _cidr = 'cafe:babe::/64'
+
+    @classmethod
+    def skip_checks(cls):
+        super(StatelessSecuritygroupTestV6, cls).skip_checks()
+        if not Topology.has_single_stack_v6_support():
+            msg = 'No single-stack v6 support.'
+            raise cls.skipException(msg)

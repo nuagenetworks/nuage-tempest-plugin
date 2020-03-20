@@ -17,8 +17,6 @@ from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
-# TODO(TEAM) Make inherit from NuageBaseTest
-
 CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
 
@@ -83,7 +81,10 @@ class BaseNuageNetworksIpv6TestCase(NuageBaseTest):
                 ip_version=6,
                 cidr=cidr6,
                 mask_bits=IPNetwork(cidr6).prefixlen,
-                enable_dhcp=vsd_subnet.enable_dhcpv6,
+                enable_dhcp=(
+                    vsd_subnet.enable_dhcpv6 if Topology.has_dhcp_v6_support()
+                    else False
+                ),
                 nuagenet=vsd_subnet.id,
                 net_partition=self.net_partition)
 
@@ -148,16 +149,22 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
             if cidr4:
                 self.assertEqual(str(cidr4.ip), l2domain_template.address)
 
-                if "netmask" not in kwargs:
+                if not kwargs.get('netmask'):
                     netmask = str(cidr4.netmask)
                     self.assertEqual(netmask, l2domain_template.netmask)
 
-                if "gateway" not in kwargs:
+                if not kwargs.get('gateway'):
                     gateway_ip = str(IPAddress(cidr4) + 1)
-                    if l2domain_template.enable_dhcpv4:
+                    if not Topology.has_full_dhcp_control_in_vsd():
+                        self.assertEqual(gateway_ip, l2domain_template.gateway)
+                        kwargs.pop('gateway', None)  # in case set to None
+                    elif l2domain_template.enable_dhcpv4:
                         self.assertEqual(gateway_ip, l2domain_template.gateway)
                     else:
                         self.assertIsNone(l2domain_template.gateway)
+
+                if not Topology.has_full_dhcp_control_in_vsd():
+                    kwargs.pop('enable_dhcpv4', None)
 
             else:
                 self.assertIsNone(l2domain_template.address)
@@ -166,19 +173,25 @@ class BaseVSDManagedNetworksIPv6Test(BaseNuageNetworksIpv6TestCase):
 
             if cidr6:
                 self.assertEqual(str(cidr6), l2domain_template.ipv6_address)
-                if not kwargs.get('ipv6_gateway'):
+                if not Topology.has_full_dhcp_control_in_vsd():
+                    kwargs.pop('enable_dhcpv6', None)
+                    kwargs.pop('ipv6_gateway', None)
+
+                elif not kwargs.get('ipv6_gateway'):
                     if kwargs.get('enable_dhcpv6'):
                         gateway_ip = str(IPAddress(cidr6) + 1)
                         self.assertEqual(gateway_ip,
                                          l2domain_template.ipv6_gateway)
                     else:
                         self.assertIsNone(l2domain_template.ipv6_gateway)
+
         else:
             self.assertFalse(l2domain_template.dhcp_managed)
 
         # verify all other kwargs as attributes (key,value) pairs
         for key, value in iteritems(kwargs):
-            self.assertEqual(value, getattr(l2domain_template, key))
+            self.assertEqual(value, getattr(l2domain_template, key),
+                             'Unexpected value for {}'.format(key))
 
         self.assertIsNone(l2domain_template.external_id)
 

@@ -214,7 +214,7 @@ class NuageGatewayTestRedundancy(base.BaseNuageGatewayTest,
         # Get the vlan
         gw_vlan = self.nuage_client.get_gateway_vlan(
             n_constants.GATEWAY_PORT, gw_port['ID'], filters='value',
-            filter_value=900)
+            filter_values=900)
         self.group_vlans.append(gw_vlan)
 
         vlan = body['nuage_gateway_vlan']
@@ -233,7 +233,7 @@ class NuageGatewayTestRedundancy(base.BaseNuageGatewayTest,
         # Get the vlan
         gw_vlan = self.nuage_client.get_gateway_vlan(
             n_constants.GATEWAY_PORT, gw_port['ID'], filters='value',
-            filter_value=211)
+            filter_values=211)
 
         self.group_vlans.append(gw_vlan)
         self.verify_vlan_properties(gw_vlan[0], vlan)
@@ -244,7 +244,7 @@ class NuageGatewayTestRedundancy(base.BaseNuageGatewayTest,
         # Verify in VSD
         gw_vlan = self.nuage_client.get_gateway_vlan(
             n_constants.GATEWAY_PORT, gw_port['ID'], filters='value',
-            filter_value=211)
+            filter_values=211)
 
         self.assertEmpty(gw_vlan)
 
@@ -271,7 +271,7 @@ class NuageGatewayTestRedundancy(base.BaseNuageGatewayTest,
         # Get the vlan
         gw_vlan = self.nuage_client.get_gateway_vlan(
             n_constants.GATEWAY_PORT, gw_port['ID'], filters='value',
-            filter_value=210)
+            filter_values=210)
 
         self.verify_vlan_properties(gw_vlan[0], vlan)
 

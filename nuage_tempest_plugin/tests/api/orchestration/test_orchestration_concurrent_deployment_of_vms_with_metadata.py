@@ -23,17 +23,23 @@ CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
 
 
-class ConcurrentUserDataTest(
+class OrchestrationVMwithMetadata(
         nuage_base.NuageBaseOrchestrationTest, NuageBaseTest):
+
+    @classmethod
+    def skip_checks(cls):
+        super(OrchestrationVMwithMetadata, cls).skip_checks()
+        if not CONF.compute_feature_enabled.metadata_service:
+            raise cls.skipException('Test requires functional metadata agent')
 
     @classmethod
     def setup_credentials(cls):
         cls.set_network_resources()
-        super(ConcurrentUserDataTest, cls).setup_credentials()
+        super(OrchestrationVMwithMetadata, cls).setup_credentials()
 
     @classmethod
     def setup_clients(cls):
-        super(ConcurrentUserDataTest, cls).setup_clients()
+        super(OrchestrationVMwithMetadata, cls).setup_clients()
         cls.floating_ips_client = cls.os_admin.floating_ips_client
 
     @decorators.attr(type='smoke')

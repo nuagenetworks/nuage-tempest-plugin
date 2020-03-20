@@ -1,12 +1,15 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
 
-from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
-from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
-from nuage_tempest_plugin.lib.utils import constants as nuage_constants
-from nuage_tempest_plugin.services.nuage_client import NuageRestClient
+import testtools
 
 from tempest.lib import decorators
+
+from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
+from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import constants as nuage_constants
+from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
 
 class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
@@ -30,17 +33,33 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
                                   enable_dhcp=enable_dhcp,
                                   cleanup=cleanup)
 
-    def _verify_ipv6_subnet_with_vsd_l2_domain(self, subnet, external_id,
-                                               cidr):
-        vsd_l2_domain = self.vsd.get_l2domain(
-            by_network_id=external_id, cidr=cidr)
+    def _verify_ipv6_subnet_with_vsd_l2_domain(self, subnet, by_subnet):
+        """_verify_ipv6_subnet_with_vsd_l2_domain
+
+        Verifies the VSD l2 domain defined by 'by_subnet' with the openstack
+        subnet 'subnet'.
+
+        @param by_subnet: the subnet via which the l2 domain will be retrieved
+        @param subnet: the subnet to compare the L2 domain with
+        """
+        vsd_l2_domain = self.vsd.get_l2domain(by_subnet=by_subnet)
         self.assertIsNotNone(vsd_l2_domain)
-        self.assertEqual('DUALSTACK', vsd_l2_domain.ip_type)
         self.assertIsNone(subnet['ipv6_ra_mode'])
         self.assertIsNone(subnet['ipv6_address_mode'])
-        self.assertEqual(subnet['cidr'], vsd_l2_domain.ipv6_address)
+        if Topology.has_single_stack_v6_support():
+            self.assertEqual('DUALSTACK', vsd_l2_domain.ip_type)
+            self.assertEqual(subnet['cidr'], vsd_l2_domain.ipv6_address)
+            self.assertEqual(subnet.get('enable_dhcp'),
+                             vsd_l2_domain.enable_dhcpv6)
+        else:
+            if subnet['enable_dhcp'] or by_subnet['enable_dhcp']:
+                self.assertEqual('DUALSTACK', vsd_l2_domain.ip_type)
+                self.assertEqual(subnet['cidr'], vsd_l2_domain.ipv6_address)
+            else:
+                self.assertIsNone(vsd_l2_domain.ip_type)
+                self.assertIsNone(vsd_l2_domain.ipv6_address)
+
         if subnet.get('enable_dhcp'):
-            self.assertTrue(vsd_l2_domain.enable_dhcpv6)
             filters = {
                 'device_owner': 'network:dhcp:nuage',
                 'network_id': subnet['network_id']
@@ -51,12 +70,11 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
                 if fixed_ip['subnet_id'] == subnet['id']:
                     self.assertEqual(fixed_ip['ip_address'],
                                      vsd_l2_domain.ipv6_gateway)
-        else:
-            self.assertFalse(vsd_l2_domain.enable_dhcpv6)
+        elif not Topology.is_v5:
             self.assertIsNone(vsd_l2_domain.ipv6_gateway)
         self.assertFalse(subnet['vsd_managed'])
-        self.assertEqual(subnet['enable_dhcp'],
-                         False, "IPv6 subnet MUST have enable_dhcp=FALSE")
+        self.assertFalse(subnet['enable_dhcp'],
+                         'IPv6 subnet MUST have enable_dhcp=FALSE')
 
     ###########################################################################
     # Typical
@@ -72,8 +90,7 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
 
         # Then a VSD L2 domain is created with type IPv4
         vsd_l2_domain = self.vsd.get_l2domain(
-            by_network_id=ipv4_subnet['network_id'],
-            cidr=ipv4_subnet['cidr'])
+            by_subnet=ipv4_subnet)
         self.assertIsNotNone(vsd_l2_domain)
         self.assertEqual("IPV4", vsd_l2_domain.ip_type)
 
@@ -84,7 +101,7 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
 
         # Then the VSD L2 domain is changed to IP type DualStack
         self._verify_ipv6_subnet_with_vsd_l2_domain(
-            ipv6_subnet, ipv4_subnet['network_id'], ipv4_subnet['cidr'])
+            ipv6_subnet, by_subnet=ipv4_subnet)
 
         router = self.create_router()
         self.assertIsNotNone(router)
@@ -96,14 +113,15 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
 
         vsd_l3_domain.fetch()
         vsd_l3_subnet = self.vsd.get_subnet_from_domain(
-            domain=vsd_l3_domain, by_network_id=ipv4_subnet['network_id'],
-            cidr=ipv4_subnet['cidr'])
+            domain=vsd_l3_domain, by_subnet=ipv4_subnet)
         port = self.create_port(network)
         self._verify_port(port, subnet4=ipv4_subnet, subnet6=None),
         self._verify_vport_in_l3_subnet(port, vsd_l3_subnet)
         server1 = self.create_tenant_server(ports=[port])
         self.assertIsNotNone(server1)
 
+    @testtools.skipUnless(Topology.has_dhcp_v6_support(),
+                          'No dhcp v6 supported')
     @decorators.attr(type='smoke')
     def test_os_managed_dual_stack_l3_subnet_with_dns_server(self):
         # Provision OpenStack network
@@ -120,11 +138,7 @@ class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
                                          enable_dhcp=True, **kwargs[6])
 
         nuage_subnet = self.nuage_client.get_domain_subnet(
-            parent=None, parent_id=None,
-            filters=['externalID', self._vsd_ipv4_address,
-                     self._vsd_ipv6_address],
-            filter_value=[ipv4_subnet['network_id'], ipv4_subnet['cidr'],
-                          ipv6_subnet['cidr']])
+            None, None, by_subnet=ipv4_subnet)
         nuage_dhcpv4opt = self.nuage_client.get_dhcpoption(
             nuage_constants.SUBNETWORK, nuage_subnet[0]['ID'],
             ipv4_subnet['ip_version'])

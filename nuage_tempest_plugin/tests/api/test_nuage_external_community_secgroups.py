@@ -90,7 +90,7 @@ class NuageExtSecGroup(test_security_groups_nuage.SecGroupTestNuageBase):
             esg_router['id'])
         l3domain = self.nuageclient.get_l3domain(
             filters='externalID',
-            filter_value=l3domain_ext_id)
+            filter_values=l3domain_ext_id)
 
         if ext_sg_rule['direction'] == 'egress':
             nuage_eacl_template = self.nuageclient.\
@@ -102,7 +102,7 @@ class NuageExtSecGroup(test_security_groups_nuage.SecGroupTestNuageBase):
                         constants.EGRESS_ACL_TEMPLATE,
                         nuage_eacl_template[0]['ID'],
                         filters='ID',
-                        filter_value=ext_sg_rule['id'])
+                        filter_values=ext_sg_rule['id'])
             else:
                 nuage_entrytemplate = self.nuageclient.\
                     get_egressacl_entrytemplate(
@@ -119,7 +119,7 @@ class NuageExtSecGroup(test_security_groups_nuage.SecGroupTestNuageBase):
                         constants.INGRESS_ACL_TEMPLATE,
                         nuage_iacl_template[0]['ID'],
                         filters='ID',
-                        filter_value=ext_sg_rule['id'])
+                        filter_values=ext_sg_rule['id'])
             else:
                 nuage_entrytemplate = self.nuageclient. \
                     get_ingressacl_entrytemplate(

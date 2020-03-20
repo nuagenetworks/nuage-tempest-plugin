@@ -39,7 +39,7 @@ class TestSecGroupScaleBase(SecGroupTestNuageBase):
                 self.nuage_domain_type,
                 nuage_domain[0]['ID'],
                 filters='externalID',
-                filter_value=self.port['id'])
+                filter_values=self.port['id'])
             nuage_policy_grps = self.nuage_client.get_policygroup(
                 n_constants.VPORT,
                 vport[0]['ID'])
@@ -73,7 +73,7 @@ class TestSecGroupScaleBase(SecGroupTestNuageBase):
             vport = self.nuage_client.get_vport(self.nuage_domain_type,
                                                 nuage_domain[0]['ID'],
                                                 filters='externalID',
-                                                filter_value=self.port['id'])
+                                                filter_values=self.port['id'])
             nuage_policy_grps = self.nuage_client.get_policygroup(
                 n_constants.VPORT,
                 vport[0]['ID'])
@@ -105,10 +105,7 @@ class TestSecGroupScaleTestL2Domain(TestSecGroupScaleBase):
         name = data_utils.rand_name('network-')
         cls.network = cls.create_network(name)
         cls.subnet = cls.create_subnet(cls.network)
-        nuage_l2domain = cls.nuage_client.get_l2domain(
-            filters=['externalID', 'address'],
-            filter_value=[cls.subnet['network_id'],
-                          cls.subnet['cidr']])
+        nuage_l2domain = cls.nuage_client.get_l2domain(by_subnet=cls.subnet)
         cls.nuage_any_domain = nuage_l2domain
         cls.nuage_domain_type = n_constants.L2_DOMAIN
 
@@ -150,7 +147,7 @@ class TestSecGroupScaleTestL3Domain(TestSecGroupScaleBase):
 
         nuage_l3domain = cls.nuage_client.get_l3domain(
             filters='externalID',
-            filter_value=cls.router['id'])
+            filter_values=cls.router['id'])
 
         cls.nuage_any_domain = nuage_l3domain
         cls.nuage_domain_type = n_constants.DOMAIN

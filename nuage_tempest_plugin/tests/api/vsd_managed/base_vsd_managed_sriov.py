@@ -37,7 +37,8 @@ class BaseVSDManagedSRIOV(
             'cidr': cidr,
             'gateway': gateway,
         }
-        l2dom_template = cls.create_vsd_dhcpmanaged_l2dom_template(**kwargs)
+        l2dom_template = cls.create_cls_vsd_dhcpmanaged_l2dom_template(
+            **kwargs)
         vsd_l2_subnet = cls.create_vsd_l2domain(tid=l2dom_template[0]['ID'])
         return vsd_l2_subnet, l2dom_template
 

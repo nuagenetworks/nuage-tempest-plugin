@@ -27,10 +27,7 @@ class NuageExtraDHCPOptionsBaseL2(
         cls.osmgd_l2_subnet = cls.create_subnet(cls.osmgd_l2_network)
         cls.os_l2_port = cls.create_port(cls.osmgd_l2_network)
         cls.l2domain = cls.nuage_client.get_l2domain(
-            filters=['externalID',
-                     'address' if cls._ip_version == 4 else 'IPv6Address'],
-            filter_value=[cls.osmgd_l2_subnet['network_id'],
-                          cls.osmgd_l2_subnet['cidr']])
+            by_subnet=cls.osmgd_l2_subnet)
 
     def _nuage_crud_port_with_dhcp_opts(self, nuage_network_type,
                                         extra_dhcp_opts, new_extra_dhcp_opts):
@@ -253,13 +250,13 @@ class NuageExtraDHCPOptionsOSManagedL2Test(NuageExtraDHCPOptionsBaseL2):
 
     @decorators.attr(type='smoke')
     @testtools.skipIf(Topology.before_openstack('queens'),
-                      'Unsupported pre queens')
+                      'Unsupported pre-queens')
     def test_nuage_l2_port_with_numerical_opt_name(self):
         self._check_nuage_crud_port_with_numerical_opt_name()
 
     @decorators.attr(type='smoke')
     @testtools.skipIf(Topology.before_openstack('queens'),
-                      'Unsupported pre queens')
+                      'Unsupported pre-queens')
     def test_nuage_l2_delete_port_extra_dhcp_opt(self):
         self._check_nuage_delete_port_extra_dhcp_opt()
 
@@ -361,3 +358,10 @@ class NuageExtraDHCPOptionsOSv6ManagedL2Test(
         NuageExtraDHCPOptionsOSManagedL2Test):
 
     _ip_version = 6
+
+    @classmethod
+    def skip_checks(cls):
+        super(NuageExtraDHCPOptionsOSv6ManagedL2Test, cls).skip_checks()
+        if not Topology.has_single_stack_v6_support():
+            msg = 'No single-stack v6 support.'
+            raise cls.skipException(msg)

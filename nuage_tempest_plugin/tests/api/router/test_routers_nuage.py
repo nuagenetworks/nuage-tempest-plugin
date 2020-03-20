@@ -54,14 +54,6 @@ class NuageRoutersTest(base.BaseNetworkTest):
         expected_exception_from_topology = exceptions.ServerFault
 
     @classmethod
-    def create_port(cls, network, **kwargs):
-        if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
-            kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
-        if CONF.network.port_profile and 'binding:profile' not in kwargs:
-            kwargs['binding:profile'] = CONF.network.port_profile
-        return super(NuageRoutersTest, cls).create_port(network, **kwargs)
-
-    @classmethod
     def skip_checks(cls):
         super(NuageRoutersTest, cls).skip_checks()
         if not utils.is_extension_enabled('router', 'network'):
@@ -104,6 +96,21 @@ class NuageRoutersTest(base.BaseNetworkTest):
 
     # copy of RoutersTest - end
 
+    @staticmethod
+    def _expected_l2domain_name(network, subnet):
+        if Topology.is_v5:
+            return subnet['id']
+        else:
+            return network['id'] + '_' + subnet['id']
+
+    @classmethod
+    def create_port(cls, network, **kwargs):
+        if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
+            kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
+        if CONF.network.port_profile and 'binding:profile' not in kwargs:
+            kwargs['binding:profile'] = CONF.network.port_profile
+        return super(NuageRoutersTest, cls).create_port(network, **kwargs)
+
     @decorators.attr(type='smoke')
     def test_create_show_list_update_delete_router(self):
         # Create a router
@@ -118,7 +125,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
         # VSD validation
         rtr_id = create_body['router']['id']
         nuage_domain = self.nuage_client.get_l3domain(
-            filters='externalID', filter_value=rtr_id)
+            filters='externalID', filter_values=rtr_id)
         self.assertEqual(nuage_domain[0]['description'], name)
         nuage_zones = self.nuage_client.get_zone(
             parent_id=nuage_domain[0]['ID'])
@@ -144,8 +151,8 @@ class NuageRoutersTest(base.BaseNetworkTest):
                 group_resp = self.nuage_client.get_resource(
                     resource=n_constants.GROUP,
                     filters='externalID',
-                    filter_value=(self.routers_client.tenant_id +
-                                  '@openstack'),
+                    filter_values=(self.routers_client.tenant_id +
+                                   '@openstack'),
                     netpart_name=self.nuage_client.def_netpart_name)
                 self.assertIsNot(group_resp, "",
                                  "User Group on VSD for the user who "
@@ -154,8 +161,8 @@ class NuageRoutersTest(base.BaseNetworkTest):
                                  self.routers_client.tenant_id)
             user_resp = self.nuage_client.get_user(
                 filters='externalID',
-                filter_value=(self.routers_client.tenant_id +
-                              '@openstack'),
+                filter_values=(self.routers_client.tenant_id +
+                               '@openstack'),
                 netpart_name=self.nuage_client.def_netpart_name)
             self.assertIsNot(user_resp, "",
                              "User on VSD for the user who created the "
@@ -167,7 +174,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
             resource_id=nuage_domain[0]['ID'],
             child_resource=n_constants.EGRESS_ACL_TEMPLATE,
             filters='externalID',
-            filter_value=self.nuage_client.get_vsd_external_id(
+            filter_values=self.nuage_client.get_vsd_external_id(
                 rtr_id))
         self.assertIsNot(default_egress_tmpl,
                          "",
@@ -178,7 +185,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
             resource_id=nuage_domain[0]['ID'],
             child_resource=n_constants.INGRESS_ACL_TEMPLATE,
             filters='externalID',
-            filter_value=self.nuage_client.get_vsd_external_id(
+            filter_values=self.nuage_client.get_vsd_external_id(
                 rtr_id))
         self.assertIsNot(default_ingress_tmpl,
                          "",
@@ -190,7 +197,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
                 resource_id=nuage_domain[0]['ID'],
                 child_resource=n_constants.INGRESS_ADV_FWD_TEMPLATE,
                 filters='externalID',
-                filter_value=self.nuage_client.get_vsd_external_id(
+                filter_values=self.nuage_client.get_vsd_external_id(
                     rtr_id))
         self.assertIsNot(default_ingress_awd_tmpl,
                          "",
@@ -228,15 +235,12 @@ class NuageRoutersTest(base.BaseNetworkTest):
         network = self.create_network()
         subnet = self.create_subnet(network)
         # Validate that an L2Domain is created on VSD for the subnet creation
-        nuage_l2dom = self.nuage_client.get_l2domain(
-            filters=['externalID', 'address'],
-            filter_value=[subnet['network_id'], subnet['cidr']])
+        nuage_l2dom = self.nuage_client.get_l2domain(by_subnet=subnet)
         self.assertEqual(nuage_l2dom[0]['name'],
-                         network['id'] + '_' + subnet['id'])
-
+                         self._expected_l2domain_name(network, subnet))
         router = self._create_router(data_utils.rand_name('router-'))
         nuage_domain = self.nuage_client.get_l3domain(
-            filters='externalID', filter_value=router['id'])
+            filters='externalID', filter_values=router['id'])
         # Add router interface with subnet id
         interface = self.routers_client.add_router_interface(
             router['id'], subnet_id=subnet['id'])
@@ -251,30 +255,25 @@ class NuageRoutersTest(base.BaseNetworkTest):
                          router['id'])
         # Validate VSD L2 Domain created above is deleted and added as a
         # L3Domain subnet
-        nuage_l2dom = self.nuage_client.get_l2domain(
-            filters=['externalID', 'address'],
-            filter_value=[subnet['network_id'], subnet['cidr']])
+        nuage_l2dom = self.nuage_client.get_l2domain(by_subnet=subnet)
         self.assertEqual(nuage_l2dom, '', "L2 domain is not deleted")
         nuage_domain_subnet = self.nuage_client.get_domain_subnet(
             parent=n_constants.DOMAIN, parent_id=nuage_domain[0]['ID'])
-
         self.assertEqual(nuage_domain_subnet[0]['name'],
-                         network['id'] + '_' + subnet['id'])
+                         self._expected_l2domain_name(network, subnet))
 
     @decorators.attr(type='smoke')
     def test_add_remove_router_interface_with_port_id(self):
         network = self.create_network()
         subnet = self.create_subnet(network)
         # Validate that an L2Domain is created on VSD for the subnet creation
-        nuage_l2dom = self.nuage_client.get_l2domain(
-            filters=['externalID', 'address'],
-            filter_value=[subnet['network_id'], subnet['cidr']])
-        self.assertEqual(nuage_l2dom[0]['name'],
-                         network['id'] + '_' + subnet['id'])
+        nuage_l2dom = self.nuage_client.get_l2domain(by_subnet=subnet)
+        self.assertEqual(self._expected_l2domain_name(network, subnet),
+                         nuage_l2dom[0]['name'])
 
         router = self._create_router(data_utils.rand_name('router-'))
         nuage_domain = self.nuage_client.get_l3domain(
-            filters='externalID', filter_value=router['id'])
+            filters='externalID', filter_values=router['id'])
         port = self.create_port(
             network=network)
         # add router interface to port created above
@@ -291,15 +290,13 @@ class NuageRoutersTest(base.BaseNetworkTest):
                          router['id'])
         # Validate L2 Domain created above is deleted and added as a L3Domain
         # subnet
-        nuage_l2dom = self.nuage_client.get_l2domain(
-            filters=['externalID', 'address'],
-            filter_value=[subnet['network_id'], subnet['cidr']])
+        nuage_l2dom = self.nuage_client.get_l2domain(by_subnet=subnet)
         self.assertEqual(
             nuage_l2dom, '', "L2 domain is not deleted in VSD")
         nuage_domain_subnet = self.nuage_client.get_domain_subnet(
             n_constants.DOMAIN, nuage_domain[0]['ID'])
-        self.assertEqual(nuage_domain_subnet[0]['name'],
-                         network['id'] + '_' + subnet['id'])
+        self.assertEqual(self._expected_l2domain_name(network, subnet),
+                         nuage_domain_subnet[0]['name'])
 
     @utils.requires_ext(extension='extraroute', service='network')
     @decorators.attr(type='smoke')
@@ -313,7 +310,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
         # VSD validation
         # Verify Router is created in VSD
         nuage_domain = self.nuage_client.get_l3domain(
-            filters='externalID', filter_value=self.router['id'])
+            filters='externalID', filter_values=self.router['id'])
         self.assertEqual(
             nuage_domain[0]['description'], self.router['name'])
 
@@ -359,7 +356,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
         # VSD validation
         # Verify Router is created in VSD
         nuage_domain = self.nuage_client.get_l3domain(
-            filters='externalID', filter_value=self.router['id'])
+            filters='externalID', filter_values=self.router['id'])
         self.assertEqual(
             nuage_domain[0]['description'], self.router['name'])
 
@@ -398,12 +395,17 @@ class NuageRoutersTest(base.BaseNetworkTest):
         wrong_destination = str(self.cidr[1]) + '/24'
         expected_exception = exceptions.BadRequest
         if Topology.before_openstack('stein'):
-            expected_error = ('Error in REST call to VSD: Network '
-                              'IP Address {} must have host bits set '
-                              'to 0.'.format(self.cidr[1]))
-            if Topology.before_nuage('20.5'):
+            if Topology.is_v5:
                 expected_exception = exceptions.ServerFault
-                expected_error = 'Nuage API: ' + expected_error
+                base_err_msg = 'Nuage API: '
+            elif Topology.before_nuage('20.5'):
+                expected_exception = exceptions.ServerFault
+                base_err_msg = 'Nuage API: Error in REST call to VSD: '
+            else:
+                base_err_msg = 'Error in REST call to VSD: '
+            expected_error = (
+                base_err_msg + 'Network IP Address {} must have host '
+                               'bits set to 0.'.format(self.cidr[1]))
         else:
             expected_error = ("Invalid input for routes. Reason: '{}' is not "
                               "a recognized CIDR".format(wrong_destination))
@@ -443,11 +445,9 @@ class NuageRoutersTest(base.BaseNetworkTest):
         network = self.create_network()
         subnet = self.create_subnet(network)
         # Validate that L2Domain is created on VSD
-        nuage_l2dom = self.nuage_client.get_l2domain(
-            filters=['externalID', 'address'],
-            filter_value=[subnet['network_id'], subnet['cidr']])
+        nuage_l2dom = self.nuage_client.get_l2domain(by_subnet=subnet)
         self.assertEqual(nuage_l2dom[0]['name'],
-                         network['id'] + '_' + subnet['id'])
+                         self._expected_l2domain_name(network, subnet))
 
         # Create net-partition
         netpart_name = data_utils.rand_name('netpart')
@@ -467,7 +467,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
 
         # Verify Router is created in correct net-partition
         nuage_domain = self.nuage_client.get_l3domain(
-            filters='externalID', filter_value=rtr_body['router']['id'],
+            filters='externalID', filter_values=rtr_body['router']['id'],
             netpart_name=netpart_name)
         self.assertEqual(rtr_body['router']['name'], nuage_domain[0][
             'description'])
@@ -517,7 +517,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
 
         # Verify router is created with correct template
         nuage_domain = self.nuage_client.get_l3domain(
-            filters='externalID', filter_value=rtr_body['router']['id'])
+            filters='externalID', filter_values=rtr_body['router']['id'])
         self.assertEqual(rtr_body['router']['name'], nuage_domain[0][
             'description'])
         self.assertEqual(nuage_template[0]['ID'],
@@ -576,7 +576,8 @@ class NuageRoutersTest(base.BaseNetworkTest):
 
             # Verify router is created in VSD with correct rt/rd values
             nuage_domain = self.nuage_client.get_l3domain(
-                filters='externalID', filter_value=create_body['router']['id'])
+                filters='externalID',
+                filter_values=create_body['router']['id'])
             self.assertEqual(create_body['router']['name'], nuage_domain[0][
                 'description'])
             self.assertEqual(rtrd['rd'], nuage_domain[0]['routeDistinguisher'])
@@ -595,7 +596,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
 
         # Verify router is created in VSD
         nuage_domain = self.nuage_client.get_l3domain(
-            filters='externalID', filter_value=create_body['router']['id'])
+            filters='externalID', filter_values=create_body['router']['id'])
         self.assertEqual(create_body['router']['name'],
                          nuage_domain[0]['description'])
 
@@ -607,7 +608,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
 
         # Get the domain from VSD and verify that rt/rd are updated
         nuage_domain = self.nuage_client.get_l3domain(
-            filters='externalID', filter_value=create_body['router']['id'])
+            filters='externalID', filter_values=create_body['router']['id'])
         self.assertEqual(rd, nuage_domain[0]['routeDistinguisher'])
         self.assertEqual(rt, nuage_domain[0]['routeTarget'])
 
@@ -622,7 +623,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
 
         # Verify router is created in VSD
         nuage_domain = self.nuage_client.get_l3domain(
-            filters='externalID', filter_value=create_body['router']['id'])
+            filters='externalID', filter_values=create_body['router']['id'])
         self.assertEqual(create_body['router']['name'],
                          nuage_domain[0]['description'])
 
@@ -632,7 +633,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
 
         # Get the domain from VSD and verify that rt/rd is not updated
         nuage_domain = self.nuage_client.get_l3domain(
-            filters='externalID', filter_value=create_body['router']['id'])
+            filters='externalID', filter_values=create_body['router']['id'])
         self.assertEqual(create_body['router']['rd'],
                          nuage_domain[0]['routeDistinguisher'])
         self.assertEqual(create_body['router']['rt'],
@@ -649,7 +650,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
 
         # Verify router is created in VSD
         nuage_domain = self.nuage_client.get_l3domain(
-            filters='externalID', filter_value=create_body['router']['id'])
+            filters='externalID', filter_values=create_body['router']['id'])
         self.assertEqual(create_body['router']['name'],
                          nuage_domain[0]['description'])
 
@@ -659,7 +660,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
 
         # Get the domain from VSD and verify that rt is updated
         nuage_domain = self.nuage_client.get_l3domain(
-            filters='externalID', filter_value=create_body['router']['id'])
+            filters='externalID', filter_values=create_body['router']['id'])
         self.assertEqual(rt, nuage_domain[0]['routeTarget'])
 
     @decorators.attr(type='smoke')
@@ -673,7 +674,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
 
         # Verify router is created in VSD
         nuage_domain = self.nuage_client.get_l3domain(
-            filters='externalID', filter_value=create_body['router']['id'])
+            filters='externalID', filter_values=create_body['router']['id'])
         self.assertEqual(create_body['router']['name'],
                          nuage_domain[0]['description'])
 
@@ -683,7 +684,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
 
         # Get the domain from VSD and verify that rd is updated
         nuage_domain = self.nuage_client.get_l3domain(
-            filters='externalID', filter_value=create_body['router']['id'])
+            filters='externalID', filter_values=create_body['router']['id'])
         self.assertEqual(rd, nuage_domain[0]['routeDistinguisher'])
 
     def test_create_router_in_shared_netpartition(self):
@@ -759,7 +760,7 @@ class NuageRoutersAdminTest(NuageAdminNetworksTest):
         # End of copy from upstream
 
         nuage_domain = self.nuage_client.get_l3domain(
-            filters='externalID', filter_value=router[-1]['id'])
+            filters='externalID', filter_values=router[-1]['id'])
         self.assertEqual(nuage_domain[0]['PATEnabled'], NUAGE_PAT_DISABLED)
 
     @utils.requires_ext(extension='ext-gw-mode', service='network')
@@ -780,7 +781,7 @@ class NuageRoutersAdminTest(NuageAdminNetworksTest):
         # End of copy from upstream
 
         nuage_domain = self.nuage_client.get_l3domain(
-            filters='externalID', filter_value=router['id'])
+            filters='externalID', filter_values=router['id'])
         self.assertEqual(nuage_domain[0]['PATEnabled'], NUAGE_PAT_DISABLED)
 
     @utils.requires_ext(extension='ext-gw-mode', service='network')
@@ -790,7 +791,7 @@ class NuageRoutersAdminTest(NuageAdminNetworksTest):
             data_utils.rand_name('router-'),
             external_network_id=self.ext_net_id)
         nuage_domain = self.nuage_client.get_l3domain(
-            filters='externalID', filter_value=router['id'])
+            filters='externalID', filter_values=router['id'])
         self.assertEqual(nuage_domain[0]['PATEnabled'], NUAGE_PAT_DISABLED)
         self.admin_routers_client.update_router(
             router['id'],
@@ -803,7 +804,7 @@ class NuageRoutersAdminTest(NuageAdminNetworksTest):
              'enable_snat': False})
         self._verify_gateway_port(router['id'])
         nuage_domain = self.nuage_client.get_l3domain(
-            filters='externalID', filter_value=router['id'])
+            filters='externalID', filter_values=router['id'])
         self.assertEqual(nuage_domain[0]['PATEnabled'], NUAGE_PAT_DISABLED)
 
     @utils.requires_ext(extension='ext-gw-mode', service='network')
@@ -824,7 +825,7 @@ class NuageRoutersAdminTest(NuageAdminNetworksTest):
                                     exp_ext_gw_info=external_gateway_info)
         nuage_domain = self.nuage_client.get_l3domain(
             filters='externalID',
-            filter_value=create_body['router']['id'])
+            filter_values=create_body['router']['id'])
         self.assertEqual(
             nuage_domain[0]['PATEnabled'],
             NUAGE_PAT_DISABLED)
@@ -862,7 +863,7 @@ class NuageRoutersAdminTest(NuageAdminNetworksTest):
 
         # Verify Router is created in VSD
         nuage_domain = self.nuage_client.get_l3domain(
-            filters='externalID', filter_value=rtr_body['router']['id'])
+            filters='externalID', filter_values=rtr_body['router']['id'])
         self.assertEqual(nuage_domain[0]['description'],
                          rtr_body['router']['name'])
 
@@ -879,9 +880,7 @@ class NuageRoutersAdminTest(NuageAdminNetworksTest):
 
         nuage_domain_subn = self.nuage_client.get_domain_subnet(
             n_constants.ZONE, shared_zone_id,
-            filters=['externalID', 'address'],
-            filter_value=[subn_body['subnet']['network_id'],
-                          subn_body['subnet']['cidr']])
+            by_subnet=subn_body['subnet'])
         self.assertIsNotNone(nuage_domain_subn[0])
 
         # Delete the router interface
@@ -891,9 +890,7 @@ class NuageRoutersAdminTest(NuageAdminNetworksTest):
 
         # Verify that the subnet is created with everybody permissions
         nuage_l2dom = self.nuage_client.get_l2domain(
-            filters=['externalID', 'address'],
-            filter_value=[subn_body['subnet']['network_id'],
-                          subn_body['subnet']['cidr']])
+            by_subnet=subn_body['subnet'])
         nuage_perm = self.nuage_client.get_permissions(
             n_constants.L2_DOMAIN, nuage_l2dom[0]['ID'])
         self.assertIsNotNone(nuage_perm[0])
@@ -957,7 +954,7 @@ class NuageRoutersAdminTest(NuageAdminNetworksTest):
         l3dom_ext_id = self.nuage_client.get_vsd_external_id(
             rtr_id)
         nuage_domain = self.nuage_client.get_l3domain(
-            filters='externalID', filter_value=l3dom_ext_id)
+            filters='externalID', filter_values=l3dom_ext_id)
         self.assertEqual(nuage_domain[0]['description'], name)
         self.assertEqual(nuage_domain[0]['backHaulVNID'], bkhaul_vnid)
         self.assertEqual(nuage_domain[0]['backHaulRouteTarget'],
@@ -999,7 +996,7 @@ class NuageRoutersAdminTest(NuageAdminNetworksTest):
         self.assertEqual(show_body['router']['nuage_backhaul_rd'],
                          updated_bkhaul_rd)
         nuage_domain = self.nuage_client.get_l3domain(
-            filters='externalID', filter_value=l3dom_ext_id)
+            filters='externalID', filter_values=l3dom_ext_id)
         self.assertEqual(nuage_domain[0]['backHaulVNID'],
                          updated_bkhaul_vnid)
         self.assertEqual(nuage_domain[0]['backHaulRouteTarget'],
@@ -1047,8 +1044,8 @@ class NuageRoutersV6Test(NuageRoutersTest):
                          interface_port['fixed_ips'][0]['subnet_id'])
 
     @classmethod
-    def create_subnet(cls, network, gateway='', cidr=None, mask_bits=None,
-                      ip_version=None, client=None, **kwargs):
+    def _create_subnet(cls, network, gateway='', cidr=None, mask_bits=None,
+                       ip_version=None, client=None, **kwargs):
 
         if "enable_dhcp" not in kwargs:
             # NUAGE non-compliance: enforce enable_dhcp = False as
@@ -1060,6 +1057,13 @@ class NuageRoutersV6Test(NuageRoutersTest):
             return super(NuageRoutersV6Test, cls).create_subnet(
                 network, gateway, cidr, mask_bits,
                 ip_version, client, **kwargs)
+
+    @classmethod
+    def create_subnet(cls, network, gateway='', cidr=None, mask_bits=None,
+                      ip_version=None, client=None, **kwargs):
+        return cls._create_subnet(
+            network, gateway, cidr, mask_bits, ip_version, client,
+            **kwargs)
 
     @decorators.attr(type='smoke')
     # OPENSTACK-1886: fails to remove router with only IPv6 subnet interface
@@ -1113,7 +1117,6 @@ class NuageRoutersV6Test(NuageRoutersTest):
                          router['id'])
 
     @utils.requires_ext(extension='extraroute', service='network')
-    # OPENSTACK-1887
     def test_update_delete_extra_route(self):
         # Create different cidr for each subnet to avoid cidr duplicate
         # The cidr starts from project_cidr

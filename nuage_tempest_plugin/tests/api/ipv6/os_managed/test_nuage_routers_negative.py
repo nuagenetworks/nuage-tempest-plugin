@@ -32,9 +32,8 @@ class NuageRoutersNegativeIpV6Test(test_routers_negative.RoutersNegativeTest):
                 'OS Managed Dual Stack is not supported in this release')
 
     @classmethod
-    def create_subnet(cls, network, gateway='', cidr=None, mask_bits=None,
-                      ip_version=None, client=None, **kwargs):
-
+    def _create_subnet(cls, network, gateway='', cidr=None, mask_bits=None,
+                       ip_version=None, client=None, **kwargs):
         if "enable_dhcp" not in kwargs:
             # NUAGE non-compliance: enforce enable_dhcp = False as
             # the default option
@@ -45,6 +44,12 @@ class NuageRoutersNegativeIpV6Test(test_routers_negative.RoutersNegativeTest):
             return super(NuageRoutersNegativeIpV6Test, cls).create_subnet(
                 network, gateway, cidr, mask_bits,
                 ip_version, client, **kwargs)
+
+    @classmethod
+    def create_subnet(cls, network, gateway='', cidr=None, mask_bits=None,
+                      ip_version=None, client=None, **kwargs):
+        return cls._create_subnet(
+            network, gateway, cidr, mask_bits, ip_version, client, **kwargs)
 
     @decorators.attr(type=['negative'])
     # OPENSTACK-1886: fails to remove router with only IPv6 subnet interface

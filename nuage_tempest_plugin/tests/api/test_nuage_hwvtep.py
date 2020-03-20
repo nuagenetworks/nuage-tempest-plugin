@@ -49,14 +49,10 @@ class TestNuageHWVTEP(NuageBaseTest):
         if not is_vsd_managed:
             if is_ipv4:
                 vsd_resource = vsd_domain = self.vsd.get_l2domain(
-                    by_network_id=network['id'],
-                    cidr=ipv4_subnet['cidr'],
-                    ip_type=4)
+                    by_subnet=ipv4_subnet)
             else:
                 vsd_resource = vsd_domain = self.vsd.get_l2domain(
-                    by_network_id=network['id'],
-                    cidr=ipv6_subnet['cidr'],
-                    ip_type=6)
+                    by_subnet=ipv6_subnet)
 
         # resources under test
         self.create_port(network)

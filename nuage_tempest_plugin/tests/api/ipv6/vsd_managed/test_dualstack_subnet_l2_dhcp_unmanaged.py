@@ -77,6 +77,8 @@ class VSDManagedDualStackCommonBase(BaseVSDManagedNetworksIPv6Test):
 
             def do_test(ipv6_cidr, dhcp6_server_ip, use_allocation_pool=False):
 
+                ipv6_cidr = IPNetwork(ipv6_cidr)
+
                 testcase = "TC-({},{},{})".format(
                     str(ipv6_cidr), str(dhcp6_server_ip), use_allocation_pool)
 
@@ -85,14 +87,14 @@ class VSDManagedDualStackCommonBase(BaseVSDManagedNetworksIPv6Test):
                     vsd_l2domain_template = self.vsd_create_l2domain_template(
                         dhcp_managed=True, ip_type="DUALSTACK",
                         cidr4=self.cidr4, enable_dhcpv4=True,
-                        ipv6_address=ipv6_cidr, ipv6_gateway=dhcp6_server_ip,
+                        cidr6=ipv6_cidr, ipv6_gateway=dhcp6_server_ip,
                         enable_dhcpv6=True)
 
                     self._verify_vsd_l2domain_template(
                         vsd_l2domain_template,
                         ip_type="DUALSTACK", dhcp_managed=True,
                         cidr4=self.cidr4, enable_dhcpv4=True,
-                        ipv6_address=ipv6_cidr, ipv6_gateway=dhcp6_server_ip,
+                        cidr6=ipv6_cidr, ipv6_gateway=dhcp6_server_ip,
                         enable_dhcpv6=True)
 
                 elif self.vsd_dhcp_managed:
@@ -106,7 +108,7 @@ class VSDManagedDualStackCommonBase(BaseVSDManagedNetworksIPv6Test):
                         vsd_l2domain_template,
                         dhcp_managed=True, ip_type="DUALSTACK",
                         cidr4=self.cidr4, gateway=None, enable_dhcpv4=False,
-                        cidr6=IPNetwork(ipv6_cidr), ipv6_gateway=None,
+                        cidr6=ipv6_cidr, ipv6_gateway=None,
                         enable_dhcpv6=False)
                 else:
                     # OS DHCP unmanaged, VSD DHCP unmanaged (legacy 5.x style)
@@ -127,31 +129,32 @@ class VSDManagedDualStackCommonBase(BaseVSDManagedNetworksIPv6Test):
                 net_name = data_utils.rand_name('network-')
                 network = self.create_network(network_name=net_name)
 
-                ipv6_network = IPNetwork(ipv6_cidr)
-                mask_bits = ipv6_network.prefixlen
+                mask_bits = ipv6_cidr.prefixlen
                 kwargs = {
                     'ip_version': 6,
-                    'cidr': ipv6_network,
+                    'cidr': ipv6_cidr,
                     'mask_bits': mask_bits,
                     # gateway is not set (VSD in any case doesn't mind ...)
                     'enable_dhcp': (vsd_l2domain_template.enable_dhcpv6
-                                    if self.vsd_dhcp_managed else False),
+                                    if self.vsd_dhcp_managed and
+                                    Topology.has_dhcp_v6_support()
+                                    else False),
                     'nuagenet': vsd_l2domain.id,
                     'net_partition': self.net_partition
                 }
 
                 if use_allocation_pool:
-                    start6 = ipv6_network[10]
-                    end6 = ipv6_network[20]
+                    start6 = ipv6_cidr[10]
+                    end6 = ipv6_cidr[20]
                     pool = {'start': start6, 'end': end6}
                     kwargs['allocation_pools'] = [pool]
                 else:
-                    start6 = ipv6_network[2]  # gateway ip is cleared but
+                    start6 = ipv6_cidr[2]  # gateway ip is cleared but
                     # as it originally was set, allocation pool is not adjusted
-                    end6 = ipv6_network[-1]  # :ff:ff
+                    end6 = ipv6_cidr[-1]  # :ff:ff
 
                 ipv6_subnet = self.create_subnet(network, **kwargs)
-                self.assertEqual(ipv6_network, IPNetwork(ipv6_subnet['cidr']))
+                self.assertEqual(ipv6_cidr, IPNetwork(ipv6_subnet['cidr']))
                 if self.os_dhcp_managed:
                     self.assertEqual(
                         IPNetwork(ipv6_subnet['cidr']),
@@ -168,7 +171,11 @@ class VSDManagedDualStackCommonBase(BaseVSDManagedNetworksIPv6Test):
                 kwargs = {
                     'cidr': self.cidr4,
                     'mask_bits': self.mask_bits4_unsliced,
-                    'enable_dhcp': self.os_dhcp_managed,
+                    # in case we run 5.x, this is always True when VSD is
+                    # dhcp managed
+                    'enable_dhcp': (self.os_dhcp_managed or
+                                    Topology.is_v5 and
+                                    self.vsd_dhcp_managed),
                     'gateway': None,
                     # gateway is not set (which ~ to option 3 not set)
                     'nuagenet': vsd_l2domain.id,
@@ -221,6 +228,9 @@ class VSDManagedL2DualStackDhcpDisabledTest(VSDManagedDualStackCommonBase):
     def _given_vsd_l2_dhcp_disabled_domain(self, gateway=None,
                                            IPv6Gateway=None):
         if self.vsd_dhcp_managed:
+            if not Topology.has_full_dhcp_control_in_vsd():
+                self.skipTest(
+                    'DHCP cannot be disabled on mgd l2 domain in this release')
             return self._given_vsd_l2domain(
                 dhcp_managed=True,
                 cidr4=self.cidr4, enable_dhcpv4=False,
@@ -236,7 +246,7 @@ class VSDManagedL2DualStackDhcpDisabledTest(VSDManagedDualStackCommonBase):
         vm_details = self.nuage_client.get_resource(
             'vms',
             filters='externalID',
-            filter_value=self.nuage_client.get_vsd_external_id(server.id),
+            filter_values=self.nuage_client.get_vsd_external_id(server.id),
             flat_rest_path=True)[0]
         if self.vsd_dhcp_managed:
             self.assertEqual(vm_details.get('interfaces')[0]['IPAddress'],

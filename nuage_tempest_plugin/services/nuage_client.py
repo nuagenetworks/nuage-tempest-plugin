@@ -183,22 +183,24 @@ class NuageRestClient(object):
         return self.request('PUT', url, body, extra_headers)
 
     @staticmethod
-    def get_extra_headers(attr, attr_value):
+    def get_extra_headers(attrs, attr_values):
         headers = {}
-        if not (isinstance(attr, list) and isinstance(attr_value, list)):
-            attr = [attr]
-            attr_value = [attr_value]
+        if not isinstance(attrs, list):
+            attrs = [attrs]
+        if not isinstance(attr_values, list):
+            attr_values = [attr_values]
         headers['X-NUAGE-FilterType'] = 'predicate'
-        headers['X-Nuage-Filter'] = ""
-        for attribute, value in zip(attr, attr_value):
+        headers['X-Nuage-Filter'] = ''
+        for attribute, value in zip(attrs, attr_values):
             if headers.get('X-Nuage-Filter'):
                 headers['X-Nuage-Filter'] += " and "
             if attribute == 'externalID':
                 value = NuageRestClient.get_vsd_external_id(value)
             if attribute == 'address' and '/' in value:
+                assert False  # fix the occurrence
                 # extracts the address from the cidr
-                value = value.split('/')[0]
-            if isinstance(attr_value, int):
+                # value = value.split('/')[0]
+            if isinstance(value, int):
                 headers['X-Nuage-Filter'] += "{} IS {}".format(
                     attribute, value)
             else:
@@ -217,15 +219,15 @@ class NuageRestClient(object):
         return res_path
 
     def get_global_resource(self, resource, filters=None,
-                            filter_value=None):
+                            filter_values=None):
         extra_headers = None
         res_path = "/%s" % resource
         if filters:
-            extra_headers = self.get_extra_headers(filters, filter_value)
+            extra_headers = self.get_extra_headers(filters, filter_values)
         return self.get(res_path, extra_headers)
 
     def get_resource(self, resource, filters=None,
-                     filter_value=None,
+                     filter_values=None,
                      netpart_name=None,
                      flat_rest_path=False):
         extra_headers = None
@@ -240,17 +242,17 @@ class NuageRestClient(object):
                 resource_id=net_part[0]['ID'],
                 child_resource=resource)
         if filters:
-            extra_headers = self.get_extra_headers(filters, filter_value)
+            extra_headers = self.get_extra_headers(filters, filter_values)
         return self.get(res_path, extra_headers)
 
     def get_child_resource(self, resource, resource_id, child_resource,
-                           filters=None, filter_value=None):
+                           filters=None, filter_values=None):
         extra_headers = None
         res_path = self.build_resource_path(
             resource, resource_id,
             child_resource)
         if filters:
-            extra_headers = self.get_extra_headers(filters, filter_value)
+            extra_headers = self.get_extra_headers(filters, filter_values)
         return self.get(res_path, extra_headers)
 
     def delete_resource(self, resource, resource_id, responseChoice=True):
@@ -281,10 +283,10 @@ class NuageRestClient(object):
 
     # Network
     # EnterpriseNetworkMacro
-    def get_enterprise_net_macro(self, filters=None, filter_value=None,
+    def get_enterprise_net_macro(self, filters=None, filter_values=None,
                                  netpart_name=None):
         return self.get_resource(constants.ENTERPRISE_NET_MACRO,
-                                 filters, filter_value, netpart_name)
+                                 filters, filter_values, netpart_name)
 
     def list_enterprises(self):
         res_path = self.build_resource_path(constants.NET_PARTITION,
@@ -294,10 +296,10 @@ class NuageRestClient(object):
         return result
 
     # Public Network Macro
-    def get_public_net_macro(self, filters=None, filter_value=None,
+    def get_public_net_macro(self, filters=None, filter_values=None,
                              netpart_name=None):
         return self.get_resource(constants.PUBLIC_NET_MACRO,
-                                 filters, filter_value, netpart_name)
+                                 filters, filter_values, netpart_name)
 
     # DomainTemplates
     def create_l3domaintemplate(self, name, extra_params=None,
@@ -317,9 +319,9 @@ class NuageRestClient(object):
         return self.post(res_path, data)
 
     def get_l3domaintemplate(self, filters=None,
-                             filter_value=None, netpart_name=None):
+                             filter_values=None, netpart_name=None):
         return self.get_resource(constants.DOMAIN_TEMPLATE,
-                                 filters, filter_value,
+                                 filters, filter_values,
                                  netpart_name)
 
     def delete_l3domaintemplate(self, l3dom_tid):
@@ -345,9 +347,10 @@ class NuageRestClient(object):
         return self.post(res_path, data)
 
     # If filters is not set, returns /enterprises/%s/domains
-    def get_l3domain(self, filters=None, filter_value=None, netpart_name=None):
+    def get_l3domain(self, filters=None, filter_values=None,
+                     netpart_name=None):
         return self.get_resource(constants.DOMAIN,
-                                 filters, filter_value, netpart_name)
+                                 filters, filter_values, netpart_name)
 
     def delete_domain(self, dom_id, responseChoice=True):
         for attempt in range(1, Topology.nbr_retries_for_test_robustness + 1):
@@ -377,10 +380,10 @@ class NuageRestClient(object):
             constants.DOMAIN_TEMPLATE, parent_id, constants.ZONE_TEMPLATE)
         return self.post(res_path, data)
 
-    def get_zonetemplate(self, parent_id, filters=None, filter_value=None):
+    def get_zonetemplate(self, parent_id, filters=None, filter_values=None):
         return self.get_child_resource(constants.DOMAIN_TEMPLATE, parent_id,
                                        constants.ZONE_TEMPLATE, filters,
-                                       filter_value)
+                                       filter_values)
 
     # Zone
     def create_zone(self, parent_id, name, externalId=None, extra_params=None):
@@ -395,9 +398,9 @@ class NuageRestClient(object):
             constants.DOMAIN, parent_id, constants.ZONE)
         return self.post(res_path, data)
 
-    def get_zone(self, parent_id, filters=None, filter_value=None):
+    def get_zone(self, parent_id, filters=None, filter_values=None):
         return self.get_child_resource(constants.DOMAIN, parent_id,
-                                       constants.ZONE, filters, filter_value)
+                                       constants.ZONE, filters, filter_values)
 
     def delete_zone(self, zone_id):
         return self.delete_resource(constants.ZONE, zone_id)
@@ -430,17 +433,35 @@ class NuageRestClient(object):
             constants.ZONE, parent_id, constants.SUBNETWORK)
         return self.post(res_path, data)
 
-    def get_domain_subnet(self, parent, parent_id, filters=None,
-                          filter_value=None):
+    @staticmethod
+    def get_subnet_filters(subnet):
+        if Topology.is_v5:
+            filters = ['externalID']
+            filter_values = [subnet['id']]
+        else:
+            if subnet['ip_version'] == 6:
+                filters = ['externalID', 'IPv6Address']
+                filter_values = [subnet['network_id'], subnet['cidr']]
+            else:
+                filters = ['externalID', 'address']
+                filter_values = [subnet['network_id'],
+                                 subnet['cidr'].split('/')[0]]
+        return filters, filter_values
+
+    def get_domain_subnet(self, parent, parent_id, by_subnet=None,
+                          filters=None, filter_values=None):
+        if by_subnet:
+            filters, filter_values = self.get_subnet_filters(by_subnet)
         if parent:
             return self.get_child_resource(
-                parent, parent_id, constants.SUBNETWORK, filters, filter_value)
+                parent, parent_id, constants.SUBNETWORK,
+                filters, filter_values)
         else:
-            return self.get_global_resource(constants.SUBNETWORK, filters,
-                                            filter_value)
+            return self.get_global_resource(constants.SUBNETWORK,
+                                            filters, filter_values)
 
     def get_l3_subnet_vports(self, subnet_id, filters=None,
-                             filter_value=None):
+                             filter_values=None):
         # TODO(team) implement filters and filter_value
         res_path = self.build_resource_path(
             constants.SUBNETWORK, subnet_id, "vports")
@@ -488,9 +509,12 @@ class NuageRestClient(object):
             else constants.DHCPV6OPTION, None, None)
 
     # Sharedresource
-    def get_sharedresource(self, filters=None, filter_value=None):
+    def get_sharedresource(self, by_subnet=None,
+                           filters=None, filter_values=None):
+        if by_subnet:
+            filters, filter_values = self.get_subnet_filters(by_subnet)
         return self.get_global_resource(constants.SHARED_NET_RES,
-                                        filters, filter_value)
+                                        filters, filter_values)
 
     def create_vsd_shared_resource(self, name, externalId=None,
                                    extra_params=None, type=None):
@@ -580,7 +604,7 @@ class NuageRestClient(object):
         return self.post(res_path, data)
 
     def get_staticroute(self, parent, parent_id, filters=None,
-                        filter_value=None):
+                        filter_values=None):
         return self.get_child_resource(
             parent, parent_id, constants.STATIC_ROUTE, None, None)
 
@@ -601,10 +625,13 @@ class NuageRestClient(object):
             constants.L2_DOMAIN_TEMPLATE)
         return self.post(res_path, data)
 
-    def get_l2domaintemplate(self, filters=None, filter_value=None,
+    def get_l2domaintemplate(self, by_subnet=None,
+                             filters=None, filter_values=None,
                              netpart_name=None):
+        if by_subnet:
+            filters, filter_values = self.get_subnet_filters(by_subnet)
         return self.get_resource(constants.L2_DOMAIN_TEMPLATE,
-                                 filters, filter_value, netpart_name)
+                                 filters, filter_values, netpart_name)
 
     def delete_l2domaintemplate(self, l2dom_tid):
         for attempt in range(1, Topology.nbr_retries_for_test_robustness + 1):
@@ -683,9 +710,12 @@ class NuageRestClient(object):
                 else:
                     raise
 
-    def get_l2domain(self, filters=None, filter_value=None, netpart_name=None):
+    def get_l2domain(self, filters=None, filter_values=None, netpart_name=None,
+                     by_subnet=None):
+        if by_subnet:
+            filters, filter_values = self.get_subnet_filters(by_subnet)
         return self.get_resource(constants.L2_DOMAIN,
-                                 filters, filter_value, netpart_name)
+                                 filters, filter_values, netpart_name)
 
     def get_l2domain_vports(self, l2domain_id):
         res_path = self.build_resource_path(
@@ -719,9 +749,9 @@ class NuageRestClient(object):
         return self.delete_resource(constants.POLICYGROUP, id)
 
     def get_policygroup(self, parent, parent_id, filters=None,
-                        filter_value=None):
+                        filter_values=None):
         return self.get_child_resource(
-            parent, parent_id, constants.POLICYGROUP, filters, filter_value)
+            parent, parent_id, constants.POLICYGROUP, filters, filter_values)
 
     def begin_l2_policy_changes(self, l2domain_id):
         data = {"command": "BEGIN_POLICY_CHANGES"}
@@ -757,10 +787,10 @@ class NuageRestClient(object):
 
     # Redirection Target
     def get_redirection_target(self, parent, parent_id,
-                               filters=None, filter_value=None):
+                               filters=None, filter_values=None):
         return self.get_child_resource(
             parent, parent_id, constants.REDIRECTIONTARGETS,
-            filters, filter_value)
+            filters, filter_values)
 
     def create_l2_redirect_target(self, domain_id, name, extra_params=None):
         data = {
@@ -805,18 +835,18 @@ class NuageRestClient(object):
         return self.delete(res_path)
 
     def get_redirection_target_vports(self, parent, parent_id,
-                                      filters=None, filter_value=None):
+                                      filters=None, filter_values=None):
         return self.get_child_resource(
-            parent, parent_id, constants.VPORT, filters, filter_value)
+            parent, parent_id, constants.VPORT, filters, filter_values)
 
     def get_redirection_target_vips(self, parent, parent_id,
-                                    filters=None, filter_value=None):
+                                    filters=None, filter_values=None):
         return self.get_child_resource(
-            parent, parent_id, constants.VIRTUAL_IP, filters, filter_value)
+            parent, parent_id, constants.VIRTUAL_IP, filters, filter_values)
 
     # ADVFWDTemplate
     def create_advfwd_entrytemplate(self, parent, parent_id,
-                                    filters=None, filter_value=None):
+                                    filters=None, filter_values=None):
         data = {
             'name': "nameke",
             'active': True,
@@ -835,16 +865,16 @@ class NuageRestClient(object):
         return self.post(res_path, data)
 
     def get_advfwd_entrytemplate(self, parent, parent_id,
-                                 filters=None, filter_value=None):
+                                 filters=None, filter_values=None):
         return self.get_child_resource(
             parent, parent_id, constants.INGRESS_ADV_FWD_ENTRY_TEMPLATE,
-            filters, filter_value)
+            filters, filter_values)
 
     def get_advfwd_template(self, parent, parent_id,
-                            filters=None, filter_value=None):
+                            filters=None, filter_values=None):
         return self.get_child_resource(
             parent, parent_id, constants.INGRESS_ADV_FWD_TEMPLATE,
-            filters, filter_value)
+            filters, filter_values)
 
     # ACLTemplate
     def create_ingress_acl_template(self, name, parent, parent_id,
@@ -955,75 +985,76 @@ class NuageRestClient(object):
         pass
 
     def get_ingressacl_entrytemplate(self, parent, parent_id,
-                                     filters=None, filter_value=None):
+                                     filters=None, filter_values=None):
         return self.get_child_resource(parent, parent_id,
                                        constants.INGRESS_ACL_ENTRY_TEMPLATE,
-                                       filters, filter_value)
+                                       filters, filter_values)
 
     def get_egressacl_entrytemplate(self, parent, parent_id,
-                                    filters=None, filter_value=None):
+                                    filters=None, filter_values=None):
         return self.get_child_resource(parent, parent_id,
                                        constants.EGRESS_ACL_ENTRY_TEMPLATE,
-                                       filters, filter_value)
+                                       filters, filter_values)
 
     # User Mgmt
     # User
-    def get_user(self, filters=None, filter_value=None, netpart_name=None):
+    def get_user(self, filters=None, filter_values=None, netpart_name=None):
         return self.get_resource(constants.USER, filters,
-                                 filter_value, netpart_name)
+                                 filter_values, netpart_name)
 
     # Group
     def get_usergroup(self, parent, parent_id, filters=None,
-                      filter_value=None, netpart_name=None):
+                      filter_values=None, netpart_name=None):
         if parent:
             return self.get_child_resource(parent, parent_id, constants.GROUP,
-                                           filters, filter_value)
+                                           filters, filter_values)
         else:
             return self.get_resource(constants.GROUP, filters,
-                                     filter_value, netpart_name)
+                                     filter_values, netpart_name)
 
     # Permissions
     def get_permissions(self, parent, parent_id, filters=None,
-                        filter_value=None):
+                        filter_values=None):
         return self.get_child_resource(parent, parent_id,
                                        constants.PERMIT_ACTION,
                                        filters,
-                                       filter_value)
+                                       filter_values)
 
     # VM Interface
-    def get_vm_iface(self, parent, parent_id, filters=None, filter_value=None):
+    def get_vm_iface(self, parent, parent_id, filters=None,
+                     filter_values=None):
         return self.get_child_resource(parent, parent_id,
                                        constants.VM_IFACE, filters,
-                                       filter_value)
+                                       filter_values)
 
     # VM
     def get_vm(self, parent, parent_id, filters=None,
-               filter_value=None, netpart_name=None):
+               filter_values=None, netpart_name=None):
         if parent:
             return self.get_child_resource(parent, parent_id, constants.VM,
-                                           filters, filter_value)
+                                           filters, filter_values)
         else:
             return self.get_resource(constants.VM, filters,
-                                     filter_value, netpart_name)
+                                     filter_values, netpart_name)
 
     # Vport
     # Bridge Interface
     def get_bridge_iface(self, parent, parent_id, filters=None,
-                         filter_value=None):
+                         filter_values=None):
         return self.get_child_resource(parent, parent_id,
                                        constants.BRIDGE_IFACE, filters,
-                                       filter_value)
+                                       filter_values)
 
     # Vport
-    def get_vport(self, parent, parent_id, filters=None, filter_value=None):
+    def get_vport(self, parent, parent_id, filters=None, filter_values=None):
         return self.get_child_resource(parent, parent_id, constants.VPORT,
-                                       filters, filter_value)
+                                       filters, filter_values)
 
     # VirtualIP
     def get_virtual_ip(self, parent, parent_id, filters=None,
-                       filter_value=None):
+                       filter_values=None):
         return self.get_child_resource(parent, parent_id, constants.VIRTUAL_IP,
-                                       filters, filter_value)
+                                       filters, filter_values)
 
     # Gateway
     def create_gateway(self, name, system_id, personality,
@@ -1049,16 +1080,16 @@ class NuageRestClient(object):
         return self.delete_resource(constants.GATEWAY, gw_id,
                                     responseChoice=True)
 
-    def get_global_gateways(self, filters=None, filter_value=None):
+    def get_global_gateways(self, filters=None, filter_values=None):
         res_path = self.build_resource_path(constants.GATEWAY)
         if filters:
-            extra_headers = self.get_extra_headers(filters, filter_value)
+            extra_headers = self.get_extra_headers(filters, filter_values)
             return self.get(res_path, extra_headers)
         return self.get(res_path)
 
-    def get_gateway(self, filters=None, filter_value=None, netpart_name=None):
+    def get_gateway(self, filters=None, filter_values=None, netpart_name=None):
         return self.get_resource(constants.GATEWAY,
-                                 filters, filter_value, netpart_name)
+                                 filters, filter_values, netpart_name)
 
     # Gateway redundancy group
     def create_redundancy_group(self, name, gateway_id_1,
@@ -1100,10 +1131,10 @@ class NuageRestClient(object):
     def delete_gateway_port(self, port_id):
         return self.delete_resource(constants.GATEWAY_PORT, port_id)
 
-    def get_gateway_port(self, filters=None, filter_value=None,
+    def get_gateway_port(self, filters=None, filter_values=None,
                          netpart_name=None):
         return self.get_resource(constants.GATEWAY_PORT,
-                                 filters, filter_value, netpart_name)
+                                 filters, filter_values, netpart_name)
 
     # GatewayVlan
     def create_gateway_vlan(self, gw_port_id, userMnemonic, value,
@@ -1125,9 +1156,9 @@ class NuageRestClient(object):
                                     responseChoice=True)
 
     def get_gateway_vlan(self, parent, parent_id, filters=None,
-                         filter_value=None):
+                         filter_values=None):
         return self.get_child_resource(
-            parent, parent_id, constants.VLAN, filters, filter_value)
+            parent, parent_id, constants.VLAN, filters, filter_values)
 
     def get_gateway_vlan_by_id(self, vlan_id):
         return self.get_global_resource(constants.VLAN + '/' + vlan_id)[0]
@@ -1269,9 +1300,9 @@ class NuageRestClient(object):
         return self.post(res_path, data)
 
     # QOS
-    def get_qos(self, parent, parent_id, filters=None, filter_value=None):
+    def get_qos(self, parent, parent_id, filters=None, filter_values=None):
         return self.get_child_resource(parent, parent_id, constants.QOS,
-                                       filters, filter_value)
+                                       filters, filter_values)
 
     def create_vlan_permission(self, vlan_id, enterprise_id):
         res_path = self.build_resource_path(
@@ -1429,6 +1460,12 @@ class NuageRestClient(object):
         if neutron_id and '@' not in neutron_id and CMS_ID:
             return neutron_id + '@' + CMS_ID
         return neutron_id
+
+    def get_subnet_external_id(self, subnet):
+        if Topology.is_v5:
+            return self.get_vsd_external_id(subnet['id'])
+        else:
+            return self.get_vsd_external_id(subnet['network_id'])
 
     # System configs
     def get_system_configuration(self):

@@ -504,7 +504,7 @@ class NuageExtraDHCPOptionsBase(base.BaseAdminNetworkTest, NuageBaseTest):
                 # using the separator ";"
                 option_value_list = option['opt_value'].split(";")
                 # Special trick for opt_name='router' and
-                # opt_value='0.0.0.0' which is converted into '00'
+                # opt_values='0.0.0.0' which is converted into '00'
                 # when sending to VSD,
                 if vsd_opt_name == 'router' and \
                         option_value_list == ['0.0.0.0']:

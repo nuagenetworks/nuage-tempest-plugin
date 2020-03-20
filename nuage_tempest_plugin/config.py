@@ -102,4 +102,9 @@ NuageSutGroup = [
                      'for network interface configuration in VM\'s. '
                      'This is needed e.g. when using DHCPv6 with RHEL VM\'s'
                      'Not supported for cirros.'),
+    cfg.BoolOpt('force_config_drive',
+                default=None,
+                help='Set to True or False to force spawning guest VMs under '
+                     'test with configdrive or not. Newton does not support '
+                     'this flag in nova.conf')
 ]

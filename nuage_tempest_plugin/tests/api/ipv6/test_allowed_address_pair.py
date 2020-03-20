@@ -14,11 +14,18 @@ from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
+LOG = Topology.get_logger(__name__)
+
 VALID_MAC_ADDRESS = 'fa:fa:3e:e8:e8:01'
 VALID_MAC_ADDRESS_2A = 'fa:fa:3e:e8:e8:2a'
 VALID_MAC_ADDRESS_2B = 'fa:fa:3e:e8:e8:2b'
 IPv6_SUBNET_RANDOM = 'fee::'
 MSG_INVALID_INPUT_FOR_AAP_IPS = "'%s' is not a valid IP address."
+
+SPOOFING_ENABLED = constants.ENABLED
+SPOOFING_DISABLED = (constants.INHERITED if Topology.is_v5
+                     else constants.DISABLED)
+
 
 ###############################################################################
 ###############################################################################
@@ -230,7 +237,7 @@ class BaseAllowedAddressPair(NuageBaseTest):
 
             nuage_vports = self.nuage_client.get_vport(
                 vsd_subnet_type, vsd_subnet.id,
-                filters='externalID', filter_value=port['id'])
+                filters='externalID', filter_values=port['id'])
             self.assertEqual(
                 len(nuage_vports), 1,
                 'Must find one VPort matching port: %s' % port['name'])
@@ -247,9 +254,9 @@ class BaseAllowedAddressPair(NuageBaseTest):
                 attr = 'l3-disable-anti-spoofing'
 
             if port_config[attr]:
-                expected_address_spoofing = constants.ENABLED
+                expected_address_spoofing = SPOOFING_ENABLED
             else:
-                expected_address_spoofing = constants.DISABLED
+                expected_address_spoofing = SPOOFING_DISABLED
             self.assertThat(
                 nuage_vport,
                 ContainsDict({'addressSpoofing': Equals(
@@ -271,7 +278,7 @@ class BaseAllowedAddressPair(NuageBaseTest):
                 constants.VPORT,
                 nuage_vport['ID'],
                 filters='virtualIP',
-                filter_value=str(ip_address))
+                filter_values=str(ip_address))
             self._verify_port_allowed_address_fields(
                 aap, nuage_vip[0]['virtualIP'], nuage_vip[0]['MAC'])
 
@@ -286,13 +293,10 @@ class BaseAllowedAddressPair(NuageBaseTest):
                                subnet4=None, subnet6=None):
         subnet = subnet6 if subnet4 is None else subnet4
         port_ext_id = self.nuage_client.get_vsd_external_id(port['id'])
-
-        vsd_l2_domain = self.nuage_client.get_l2domain(
-            filters=['externalID', 'address'],
-            filter_value=[subnet['network_id'], subnet['cidr']])
+        vsd_l2_domain = self.nuage_client.get_l2domain(by_subnet=subnet)
         nuage_vports = self.nuage_client.get_vport(
             constants.L2_DOMAIN, vsd_l2_domain[0]['ID'],
-            filters='externalID', filter_value=port_ext_id)
+            filters='externalID', filter_values=port_ext_id)
         self.assertEqual(
             len(nuage_vports), 1,
             'Must find one VPort matching port: %s' % port['name'])
@@ -305,19 +309,17 @@ class BaseAllowedAddressPair(NuageBaseTest):
         subnet = subnet6 if subnet4 is None else subnet4
         nuage_domain = self.nuage_client.get_l3domain(
             filters='externalID',
-            filter_value=self.nuage_client.get_vsd_external_id(
+            filter_values=self.nuage_client.get_vsd_external_id(
                 router['id']))
-        vsd_subnet = (
-            self.nuage_client.get_domain_subnet(
-                'domains', nuage_domain[0]['ID'],
-                filters=['externalID', 'address'],
-                filter_value=[subnet['network_id'], subnet['cidr']]))
+        vsd_subnet = self.nuage_client.get_domain_subnet(
+            'domains', nuage_domain[0]['ID'],
+            by_subnet=subnet)
         port_ext_id = self.nuage_client.get_vsd_external_id(port['id'])
         nuage_vports = self.nuage_client.get_vport(
             constants.SUBNETWORK,
             vsd_subnet[0]['ID'],
             filters='externalID',
-            filter_value=port_ext_id)
+            filter_values=port_ext_id)
         self.assertEqual(
             len(nuage_vports), 1,
             'Must find one VPort matching port: %s' % port['name'])

@@ -40,21 +40,28 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
             self.vsd_l2domain = None
             self.net_partition_name = None
 
+        @staticmethod
+        def expected_ext_id(subnet):
+            return ExternalId(subnet['id'] if Topology.is_v5
+                              else subnet['network_id']).at_cms_id()
+
+        @staticmethod
+        def expected_name(subnet):
+            return (subnet['id'] if Topology.is_v5 else
+                    subnet['network_id'] + '_' + subnet['id'])
+
         def get_by_external_id(self, net_partition_name=None):
             self.net_partition_name = net_partition_name
             vsd_l2domains = self.test.nuage_client.get_l2domain(
                 netpart_name=self.net_partition_name,
-                filters=['externalID', 'address'],
-                filter_value=[self.subnet['network_id'],
-                              self.subnet['cidr']])
+                by_subnet=self.subnet)
             # should have exact 1 match
             self.test.assertEqual(len(vsd_l2domains), 1)
             self.vsd_l2domain = vsd_l2domains[0]
 
             self.test.assertNotEmpty(self.vsd_l2domain)
             self.test.assertEqual(
-                self.vsd_l2domain['name'],
-                self.subnet['network_id'] + '_' + self.subnet['id'])
+                self.vsd_l2domain['name'], self.expected_name(self.subnet))
             return self
 
         def has_l2domain_template(self, with_external_id=None):
@@ -62,8 +69,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
             vsd_l2domain_templates = \
                 self.test.nuage_client.get_l2domaintemplate(
                     filters='name',
-                    filter_value=(self.subnet['network_id'] + '_' +
-                                  self.subnet['id']))
+                    filter_values=self.expected_name(self.subnet))
             self.test.assertEqual(
                 len(vsd_l2domain_templates), 1,
                 "vsd_l2domain_template not found by parent ID")
@@ -78,7 +84,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
                 # can find vsd permissions by external ID
                 vsd_l2domain_templates = \
                     self.test.nuage_client.get_l2domaintemplate(
-                        filters='externalID', filter_value=with_external_id)
+                        filters='externalID', filter_values=with_external_id)
                 self.test.assertEqual(
                     len(vsd_l2domain_templates), 1,
                     "vsd_l2domain_template not found by ExternalID")
@@ -104,7 +110,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
                 vsd_permissions = self.test.nuage_client.get_permissions(
                     parent=n_constants.L2_DOMAIN,
                     parent_id=self.vsd_l2domain['ID'],
-                    filters='externalID', filter_value=with_external_id)
+                    filters='externalID', filter_values=with_external_id)
                 self.test.assertEqual(
                     len(vsd_permissions), 1,
                     "VSD Permission not found by ExternalID")
@@ -130,7 +136,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
                     netpart_name=self.net_partition_name,
                     resource=n_constants.GROUP,
                     filters='externalID',
-                    filter_value=with_external_id)
+                    filter_values=with_external_id)
 
                 self.test.assertEqual(
                     len(vsd_groups), 1, "Group not found by ExternalID")
@@ -156,7 +162,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
             vsd_users = self.test.nuage_client.get_user(
                 netpart_name=self.net_partition_name,
                 filters='userName',
-                filter_value=self.subnet['tenant_id'])
+                filter_values=self.subnet['tenant_id'])
 
             self.test.assertEqual(
                 len(vsd_users), 1, "User not found by VSD parent ID")
@@ -172,7 +178,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
                     netpart_name=self.net_partition_name,
                     resource=n_constants.USER,
                     filters='externalID',
-                    filter_value=with_external_id)
+                    filter_values=with_external_id)
 
                 self.test.assertEqual(
                     len(vsd_users), 1, "User not found by ExternalID")
@@ -197,7 +203,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
                         resource_id=self.vsd_l2domain['ID'],
                         child_resource=n_constants.DHCPOPTION,
                         filters='externalID',
-                        filter_value=with_external_id)
+                        filter_values=with_external_id)
 
                 self.test.assertEqual(
                     len(vsd_dhcp_options), len(with_dhcp_opts),
@@ -227,7 +233,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
                         resource_id=self.vsd_l2domain['ID'],
                         child_resource=n_constants.EGRESS_ACL_TEMPLATE,
                         filters='externalID',
-                        filter_value=with_external_id)
+                        filter_values=with_external_id)
 
                 self.test.assertEqual(
                     len(vsd_egress_acl_templates), 1,
@@ -257,7 +263,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
                         resource_id=self.vsd_l2domain['ID'],
                         child_resource=n_constants.INGRESS_ACL_TEMPLATE,
                         filters='externalID',
-                        filter_value=with_external_id)
+                        filter_values=with_external_id)
 
                 self.test.assertEqual(
                     len(vsd_ingress_acl_templates), 1,
@@ -288,7 +294,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
                         resource_id=self.vsd_l2domain['ID'],
                         child_resource=n_constants.INGRESS_ADV_FWD_TEMPLATE,
                         filters='externalID',
-                        filter_value=with_external_id)
+                        filter_values=with_external_id)
 
                 self.test.assertEqual(
                     len(vsd_forwarding_policy_templates), 1,
@@ -330,22 +336,24 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
         vsd_l2domain = self.MatchingVsdL2domain(
             self, subnet).get_by_external_id()
         vsd_l2domain.has_l2domain_template(
-            with_external_id=ExternalId(subnet['network_id']).at_cms_id())
+            with_external_id=vsd_l2domain.expected_ext_id(subnet))
         vsd_l2domain.has_dhcp_options(
             with_external_id=ExternalId(subnet['id']).at_cms_id(),
             with_dhcp_opts=dhcp_opts)
         vsd_l2domain.has_permissions(
             with_external_id=ExternalId(subnet['tenant_id']).at_cms_id())
         vsd_l2domain.has_group(
-            with_external_id=ExternalId(subnet['tenant_id']).at_openstack())
+            with_external_id=ExternalId(
+                subnet['tenant_id']).at_openstack())
         vsd_l2domain.has_user(
-            with_external_id=ExternalId(subnet['tenant_id']).at_openstack())
+            with_external_id=ExternalId(
+                subnet['tenant_id']).at_openstack())
         vsd_l2domain.has_egress_acl_template(
-            with_external_id=ExternalId(subnet['network_id']).at_cms_id())
+            with_external_id=vsd_l2domain.expected_ext_id(subnet))
         vsd_l2domain.has_ingress_acl_template(
-            with_external_id=ExternalId(subnet['network_id']).at_cms_id())
+            with_external_id=vsd_l2domain.expected_ext_id(subnet))
         vsd_l2domain.has_forwarding_policy_template(
-            with_external_id=ExternalId(subnet['network_id']).at_cms_id())
+            with_external_id=vsd_l2domain.expected_ext_id(subnet))
 
         # Delete
         vsd_l2domain.verify_cannot_delete()
@@ -414,7 +422,7 @@ class ExternalIdForL2domainAdminTest(ExternalIdForL2domainTest):
         cls.admin_routers_client = cls.os_admin.routers_client
         cls.admin_subnets_client = cls.os_admin.subnets_client
 
-    # TODO(team) something is wrong with this test
+    # TODO(Kris) Kris to investigate - something is wrong with this test
     def fixme_test_neutron_isolated_shared_subnet_matches_to_l2domain(self):
         # Create a network
         name = data_utils.rand_name('network-')

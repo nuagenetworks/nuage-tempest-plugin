@@ -5,6 +5,7 @@ from tempest.lib import decorators
 from tempest.lib import exceptions as tempest_exceptions
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.topology import Topology
 
 
 class RouterAttachmentTest(NuageBaseTest):
@@ -127,10 +128,8 @@ class RouterAttachmentTest(NuageBaseTest):
                          observed=observed_subnet_id)
 
         # validate the vsd configuration
-        domain = self.vsd.get_l3_domain_by_network_id_and_cidr(
-            subnet['network_id'],
-            subnet['cidr'],
-            ip_type=self._ip_version)
+        domain = self.vsd.get_l3_domain_by_subnet(
+            by_subnet=subnet)
         self.assertIsNotNone(domain)
         self.assertEqual(expected=self.vsd.external_id(router['id']),
                          observed=domain.external_id)
@@ -142,15 +141,18 @@ class RouterAttachmentTest(NuageBaseTest):
         self.assertIsNone(router_interface)
 
         # Check we are at L2 in VSD
-        self.assertIsNone(self.vsd.get_l3_domain_by_network_id_and_cidr(
-            subnet['network_id'],
-            subnet['cidr'],
-            ip_type=self._ip_version))
+        self.assertIsNone(self.vsd.get_l3_domain_by_subnet(
+            by_subnet=subnet))
         self.assertIsNotNone(self.vsd.get_l2domain(
-            by_network_id=subnet['network_id'],
-            cidr=subnet['cidr'],
-            ip_type=self._ip_version))
+            by_subnet=subnet))
 
 
 class RouterAttachmentTestV6(RouterAttachmentTest):
     _ip_version = 6
+
+    @classmethod
+    def skip_checks(cls):
+        super(RouterAttachmentTestV6, cls).skip_checks()
+        if not Topology.has_single_stack_v6_support():
+            msg = 'No single-stack v6 support.'
+            raise cls.skipException(msg)

@@ -42,6 +42,11 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
     nuage_any_domain = None
     nuage_domain_type = None
 
+    if Topology.is_v5:
+        err_msg_base = 'Bad request: '
+    else:
+        err_msg_base = 'Bad request: Error in REST call to VSD: '
+
     @classmethod
     def setup_clients(cls):
         super(SecGroupTestNuageBase, cls).setup_clients()
@@ -108,7 +113,7 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
             self.nuage_domain_type,
             nuage_domain[0]['ID'],
             filters='externalID',
-            filter_value=remote_group_id)
+            filter_values=remote_group_id)
         self.assertEqual(nuage_policy_grp[0]['name'],
                          remote_group_id)
 
@@ -116,10 +121,10 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
         net_addr = remote_ip_prefix.split('/')
         if ethertype == 'IPv4':
             ent_net_macro = self.nuage_client.get_enterprise_net_macro(
-                filters='address', filter_value=net_addr[0])
+                filters='address', filter_values=net_addr[0])
         else:
             ent_net_macro = self.nuage_client.get_enterprise_net_macro(
-                filters='IPv6Address', filter_value=remote_ip_prefix)
+                filters='IPv6Address', filter_values=remote_ip_prefix)
         self.assertNotEqual(ent_net_macro, '', msg='Macro not found')
         self.assertEqual(ent_net_macro[0]['externalID'],
                          ent_net_macro[0]['parentID'] + '@openstack')
@@ -146,7 +151,7 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
                 get_egressacl_entrytemplate(n_constants.EGRESS_ACL_TEMPLATE,
                                             nuage_eacl_template[0]['ID'],
                                             filters='externalID',
-                                            filter_value=sec_group_rule['id'])
+                                            filter_values=sec_group_rule['id'])
             return nuage_eacl_entry_template
         else:
             nuage_iacl_template = self.nuage_client. \
@@ -154,10 +159,11 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
                                         nuage_domain[0]['ID'])
 
             nuage_iacl_entry_template = self.nuage_client. \
-                get_ingressacl_entrytemplate(n_constants.INGRESS_ACL_TEMPLATE,
-                                             nuage_iacl_template[0]['ID'],
-                                             filters='externalID',
-                                             filter_value=sec_group_rule['id'])
+                get_ingressacl_entrytemplate(
+                    n_constants.INGRESS_ACL_TEMPLATE,
+                    nuage_iacl_template[0]['ID'],
+                    filters='externalID',
+                    filter_values=sec_group_rule['id'])
             return nuage_iacl_entry_template
 
     def _verify_reverse_acl_entry_template(self, sec_group_rule,
@@ -469,17 +475,13 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
         if l3:
             nuage_d1 = self.nuage_client.get_l3domain(
                 filters='externalID',
-                filter_value=r1['id'])
+                filter_values=r1['id'])
             nuage_d2 = self.nuage_client.get_l3domain(
                 filters='externalID',
-                filter_value=r2['id'])
+                filter_values=r2['id'])
         else:
-            nuage_d1 = self.nuage_client.get_l2domain(
-                filters=['externalID', 'address'],
-                filter_value=[s1['network_id'], s1['cidr']])
-            nuage_d2 = self.nuage_client.get_l2domain(
-                filters=['externalID', 'address'],
-                filter_value=[s2['network_id'], s2['cidr']])
+            nuage_d1 = self.nuage_client.get_l2domain(by_subnet=s1)
+            nuage_d2 = self.nuage_client.get_l2domain(by_subnet=s2)
         sg_id = sg1_body['security_group']['id']
         direction = 'ingress'
         protocol = 'tcp'
@@ -505,10 +507,7 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
         name = data_utils.rand_name('network-')
         cls.network = cls.create_network(network_name=name)
         cls.subnet = cls.create_subnet(cls.network)
-        nuage_l2domain = cls.nuage_client.get_l2domain(
-            filters=['externalID', 'address'],
-            filter_value=[cls.subnet['network_id'],
-                          cls.subnet['cidr']])
+        nuage_l2domain = cls.nuage_client.get_l2domain(by_subnet=cls.subnet)
         cls.nuage_any_domain = nuage_l2domain
         cls.nuage_domain_type = n_constants.L2_DOMAIN
 
@@ -555,10 +554,11 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
             port_range_min=port_range_min,
             port_range_max=port_range_max,
             remote_ip_prefix=ip_prefix)
-        msg = ('Bad request: Error in REST call to VSD: Non supported remote'
-               ' CIDR in security rule: Does not match n.n.n.n where n=1-3'
-               ' decimal digits and the mask is not all zeros , address is'
-               ' 192.168.1.0 , mask is 0.0.0.0')
+        msg = self.err_msg_base + (
+            'Non supported remote CIDR in security rule:'
+            ' Does not match n.n.n.n where n=1-3'
+            ' decimal digits and the mask is not all zeros , address is'
+            ' 192.168.1.0 , mask is 0.0.0.0')
         self.assertRaisesRegex(exceptions.BadRequest,
                                msg,
                                self._create_nuage_port_with_security_group,
@@ -607,9 +607,10 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
             port_range_min=port_range_min,
             port_range_max=port_range_max,
             remote_ip_prefix=ip_prefix)
-        msg = ('Bad request: Error in REST call to VSD: Non supported remote'
-               ' CIDR in security rule: Network IP Address 172.16.50.210 must'
-               ' have host bits set to 0.')
+        msg = (self.err_msg_base +
+               'Non supported remote CIDR in security rule:'
+               ' Network IP Address 172.16.50.210 must have'
+               ' host bits set to 0.')
         self.assertRaisesRegex(exceptions.BadRequest,
                                msg,
                                self._create_nuage_port_with_security_group,
@@ -629,10 +630,11 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
             port_range_min=port_range_min,
             port_range_max=port_range_max,
             remote_ip_prefix=ip_prefix)
-        msg = ('Bad request: Error in REST call to VSD: Non supported remote'
-               ' CIDR in security rule: Does not match n.n.n.n where n=1-3'
-               ' decimal digits and the mask is not all zeros , address is'
-               ' 192.168.1.0 , mask is 0.0.0.0')
+        msg = self.err_msg_base + (
+            'Non supported remote CIDR in security rule:'
+            ' Does not match n.n.n.n where n=1-3'
+            ' decimal digits and the mask is not all zeros , address is'
+            ' 192.168.1.0 , mask is 0.0.0.0')
         post_body = {
             "network": self.network,
             "name": data_utils.rand_name('port-')
@@ -647,21 +649,20 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
             self.nuage_domain_type,
             self.nuage_any_domain[0]['ID'],
             filters='externalID',
-            filter_value=sg_id)
+            filter_values=sg_id)
         self.assertEqual(len(nuage_pg), 0)
         vport = self.nuage_client.get_vport(
             self.nuage_domain_type,
             self.nuage_any_domain[0]['ID'],
             filters='externalID',
-            filter_value=port['id'])
+            filter_values=port['id'])
         nuage_policy_grps = self.nuage_client.get_policygroup(
             n_constants.VPORT,
             vport[0]['ID'])
         self.assertEqual(nuage_policy_grps[0]['name'],
                          port['security_groups'][0])
 
-    def test_security_group_rule_invalid_nw_macro_update_port_negative(
-            self):
+    def test_security_group_rule_invalid_nw_macro_update_port_negative(self):
         sg1_body, _ = self._create_security_group()
         sg_id = sg1_body['security_group']['id']
         direction = 'ingress'
@@ -675,9 +676,9 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
             port_range_min=port_range_min,
             port_range_max=port_range_max,
             remote_ip_prefix=ip_prefix)
-        msg = ('Bad request: Error in REST call to VSD: Non supported remote'
-               ' CIDR in security rule: Network IP Address 172.16.50.210 must'
-               ' have host bits set to 0.')
+        msg = self.err_msg_base + (
+            'Non supported remote CIDR in security rule:'
+            ' Network IP Address 172.16.50.210 must have host bits set to 0.')
         post_body = {
             "network": self.network,
             "name": data_utils.rand_name('port-')
@@ -692,13 +693,13 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
             self.nuage_domain_type,
             self.nuage_any_domain[0]['ID'],
             filters='externalID',
-            filter_value=sg_id)
+            filter_values=sg_id)
         self.assertEqual(len(nuage_pg), 0)
         vport = self.nuage_client.get_vport(
             self.nuage_domain_type,
             self.nuage_any_domain[0]['ID'],
             filters='externalID',
-            filter_value=port['id'])
+            filter_values=port['id'])
         nuage_policy_grps = self.nuage_client.get_policygroup(
             n_constants.VPORT,
             vport[0]['ID'])
@@ -731,7 +732,7 @@ class TestSecGroupTestNuageL3Domain(SecGroupTestNuageBase):
 
         nuage_l3domain = cls.nuage_client.get_l3domain(
             filters='externalID',
-            filter_value=cls.router['id'])
+            filter_values=cls.router['id'])
 
         cls.nuage_any_domain = nuage_l3domain
         cls.nuage_domain_type = n_constants.DOMAIN
@@ -788,21 +789,23 @@ class SecGroupTestNuageBaseV6(SecGroupTestNuageBase):
     if netaddr.IPNetwork(CONF.network.project_network_v6_cidr).prefixlen < 64:
         _project_network_cidr = netaddr.IPNetwork('cafe:babe::/64')
 
-
-class SecGroupTestNuageL2DomainIPv6Test(SecGroupTestNuageBaseV6):
+    @classmethod
+    def skip_checks(cls):
+        super(SecGroupTestNuageBaseV6, cls).skip_checks()
+        if not Topology.has_single_stack_v6_support():
+            msg = 'No single-stack v6 support.'
+            raise cls.skipException(msg)
 
     @classmethod
     def resource_setup(cls):
-        super(SecGroupTestNuageL2DomainIPv6Test, cls).resource_setup()
+        super(SecGroupTestNuageBaseV6, cls).resource_setup()
 
         # Nuage specific resource addition
         name = data_utils.rand_name('network-')
         cls.network = cls.create_network(network_name=name)
         cls.ipv6_subnet = cls.create_subnet(cls.network, enable_dhcp=True)
         nuage_l2domain = cls.nuage_client.get_l2domain(
-            filters=['externalID', 'IPv6Address'],  # mind
-            filter_value=[cls.ipv6_subnet['network_id'],
-                          cls.ipv6_subnet['cidr']])
+            by_subnet=cls.ipv6_subnet)
         cls.nuage_any_domain = nuage_l2domain
         cls.nuage_domain_type = n_constants.L2_DOMAIN
 
@@ -836,9 +839,7 @@ class SecGroupTestNuageL2DomainDualstackTest(SecGroupTestNuageBaseV6):
         cls.ipv4_subnet = cls.create_subnet(cls.network, ip_version=4)
         cls.ipv6_subnet = cls.create_subnet(cls.network, enable_dhcp=False)
         nuage_l2domain = cls.nuage_client.get_l2domain(
-            filters=['externalID', 'address'],
-            filter_value=[cls.ipv4_subnet['network_id'],
-                          cls.ipv4_subnet['cidr']])
+            by_subnet=cls.ipv4_subnet)
         cls.nuage_any_domain = nuage_l2domain
         cls.nuage_domain_type = n_constants.L2_DOMAIN
 
@@ -885,7 +886,7 @@ class SecGroupTestNuageL3DomainIPv6Test(SecGroupTestNuageBaseV6):
 
         nuage_l3domain = cls.nuage_client.get_l3domain(
             filters='externalID',
-            filter_value=cls.router['id'])
+            filter_values=cls.router['id'])
 
         cls.nuage_any_domain = nuage_l3domain
         cls.nuage_domain_type = n_constants.DOMAIN
@@ -943,7 +944,7 @@ class SecGroupTestNuageL3DomainDualstackTest(SecGroupTestNuageBaseV6):
 
         nuage_l3domain = cls.nuage_client.get_l3domain(
             filters='externalID',
-            filter_value=cls.router['id'])
+            filter_values=cls.router['id'])
 
         cls.nuage_any_domain = nuage_l3domain
         cls.nuage_domain_type = n_constants.DOMAIN

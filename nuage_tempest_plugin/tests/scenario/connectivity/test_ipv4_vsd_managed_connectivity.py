@@ -1,5 +1,6 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
+
 from netaddr import IPAddress
 from netaddr import IPNetwork
 
@@ -89,8 +90,7 @@ class Ipv4L3VsdManagedConnectivityTest(NuageBaseTest):
     def test_icmp_connectivity_stateless_acl_l3_vsd_managed(self):
         self._test_icmp_connectivity_l3_vsd_managed(stateful=False)
 
-    def test_icmp_connectivity_l3_vsd_managed_link_shared_subnet(
-            self):
+    def test_icmp_connectivity_l3_vsd_managed_link_shared_subnet(self):
         # Provision shared dualstack subnet in shared infrastructure
         shared_vsd_l3domain_template = self.vsd_create_l3domain_template(
             enterprise=self.shared_infrastructure)
@@ -264,6 +264,13 @@ class Ipv4L3VsdManagedConnectivityWithAggrFlowsTest(
         Ipv4L3VsdManagedConnectivityTest):
 
     enable_aggregate_flows_on_vsd_managed = True
+
+    @classmethod
+    def skip_checks(cls):
+        super(Ipv4L3VsdManagedConnectivityWithAggrFlowsTest, cls).skip_checks()
+        if not Topology.has_aggregate_flows_support():
+            msg = 'No aggregate flows support.'
+            raise cls.skipException(msg)
 
     @staticmethod
     def get_static_route_data(remote_cidr, local_gw, nic):

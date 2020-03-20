@@ -20,6 +20,10 @@ VALID_MAC_ADDRESS = 'fa:fa:3e:e8:e8:01'
 VALID_MAC_ADDRESS_2A = 'fa:fa:3e:e8:e8:2a'
 VALID_MAC_ADDRESS_2B = 'fa:fa:3e:e8:e8:2b'
 
+SPOOFING_ENABLED = constants.ENABLED
+SPOOFING_DISABLED = (constants.INHERITED if Topology.is_v5
+                     else constants.DISABLED)
+
 
 ###############################################################################
 # MultiVIP . allowed address pairs
@@ -118,9 +122,7 @@ class OSManagedAllowedAddressPairsCliTest(
             addr_pair_port['mac_address'])
         # And no corresponding MultiVIP on the VSD
         vsd_l2_domain = self.nuage_client.get_l2domain(
-            filters=['externalID', 'address'],
-            filter_value=[cli_subnet4['network_id'],
-                          cli_subnet4['cidr']])
+            by_subnet=cli_subnet4)
         vsd_l2_domain = vsd_l2_domain[0]
 
         port_ext_id = self.nuage_client.get_vsd_external_id(
@@ -129,7 +131,7 @@ class OSManagedAllowedAddressPairsCliTest(
             constants.L2_DOMAIN,
             vsd_l2_domain['ID'],
             filters='externalID',
-            filter_value=port_ext_id)
+            filter_values=port_ext_id)
 
         self.assertIsNone(nuage_vport[0]['multiNICVPortID'],
                           "multiNICVPortID is not empty while it should be")
@@ -151,13 +153,13 @@ class OSManagedAllowedAddressPairsCliTest(
             constants.L2_DOMAIN,
             vsd_l2_domain['ID'],
             filters='externalID',
-            filter_value=port_ext_id6)
+            filter_values=port_ext_id6)
 
         self.assertIsNone(nuage_vport_dual[0]['multiNICVPortID'],
                           "multiNICVPortID is not empty while it should be")
 
         # And anti-address spoofing is disabled on vport in VSD
-        self.assertEqual(constants.ENABLED,
+        self.assertEqual(SPOOFING_ENABLED,
                          nuage_vport_dual[0]['addressSpoofing'])
         # When I delete the allowed address  pair from the port
         self.cli_remove_port_allowed_address_pairs(addr_pair_port['id'])
