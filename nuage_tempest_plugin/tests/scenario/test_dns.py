@@ -74,6 +74,6 @@ class DNSScenarioTest(nuage_test.NuageBaseTest):
     def test_dns_up_to_vm_l2_dualstack(self):
         self._test_dns_up_to_vm(ip_versions=[6, 4], is_l3=False)
 
-    @nuage_test.skip_because(bug='OPENSTACK-2654')
+    @decorators.attr(type='smoke')
     def test_dns_up_to_vm_l3_dualstack(self):
         self._test_dns_up_to_vm(ip_versions=[6, 4], is_l3=True)
