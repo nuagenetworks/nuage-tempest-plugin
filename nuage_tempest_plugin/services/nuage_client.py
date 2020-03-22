@@ -526,7 +526,7 @@ class NuageRestClient(object):
         }
         if externalId:
             data['externalID'] = self.get_vsd_external_id(externalId)
-        if self.extra_params:
+        if extra_params:
             data.update(extra_params)
         if not parent:
             parent = constants.DOMAIN
@@ -571,7 +571,7 @@ class NuageRestClient(object):
         }
         if externalId:
             data['externalID'] = self.get_vsd_external_id(externalId)
-        if self.extra_params:
+        if extra_params:
             data.update(extra_params)
         res_path = self.build_resource_path(
             parent, parent_id, constants.STATIC_ROUTE)
