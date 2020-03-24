@@ -400,6 +400,8 @@ class BaseTestCase(object):
             self._test_icmp_connectivity_stateful_acl_os_managed(
                 is_l3=False, stateful=False)
 
+        @testtools.skipIf(Topology.has_default_switchdev_port_profile(),
+                          reason='VRS-35482')
         def test_icmp_connectivity_stateful_acl_os_managed_l3(self):
             self._test_icmp_connectivity_stateful_acl_os_managed(is_l3=True)
 
