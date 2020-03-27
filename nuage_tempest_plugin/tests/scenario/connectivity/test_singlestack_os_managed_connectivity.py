@@ -237,7 +237,7 @@ class Ipv4OsMgdL2ConnectivityTest(SingleStackOsMgdConnectivityTestBase):
 
     @decorators.attr(type='smoke')
     @testtools.skipIf(not CONF.scenario.dhcp_client,
-                      reason='OPENSTACK-2786')
+                      reason='IP statically configured through cloud-init')
     def test_icmp_connectivity_l2_os_managed_no_dhcp(self):
         # Provision OpenStack network resources
         network, _ = self._create_resources(enable_dhcp=False)
@@ -259,7 +259,7 @@ class Ipv4OsMgdL2ConnectivityTest(SingleStackOsMgdConnectivityTestBase):
         self.assert_ping(server1, server2, network)
 
     @testtools.skipIf(not CONF.scenario.dhcp_client,
-                      reason='OPENSTACK-2786')
+                      reason='IP statically configured through cloud-init')
     def test_icmp_connectivity_l2_os_managed_no_dhcp_neg(self):
         # Provision OpenStack network resources
         network, _ = self._create_resources(enable_dhcp=False)
@@ -380,7 +380,7 @@ class Ipv4OsMgdL3ConnectivityTest(SingleStackOsMgdConnectivityTestBase):
         self.assert_ping(server12, server2, network2)
 
     @testtools.skipIf(not CONF.scenario.dhcp_client,
-                      reason='OPENSTACK-2786')
+                      reason='IP statically configured through cloud-init')
     def test_icmp_connectivity_l3_os_managed_no_dhcp(self):
         # Provision OpenStack network resources
         network, _ = self._create_resources(is_l3=True, enable_dhcp=False)
@@ -403,7 +403,7 @@ class Ipv4OsMgdL3ConnectivityTest(SingleStackOsMgdConnectivityTestBase):
         self.assert_ping(server1, server2, network)
 
     @testtools.skipIf(not CONF.scenario.dhcp_client,
-                      reason='OPENSTACK-2786')
+                      reason='IP statically configured through cloud-init')
     def test_icmp_connectivity_l3_os_managed_no_dhcp_neg(self):
         # Provision OpenStack network resources
         network, _ = self._create_resources(is_l3=True, enable_dhcp=False)

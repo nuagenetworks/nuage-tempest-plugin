@@ -96,5 +96,10 @@ NuageSutGroup = [
     cfg.BoolOpt('nuage_hybrid_mpls_enabled',
                 default=False,
                 help="Indicating whether nuage_hybrid_mpls is enabled."),
-
+    cfg.BoolOpt('use_network_scripts',
+                default=False,
+                help='Whether to use /etc/sysconfig/network-scripts '
+                     'for network interface configuration in VM\'s. '
+                     'This is needed e.g. when using DHCPv6 with RHEL VM\'s'
+                     'Not supported for cirros.'),
 ]
