@@ -5,21 +5,24 @@ import random
 import time
 
 
-def gimme_a_cidr_address(ip_version=4):
+def gimme_a_cidr_address(ip_version=4, netmask=None):
     """Get random IPv4 or IPv6 cidr
 
     This method was copied from neutron_lib since we cannot add it as a
     dependency at the moment due to python version issues
     """
     if ip_version == 4:
+        netmask = netmask or 24
         return '10.%d.%d.0/%d' % (random.randint(3, 254),
                                   random.randint(3, 254),
-                                  24)
-    return '2001:db8:%x::/%d' % (random.getrandbits(16), 64)
+                                  netmask)
+    else:
+        netmask = netmask or 64
+        return '2001:db8:%x::/%d' % (random.getrandbits(16), netmask)
 
 
-def gimme_a_cidr(ip_version=4):
-    return IPNetwork(gimme_a_cidr_address(ip_version))
+def gimme_a_cidr(ip_version=4, netmask=None):
+    return IPNetwork(gimme_a_cidr_address(ip_version, netmask))
 
 
 def get_cidr_attributes(ip_network):
