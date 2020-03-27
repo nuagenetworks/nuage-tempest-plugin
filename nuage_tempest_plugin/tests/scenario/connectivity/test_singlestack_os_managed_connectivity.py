@@ -1,4 +1,3 @@
-# Copyright 2017 - Nokia
 # All Rights Reserved.
 
 import sys
@@ -378,7 +377,7 @@ class BaseTestCase(object):
                              should_pass=stateful)
 
             if stateful:
-                self.sleep(seconds=6,
+                self.sleep(seconds=7,
                            msg="The OVS flows take some time to expire, e.g."
                                "for OVRS this is around 5 seconds. For "
                                "stateful ping traffic this means that when "
@@ -400,8 +399,6 @@ class BaseTestCase(object):
             self._test_icmp_connectivity_stateful_acl_os_managed(
                 is_l3=False, stateful=False)
 
-        @testtools.skipIf(Topology.has_default_switchdev_port_profile(),
-                          reason='VRS-35482')
         def test_icmp_connectivity_stateful_acl_os_managed_l3(self):
             self._test_icmp_connectivity_stateful_acl_os_managed(is_l3=True)
 
