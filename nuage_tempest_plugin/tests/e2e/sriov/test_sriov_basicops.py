@@ -61,6 +61,9 @@ class SriovBasicOpsTest(NuageBaseTest):
         if CONF.network.port_vnic_type not in ['direct']:
             msg = 'Test requires port_vnic_type "direct"'
             raise cls.skipException(msg)
+        if Topology.has_default_switchdev_port_profile():
+            raise cls.skipException('Test requires switchdev offloading '
+                                    'to be disabled')
 
     def _create_server_with_virtio_port(self):
         port = self.create_port(self.network, security_groups=[
@@ -206,6 +209,9 @@ class SriovTrunkTest(NuageBaseTest):
         if CONF.network.port_vnic_type not in ['direct']:
             msg = 'Test requires port_vnic_type "direct"'
             raise cls.skipException(msg)
+        if Topology.has_default_switchdev_port_profile():
+            raise cls.skipException('Test requires switchdev offloading '
+                                    'to be disabled')
 
     def _create_network(self, segmentation_id=0):
         network_type = 'vlan' if segmentation_id else 'flat'
