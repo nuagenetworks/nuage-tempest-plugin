@@ -19,7 +19,7 @@ class TestNuageL2BridgeCli(client_testcase.CLIClientTestCase):
         name = data_utils.rand_name('test-create-l2bridge-')
         bridge = self.create_nuage_l2bridge_cli(
             '--physnet ',
-            'physnet_name=physnet1,segmentation_id=100,'
+            'physnet_name=physnet1,segmentation_id=102,'
             'segmentation_type=vlan ', name)
         self.assertIsNotNone(bridge)
         self.delete_nuage_l2bridge_cli(name)
@@ -32,7 +32,7 @@ class TestNuageL2BridgeCli(client_testcase.CLIClientTestCase):
         self.assertIsNotNone(bridge)
         self.update_nuage_l2bridge_cli(
             '--physnet ',
-            'physnet_name=physnet1,segmentation_id=100,'
+            'physnet_name=physnet1,segmentation_id=103,'
             'segmentation_type=vlan ', name)
         bridge = self.show_nuage_l2bridge_cli(name)
         self.assertIsNotNone(bridge)

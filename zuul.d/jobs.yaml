@@ -59,6 +59,20 @@
       tempest_concurrency: 2
 
 - job:
+    name: tempest-full-vsdipam
+    parent: tempest-full
+    branches: ^(?!stable/(newton|ocata)).*$
+    vars: &vsd_ipam_vars
+      devstack_localrc:
+        NUAGE_IPAM_DRIVER: "nuage_vsd_managed"
+      devstack_local_conf:
+        test-config:
+          $TEMPEST_CONFIG:
+            nuage_sut:
+              ipam_driver: nuage_vsd_managed
+
+
+- job:
     name: tempest-full-5.4
     parent: networking-nuage-base-5.4
     # This currently works from pike on.
@@ -94,6 +108,12 @@
       tempest_test_regex: '^(tempest|neutron_tempest_plugin)\.(api|scenario)'
       tempest_test_blacklist: "{{devstack_base_dir}}/nuage-tempest-plugin/tempest-blacklist.txt"
       tempest_concurrency: 2
+
+- job:
+    name: tempest-full-py3-vsdipam
+    parent: tempest-full-py3
+    branches: ^(?!stable/(newton|ocata)).*$
+    vars: *vsd_ipam_vars
 
 - job:
     name: networking-nuage-base
@@ -269,6 +289,12 @@
       tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|neutron_tempest_plugin\.api\.admin\.test_tag.*|nuage_tempest_plugin.*orchestration.*|nuage_tempest_plugin\.tests\.scenario\.connectivity\..*\..*AggrFlowsTest\..*|tempest\.api\.network\.test_ports.*test_show_port))'
 
 - job:
+    name: networking-nuage-tempest-smoke-vsdipam
+    parent: networking-nuage-tempest-smoke
+    branches: ^(?!stable/(newton|ocata)).*$
+    vars: *vsd_ipam_vars
+
+- job:
     name: networking-nuage-tempest-smoke-py3
     parent: networking-nuage-base-py3
     description: job used in gate testing smoke annotated tests
@@ -279,6 +305,12 @@
       devstack_local_conf: *mpls-type-driver-tempest
       tempest_test_regex: '^(nuage_tempest_plugin|tempest\.api\.network|neutron_tempest_plugin\.(api|scenario))\..*\[(?=.*smoke)'
       tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|neutron_tempest_plugin\.api\.admin\.test_tag.*|nuage_tempest_plugin.*orchestration.*|nuage_tempest_plugin\.tests\.scenario\.connectivity\..*\..*AggrFlowsTest\..*|tempest\.api\.network\.test_ports.*test_show_port))'
+
+- job:
+    name: networking-nuage-tempest-smoke-py3-vsdipam
+    parent: networking-nuage-tempest-smoke-py3
+    branches: ^(?!stable/(newton|ocata)).*$
+    vars: *vsd_ipam_vars
 
 - job:
     name: networking-nuage-tempest-smoke-5.4
@@ -328,6 +360,12 @@
       tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway|nuage_hybrid_mpls\.test_nuage_hybrid_mpls_sriov).*))'
 
 - job:
+    name: networking-nuage-tempest-virtio-vsdipam
+    parent: networking-nuage-tempest-virtio
+    branches: ^(?!stable/(newton|ocata)).*$
+    vars: *vsd_ipam_vars
+
+- job:
     name: networking-nuage-tempest-virtio-5.4
     parent: networking-nuage-base-5.4
     description: job running all virtio tests on 5.4 branches
@@ -349,6 +387,12 @@
       devstack_local_conf: *mpls-type-driver-tempest
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\..*'
       tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway|nuage_hybrid_mpls\.test_nuage_hybrid_mpls_sriov).*))'
+
+- job:
+    name: networking-nuage-tempest-virtio-py3-vsdipam
+    parent: networking-nuage-tempest-virtio-py3
+    branches: ^(?!stable/(newton|ocata)).*$
+    vars: *vsd_ipam_vars
 
 - job:
     name: networking-nuage-tempest-api-switchdev
@@ -388,6 +432,11 @@
               port_vnic_type: direct
             neutron_plugin_options:
               available_type_drivers: flat,vlan,local,vxlan,nuage_hybrid_mpls
+
+- job:
+    name: networking-nuage-tempest-sriov-vsdipam
+    parent: networking-nuage-tempest-sriov
+    vars: *vsd_ipam_vars
 
 - job:
     name: networking-nuage-tempest-sriov-5.4
@@ -472,6 +521,12 @@
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.baremetal\..*'
 
 - job:
+    name: networking-nuage-tempest-baremetal-vsdipam
+    parent: networking-nuage-tempest-baremetal
+    branches: ^(?!stable/(newton|ocata)).*$
+    vars: *vsd_ipam_vars
+
+- job:
     name: networking-nuage-tempest-baremetal-5.4
     parent: networking-nuage-base-5.4
     description: job running all baremetal tests on 5.4 branches
@@ -491,6 +546,12 @@
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.scenario\..*'
       tempest_black_regex: '^nuage_tempest_plugin\.tests\.scenario\.connectivity\..*\..*AggrFlowsTest\..*'
       tempest_concurrency: 2
+
+- job:
+    name: networking-nuage-tempest-scenario-vsdipam
+    parent: networking-nuage-tempest-scenario
+    branches: ^(?!stable/(newton|ocata)).*$
+    vars: *vsd_ipam_vars
 
 - job:
     name: networking-nuage-tempest-scenario-5.4

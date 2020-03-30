@@ -89,5 +89,10 @@ NuageSutGroup = [
                      'GW port has vlan 0 provisioned by external entity'),
     cfg.BoolOpt('nuage_fip_underlay',
                 default=False,
-                help='System under test underlay setting for FIP subnets')
+                help='System under test underlay setting for FIP subnets'),
+    cfg.StrOpt('ipam_driver',
+               default='nuage_internal',
+               help="Currently active ipam driver. "
+                    "Valid examples: nuage_internal, nuage_vsd_managed"),
+
 ]

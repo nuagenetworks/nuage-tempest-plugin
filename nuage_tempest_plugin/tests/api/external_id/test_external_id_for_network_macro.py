@@ -19,7 +19,7 @@ from tempest.lib.common.utils import test_utils
 
 import testtools
 
-from .external_id import ExternalId
+from nuage_tempest_plugin.tests.api.external_id.external_id import ExternalId
 
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.topology import Topology
@@ -82,7 +82,7 @@ class ExternalIdForNetworkMacroTest(base.BaseAdminNetworkTest):
                 "Multiple choices",
                 self.test.nuage_client.delete_resource,
                 n_constants.ENTERPRISE_NET_MACRO,
-                self.vsd_network_macro['ID'])
+                self.vsd_network_macro['ID'], responseChoice=False)
 
     @classmethod
     def create_port(cls, network, **kwargs):

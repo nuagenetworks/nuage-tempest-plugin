@@ -89,7 +89,7 @@ class ExternalIdForVmTest(
                 n_exceptions.MultipleChoices,
                 "Multiple choices",
                 self.test.nuage_client.delete_resource,
-                n_constants.VM, self.vsd_vm['ID'])
+                n_constants.VM, self.vsd_vm['ID'], responseChoice=False)
 
     def setUp(self):
         super(ExternalIdForVmTest, self).setUp()

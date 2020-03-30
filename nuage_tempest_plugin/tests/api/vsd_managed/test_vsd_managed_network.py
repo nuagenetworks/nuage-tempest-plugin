@@ -15,6 +15,7 @@
 
 from netaddr import IPAddress
 from netaddr import IPNetwork
+import testtools
 
 from tempest.api.network import base
 from tempest.lib.common.utils import data_utils
@@ -426,6 +427,9 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
             vsd_unmanaged_shared_l2dom['DHCPManaged'])
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(CONF.nuage_sut.ipam_driver == 'nuage_vsd_managed',
+                      'Unmanaged domains not supported with nuage_vsd_managed '
+                      'ipam.')
     def test_port_update_link_vsd_unmanaged_shared_subnet_l2_with_vm(self):
         vsd_unmanaged_shared_l2dom, vsd_l2dom_with_shared_unmanaged = \
             self._create_unmgd_link_unmanaged_shared_subnet_l2()

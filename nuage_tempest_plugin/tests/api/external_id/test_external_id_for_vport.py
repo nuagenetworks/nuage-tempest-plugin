@@ -22,7 +22,7 @@ from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.lib.utils import exceptions as n_exceptions
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
-from .external_id import ExternalId
+from nuage_tempest_plugin.tests.api.external_id.external_id import ExternalId
 
 LOG = Topology.get_logger(__name__)
 
@@ -252,7 +252,7 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
                 "Multiple choices",
                 self.test.nuage_client.delete_resource,
                 n_constants.VPORT,
-                self.vsd_vport['ID'])
+                self.vsd_vport['ID'], responseChoice=False)
 
     @classmethod
     def setup_clients(cls):

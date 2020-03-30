@@ -262,26 +262,6 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
 
         return cls.dhcp_agent_present
 
-    @classmethod
-    def _try_delete(cls, delete_callable, *args, **kwargs):
-        """Cleanup resources in case of test-failure
-
-        Some resources are explicitly deleted by the test.
-        If the test failed to delete a resource, this method will execute
-        the appropriate delete methods. Otherwise, the method ignores NotFound
-        exceptions thrown for resources that were correctly deleted by the
-        test.
-
-        :param delete_callable: delete method
-        :param args: arguments for delete method
-        :param kwargs: keyword arguments for delete method
-        """
-        try:
-            delete_callable(*args, **kwargs)
-        # if resource is not found, this means it was deleted in the test
-        except lib_exc.NotFound:
-            pass
-
     def assert_icmp_connectivity(self, from_server, to_server,
                                  network_name=None,
                                  is_connectivity_expected=True, ip_version=6):
@@ -730,7 +710,9 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                                                 **kwargs)
         port = body['port']
         if cleanup:
-            self.addCleanup(manager.ports_client.delete_port, port['id'])
+            self.addCleanup(test_utils.call_and_ignore_notfound_exc,
+                            manager.ports_client.delete_port,
+                            port['id'])
 
         return port
 
@@ -1076,7 +1058,8 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         interface = manager.routers_client.add_router_interface(
             router_id, subnet_id=subnet_id)
         if cleanup:
-            self.addCleanup(self.remove_router_interface, router_id, subnet_id,
+            self.addCleanup(test_utils.call_and_ignore_notfound_exc,
+                            self.remove_router_interface, router_id, subnet_id,
                             manager)
         return interface
 
@@ -1154,9 +1137,9 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             client.update_trunk(trunk['id'], admin_state_up=True)
         if trunk['sub_ports']:
             # Removes trunk ports before deleting it
-            self._try_delete(client.remove_subports,
-                             trunk['id'],
-                             trunk['sub_ports'])
+            test_utils.call_and_ignore_notfound_exc(client.remove_subports,
+                                                    trunk['id'],
+                                                    trunk['sub_ports'])
 
         # we have to detach the interface from the server before
         # the trunk can be deleted.
@@ -1414,7 +1397,8 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         vm = None
 
         def cleanup_server():
-            self._try_delete(manager.servers_client.delete_server, vm['id'])
+            test_utils.call_and_ignore_notfound_exc(
+                manager.servers_client.delete_server, vm['id'])
             waiters.wait_for_server_termination(
                 manager.servers_client, vm['id'])
 

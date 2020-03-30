@@ -2,6 +2,9 @@
 # All Rights Reserved.
 
 from six import iteritems
+import testtools
+
+from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as nuage_constants
@@ -9,7 +12,8 @@ from nuage_tempest_plugin.tests.api.ipv6.test_allowed_address_pair \
     import BaseAllowedAddressPair
 from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
     import BaseVSDManagedNetworksIPv6Test
-from tempest.test import decorators
+
+CONF = Topology.get_conf()
 
 ###############################################################################
 ###############################################################################
@@ -23,6 +27,9 @@ LOG = Topology.get_logger(__name__)
 class VSDManagedAllowedAddressPairsTest(BaseAllowedAddressPair,
                                         BaseVSDManagedNetworksIPv6Test):
 
+    @testtools.skipIf(CONF.nuage_sut.ipam_driver == 'nuage_vsd_managed',
+                      'Unmanaged domains not supported with nuage_vsd_managed '
+                      'ipam.')
     def test_provision_ports_without_address_pairs_in_l2_subnet_vsd_unmanaged(
             self):
         vsd_l2_subnet = self._given_vsd_l2domain(dhcp_managed=False)

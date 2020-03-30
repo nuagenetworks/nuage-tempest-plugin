@@ -253,7 +253,7 @@ class NuageRestClient(object):
             extra_headers = self.get_extra_headers(filters, filter_value)
         return self.get(res_path, extra_headers)
 
-    def delete_resource(self, resource, resource_id, responseChoice=False):
+    def delete_resource(self, resource, resource_id, responseChoice=True):
         res_path = self.build_resource_path(resource, resource_id)
         if responseChoice:
             res_path = res_path + RESPONSECHOICE
@@ -349,10 +349,11 @@ class NuageRestClient(object):
         return self.get_resource(constants.DOMAIN,
                                  filters, filter_value, netpart_name)
 
-    def delete_domain(self, dom_id):
+    def delete_domain(self, dom_id, responseChoice=True):
         for attempt in range(1, Topology.nbr_retries_for_test_robustness + 1):
             try:
-                return self.delete_resource(constants.DOMAIN, dom_id)
+                return self.delete_resource(constants.DOMAIN, dom_id,
+                                            responseChoice)
 
             except Exception as e:
                 if attempt == Topology.nbr_retries_for_test_robustness:
@@ -456,8 +457,9 @@ class NuageRestClient(object):
                                             subnet_id, None)
         return self.put(res_path, data)
 
-    def delete_domain_subnet(self, subnet_id):
-        return self.delete_resource(constants.SUBNETWORK, subnet_id)
+    def delete_domain_subnet(self, subnet_id, responseChoice=True):
+        return self.delete_resource(constants.SUBNETWORK, subnet_id,
+                                    responseChoice)
 
     # DHCPOptions
     def create_dhcpoption(self, parent_type, parent,
@@ -664,10 +666,11 @@ class NuageRestClient(object):
             None)
         return self.put(res_path, data)
 
-    def delete_l2domain(self, l2dom_id):
+    def delete_l2domain(self, l2dom_id, responseChoice=True):
         for attempt in range(1, Topology.nbr_retries_for_test_robustness + 1):
             try:
-                return self.delete_resource(constants.L2_DOMAIN, l2dom_id)
+                return self.delete_resource(constants.L2_DOMAIN, l2dom_id,
+                                            responseChoice)
 
             except Exception as e:
                 if attempt == Topology.nbr_retries_for_test_robustness:
