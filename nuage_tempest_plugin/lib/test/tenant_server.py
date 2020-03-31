@@ -567,7 +567,8 @@ class TenantServer(object):
 
             # TODO(Kris) check each subnet separately for dhcp seems more
             #            suited?
-            if self.force_dhcp or self.parent.is_dhcp_enabled(network):
+            if self.force_dhcp or self.parent.is_dhcp_enabled(
+                    network, manager=manager):
                 if first_nic_prepared:
                     LOG.info('[{}] Preparing user-data for {} nics'.format(
                         self.tag, nbr_nics))

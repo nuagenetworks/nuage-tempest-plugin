@@ -630,8 +630,10 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                       'as there are many ({})'.format(ip_version,
                                                       len(subnets)))
 
-    def is_dhcp_enabled(self, network, require_all_subnets_to_match=False):
-        subnets = self.list_subnets(network_id=network['id'])
+    def is_dhcp_enabled(self, network, require_all_subnets_to_match=False,
+                        manager=None):
+        subnets = self.list_subnets(network_id=network['id'],
+                                    manager=manager)
         if require_all_subnets_to_match:
             for subnet in subnets:
                 if not subnet['enable_dhcp']:
