@@ -537,6 +537,37 @@ class Ipv4OsManagedConnectivityTest(
         self.assert_ping(server1, server2, ext_network,
                          address=fip2['floating_ip_address'])
 
+    @decorators.attr(type='smoke')
+    def test_icmp_connectivity_l3_os_managed_cross_subnet(self):
+        # Provision OpenStack network resources
+        # A goal of this tests is also to use the small /30 subnet
+        network_1 = self.create_network(port_security_enabled=False)
+        subnet_1 = self.create_subnet(network_1)
+        network_2 = self.create_network(port_security_enabled=False)
+        subnet_2 = self.create_subnet(network_2,
+                                      cidr=IPNetwork('10.11.12.1/30'),
+                                      mask_bits=30)
+        # attach subnets to router
+        router = self.create_router(
+            external_network_id=self.ext_net_id)
+        self.router_attach(router, subnet_1)
+        self.router_attach(router, subnet_2)
+
+        # Launch tenant servers in OpenStack network
+        server2 = self.create_tenant_server(
+            [network_2],
+            security_groups=[],
+            prepare_for_connectivity=False)
+
+        # to make it reachable via FIP, gateway also must be configured.
+        server1 = self.create_tenant_server(
+            [network_1],
+            security_groups=[],
+            prepare_for_connectivity=True)
+
+        # Test connectivity between peer servers
+        self.assert_ping(server1, server2, network_2)
+
 
 class Ipv6OsManagedConnectivityTest(
         BaseTestCase.SingleStackOsManagedConnectivityTest):
