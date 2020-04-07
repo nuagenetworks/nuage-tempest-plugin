@@ -41,7 +41,7 @@ class NuageApiTest(NuageBaseTest):
                          domain_json.get('net_partition_id'))
         self.assertEqual(vspk_domain.dhcp_managed,
                          domain_json.get('dhcp_managed'))
-        self.assertEqual(vspk_domain.ip_type, domain_json.get('ip_type'))
+        self.assertEqual(vspk_domain.ip_type, domain_json.get('ip_version'))
         l2dom_address = netaddr.IPNetwork(
             vspk_domain.address + '/' + vspk_domain.netmask)
         self.assertEqual(str(l2dom_address), domain_json.get('cidr'))
