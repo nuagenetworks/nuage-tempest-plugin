@@ -516,6 +516,7 @@ class UpgradeTo60Test(NuageBaseTest, L3Mixin,
 
             subnet = self.create_subnet(
                 network, ip_version=4,
+                mask_bits=24,
                 enable_dhcp=False)
             self._resources['l2_subnets'].append(subnet)
 
@@ -599,6 +600,7 @@ class UpgradeTo60Test(NuageBaseTest, L3Mixin,
             'ip_version': self._ip_version
         }
         subnet1 = self.create_subnet(manager=self.admin_manager,
+                                     mask_bits=24,
                                      **subnet_params)
 
         gateway_vsg = self.vsd_client.create_gateway(
@@ -665,8 +667,9 @@ class UpgradeTo60Test(NuageBaseTest, L3Mixin,
         )
 
         network = self.create_network()
-        cidr = nuage_data_utils.gimme_a_cidr()
-        subnet = self.create_subnet(network, cidr=cidr)
+        cidr = nuage_data_utils.gimme_a_cidr(netmask=23)
+        subnet = self.create_subnet(network, cidr=cidr,
+                                    mask_bits=cidr.prefixlen)
 
         # we can't test L3 with bridge ports.
         if bridge_vport:
@@ -861,8 +864,8 @@ class UpgradeTo60Test(NuageBaseTest, L3Mixin,
         policy_group_allow_all = l3_domain.policy_groups.get(
             filter='externalID == "{}"'.format(
                 self._get_external_id(constants.NUAGE_PLCY_GRP_ALLOW_ALL)))[0]
-        vports = policy_group_allow_all.vports.get()
-        self.assertEqual(sum(vport_num), len(vports))
+        vports = policy_group_allow_all.vports.get_count()
+        self.assertEqual(sum(vport_num), vports)
         self.assertEqual(policy_group.id, policy_group_allow_all.id)
 
     def _create_os_resource(self, topologies):
@@ -876,6 +879,7 @@ class UpgradeTo60Test(NuageBaseTest, L3Mixin,
             for ip_version in topology['ip_versions']:
                 subnet = self.create_subnet(
                     network, ip_version=ip_version,
+                    mask_bits=24 if ip_version == 4 else 64,
                     enable_dhcp=topology['DHCPv{}'.format(ip_version)])
                 temp_subnets.append(subnet)
 
@@ -1078,10 +1082,12 @@ class UpgradeTo60Test(NuageBaseTest, L3Mixin,
                 # checking for IPv4 is enough because only supported cases
                 # singlestack v4 and dualstack
                 router = self.create_router(
-                    external_network_id=CONF.network.public_network_id
+                    external_network_id=CONF.network.public_network_id,
+                    cleanup=False
                 )
                 self.router_attach(router, subnet, cleanup=False)
                 self.router_detach(router, subnet)
+                self.delete_router(router)
 
     # l2/l3 methods are same but might differ when extended.
     def _verify_l2_dom(self, l2dom, subnet):
