@@ -24,6 +24,23 @@ LOG = Topology.get_logger(__name__)
 VIRTIO_ARGS = {'binding:vnic_type': 'normal', 'binding:profile': {}}
 
 
+class FlowCaptureFailure(Exception):
+    pass
+
+
+def retry_flow_capture(func):
+    """Decorator to retry a method when FlowCaptureFailure occurs"""
+    def function_wrapper(*args, **kwargs):
+        retry_limit = 5
+        for i in range(retry_limit):
+            try:
+                return func(*args, **kwargs)
+            except FlowCaptureFailure:
+                if i == retry_limit - 1:
+                    raise
+    return function_wrapper
+
+
 class E2eTestBase(NuageBaseTest):
     # defaults
     IP_VERSIONS_V4 = (4,)
@@ -146,6 +163,24 @@ class E2eTestBase(NuageBaseTest):
             args['config_drive'] = True
         return args
 
+    @retry_flow_capture
+    def _validate_icmp(self, connectivity_check_kwargs, offload_check_kwargs):
+        ip_version = connectivity_check_kwargs['ip_version']
+        LOG.info('Verify ICMP/IPv{} traffic'.format(ip_version))
+        self.assert_icmp_connectivity(**connectivity_check_kwargs)
+        if (ip_version == 6 and not self.is_icmpv6_offload_supported):
+            LOG.info('skipping ICMPv6 offloading checks as they are not '
+                     'supported by CX-5')
+        else:
+            self.validate_flows(**offload_check_kwargs)
+
+    @retry_flow_capture
+    def _validate_tcp(self, connectivity_check_kwargs, offload_check_kwargs):
+        ip_version = connectivity_check_kwargs['ip_version']
+        LOG.info('Verify TCP/IPv{} traffic'.format(ip_version))
+        self.assert_tcp_connectivity(**connectivity_check_kwargs)
+        self.validate_flows(**offload_check_kwargs)
+
     def _offload_test(self, from_server, from_port, to_server, to_port,
                       destination_network):
         """Send traffic between the servers and analyze ovs flows
@@ -159,22 +194,22 @@ class E2eTestBase(NuageBaseTest):
         to_hv = self.get_hypervisor(to_server)
 
         for ip_version in self.ip_versions:
-            kwargs = dict(from_server=from_server, to_server=to_server,
-                          network_name=destination_network['name'],
-                          ip_version=ip_version)
-
-            LOG.info('Verify TCP/IPv{} traffic'.format(ip_version))
-            self.assert_tcp_connectivity(**kwargs)
-            self.validate_flows(from_hv, to_hv, from_port, to_port, ip_version)
-
-            LOG.info('Verify ICMP/IPv{} traffic'.format(ip_version))
-            self.assert_icmp_connectivity(**kwargs)
-            if ip_version == 6 and not self.is_icmpv6_offload_supported:
-                LOG.info('skipping ICMPv6 offloading checks as they are not '
-                         'supported by CX-5')
-            else:
-                self.validate_flows(from_hv, to_hv, from_port, to_port,
-                                    ip_version)
+            connectivity_check_kwargs = dict(
+                from_server=from_server,
+                to_server=to_server,
+                network_name=destination_network['name'],
+                ip_version=ip_version)
+            offload_check_kwargs = dict(
+                from_hv=from_hv,
+                to_hv=to_hv,
+                from_port=from_port,
+                to_port=to_port,
+                ip_version=ip_version
+            )
+            self._validate_tcp(connectivity_check_kwargs,
+                               offload_check_kwargs)
+            self._validate_icmp(connectivity_check_kwargs,
+                                offload_check_kwargs)
 
     def validate_flows(self, from_hv, to_hv, from_port,
                        to_port, ip_version):
@@ -242,6 +277,9 @@ class E2eTestBase(NuageBaseTest):
         # Check that there are matching flows and that these are
         # offloading as expected
         flows_before_offloading = expected_flows.result()
+        if not flows_before_offloading:
+            raise FlowCaptureFailure('No relevant flows captured. Trace: {}'
+                                     .format(expected_flows.trace()))
         if is_offloading_expected:
             expected_flows.offload()
         else:
