@@ -99,6 +99,11 @@ class FlowQuery(object):
         """Flows must not be offloaded"""
         pass
 
+    @abc.abstractmethod
+    def no_arp(self):
+        """No arp flows"""
+        pass
+
     def trace(self):
         return (' -> '.join('{}({}) ({} flows)'
                             .format(item['filter'],
@@ -192,6 +197,12 @@ class OvrsFlowQuery(FlowQuery):
         self._not_matches('.*offloaded:yes.*')
         return self
 
+    @filter
+    def no_arp(self):
+        """No arp flows"""
+        self._not_matches('.*arp.*')
+        return self
+
 
 class AvrsFlowQuery(FlowQuery):
 
@@ -258,4 +269,9 @@ class AvrsFlowQuery(FlowQuery):
     @filter
     def no_offload(self):
         """Flows must not be offloaded"""
+        return self
+
+    @filter
+    def no_arp(self):
+        """No arp flows"""
         return self

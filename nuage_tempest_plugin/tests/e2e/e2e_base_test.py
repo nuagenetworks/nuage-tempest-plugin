@@ -231,7 +231,7 @@ class E2eTestBase(NuageBaseTest):
     def _validate_offloaded_flow(self, flows, is_vxlan_tunneled,
                                  is_offloading_expected, src_mac,
                                  dst_mac, is_originating_from_hv):
-        expected_flows = flows.src_mac(src_mac).dst_mac(dst_mac)
+        expected_flows = flows.src_mac(src_mac).dst_mac(dst_mac).no_arp()
 
         if is_vxlan_tunneled:
             if is_originating_from_hv:
@@ -249,13 +249,15 @@ class E2eTestBase(NuageBaseTest):
         flows_after_offloading = expected_flows.result()
 
         self.assertNotEmpty(flows_after_offloading,
-                            ("Expected flows not found. Trace: {}"
+                            ("Offloading failure. Trace: {}"
                              .format(expected_flows.trace())))
         self.assertEqual(len(flows_before_offloading),
-                         len(flows_before_offloading),
-                         ("Not all relevant flows between source and "
-                          "destination port are offloaded. Trace: {}"
-                          .format(expected_flows.trace())))
+                         len(flows_after_offloading),
+                         ("Offloading failure. Not all relevant flows between "
+                          "the source and destination port are offloaded. "
+                          "Violating flows: {}"
+                          .format(set(flows_before_offloading) -
+                                  set(flows_after_offloading))))
 
     def _test_same_hv_virtio_virtio(self):
         hv = self.selected_hypervisors[0]['hypervisor_hostname']
