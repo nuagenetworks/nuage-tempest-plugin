@@ -208,7 +208,8 @@ class VsdHelper(object):
     def delete_l2domain_template(self, l2dom_t_id):
         return self.nuage_rest_client.delete_l2domaintemplate(l2dom_t_id)
 
-    def create_l2domain(self, name=None, enterprise=None, template=None):
+    def create_l2domain(self, name=None, enterprise=None, template=None,
+                        **kwargs):
         if enterprise and not isinstance(enterprise, self.vspk.NUEnterprise):
             # get enterprise by _name_
             enterprise = self.get_enterprise_by_name(enterprise)
@@ -222,7 +223,8 @@ class VsdHelper(object):
 
         l2domain = self.vspk.NUL2Domain(
             name=name,
-            template=template)
+            template=template,
+            **kwargs)
 
         return enterprise.instantiate_child(l2domain, template)[0]
 
