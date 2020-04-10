@@ -546,3 +546,20 @@
         neutron-lbaas: https://opendev.org/openstack/neutron-lbaas.git
       tempest_plugins:
         - neutron-lbaas
+
+- job:
+    name: networking-nuage-fwaas-v1
+    parent: networking-nuage-base
+    branches: ".*(rocky|queens).*"
+    roles:
+      - zuul: openstack/devstack
+    required-projects:
+      - openstack/neutron-fwaas
+    vars:
+      tempest_test_regex: '^(neutron_fwaas|nuage_tempest_plugin\.tests\.api\.test_fwaas|nuage_tempest_plugin\.tests\.scenario\.test_fwaas)'
+      devstack_plugins:
+        neutron-fwaas: https://opendev.org/openstack/neutron-fwaas.git
+      devstack_services:
+        q-fwaas-v1: true
+      devstack_localrc:
+        FWAAS_PLUGIN: NuageFWaaS
