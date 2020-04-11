@@ -84,7 +84,7 @@ class Release(object):
                 return self._openstack_release is None
 
     def __gt__(self, other):
-        return not self < other
+        return not self <= other
 
     def __str__(self):
         if self.labelled:

@@ -72,16 +72,6 @@ class Topology(object):
         return Topology.nuage_release >= Release(nuage_release)
 
     @staticmethod
-    def from_tock(nuage_release):
-        this = Topology.nuage_release
-        spec = Release(nuage_release)
-        # TODO(team)
-        # below comparison is hacky and should be replaced - problem is
-        # Release class still assumes nuage release formats in form of x.yRz
-        return (this > spec and
-                Release.nuage_part(this) != Release.nuage_part(spec) + '.1')
-
-    @staticmethod
     def from_openstack(openstack_version):
         return Topology.openstack_version >= Release(openstack_version)
 
