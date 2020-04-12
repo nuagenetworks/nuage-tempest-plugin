@@ -256,6 +256,13 @@
     # This currently works from stable/pike on
     branches: ^(?!stable/(newton|ocata)).*$
     vars:
+      devstack_localrc: &mpls-type-driver-devstack
+        Q_ML2_PLUGIN_TYPE_DRIVERS: vxlan,vlan,flat,nuage_hybrid_mpls
+      devstack_local_conf: &mpls-type-driver-tempest
+        test-config:
+          $TEMPEST_CONFIG:
+            neutron_plugin_options:
+              available_type_drivers: flat,vlan,local,vxlan,nuage_hybrid_mpls
       tempest_test_regex: '^(nuage_tempest_plugin|tempest\.api\.network|neutron_tempest_plugin\.(api|scenario))\..*\[(?=.*smoke)'
       tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|neutron_tempest_plugin\.api\.admin\.test_tag.*|nuage_tempest_plugin.*orchestration.*|nuage_tempest_plugin\.tests\.scenario\.connectivity\..*\..*AggrFlowsTest\..*|tempest\.api\.network\.test_ports.*test_show_port))'
 
@@ -266,6 +273,8 @@
     # This currently works from stable/pike on
     branches: ^(?!stable/(newton|ocata)).*$
     vars:
+      devstack_localrc: *mpls-type-driver-devstack
+      devstack_local_conf: *mpls-type-driver-tempest
       tempest_test_regex: '^(nuage_tempest_plugin|tempest\.api\.network|neutron_tempest_plugin\.(api|scenario))\..*\[(?=.*smoke)'
       tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|neutron_tempest_plugin\.api\.admin\.test_tag.*|nuage_tempest_plugin.*orchestration.*|nuage_tempest_plugin\.tests\.scenario\.connectivity\..*\..*AggrFlowsTest\..*|tempest\.api\.network\.test_ports.*test_show_port))'
 
@@ -311,13 +320,8 @@
     branches: ^(?!stable/(newton|ocata)).*$
     timeout: 18000
     vars:
-      devstack_localrc:
-        Q_ML2_PLUGIN_TYPE_DRIVERS: vxlan,vlan,flat,nuage_hybrid_mpls
-      devstack_local_conf:
-        test-config:
-          $TEMPEST_CONFIG:
-            neutron_plugin_options:
-              available_type_drivers: flat,vlan,local,vxlan,nuage_hybrid_mpls
+      devstack_localrc: *mpls-type-driver-devstack
+      devstack_local_conf: *mpls-type-driver-tempest
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\..*'
       tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway|nuage_hybrid_mpls\.test_nuage_hybrid_mpls_sriov).*))'
 
@@ -339,13 +343,8 @@
     branches: ^(?!stable/(newton|ocata)).*$
     timeout: 18000
     vars:
-      devstack_localrc:
-        Q_ML2_PLUGIN_TYPE_DRIVERS: vxlan,vlan,flat,nuage_hybrid_mpls
-      devstack_local_conf:
-        test-config:
-          $TEMPEST_CONFIG:
-            neutron_plugin_options:
-              available_type_drivers: flat,vlan,local,vxlan,nuage_hybrid_mpls
+      devstack_localrc: *mpls-type-driver-devstack
+      devstack_local_conf: *mpls-type-driver-tempest
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\..*'
       tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway|nuage_hybrid_mpls\.test_nuage_hybrid_mpls_sriov).*))'
 

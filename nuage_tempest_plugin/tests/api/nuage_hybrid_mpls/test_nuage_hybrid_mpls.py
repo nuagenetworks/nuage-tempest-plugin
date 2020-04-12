@@ -21,6 +21,7 @@ from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
 
 from tempest.lib import exceptions
+from tempest.test import decorators
 
 
 class NuageHybridMplsTest(NuageBaseTest):
@@ -50,6 +51,7 @@ class NuageHybridMplsTest(NuageBaseTest):
                                           **kwargs)
         return l3subnet
 
+    @decorators.attr(type='smoke')
     def test_os_managed_subnet_tunnel_type_mpls(self):
         # Nuage Hybrid MPLS Network
         kwargs = {'provider:network_type': 'nuage_hybrid_mpls'}
@@ -79,6 +81,7 @@ class NuageHybridMplsTest(NuageBaseTest):
                                          cidr=subnet['cidr'])
         self.assertEqual('MPLS', l2domain.l2_encap_type)
 
+    @decorators.attr(type='smoke')
     def test_vsd_managed_subnet_tunnel_type_mpls(self):
         # L2 Domain
         l2domain = self.create_l2_domain_tunnel_type_mpls()
@@ -116,6 +119,7 @@ class NuageHybridMplsTest(NuageBaseTest):
                                network,
                                **kwargs)
 
+    @decorators.attr(type='smoke')
     @testtools.skipIf(Topology.at_openstack('queens'),
                       'SegmentClient not loaded')
     def test_router_interface_blocked_tunnel_type_mpls(self):
@@ -163,6 +167,7 @@ class NuageHybridMplsTest(NuageBaseTest):
                                self.create_router_interface,
                                **kwargs)
 
+    @decorators.attr(type='smoke')
     @testtools.skipIf(Topology.at_openstack('queens'),
                       'SegmentClient not loaded')
     def test_vxlan_mpls_segments_blocked_single_network(self):
@@ -203,6 +208,7 @@ class NuageHybridMplsTest(NuageBaseTest):
                                self.create_segment,
                                **kwargs)
 
+    @decorators.attr(type='smoke')
     def test_virtio_port_blocked_tunnel_type_mpls(self):
         kwargs = {'provider:network_type': 'nuage_hybrid_mpls'}
         network = self.create_network(manager=self.admin_manager, **kwargs)
