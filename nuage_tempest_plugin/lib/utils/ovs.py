@@ -131,14 +131,16 @@ class OvrsFlowQuery(FlowQuery):
     def src_mac(self, mac):
         """Flows must have src mac equal to input"""
 
-        self._matches(r'.*eth\(src={},dst=[^\)]+\).*'.format(mac.lower()))
+        self._matches(r'.*eth\(src={},dst=[^\)]+\).*actions.*'
+                      .format(mac.lower()))
         return self
 
     @filter
     def dst_mac(self, mac):
         """Flows must have dst mac equal to input"""
 
-        self._matches(r'.*eth\(src=[^\)]+,dst={}\).*'.format(mac.lower()))
+        self._matches(r'.*eth\(src=[^\)]+,dst={}\).*actions.*'
+                      .format(mac.lower()))
         return self
 
     @filter

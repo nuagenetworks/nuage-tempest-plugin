@@ -13,6 +13,7 @@
 #    under the License.
 import abc
 import copy
+import json
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
@@ -294,8 +295,14 @@ class E2eTestBase(NuageBaseTest):
                          ("Offloading failure. Not all relevant flows between "
                           "the source and destination port are offloaded. "
                           "Violating flows: {}"
-                          .format(set(flows_before_offloading) -
-                                  set(flows_after_offloading))))
+                          # Flows can be anything.. e.g. AVRS uses dicts
+                          # while OVRS uses strings.. Since it is not possible
+                          # to create a set out of a list of dicts we convert
+                          # them to strings here
+                          .format({json.dumps(flow, sort_keys=True)
+                                   for flow in flows_before_offloading} -
+                                  {json.dumps(flow, sort_keys=True)
+                                   for flow in flows_after_offloading})))
 
     def _test_same_hv_virtio_virtio(self):
         hv = self.selected_hypervisors[0]['hypervisor_hostname']
