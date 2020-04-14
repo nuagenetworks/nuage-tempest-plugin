@@ -2,6 +2,7 @@
 # All Rights Reserved.
 
 from tempest.lib.common.utils import data_utils
+from tempest.lib import decorators
 from tempest.lib import exceptions
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
@@ -22,6 +23,7 @@ class TestNuageRouterOSMgdAggregateFlows(NuageBaseTest):
             raise cls.skipException('OS managed aggregate flows available'
                                     'starting 20.5')
 
+    @decorators.attr(type='smoke')
     def test_aggregate_flows_create_get_router(self):
         """Relevant router interface:
 
@@ -38,6 +40,7 @@ class TestNuageRouterOSMgdAggregateFlows(NuageBaseTest):
         for conf in configs:
             self._router_create_get_check_vsd(conf[0], conf[1], conf[2])
 
+    @decorators.attr(type='smoke')
     def test_aggregate_flows_update_router(self):
         """Relevant router interface:
 
@@ -221,6 +224,8 @@ class TestNuageRouterOSMgdAggregateFlows(NuageBaseTest):
             self.update_router,
             router,
             nuage_aggregate_flows=update_nuage_aggregate_flows)
+        router = self.get_router(router['id'])
+        self.assertIsNotNone(router['external_gateway_info'])
 
         LOG.debug("Verified for updated nuage_aggregate_flows={}, "
                   "with_vm={}.".format(update_nuage_aggregate_flows, with_vm))

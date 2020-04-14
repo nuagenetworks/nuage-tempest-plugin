@@ -59,7 +59,7 @@ class DualstackOsMgdConnectivityTest(DualstackOsMgdConnectivityTestBase):
     def test_icmp_connectivity_l2_os_managed_dualstack(self):
         self._test_icmp_connectivity_os_managed_dualstack(is_l3=False)
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_icmp_connectivity_l3_os_managed_dualstack(self):
         self._test_icmp_connectivity_os_managed_dualstack(is_l3=True)
 

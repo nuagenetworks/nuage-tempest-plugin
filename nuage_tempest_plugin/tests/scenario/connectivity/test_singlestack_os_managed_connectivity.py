@@ -305,7 +305,7 @@ class Ipv4OsMgdL2ConnectivityTest(SingleStackOsMgdConnectivityTestBase):
 
 class Ipv4OsMgdL3ConnectivityTest(SingleStackOsMgdConnectivityTestBase):
 
-    # @decorators.attr(type='smoke')
+    @decorators.attr(type='smoke')
     def test_icmp_connectivity_l3_os_managed(self):
         self._icmp_connectivity_l3_os_managed_by_name('test-server')
 
