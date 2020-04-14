@@ -13,13 +13,14 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from netaddr import IPNetwork
+
 from tempest.lib.common.utils import data_utils
 
 from nuage_tempest_plugin.lib.mixins import net_topology as topology_mixin
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
-
 
 CONF = Topology.get_conf()
 
@@ -59,79 +60,132 @@ class NuageHybridMplsSriov(NuageBaseTest,
         cls.nuage_client.delete_gateway(cls.vsg_gateway['ID'])
         cls.nuage_client.delete_gateway(cls.unmanaged_gateway['ID'])
 
-    def test_nuage_hybrid_mpls_sriov_with_unmanaged_gateway(self):
+    def _create_os_topology(self, gateway, network_type):
+
+        segments = [{"provider:network_type": "vlan",
+                     "provider:segmentation_id": 210,
+                     "provider:physical_network": "physnet1"},
+                    {"provider:network_type": network_type}]
+        kwargs = {'segments': segments}
+        network = self.create_network(manager=self.admin_manager, **kwargs)
+
+        subnet = self.create_subnet(network,
+                                    ip_version=4,
+                                    manager=self.admin_manager)
+        self.assertIsNotNone(subnet)
+
+        port_name = data_utils.rand_name(name='gw-port')
+        gw_port = self.nuage_client.create_gateway_port(
+            port_name, port_name, 'ACCESS',
+            gateway['ID'],
+            extra_params={'VLANRange': '0-4095'})[0]
+
+        return network, subnet, gw_port
+
+    def _create_vsd_mgd_os_topology(self):
+
+        topology = {}
+
+        l3template = self.vsd_create_l3domain_template()
+        l3domain = self.vsd_create_l3domain(template_id=l3template.id)
+        zone = self.vsd_create_zone(domain=l3domain)
+
+        # MPLS
+        kwargs = {'l2_encap_type': 'MPLS'}
+        l3subnet_mpls = self.create_vsd_subnet(
+            zone=zone, cidr4=IPNetwork('1.0.0.0/24'),
+            gateway4='1.0.0.1', **kwargs)
+        topology['l3subnet_mpls'] = l3subnet_mpls
+
+        # VXLAN
+        l3subnet_vxlan = self.create_vsd_subnet(zone=zone,
+                                                cidr4=IPNetwork('2.0.0.0/24'),
+                                                gateway4='2.0.0.1')
+        topology['l3subnet_vxlan'] = l3subnet_vxlan
+
+        # MPLS
         segments = [{"provider:network_type": "vlan",
                      "provider:segmentation_id": 210,
                      "provider:physical_network": "physnet1"},
                     {"provider:network_type": "nuage_hybrid_mpls"}]
         kwargs = {'segments': segments}
-        network = self.create_network(manager=self.admin_manager, **kwargs)
+        network_mpls = self.create_network(manager=self.admin_manager,
+                                           **kwargs)
+        subnet_mpls = self.create_l3_vsd_managed_subnet(
+            network_mpls, l3subnet_mpls, manager=self.admin_manager)
+        topology['network_mpls'] = network_mpls
+        topology['subnet_mpls'] = subnet_mpls
 
-        subnet_v4 = self.create_subnet(network,
-                                       ip_version=4,
-                                       manager=self.admin_manager)
-        self.assertIsNotNone(subnet_v4)
+        # VXLAN
+        segments = [{"provider:network_type": "vlan",
+                     "provider:segmentation_id": 211,
+                     "provider:physical_network": "physnet1"},
+                    {"provider:network_type": "vxlan"}]
+        kwargs = {'segments': segments}
+        network_vxlan = self.create_network(manager=self.admin_manager,
+                                            **kwargs)
+        subnet_vxlan = self.create_l3_vsd_managed_subnet(
+            network_vxlan, l3subnet_vxlan, manager=self.admin_manager)
+        topology['network_vxlan'] = network_vxlan
+        topology['subnet_vxlan'] = subnet_vxlan
 
-        umg_port_name = data_utils.rand_name(name='uwmg-port1')
-        umg_port1 = self.nuage_client.create_gateway_port(
-            umg_port_name, umg_port_name, 'ACCESS',
+        vsg_port_name = data_utils.rand_name(name='vsg-port')
+        vsg_port = self.nuage_client.create_gateway_port(
+            vsg_port_name, vsg_port_name, 'ACCESS',
+            self.vsg_gateway['ID'],
+            extra_params={'VLANRange': '0-4095'})[0]
+        topology['vsg_port'] = vsg_port
+
+        um_port_name = data_utils.rand_name(name='um-port')
+        um_port = self.nuage_client.create_gateway_port(
+            um_port_name, um_port_name, 'ACCESS',
             self.unmanaged_gateway['ID'],
             extra_params={'VLANRange': '0-4095'})[0]
+        topology['um_port'] = um_port
 
-        mapping1 = {'switch_id': self.unmanaged_gateway['systemID'],
-                    'port_id': umg_port1['physicalName'],
-                    'host_id': 'host-hierarchical',
-                    'pci_slot': '0000:03:10.16'}
+        return topology
 
-        with self.switchport_mapping(do_delete=False, **mapping1) \
-                as switch_map1:
-            self.addCleanup(self.switchport_mapping_client_admin.
-                            delete_switchport_mapping, switch_map1['id'])
+    def _validate_port_binding(self, network, subnet, should_succeed,
+                               l3subnet=None, **kwargs):
+        # When port binding is successful, a bridge port is created and
+        # the vif_type is set to 'hw_veb'. When it fails, the value of
+        # vif_type is binding_failed and no bridge port is created
 
-            kwargs = {
-                'binding:vnic_type': 'direct',
-                'binding:host_id': 'host-hierarchical',
-                'binding:profile': {
-                    'pci_slot': '0000:03:10.16',
-                    'physical_network': 'physnet1',
-                    'pci_vendor_info': '8086:10ed'
-                }
-            }
+        if should_succeed:
+            vif_type = 'hw_veb'
+            assert_vport = self.assertIsNotNone
+        else:
+            vif_type = 'binding_failed'
+            assert_vport = self.assertIsNone
 
-            self.create_port(network, self.admin_manager, **kwargs)
-
+        port = self.create_port(network, self.admin_manager,
+                                cleanup=True, **kwargs)
+        self.assertEqual(vif_type, port['binding:vif_type'])
+        if not l3subnet:
             l2domain = self.vsd.get_l2domain(by_network_id=network["id"],
-                                             cidr=subnet_v4["cidr"])
-            self.assertIsNotNone(self.vsd.get_vport(l2domain=l2domain,
-                                                    by_port_id=network['id']))
+                                             cidr=subnet["cidr"])
+            assert_vport(self.vsd.get_vport(l2domain=l2domain,
+                                            by_port_id=network['id']))
+        else:
+            assert_vport(self.vsd.get_vport(subnet=l3subnet,
+                                            by_port_id=network['id']))
 
-    def test_nuage_hybrid_mpls_sriov_with_managed_gateway_neg(self):
-        segments = [{"provider:network_type": "vlan",
-                     "provider:segmentation_id": 210,
-                     "provider:physical_network": "physnet1"},
-                    {"provider:network_type": "nuage_hybrid_mpls"}]
-        kwargs = {'segments': segments}
-        network = self.create_network(manager=self.admin_manager, **kwargs)
+        self.delete_port(port, self.admin_manager)
 
-        subnet_v4 = self.create_subnet(network,
-                                       ip_version=4,
-                                       manager=self.admin_manager)
-        self.assertIsNotNone(subnet_v4)
+    def test_os_nuage_hybrid_mpls_sriov_with_unmanaged_gateway(self):
 
-        vsg_port_name = data_utils.rand_name(name='vsg-port1')
-        vsg_port1 = self.nuage_client.create_gateway_port(
-            vsg_port_name, vsg_port_name, 'ACCESS', self.vsg_gateway['ID'],
-            extra_params={'VLANRange': '0-4095'})[0]
+        network, subnet, gw_port = self._create_os_topology(
+            self.unmanaged_gateway, network_type='nuage_hybrid_mpls')
 
-        mapping1 = {'switch_id': self.vsg_gateway['systemID'],
-                    'port_id': vsg_port1['physicalName'],
-                    'host_id': 'host-hierarchical',
-                    'pci_slot': '0000:03:10.15'}
+        mapping = {'switch_id': self.unmanaged_gateway['systemID'],
+                   'port_id': gw_port['physicalName'],
+                   'host_id': 'host-hierarchical',
+                   'pci_slot': '0000:03:10.15'}
 
-        with self.switchport_mapping(do_delete=False, **mapping1) as \
-                switch_map1:
+        with self.switchport_mapping(do_delete=False, **mapping) \
+                as switch_map:
             self.addCleanup(self.switchport_mapping_client_admin.
-                            delete_switchport_mapping, switch_map1['id'])
+                            delete_switchport_mapping, switch_map['id'])
 
             kwargs = {
                 'binding:vnic_type': 'direct',
@@ -143,14 +197,132 @@ class NuageHybridMplsSriov(NuageBaseTest,
                 }
             }
 
-            port = self.create_port(network, self.admin_manager,
-                                    False, **kwargs)
+            self._validate_port_binding(network, subnet,
+                                        should_succeed=True, **kwargs)
 
-            self.assertEqual('binding_failed', port['binding:vif_type'])
+    def test_os_nuage_hybrid_mpls_sriov_with_managed_gateway_neg(self):
 
-            self.delete_port(port, self.admin_manager)
+        network, subnet, gw_port = self._create_os_topology(
+            self.vsg_gateway, network_type='nuage_hybrid_mpls')
 
-            l2domain = self.vsd.get_l2domain(by_network_id=network["id"],
-                                             cidr=subnet_v4["cidr"])
-            self.assertIsNone(self.vsd.get_vport(l2domain=l2domain,
-                                                 by_port_id=network['id']))
+        mapping = {'switch_id': self.vsg_gateway['systemID'],
+                   'port_id': gw_port['physicalName'],
+                   'host_id': 'host-hierarchical',
+                   'pci_slot': '0000:03:10.16'}
+
+        with self.switchport_mapping(do_delete=False, **mapping) as \
+                switch_map:
+            self.addCleanup(self.switchport_mapping_client_admin.
+                            delete_switchport_mapping, switch_map['id'])
+
+            kwargs = {
+                'binding:vnic_type': 'direct',
+                'binding:host_id': 'host-hierarchical',
+                'binding:profile': {
+                    'pci_slot': '0000:03:10.16',
+                    'physical_network': 'physnet1',
+                    'pci_vendor_info': '8086:10ed'
+                }
+            }
+
+            self._validate_port_binding(network, subnet,
+                                        should_succeed=False, **kwargs)
+
+    def test_os_vxlan_sriov_with_unmanaged_gateway_neg(self):
+
+        network, subnet, gw_port = self._create_os_topology(
+            self.unmanaged_gateway, network_type='vxlan')
+
+        mapping = {'switch_id': self.unmanaged_gateway['systemID'],
+                   'port_id': gw_port['physicalName'],
+                   'host_id': 'host-hierarchical',
+                   'pci_slot': '0000:03:10.17'}
+
+        with self.switchport_mapping(do_delete=False, **mapping) \
+                as switch_map:
+            self.addCleanup(self.switchport_mapping_client_admin.
+                            delete_switchport_mapping, switch_map['id'])
+
+            kwargs = {
+                'binding:vnic_type': 'direct',
+                'binding:host_id': 'host-hierarchical',
+                'binding:profile': {
+                    'pci_slot': '0000:03:10.17',
+                    'physical_network': 'physnet1',
+                    'pci_vendor_info': '8086:10ed'
+                }
+            }
+
+            self._validate_port_binding(network, subnet,
+                                        should_succeed=False, **kwargs)
+
+    def test_vsd_nuage_hybrid_mpls_scenario(self):
+        # This test covers the topology that will be used in real
+        # implementations. There will be one l3 domain with both
+        # vxlan and mpls subnets. Negative cases are also included.
+
+        topology = self._create_vsd_mgd_os_topology()
+
+        # VXLAN - Bridge port creation
+        mapping = {'switch_id': self.vsg_gateway['systemID'],
+                   'port_id': topology['vsg_port']['physicalName'],
+                   'host_id': 'host-hierarchical',
+                   'pci_slot': '0000:03:10.18'}
+
+        with self.switchport_mapping(do_delete=False, **mapping) \
+                as switch_map:
+            self.addCleanup(self.switchport_mapping_client_admin.
+                            delete_switchport_mapping, switch_map['id'])
+
+            kwargs = {
+                'binding:vnic_type': 'direct',
+                'binding:host_id': 'host-hierarchical',
+                'binding:profile': {
+                    'pci_slot': '0000:03:10.18',
+                    'physical_network': 'physnet1',
+                    'pci_vendor_info': '8086:10ed'
+                }
+            }
+
+            self._validate_port_binding(topology['network_mpls'],
+                                        topology['subnet_mpls'],
+                                        should_succeed=False,
+                                        l3subnet=topology['l3subnet_mpls'],
+                                        **kwargs)
+            self._validate_port_binding(topology['network_vxlan'],
+                                        topology['subnet_vxlan'],
+                                        should_succeed=True,
+                                        l3subnet=topology['l3subnet_vxlan'],
+                                        **kwargs)
+
+        # MPLS - Bridge port creation
+        mapping = {'switch_id': self.unmanaged_gateway['systemID'],
+                   'port_id': topology['um_port']['physicalName'],
+                   'host_id': 'host-hierarchical',
+                   'pci_slot': '0000:03:10.19'}
+
+        with self.switchport_mapping(do_delete=False, **mapping) \
+                as switch_map:
+            self.addCleanup(self.switchport_mapping_client_admin.
+                            delete_switchport_mapping, switch_map['id'])
+
+            kwargs = {
+                'binding:vnic_type': 'direct',
+                'binding:host_id': 'host-hierarchical',
+                'binding:profile': {
+                    'pci_slot': '0000:03:10.19',
+                    'physical_network': 'physnet1',
+                    'pci_vendor_info': '8086:10ed'
+                }
+            }
+
+            self._validate_port_binding(topology['network_vxlan'],
+                                        topology['subnet_vxlan'],
+                                        should_succeed=False,
+                                        l3subnet=topology['l3subnet_vxlan'],
+                                        **kwargs)
+            self._validate_port_binding(topology['network_mpls'],
+                                        topology['subnet_mpls'],
+                                        should_succeed=True,
+                                        l3subnet=topology['l3subnet_mpls'],
+                                        **kwargs)
