@@ -31,8 +31,7 @@ class AvrsOsManagedConnectivityTest(E2eTestBase):
     @classmethod
     def setUpClass(cls):
         super(AvrsOsManagedConnectivityTest, cls).setUpClass()
-        hypervisors = [hv for hv in cls.get_hypervisors()
-                       if 'avrs' in hv['hypervisor_hostname']]
+        hypervisors = cls.get_hypervisors('avrs')
         cls.selected_hypervisors = random.sample(hypervisors,
                                                  min(2, len(hypervisors)))
 

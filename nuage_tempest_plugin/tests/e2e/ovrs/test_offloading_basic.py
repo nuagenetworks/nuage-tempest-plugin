@@ -64,8 +64,7 @@ class BasicOffloadingTest(E2eTestBase):
     @classmethod
     def setUpClass(cls):
         super(BasicOffloadingTest, cls).setUpClass()
-        hypervisors = [hv for hv in cls.get_hypervisors()
-                       if 'ovrs' in hv['hypervisor_hostname']]
+        hypervisors = cls.get_hypervisors('ovrs')
         cls.selected_hypervisors = random.sample(hypervisors,
                                                  min(2, len(hypervisors)))
 

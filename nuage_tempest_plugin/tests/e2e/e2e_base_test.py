@@ -47,7 +47,6 @@ class E2eTestBase(NuageBaseTest):
     IP_VERSIONS_V4 = (4,)
     IP_VERSIONS_V6 = (6,)
     IP_VERSIONS_DUALSTACK = (4, 6)
-    hypervisors = None
     is_icmpv6_offload_supported = False  # limitation of CX-5 at the moment
     is_same_subnet = True  # Whether to do cross-subnet connectivity test
     is_l3 = True  # Whether to test L3- or L2 connectivity
@@ -61,6 +60,7 @@ class E2eTestBase(NuageBaseTest):
     def setup_clients(cls):
         super(E2eTestBase, cls).setup_clients()
         cls.hv_client = cls.admin_manager.hypervisor_client
+        cls.aggregates_client = cls.admin_manager.aggregates_client
 
     @classmethod
     def setUpClass(cls):
@@ -128,11 +128,16 @@ class E2eTestBase(NuageBaseTest):
         return network, gateway_mac_address
 
     @classmethod
-    def get_hypervisors(cls):
-        if not cls.hypervisors:
-            cls.hypervisors = cls.hv_client.list_hypervisors(
-                detail=True)['hypervisors']
-        return cls.hypervisors
+    def get_hypervisors(cls, aggregate_instance_extra_specs_flavor=''):
+        hvs = cls.hv_client.list_hypervisors(detail=True)['hypervisors']
+        if aggregate_instance_extra_specs_flavor:
+            aggregates = cls.aggregates_client.list_aggregates()['aggregates']
+            my_aggregate = next(
+                (a for a in aggregates if a['metadata'].get('flavor') ==
+                 aggregate_instance_extra_specs_flavor), None)
+            hvs = [hv for hv in hvs if hv['hypervisor_hostname'] in
+                   my_aggregate['hosts']] if my_aggregate else []
+        return hvs
 
     @classmethod
     def get_hypervisor(cls, server):
