@@ -1414,7 +1414,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         vm = None
 
         def cleanup_server():
-            manager.servers_client.delete_server(vm['id'])
+            self._try_delete(manager.servers_client.delete_server, vm['id'])
             waiters.wait_for_server_termination(
                 manager.servers_client, vm['id'])
 
