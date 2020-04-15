@@ -118,6 +118,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
     image_name_to_id_cache = {}
     dhcp_agent_present = None
 
+    nuage_aggregate_flows = 'off'
     default_prepare_for_connectivity = False
     enable_aggregate_flows_on_vsd_managed = False
     ssh_security_group = None
@@ -811,6 +812,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                                tenant_id=None,
                                namestart='secgroup-smoke',
                                security_groups_client=None,
+                               stateful=True,
                                cleanup=True):
         if security_group_rules_client is None:
             security_group_rules_client = self.security_group_rules_client
@@ -820,7 +822,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             tenant_id = security_groups_client.tenant_id
         secgroup = self._create_empty_security_group(
             namestart=namestart, client=security_groups_client,
-            tenant_id=tenant_id, cleanup=cleanup)
+            tenant_id=tenant_id, stateful=stateful, cleanup=cleanup)
 
         # Add rules to the security group
         rules = self._create_loginable_secgroup_rule(
@@ -830,10 +832,21 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         for rule in rules:
             self.assertEqual(tenant_id, rule['tenant_id'])
             self.assertEqual(secgroup['id'], rule['security_group_id'])
+        if not stateful:
+            for direction in ['ingress', 'egress']:
+                ruleset = {
+                    'protocol': 'tcp',
+                    'direction': direction,
+                    'ethertype': 'IPv4'
+                }
+                self.create_security_group_rule(
+                    security_group=secgroup,
+                    **ruleset)
         return secgroup
 
     def _create_empty_security_group(self, client=None, tenant_id=None,
-                                     namestart='secgroup-smoke', cleanup=True):
+                                     namestart='secgroup-smoke',
+                                     stateful=True, cleanup=True):
         """Create a security group without rules.
 
         Default rules will be created:
@@ -852,6 +865,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         sg_dict = dict(name=sg_name,
                        description=sg_desc)
         sg_dict['tenant_id'] = tenant_id
+        sg_dict['stateful'] = stateful
         result = client.create_security_group(**sg_dict)
 
         secgroup = result['security_group']
@@ -866,7 +880,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
     # -------------- copy of upstream but added cleanup support ---------------
 
     def create_open_ssh_security_group(self, sg_name=None, manager=None,
-                                       cleanup=True):
+                                       stateful=True, cleanup=True):
         manager = manager or self.manager
         if not self.ssh_security_group:
             self.ssh_security_group = self._create_security_group(
@@ -874,6 +888,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                 security_group_rules_client=(
                     manager.security_group_rules_client),
                 security_groups_client=manager.security_groups_client,
+                stateful=stateful,
                 cleanup=cleanup)
         return self.ssh_security_group
 
@@ -1538,6 +1553,8 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             # applied; and as such overcome the limitation
             elif (first_v4_subnet['vsd_managed'] and
                     self.enable_aggregate_flows_on_vsd_managed):
+                prepare = True
+            elif self.nuage_aggregate_flows == 'route':
                 prepare = True
             # ----------------------- aggregate flows -------------------------
 
