@@ -47,7 +47,8 @@ class E2eTestBase(NuageBaseTest):
     IP_VERSIONS_V4 = (4,)
     IP_VERSIONS_V6 = (6,)
     IP_VERSIONS_DUALSTACK = (4, 6)
-    is_icmpv6_offload_supported = False  # limitation of CX-5 at the moment
+    is_icmpv6_offload_supported = True
+    is_fip_offload_supported = True
     is_same_subnet = True  # Whether to do cross-subnet connectivity test
     is_l3 = True  # Whether to test L3- or L2 connectivity
     ip_versions = IP_VERSIONS_DUALSTACK  # Which IP versions to use for tests
@@ -210,7 +211,10 @@ class E2eTestBase(NuageBaseTest):
                 to_hv=to_hv,
                 from_port=from_port,
                 to_port=to_port,
-                ip_version=ip_version
+                ip_version=ip_version,
+                exclude_by_ip=([from_server.get_fip_ip(),
+                                to_server.get_fip_ip()]
+                               if not self.is_fip_offload_supported else [])
             )
             self._validate_tcp(connectivity_check_kwargs,
                                offload_check_kwargs)
@@ -218,7 +222,7 @@ class E2eTestBase(NuageBaseTest):
                                 offload_check_kwargs)
 
     def validate_flows(self, from_hv, to_hv, from_port,
-                       to_port, ip_version):
+                       to_port, ip_version, exclude_by_ip):
         # Note that flows will expire after some time, don't add any
         # api calls other other time intensive operations here
 
@@ -226,19 +230,34 @@ class E2eTestBase(NuageBaseTest):
         gateway_mac_src_subnet = self.networks[0][1]
         gateway_mac_dst_subnet = self.networks[1][1]
 
-        flows = self.dump_flows(from_hv).ip_version(ip_version)
+        flows = self.dump_flows(from_hv)
         self._validate_offloading(
             flows, from_port, is_cross_hv, to_port,
-            gateway_mac_src_subnet)
+            gateway_mac_src_subnet, ip_version, exclude_by_ip)
 
         if is_cross_hv:
             flows = self.dump_flows(to_hv)
             self._validate_offloading(
                 flows, to_port, is_cross_hv, from_port,
-                gateway_mac_dst_subnet)
+                gateway_mac_dst_subnet, ip_version, exclude_by_ip)
 
     def _validate_offloading(self, flows, from_port, is_different_hv,
-                             to_port, gateway_mac_src_subnet):
+                             to_port, gateway_mac_src_subnet, ip_version,
+                             exclude_by_ip):
+        """Asserts if flows are not offloaded while expected and vice versa"""
+        flows.ip_version(ip_version)
+
+        # Exclude exceptional flows containing some src or destination ip.
+        # This is used e.g for cross subnet OVRS test:
+        # In that case the two VM's can only communicate by sending traffic
+        # over the gateway. VM_1 <-> router gw port <-> VM_2. From the
+        # perspective of ovs-flows, from_port and to_port are either the VM
+        # port or the gateway port. Since FIP traffic also arrives from the
+        # gateway port and FIP offloading is not supported we have to filter
+        # it out to avoid false offloading failure detection of these flows.
+        for ip in exclude_by_ip:
+            flows.no_ip(ip)
+
         is_offloading_expected = self._is_offloading_expected(
             from_port, to_port, is_different_hv)
         src_mac = from_port['mac_address']
