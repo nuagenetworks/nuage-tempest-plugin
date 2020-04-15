@@ -968,6 +968,13 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         router = body["router"]
         return router
 
+    def get_router(self, router_id, client=None, **kwargs):
+        if not client:
+            client = self.manager
+        body = client.routers_client.show_router(router_id, **kwargs)
+        router = body['router']
+        return router
+
     def create_floatingip(self, server=None, external_network_id=None,
                           port_id=None, manager=None, cleanup=True, **kwargs):
 
