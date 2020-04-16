@@ -1,0 +1,28 @@
+heat_template_version: 2013-05-23
+description: Template to create a network and segment of type nuage_hybrid_mpls
+parameters:
+  net_type:
+    type: string
+    label: Network Type
+    description: The type of the network
+  segment_type:
+    type: string
+    label: Segment Type
+    description: The type of the segment
+resources:
+  network_mpls:
+    type: OS::Neutron::Net
+    properties:
+      name: network_mpls
+      value_specs: { 'provider:network_type': { get_param: net_type } }
+  subnet_mpls:
+    type: OS::Neutron::Subnet
+    properties:
+      network: { get_resource: network_mpls }
+      cidr: 10.0.0.1/24
+      name: subnet_mpls
+  segment_mpls:
+    type: Nuage::Neutron::NuageSegment
+    properties:
+      network: { get_resource: network_mpls }
+      network_type: { get_param: segment_type }
