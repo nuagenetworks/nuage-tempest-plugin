@@ -126,6 +126,7 @@
       tox_envlist: all
       tempest_concurrency: 4
       devstack_localrc:
+        FORCE: 'yes'
         LIBVIRT_TYPE: kvm
         IMAGE_URLS: "{{ image_url }}"
         DEFAULT_IMAGE_FILE_NAME: cirros-ipv6.qcow2

@@ -1,7 +1,8 @@
-# xenial version of python-openssl is too low
-# once moved bionic this should go
 - hosts: all
   tasks:
+    - name: Upgrade pip
+      become: yes
+      command: pip3 install --upgrade pip
     - name: Install pyOpenSSL
       become: yes
       pip:
