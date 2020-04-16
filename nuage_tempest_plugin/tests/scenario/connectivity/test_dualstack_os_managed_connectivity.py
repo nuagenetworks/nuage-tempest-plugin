@@ -26,9 +26,10 @@ class DualstackOsMgdConnectivityTestBase(nuage_test.NuageBaseTest):
         self.create_subnet(network, ip_version=6)
 
         if is_l3:
-            router = self.create_router(
-                external_network_id=self.ext_net_id,
-                nuage_aggregate_flows=self.nuage_aggregate_flows)
+            kwargs = {'external_network_id': self.ext_net_id}
+            if self.nuage_aggregate_flows != 'off':
+                kwargs['nuage_aggregate_flows'] = self.nuage_aggregate_flows
+            router = self.create_router(**kwargs)
             self.router_attach(router, ipv4_subnet)
 
         # create open-ssh security group
@@ -135,6 +136,12 @@ class DualstackOsMgdConnectivityWithAggrFlowsTest(
         # ('Aggregate flow pbr', {'nuage_aggregate_flows': 'pbr'}),
         ('Aggregate flow route', {'nuage_aggregate_flows': 'route'})
     ])
+
+    def skip_checks(cls):
+        super(DualstackOsMgdConnectivityWithAggrFlowsTest, cls).skip_checks()
+        if Topology.before_nuage('20.5'):
+            raise cls.skipException('OS managed aggregate flows available'
+                                    'starting 20.5')
 
     def test_icmp_connectivity_l3_os_managed_dualstack(self):
         self._test_icmp_connectivity_os_managed_dualstack(is_l3=True)
