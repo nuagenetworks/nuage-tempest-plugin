@@ -39,10 +39,11 @@ class SingleStackOsMgdConnectivityTestBase(NuageBaseTest):
         subnet = self.create_subnet(network, subnet_name=name, **kwargs)
 
         if is_l3:
-            router = self.create_router(
-                router_name=name,
-                external_network_id=self.ext_net_id,
-                nuage_aggregate_flows=self.nuage_aggregate_flows)
+            kwargs = {'router_name': name,
+                      'external_network_id': self.ext_net_id}
+            if self.nuage_aggregate_flows != 'off':
+                kwargs['nuage_aggregate_flows'] = self.nuage_aggregate_flows
+            router = self.create_router(**kwargs)
             self.router_attach(router, subnet)
         return network, subnet
 
@@ -593,6 +594,12 @@ class OsMgdL3ConnectivityTestWithAggrFlowsTest(
         ('IPv4', {'_ip_version': 4}),
         ('IPv6', {'_ip_version': 6}),
     ])
+
+    def skip_checks(cls):
+        super(OsMgdL3ConnectivityTestWithAggrFlowsTest, cls).skip_checks()
+        if Topology.before_nuage('20.5'):
+            raise cls.skipException('OS managed aggregate flows available'
+                                    'starting 20.5')
 
     def test_icmp_connectivity_l3_os_managed(self):
         self._icmp_connectivity_l3_os_managed_by_name('test-server')

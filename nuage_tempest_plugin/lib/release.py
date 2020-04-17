@@ -23,7 +23,7 @@ class Release(object):
         self.major_release = parsed.group(2) or '0.0'
         self.labelled = "R" in release.upper()
         self.sub_release = parsed.group(5) or ''
-        self.major_list = self.major_release.split('.')
+        self.major_list = [int(rel) for rel in self.major_release.split('.')]
         self.sub_list = self.sub_release.split('.')
 
     def __eq__(self, other):

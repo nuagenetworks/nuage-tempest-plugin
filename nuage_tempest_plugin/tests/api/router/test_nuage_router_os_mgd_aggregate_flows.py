@@ -15,6 +15,12 @@ LOG = Topology.get_logger(__name__)
 
 class TestNuageRouterOSMgdAggregateFlows(NuageBaseTest):
 
+    def skip_checks(cls):
+        super(TestNuageRouterOSMgdAggregateFlows, cls).skip_checks()
+        if Topology.before_nuage('20.5'):
+            raise cls.skipException('OS managed aggregate flows available'
+                                    'starting 20.5')
+
     def test_aggregate_flows_create_get_router(self):
         """Relevant router interface:
 
