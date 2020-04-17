@@ -28,13 +28,11 @@ class SingleStackOsMgdConnectivityTestBase(NuageBaseTest):
     def _create_resources(self, name=None, cidr=None, is_l3=False,
                           enable_dhcp=True):
         network = self.create_network(network_name=name)
-        kwargs = {}
+        kwargs = {'enable_dhcp': enable_dhcp}
         if cidr:
             kwargs.update({'gateway': cidr.ip,
                            'cidr': cidr,
                            'mask_bits': cidr.prefixlen})
-        if enable_dhcp:
-            kwargs.update({'enable_dhcp': enable_dhcp})
 
         subnet = self.create_subnet(network, subnet_name=name, **kwargs)
 
