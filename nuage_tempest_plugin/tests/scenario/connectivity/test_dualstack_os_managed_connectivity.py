@@ -137,6 +137,7 @@ class DualstackOsMgdConnectivityWithAggrFlowsTest(
         ('Aggregate flow route', {'nuage_aggregate_flows': 'route'})
     ])
 
+    @classmethod
     def skip_checks(cls):
         super(DualstackOsMgdConnectivityWithAggrFlowsTest, cls).skip_checks()
         if Topology.before_nuage('20.5'):

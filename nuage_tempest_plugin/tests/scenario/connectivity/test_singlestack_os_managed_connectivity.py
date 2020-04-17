@@ -595,6 +595,7 @@ class OsMgdL3ConnectivityTestWithAggrFlowsTest(
         ('IPv6', {'_ip_version': 6}),
     ])
 
+    @classmethod
     def skip_checks(cls):
         super(OsMgdL3ConnectivityTestWithAggrFlowsTest, cls).skip_checks()
         if Topology.before_nuage('20.5'):

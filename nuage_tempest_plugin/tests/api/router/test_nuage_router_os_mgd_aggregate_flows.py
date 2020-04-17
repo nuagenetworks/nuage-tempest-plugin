@@ -15,6 +15,7 @@ LOG = Topology.get_logger(__name__)
 
 class TestNuageRouterOSMgdAggregateFlows(NuageBaseTest):
 
+    @classmethod
     def skip_checks(cls):
         super(TestNuageRouterOSMgdAggregateFlows, cls).skip_checks()
         if Topology.before_nuage('20.5'):
