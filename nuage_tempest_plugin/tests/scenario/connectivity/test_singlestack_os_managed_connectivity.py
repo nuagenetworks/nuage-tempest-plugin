@@ -575,11 +575,11 @@ class Ipv6OsMgdL3ConnectivityTest(Ipv4OsMgdL3ConnectivityTest):
     _cidr1 = IPNetwork('cafe:babb::1/64')
     _cidr2 = IPNetwork('cafe:babc::1/64')
 
-    def test_icmp_connectivity_l3_vsd_managed_dualstack_linked_networks(self):
-        self.skipTest('Skip for ipv6')
+    def test_icmp_connectivity_multiple_subnets_in_shared_network(self):
+        self.skipTest('Skip because shared network only supports IPv4')
 
     def test_icmp_connectivity_l3_os_managed_cross_subnet(self):
-        self.skipTest('Skip for ipv6')
+        self.skipTest('Skip because it tests ipv4 /30')
 
 
 class OsMgdL3ConnectivityTestWithAggrFlowsTest(
