@@ -46,8 +46,8 @@ class ExternalIdTest(tempest.test.BaseTestCase):
         self.assertEqual(external_id.uuid, "")
 
     def test_external_id_format_default_security_policy_group(self):
-        external_id = ExternalId(n_constants.NUAGE_PLCY_GRP_ALLOW_ALL
-                                 + '@1b501982-2da1-48b9-931b-af49b6ee065f')
+        external_id = ExternalId(n_constants.NUAGE_PLCY_GRP_ALLOW_ALL +
+                                 '@1b501982-2da1-48b9-931b-af49b6ee065f')
         self.assertEqual(
             external_id.uuid,
             n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
@@ -58,17 +58,17 @@ class ReleaseTest(testtools.TestCase):
         release = Release("kilo 4.0R3")
         self.assertEqual(release.openstack_release, "kilo")
         self.assertEqual(release.major_release, "4.0")
-        self.assertEqual(release.major_list[0], "4")
-        self.assertEqual(release.major_list[1], "0")
-        self.assertEqual(release.sub_release, "3")
+        self.assertEqual(release.major_list[0], 4)
+        self.assertEqual(release.major_list[1], 0)
+        self.assertEqual(release.sub_release, '3')
 
     def test_release_dot_release(self):
         release = Release("4.0R3")
         self.assertEqual(release.openstack_release, "master")
         self.assertEqual(release.major_release, "4.0")
-        self.assertEqual(release.major_list[0], "4")
-        self.assertEqual(release.major_list[1], "0")
-        self.assertEqual(release.sub_release, "3")
+        self.assertEqual(release.major_list[0], 4)
+        self.assertEqual(release.major_list[1], 0)
+        self.assertEqual(release.sub_release, '3')
 
     def test_release_branch_release(self):
         release = Release("liberty-PROD-2456-plugin-11")
