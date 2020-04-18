@@ -24,7 +24,8 @@ class Release(object):
         self.labelled = "R" in release.upper()
         self.sub_release = parsed.group(5) or ''
         self.major_list = [int(rel) for rel in self.major_release.split('.')]
-        self.sub_list = self.sub_release.split('.')
+        self.sub_list = [int(rel) for rel in self.sub_release.split('.')
+                         if rel]
 
     def __eq__(self, other):
         """__eq__
