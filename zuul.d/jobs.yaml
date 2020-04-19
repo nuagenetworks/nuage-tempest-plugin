@@ -586,14 +586,6 @@
     name: networking-nuage-vtep-vxlan
     parent: tempest-full-py3
     branches: ^(?!stable/(newton|ocata)).*$
-    nodeset:
-      nodes:
-        - name: controller
-          label: ubuntu-bionic
-      groups:
-        - name: tempest
-          nodes:
-            - controller
     required-projects:
       - OpenStack/networking-testsriov
     vars:
@@ -660,6 +652,7 @@
     name: networking-nuage-vtep-vlan-upstream
     parent: networking-nuage-vtep-vxlan
     branches: ^(?!stable/(newton|ocata)).*$
+    timeout: 21600
     vars:
       tempest_test_blacklist: ''
       tempest_black_regex: '^(?:.*(neutron_tempest_plugin\.(api\.admin\.test_routers_ha\.RoutersTestHA\.(test_delete_ha_router_keeps_ha_network_segment_data|test_ha_router_creation)|scenario\.(test_mtu|test_trunk|test_network_v6\.TestGettingAddress\.test_multi_prefix))|tempest\.scenario\.(test_network_v6\.TestGettingAddress\.test_multi|test_network_basic_ops\.TestNetworkBasicOps\.(test_hotplug_nic|test_subnet_details|test_network_basic_ops|test_connectivity_between_vms_on_different_networks))).*)'
@@ -670,7 +663,6 @@
     name: networking-nuage-vtep-vlan-nuage
     parent: networking-nuage-vtep-vlan-upstream
     branches: ^(?!stable/(newton|ocata)).*$
-    timeout: 21600
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.(test_nuage_hwvtep|ipv6\.(os_managed\.test_nuage_networks|test_os_managed_singlestack_l2_subnets|vsd_managed\.test_ipv6_subnet)|vsd_managed\.test_vsd_managed_network).*'
       tempest_black_regex: '^(?:nuage_tempest_plugin\.tests\.api\.(ipv6\.os_managed\.test_nuage_networks\.NuageNetworksIpV6TestAttrs|vsd_managed\.(.*with_vm.*|.*test_link_multi_l2domain_to_network|.*test_link_multi_l3domain_subnets_to_network)))'
