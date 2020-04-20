@@ -396,6 +396,9 @@ class NuageRoutersTest(base.BaseNetworkTest):
             expected_error = ('Error in REST call to VSD: Network '
                               'IP Address {} must have host bits set '
                               'to 0.'.format(self.cidr[1]))
+            if Topology.before_nuage('20.5'):
+                expected_exception = exceptions.ServerFault
+                expected_error = 'Nuage API: ' + expected_error
         else:
             expected_error = ("Invalid input for routes. Reason: '{}' is not "
                               "a recognized CIDR".format(wrong_destination))
