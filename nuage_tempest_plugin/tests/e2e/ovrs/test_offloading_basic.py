@@ -61,6 +61,10 @@ class BasicOffloadingTest(E2eTestBase):
     # destination port. They can be the same, i.e. traffic within single subnet
     networks = []
 
+    # limitations of OVRS
+    is_fip_offload_supported = False
+    is_icmpv6_offload_supported = False  # limitation of CX-5 at the moment
+
     @classmethod
     def setUpClass(cls):
         super(BasicOffloadingTest, cls).setUpClass()

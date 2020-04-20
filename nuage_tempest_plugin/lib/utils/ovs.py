@@ -90,6 +90,10 @@ class FlowQuery(object):
         pass
 
     @abc.abstractmethod
+    def no_ip(self, ip):
+        pass
+
+    @abc.abstractmethod
     def offload(self):
         """Flows must be offloaded"""
         pass
@@ -131,7 +135,7 @@ class OvrsFlowQuery(FlowQuery):
     def src_mac(self, mac):
         """Flows must have src mac equal to input"""
 
-        self._matches(r'.*eth\(src={},dst=[^\)]+\).*actions.*'
+        self._matches(r'.*eth\(src={},dst=[^\)]+\).*'
                       .format(mac.lower()))
         return self
 
@@ -139,7 +143,7 @@ class OvrsFlowQuery(FlowQuery):
     def dst_mac(self, mac):
         """Flows must have dst mac equal to input"""
 
-        self._matches(r'.*eth\(src=[^\)]+,dst={}\).*actions.*'
+        self._matches(r'.*eth\(src=[^\)]+,dst={}\).*'
                       .format(mac.lower()))
         return self
 
@@ -183,6 +187,13 @@ class OvrsFlowQuery(FlowQuery):
         """Flow with specific ip version"""
 
         self._matches('.*ipv{}.*actions.*'.format(version))
+        return self
+
+    @filter
+    def no_ip(self, ip):
+        """Flows excluding the ip"""
+
+        self._not_matches('.*{}.*'.format(ip.replace('.', '\\.')))
         return self
 
     @filter
@@ -262,6 +273,11 @@ class AvrsFlowQuery(FlowQuery):
             self.flows = [flow for flow in self.flows if
                           'ipv6' in flow['flow.key']]
         return self
+
+    @filter
+    def no_ip(self, ip):
+        """Flows excluding the ip"""
+        raise NotImplementedError
 
     @filter
     def offload(self):
