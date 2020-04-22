@@ -155,7 +155,7 @@
         c-api: true
         c-sch: true
         c-vol: true
-        dstat: true
+        dstat: false
         g-api: true
         g-reg: true
         keystone: true
@@ -607,7 +607,6 @@
         q-l3: true
         nuage-metadata-agent: false
         s-account: true
-        s-container-sync: true
         s-container: true
         s-object: true
         s-proxy: true
