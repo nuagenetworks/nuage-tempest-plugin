@@ -2,16 +2,17 @@
 # All Rights Reserved.
 
 from netaddr import IPNetwork
+import testtools
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageAdminNetworksTest
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
-from nuage_tempest_plugin.lib.test.nuage_test import skip_because
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
 from tempest.common import custom_matchers
 from tempest.common import waiters
+from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions
 from tempest.scenario import manager
 from tempest.test import decorators
@@ -413,7 +414,6 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                            ip_version=6)
         self.delete_port(port)
 
-    @skip_because(bug='VSD-36197')
     @decorators.attr(type='smoke')
     def test_nuage_port_update_fixed_ips_dual_subnets_with_vm_l2(self):
         self._nuage_port_update_fixed_ips_dual_subnets_with_vm(is_l2=True)
@@ -627,6 +627,8 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         self.assertEqual(mac_mismatch, False)
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(CONF.nuage_sut.ipam_driver == 'nuage_vsd_managed',
+                      'VIP is in use in nuage_vsd_managed ipam case.')
     def test_nuage_port_update_fixed_ips_same_subnet_l3_no_security(self):
         # Set up resources
         # Base resources
@@ -1130,6 +1132,8 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             self.assertEqual(vip_mismatch, False)
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(CONF.nuage_sut.ipam_driver == 'nuage_vsd_managed',
+                      'VIP is in use in nuage_vsd_managed ipam case.')
     def test_nuage_port_update_fixed_ips_same_subnet_l3_with_aap_with_vm(self):
         # Set up resources
         # Base resources
@@ -1228,6 +1232,8 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             self.assertEqual(vip_mismatch, False)
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(CONF.nuage_sut.ipam_driver == 'nuage_vsd_managed',
+                      'VIP is in use in nuage_vsd_managed ipam case.')
     def test_nuage_port_update_app_to_fixed_ips_l3_with_vm(self):
         # Set up resources
         # Base resources
@@ -1326,6 +1332,8 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             self.assertEqual(vip_mismatch, False)
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(CONF.nuage_sut.ipam_driver == 'nuage_vsd_managed',
+                      'VIP is in use in nuage_vsd_managed ipam case.')
     def test_nuage_port_update_fixed_ip_with_vm_and_conflict_with_aap_neg(
             self):
         # Set up resources
@@ -1498,6 +1506,8 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             self.assertEqual(mac_mismatch, False)
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(CONF.nuage_sut.ipam_driver == 'nuage_vsd_managed',
+                      'VIP is in use in nuage_vsd_managed ipam case.')
     def test_nuage_port_update_fixed_ips_same_as_aap(self):
         # Set up resources
         # Base resources
@@ -1759,7 +1769,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                                     mask_bits=28)
         self.assertIsNotNone(subnet, "Unable to create subnet")
         port = self.create_port(network=network, cleanup=False)
-        self.addCleanup(self._try_delete,
+        self.addCleanup(test_utils.call_and_ignore_notfound_exc,
                         self.manager.ports_client.delete_port,
                         port['id'])
 
@@ -1801,8 +1811,10 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         subnet = self.create_subnet(network, cidr=IPNetwork("10.0.0.0/24"),
                                     mask_bits=28)
         self.assertIsNotNone(subnet, "Unable to create subnet")
-        port = self.create_port(network=network, cleanup=False)
-        self.addCleanup(self._try_delete,
+        port = self.create_port(network=network,
+                                fixed_ips=[{'ip_address': '10.0.0.10'}],
+                                cleanup=False)
+        self.addCleanup(test_utils.call_and_ignore_notfound_exc,
                         self.manager.ports_client.delete_port,
                         port['id'])
 
@@ -1828,3 +1840,53 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         self.assertEqual(port['device_id'], vm_interface.vmuuid,
                          "Port device id should be equal to vm_interface "
                          "attached VM uuid")
+
+    def test_add_ips_from_port_with_vm(self):
+        """test_add_ips_from_port_with_vm
+
+        Test that adding an IP to a port results in the IP being updated in VSD
+
+        """
+        network = self.create_network()
+        self.assertIsNotNone(network, "Unable to create network")
+
+        subnet = self.create_subnet(network, cidr=IPNetwork("10.0.0.0/24"),
+                                    mask_bits=28)
+        self.assertIsNotNone(subnet, "Unable to create subnet")
+        router = self.create_router()
+        self.router_attach(router, subnet)
+        port = self.create_port(network=network,
+                                fixed_ips=[{'ip_address': '10.0.0.10'}],
+                                cleanup=False)
+        self.addCleanup(test_utils.call_and_ignore_notfound_exc,
+                        self.manager.ports_client.delete_port,
+                        port['id'])
+
+        self._create_a_server(name='vm-' + network['name'],
+                              network=network, port_id=port['id'])
+
+        # update port to have two ips
+        port = self.update_port(port=port,
+                                fixed_ips=[{'ip_address': '10.0.0.9'},
+                                           {'ip_address': '10.0.0.10'}])
+
+        l3subnet = self.vsd.get_subnet_from_domain(
+            by_network_id=network['id'], cidr='10.0.0.0/24')
+        vport = self.vsd.get_vport(subnet=l3subnet, by_port_id=port['id'])
+        self.assertIsNotNone(vport, "Port updated to have two ips,"
+                                    "vport should exist.")
+        vips = vport.virtual_ips.get()
+        self.assertNotEmpty(vips, "vip not created.")
+        vip = vips[0]
+        self.assertEqual('10.0.0.9', vip.virtual_ip,
+                         "Port lowest ip address should be equal to "
+                         "vip ip address")
+        vm_interfaces = vport.vm_interfaces.get()
+        self.assertNotEmpty(vm_interfaces, "vm_interface not created.")
+        vm_interface = vm_interfaces[0]
+        self.assertEqual(port['device_id'], vm_interface.vmuuid,
+                         "Port device id should be equal to vm_interface "
+                         "attached VM uuid")
+        self.assertEqual('10.0.0.10', vm_interface.ip_address,
+                         "Port highest ip address should be equal to "
+                         "vm_interface ip address")

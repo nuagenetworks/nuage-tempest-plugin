@@ -14,6 +14,7 @@
 from netaddr import IPNetwork
 
 from tempest.lib.common.utils import data_utils
+from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
@@ -45,7 +46,8 @@ class SecuredNetpartitionsTest(NuageBaseTest):
                 {'project': project_id,
                  'net_partition_id': netpart['id']}
             )['project_net_partition_mapping']
-        self.addCleanup(self._try_delete, self.plugin_admin_network_client.
+        self.addCleanup(test_utils.call_and_ignore_notfound_exc,
+                        self.plugin_admin_network_client.
                         delete_project_netpartition_mapping,
                         mapping['project'])
         self.assertEqual(project_id,
@@ -99,7 +101,8 @@ class SecuredNetpartitionsTest(NuageBaseTest):
                 {'project': project_admin,
                  'net_partition_id': netpart['id']}
             )['project_net_partition_mapping']
-        self.addCleanup(self._try_delete, self.plugin_admin_network_client.
+        self.addCleanup(test_utils.call_and_ignore_notfound_exc,
+                        self.plugin_admin_network_client.
                         delete_project_netpartition_mapping,
                         mapping1['project'])
         project_user = self.plugin_network_client.tenant_id
@@ -108,7 +111,8 @@ class SecuredNetpartitionsTest(NuageBaseTest):
                 {'project': project_user,
                  'net_partition_id': netpart['id']}
             )['project_net_partition_mapping']
-        self.addCleanup(self._try_delete, self.plugin_admin_network_client.
+        self.addCleanup(test_utils.call_and_ignore_notfound_exc,
+                        self.plugin_admin_network_client.
                         delete_project_netpartition_mapping,
                         mapping2['project'])
 
@@ -159,7 +163,8 @@ class SecuredNetpartitionsTest(NuageBaseTest):
                 {'project': project_id,
                  'net_partition_id': netpart['id']}
             )['project_net_partition_mapping']
-        self.addCleanup(self._try_delete, self.plugin_admin_network_client.
+        self.addCleanup(test_utils.call_and_ignore_notfound_exc,
+                        self.plugin_admin_network_client.
                         delete_project_netpartition_mapping,
                         mapping['project'])
         self.assertEqual(project_id,
@@ -224,7 +229,8 @@ class SecuredNetpartitionsTest(NuageBaseTest):
                 {'project': project_id,
                  'net_partition_id': netpart['id']}
             )['project_net_partition_mapping']
-        self.addCleanup(self._try_delete, self.plugin_admin_network_client.
+        self.addCleanup(test_utils.call_and_ignore_notfound_exc,
+                        self.plugin_admin_network_client.
                         delete_project_netpartition_mapping,
                         mapping['project'])
 
@@ -289,7 +295,8 @@ class SecuredNetpartitionsTest(NuageBaseTest):
                 {'project': project_id,
                  'net_partition_id': netpart['id']}
             )['project_net_partition_mapping']
-        self.addCleanup(self._try_delete, self.plugin_admin_network_client.
+        self.addCleanup(test_utils.call_and_ignore_notfound_exc,
+                        self.plugin_admin_network_client.
                         delete_project_netpartition_mapping,
                         mapping['project'])
 
@@ -354,7 +361,8 @@ class SecuredNetpartitionsTest(NuageBaseTest):
                 {'project': project_id,
                  'net_partition_id': netpart['id']}
             )['project_net_partition_mapping']
-        self.addCleanup(self._try_delete, self.plugin_admin_network_client.
+        self.addCleanup(test_utils.call_and_ignore_notfound_exc,
+                        self.plugin_admin_network_client.
                         delete_project_netpartition_mapping,
                         mapping['project'])
 

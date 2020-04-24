@@ -18,7 +18,7 @@ from netaddr import IPNetwork
 from tempest.api.network import base as base
 from tempest.lib.common.utils import data_utils
 
-from .external_id import ExternalId
+from nuage_tempest_plugin.tests.api.external_id.external_id import ExternalId
 
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
@@ -227,7 +227,7 @@ class ExternalIdForVPortTest(base.BaseAdminNetworkTest):
                 "Multiple choices",
                 self.test.nuage_client.delete_resource,
                 n_constants.VPORT,
-                self.vsd_vport['ID'])
+                self.vsd_vport['ID'], responseChoice=False)
 
     @classmethod
     def setup_clients(cls):

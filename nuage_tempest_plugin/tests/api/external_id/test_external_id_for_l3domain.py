@@ -21,7 +21,7 @@ from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.lib.utils import exceptions as n_exceptions
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
-from .external_id import ExternalId
+from nuage_tempest_plugin.tests.api.external_id.external_id import ExternalId
 
 CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
@@ -295,7 +295,7 @@ class ExternalIdForL3domainTest(base.BaseAdminNetworkTest):
                 n_exceptions.MultipleChoices,
                 "Multiple choices",
                 self.test.nuage_client.delete_domain,
-                self.vsd_l3domain['ID'])
+                self.vsd_l3domain['ID'], responseChoice=False)
 
         def verify_cannot_delete_subnets(self):
             # Can't delete L3 domain in VSD
@@ -304,7 +304,7 @@ class ExternalIdForL3domainTest(base.BaseAdminNetworkTest):
                     n_exceptions.MultipleChoices,
                     "Multiple choices",
                     self.test.nuage_client.delete_domain_subnet,
-                    subnet['ID'])
+                    subnet['ID'], responseChoice=False)
 
     @classmethod
     def setup_clients(cls):

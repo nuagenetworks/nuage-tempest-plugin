@@ -24,7 +24,7 @@ from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
-from .external_id import ExternalId
+from nuage_tempest_plugin.tests.api.external_id.external_id import ExternalId
 
 LOG = Topology.get_logger(__name__)
 
@@ -303,7 +303,7 @@ class ExternalIdForL2domainTest(base.BaseNetworkTest):
                 n_exceptions.MultipleChoices,
                 "Multiple choices",
                 self.test.nuage_client.delete_l2domain,
-                self.vsd_l2domain['ID'])
+                self.vsd_l2domain['ID'], responseChoice=False)
 
     @classmethod
     def setup_clients(cls):

@@ -22,6 +22,8 @@ MSG_INVALID_INPUT_FOR_FIXED_IPS = "Invalid input for fixed_ips. " \
 MSG_INVALID_IP_ADDRESS_FOR_SUBNET = "IP address %s is not a valid IP " \
                                     "for the specified subnet."
 
+CONF = Topology.get_conf()
+
 
 class VSDManagedDualStackCommonBase(BaseVSDManagedNetworksIPv6Test):
 
@@ -602,3 +604,10 @@ class LegacyVSDManagedL2DualStackDhcpDisabledTest(
         VSDManagedL2DualStackDhcpDisabledTest):
 
     vsd_dhcp_managed = False  # legacy 5.x style, DHCP unmanaged
+
+    @classmethod
+    def skip_checks(cls):
+        super(LegacyVSDManagedL2DualStackDhcpDisabledTest, cls).skip_checks()
+        if CONF.nuage_sut.ipam_driver == 'nuage_vsd_managed':
+            raise cls.skipException("VSD managed ipam is not compatible with "
+                                    "VSD unmanaged l2domains.")
