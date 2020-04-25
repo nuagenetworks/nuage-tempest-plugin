@@ -669,6 +669,7 @@
         nuage-metadata-agent: false
         s-account: true
         s-container: true
+        s-container-sync: true
         s-object: true
         s-proxy: true
       devstack_plugins:
