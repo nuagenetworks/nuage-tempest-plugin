@@ -16,14 +16,17 @@
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.tests.api.orchestration import nuage_base
 
+CONF = Topology.get_conf()
+
 
 class NuageHybridMplsSegmentTest(nuage_base.NuageBaseOrchestrationTest):
 
     @classmethod
     def skip_checks(cls):
         super(NuageHybridMplsSegmentTest, cls).skip_checks()
-        if not Topology.beyond_nuage('6.0'):
-            raise cls.skipException('VSP release not compatible')
+        if not CONF.nuage_sut.nuage_hybrid_mpls_enabled:
+            raise cls.skipException('nuage_hybrid_mpls type driver '
+                                    'not enabled in tempest.conf')
 
     def test_nuage_hybrid_mpls_segment(self):
 

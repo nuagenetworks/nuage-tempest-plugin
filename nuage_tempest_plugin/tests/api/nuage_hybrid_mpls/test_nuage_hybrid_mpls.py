@@ -23,14 +23,17 @@ from nuage_tempest_plugin.lib.topology import Topology
 from tempest.lib import exceptions
 from tempest.test import decorators
 
+CONF = Topology.get_conf()
+
 
 class NuageHybridMplsTest(NuageBaseTest):
 
     @classmethod
     def skip_checks(cls):
         super(NuageHybridMplsTest, cls).skip_checks()
-        if not Topology.beyond_nuage('6.0'):
-            raise cls.skipException('VSP release not compatible')
+        if not CONF.nuage_sut.nuage_hybrid_mpls_enabled:
+            raise cls.skipException('nuage_hybrid_mpls type driver '
+                                    'not enabled in tempest.conf')
 
     def create_l2_domain_tunnel_type_mpls(self):
         l2template = self.vsd_create_l2domain_template(

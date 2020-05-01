@@ -30,8 +30,9 @@ class NuageHybridMplsSriov(NuageBaseTest,
     @classmethod
     def skip_checks(cls):
         super(NuageHybridMplsSriov, cls).skip_checks()
-        if not Topology.beyond_nuage('6.0'):
-            raise cls.skipException('VSP release not compatible')
+        if not CONF.nuage_sut.nuage_hybrid_mpls_enabled:
+            raise cls.skipException('nuage_hybrid_mpls type driver '
+                                    'not enabled in tempest.conf')
 
         if CONF.network.port_vnic_type not in ['direct', 'macvtap']:
             msg = ("Test requires nuage_test_sriov mech driver "
