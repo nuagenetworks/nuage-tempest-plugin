@@ -3,6 +3,7 @@
 
 from netaddr import IPNetwork
 
+from tempest.lib import exceptions
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
@@ -82,8 +83,19 @@ class NuageFipToVip(NuageBaseTest):
 
         # Add Allowable_address_pair to port, this should result in the
         # VIP creation on VSD.
+        # If nuage_vsd_managed ipam driver is enabled this will fail, as
+        # nuage:vip port is required in this case.
         aap_ip = vip_port['fixed_ips'][0]['ip_address']
         aap_mac = AAP_port['mac_address']
+        if CONF.nuage_sut.ipam_driver == 'nuage_vsd_managed':
+            self.assertRaisesRegex(
+                exceptions.BadRequest,
+                "Unable to find 'vip' reservation port for "
+                "allowed address pair with ip",
+                self.update_port, port=AAP_port,
+                allowed_address_pairs=[{"ip_address": aap_ip,
+                                        "mac_address": aap_mac}])
+            return
         self.update_port(port=AAP_port,
                          allowed_address_pairs=[{"ip_address": aap_ip,
                                                 "mac_address": aap_mac}])

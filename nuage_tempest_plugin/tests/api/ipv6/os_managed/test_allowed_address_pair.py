@@ -21,6 +21,7 @@ from nuage_tempest_plugin.tests.api.ipv6.test_allowed_address_pair \
     import BaseAllowedAddressPair
 
 from tempest.api.network import test_allowed_address_pair as base_tempest
+from tempest.lib.common.utils import test_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions as tempest_exceptions
 
@@ -35,10 +36,16 @@ MSG_INVALID_IP_ADDRESS_FOR_SUBNET = "IP address %s is not a valid IP for " \
 MSG_INVALID_INPUT_FOR_AAP_IPS = "'%s' is not a valid IP address."
 
 
-class AllowedAddressPairIpV6NuageTest(
+class AllowedAddressPairNuageTest(
         base_tempest.AllowedAddressPairTestJSON):
+    """AllowedAddressPairNuageTest
 
-    _ip_version = 6
+    Inherited class from upstream AllowedAddressPairTestJSON
+    This inheritance allows this class to run with the nuage_vsd_managed
+    ipam driver, as this driver requires a nuage:vip port to be created
+    before using an AAP.
+    """
+    # TODO(Team): Should this inherit from neutron_tempest_plugin instead?
 
     @classmethod
     def create_port(cls, network, **kwargs):
@@ -46,22 +53,56 @@ class AllowedAddressPairIpV6NuageTest(
             kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
         if CONF.network.port_profile and 'binding:profile' not in kwargs:
             kwargs['binding:profile'] = CONF.network.port_profile
-        return super(
-            AllowedAddressPairIpV6NuageTest, cls).create_port(network,
-                                                              **kwargs)
+        return super(AllowedAddressPairNuageTest,
+                     cls).create_port(network, **kwargs)
 
     @classmethod
     def resource_setup(cls):
-        super(base_tempest.AllowedAddressPairTestJSON, cls).resource_setup()
-        cls.network = cls.create_network()
-        cls.subnet4 = cls.create_subnet(
-            cls.network, ip_version=4, enable_dhcp=True)
-        cls.subnet6 = cls.create_subnet(
-            cls.network, ip_version=6, enable_dhcp=False)
+        """resource_setup
 
-        port = cls.create_port(cls.network)
-        cls.ip_address = port['fixed_ips'][1]['ip_address']
-        cls.mac_address = port['mac_address']
+        The AAP port is created during the resource setup to reserve an AAP ip
+        We replace this AAP port with the same AAP port with a nuage:vip
+        device owner
+        """
+        super(AllowedAddressPairNuageTest, cls).resource_setup()
+        if CONF.nuage_sut.ipam_driver == 'nuage_vsd_managed':
+            port = cls.create_port(cls.network, device_owner='nuage:vip')
+            cls.ip_address = port['fixed_ips'][0]['ip_address']
+            cls.mac_address = port['mac_address']
+
+    @decorators.idempotent_id('b3f20091-6cd5-472b-8487-3516137df933')
+    def test_update_port_with_multiple_ip_mac_address_pair(self):
+        """test_update_port_with_multiple_ip_mac_address_pair
+
+        This test creates it's own AAP port, so has to be completely overridden
+        The nuage_vsd_managed ipam case is a copy of the test to change the
+        device_owner.
+        """
+        if CONF.nuage_sut.ipam_driver != 'nuage_vsd_managed':
+            super(AllowedAddressPairNuageTest,
+                  self).test_update_port_with_multiple_ip_mac_address_pair()
+        else:
+            # Create an ip_address and mac_address through port create
+            resp = self.ports_client.create_port(
+                network_id=self.network['id'],
+                name='vip-port', device_owner='nuage:vip')
+            newportid = resp['port']['id']
+            self.addCleanup(test_utils.call_and_ignore_notfound_exc,
+                            self.ports_client.delete_port, newportid)
+            ipaddress = resp['port']['fixed_ips'][0]['ip_address']
+            macaddress = resp['port']['mac_address']
+
+            # Update allowed address pair port with multiple ip and  mac
+            allowed_address_pairs = {'ip_address': ipaddress,
+                                     'mac_address': macaddress}
+            self._update_port_with_address(
+                self.ip_address, self.mac_address,
+                allowed_address_pairs=allowed_address_pairs)
+
+
+class AllowedAddressPairIpV6NuageTest(AllowedAddressPairNuageTest):
+
+    _ip_version = 6
 
 
 class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
@@ -103,6 +144,15 @@ class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
             network, ip_version=4, enable_dhcp=True)
         subnet6 = self.create_subnet(
             network, ip_version=6, enable_dhcp=False)
+        if CONF.nuage_sut.ipam_driver == 'nuage_vsd_managed':
+            # If nuage_vsd_managed ipam is enabled, a nuage:vip port is needed
+            port_args = {
+                'fixed_ips': [
+                    {'ip_address': str(IPAddress(self.cidr6.first) + 10)}],
+                'device_owner': 'nuage:vip'
+            }
+            self.create_port(network, **port_args)
+
         port_args = {'fixed_ips': [
             {'ip_address': str(IPAddress(self.cidr4.first) + 8)},
             {'ip_address': str(IPAddress(self.cidr6.first) + 8)}],
@@ -123,7 +173,7 @@ class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
         vsd_l3_domain = self.vsd.get_l3domain(by_router_id=router['id'])
         self.assertIsNotNone(vsd_l3_domain)
 
-        self.router_attach(router, subnet4, cleanup=False)
+        self.router_attach(router, subnet4)
 
         self._verify_l3_vport_by_id(router, port, constants.DISABLED,
                                     subnet4=subnet4)

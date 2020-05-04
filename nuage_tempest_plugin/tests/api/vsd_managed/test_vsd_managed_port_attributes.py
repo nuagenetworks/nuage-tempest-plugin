@@ -30,6 +30,7 @@ from nuage_tempest_plugin.tests.api.vsd_managed \
 from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_port_attributes
 
+CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
 
 # # Stuff for the inter-connectivity VM
@@ -1287,6 +1288,13 @@ class VSDManagedAllowedAddresPairssTest(
         # cls.iacl_template = ''
         # cls.eacl_templace = ''
 
+    def _ensure_nuage_vip_port_vsd_ipam(self, aap_fixed_ip, network):
+        if CONF.nuage_sut.ipam_driver == 'nuage_vsd_managed':
+            # vsd managed ipam requires nuage:vip port
+            self.create_port(network=network,
+                             fixed_ips=[{'ip_address': aap_fixed_ip}],
+                             device_owner='nuage:vip')
+
     def test_create_address_pair_l2domain_no_mac(self):
         # Given I have a VSD-L2-Managed subnet
         vsd_l2_subnet, l2_domtmpl = self._create_vsd_l2_managed_subnet()
@@ -1299,6 +1307,9 @@ class VSDManagedAllowedAddresPairssTest(
         port_fixed_ip = str(IPAddress(
             base_vsd_managed_networks.VSD_L2_SHARED_MGD_GW) + 10)
         aap_fixed_ip = str(IPAddress(port_fixed_ip) + 5)
+
+        self._ensure_nuage_vip_port_vsd_ipam(aap_fixed_ip, network)
+
         kwargs = {
             'fixed_ips': [{
                 'subnet_id': subnet['id'],
@@ -1348,6 +1359,9 @@ class VSDManagedAllowedAddresPairssTest(
         port_fixed_ip = str(IPAddress(
             base_vsd_managed_networks.VSD_L2_SHARED_MGD_GW) + 100)
         aap_fixed_ip = str(IPAddress(port_fixed_ip) + 5)
+
+        self._ensure_nuage_vip_port_vsd_ipam(aap_fixed_ip, network)
+
         kwargs = {
             'fixed_ips': [{
                 'subnet_id': subnet['id'],
@@ -1398,6 +1412,9 @@ class VSDManagedAllowedAddresPairssTest(
         port_fixed_ip = str(IPAddress(
             base_vsd_managed_networks.VSD_L3_SHARED_MGD_GW) + 10)
         aap_fixed_ip = str(IPAddress(port_fixed_ip) + 5)
+
+        self._ensure_nuage_vip_port_vsd_ipam(aap_fixed_ip, network)
+
         kwargs = {
             'fixed_ips': [{
                 'subnet_id': subnet['id'],
@@ -1437,7 +1454,7 @@ class VSDManagedAllowedAddresPairssTest(
 
     @decorators.attr(type='smoke')
     def test_create_address_pair_l3domain_with_mac(self):
-        # Given I have a VSD-L2-Managed subnet
+        # Given I have a VSD-L3-Managed subnet
         vsd_l3_subnet, l3_domain = self._create_vsd_l3_managed_subnet()
         network, subnet = self._create_os_l3_vsd_managed_subnet(vsd_l3_subnet)
         # When I create a port in this VSD-L3-Managed-Subnet with
@@ -1448,6 +1465,9 @@ class VSDManagedAllowedAddresPairssTest(
         port_fixed_ip = str(IPAddress(
             base_vsd_managed_networks.VSD_L3_SHARED_MGD_GW) + 100)
         aap_fixed_ip = str(IPAddress(port_fixed_ip) + 5)
+
+        self._ensure_nuage_vip_port_vsd_ipam(aap_fixed_ip, network)
+
         kwargs = {
             'fixed_ips': [{
                 'subnet_id': subnet['id'],

@@ -963,6 +963,11 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         # Attach subnet
         self.create_router_interface(router_id=router["id"],
                                      subnet_id=subnet["id"])
+        if CONF.nuage_sut.ipam_driver == 'nuage_vsd_managed':
+            # vsd managed ipam requires nuage:vip port
+            self.create_port(network=network,
+                             fixed_ips=[{'ip_address': '10.0.0.6'}],
+                             device_owner='nuage:vip')
         fixed_ips = [
             {
                 "ip_address": "10.0.0.4",
@@ -1094,6 +1099,12 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             filter_value=port['id'])
         self.assertEqual(constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
+
+        if CONF.nuage_sut.ipam_driver == 'nuage_vsd_managed':
+            # vsd managed ipam requires nuage:vip port
+            self.create_port(network=network,
+                             fixed_ips=[{'ip_address': '10.0.0.6'}],
+                             device_owner='nuage:vip')
 
         # update within subnet should succeed
         fixed_ips = [
@@ -1616,6 +1627,11 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             external_network_id=self.ext_net_id)
         self.assertIsNotNone(router, "Unable to create router")
 
+        if CONF.nuage_sut.ipam_driver == 'nuage_vsd_managed':
+            # vsd managed ipam requires nuage:vip port
+            self.create_port(network=network,
+                             fixed_ips=[{'ip_address': '10.0.0.6'}],
+                             device_owner='nuage:vip')
         fixed_ips = [
             {
                 "ip_address": "10.0.0.4",
@@ -1708,6 +1724,12 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             filter_value=port['id'])
         self.assertEqual(constants.DISABLED,
                          nuage_vport[0]['addressSpoofing'])
+
+        if CONF.nuage_sut.ipam_driver == 'nuage_vsd_managed':
+            # vsd managed ipam requires nuage:vip port
+            self.create_port(network=network,
+                             fixed_ips=[{'ip_address': '10.0.0.6'}],
+                             device_owner='nuage:vip')
 
         # update within subnet should succeed
         fixed_ips = [

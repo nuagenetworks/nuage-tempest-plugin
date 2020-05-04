@@ -93,7 +93,7 @@ class PortSecAAPTest(NuageBaseTest):
 
         # create port to reserve ip/mac for AAP
         port_for_aap = self.create_port(
-            self.test_network)
+            self.test_network, device_owner='nuage:vip')
 
         servers = [
             self._create_server_with_ports(is_l2=is_l2)

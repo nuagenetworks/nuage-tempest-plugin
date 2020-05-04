@@ -109,3 +109,10 @@ tempest\.api\.network\.test_ports.*test_show_port
 
 # Neutron Security Group Qouata test can only run in isolation
 neutron_tempest_plugin\.api\.test_security_groups\.SecGroupQuotaTest
+
+# Tests are inherited into nuage_tempest_plugin
+# nuage_tempest_plugin.tests.api.ipv6.os_managed.test_allowed_address_pair
+tempest.api.network.test_allowed_address_pair
+# Tests are copies from tempest.api.network.test_allowed_address_pair
+# TODO(Team) Move inheritance to neutron tempest plugin
+neutron_tempest_plugin.api.test_allowed_address_pair
