@@ -205,17 +205,10 @@ class VSDManagedDualStackSubnetL3Test(BaseVSDManagedNetworksIPv6Test):
 
         # shall not create Openstack IPv6 subnet on Openstack based on
         # VSD l3domain subnet with type IPV4
-        if Topology.from_openstack('Newton'):
-            expected_exception = tempest_exceptions.BadRequest
-            expected_message = "Subnet with ip_version 6 can't be linked to " \
-                               "vsd subnet with IPType IPV4"
-        else:
-            expected_exception = tempest_exceptions.ServerFault
-            expected_message = "create_subnet_postcommit failed."
-
         self.assertRaisesRegex(
-            expected_exception,
-            expected_message,
+            tempest_exceptions.BadRequest,
+            "Subnet with ip_version 6 can't be linked to "
+            "vsd subnet with IPType IPV4",
             self.create_subnet,
             network,
             ip_version=6,
@@ -255,16 +248,9 @@ class VSDManagedDualStackSubnetL3Test(BaseVSDManagedNetworksIPv6Test):
         network = self.create_network(network_name=net_name)
 
         # create Openstack IPv4 subnet on Openstack based on VSD l3dom subnet
-        if Topology.from_openstack('Newton'):
-            expected_exception = tempest_exceptions.BadRequest
-            expected_message = "enable_dhcp in subnet must be True"
-        else:
-            expected_exception = tempest_exceptions.ServerFault
-            expected_message = "create_subnet_postcommit failed."
-
         self.assertRaisesRegex(
-            expected_exception,
-            expected_message,
+            tempest_exceptions.BadRequest,
+            'enable_dhcp in subnet must be True',
             self.create_subnet,
             network,
             gateway=subnet_gateway,

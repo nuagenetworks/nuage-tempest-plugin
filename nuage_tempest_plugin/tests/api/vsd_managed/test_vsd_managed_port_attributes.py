@@ -51,6 +51,11 @@ VALID_MAC_ADDRESS = 'fa:fa:3e:e8:e8:c0'
 class VSDManagedRedirectTargetTest(
         base_vsd_managed_port_attributes.BaseVSDManagedPortAttributes):
 
+    if Topology.from_nuage('20.5'):
+        expected_exception_from_topology = exceptions.BadRequest
+    else:
+        expected_exception_from_topology = exceptions.ServerFault
+
     @classmethod
     def resource_setup(cls):
         super(VSDManagedRedirectTargetTest, cls).resource_setup()
@@ -545,20 +550,11 @@ class VSDManagedRedirectTargetTest(
                      'name': "rt-l2-redundancy-enabled-fail"}
         # When I try to create a redirection target
         # I expect an error
-        msg = "Cannot have more than 1 vPort under a redirectiontarget with " \
-              "redundancy disabled"
-        expected_exception = exceptions.BadRequest
-        # TODO(team) VSD-14420 adapt expected return code into badrequest
-        LOG.warning("VSD-14420: throws wrong http error code: "
-                    "ServerFault iso BadRequest")
-        msg = ('Nuage API: Error in REST call to VSD: vPort Tag with endpoint'
-               ' type as NONE/VIRTUAL_WIRE cannot have redundancy enabled and'
-               ' trigger type as GARP')
-        expected_exception = exceptions.ServerFault
-
         self.assertRaisesRegex(
-            expected_exception,
-            msg,
+            self.expected_exception_from_topology,
+            'Error in REST call to VSD: vPort Tag with endpoint'
+            ' type as NONE/VIRTUAL_WIRE cannot have redundancy enabled and'
+            ' trigger type as GARP',
             self.nuage_network_client.create_redirection_target,
             **post_body
         )
@@ -574,23 +570,10 @@ class VSDManagedRedirectTargetTest(
                      'subnet_id': subnet['id'],
                      'name': "rt-l2-insertion-mode-l3-fail"}
 
-        expected_exception = exceptions.BadRequest
-        if (Topology.is_ml2 and
-                Topology.before_openstack('Newton')):
-            expected_exception = exceptions.ServerFault
-            msg = "Got server fault"
-        else:
-            # TODO(team) Need a valid error message, this message should fail !
-            # See VSD-14421
-            LOG.warning("VSD-14421: throws wrong http error code: "
-                        "ServerFault iso BadRequest")
-            msg = ('Nuage API: Error in REST call to VSD: An L2 domain '
-                   'redirectiontarget cannot have an L3 endpoint.')
-            expected_exception = exceptions.ServerFault
-
         self.assertRaisesRegex(
-            expected_exception,
-            msg,
+            self.expected_exception_from_topology,
+            'Error in REST call to VSD: An L2 domain '
+            'redirectiontarget cannot have an L3 endpoint.',
             self.nuage_network_client.create_redirection_target,
             **post_body
         )
@@ -608,20 +591,9 @@ class VSDManagedRedirectTargetTest(
                      'name': "rt-l2-insertion-mode-l2-fail"}
 
         # I expect a badRequest
-        if Topology.is_ml2 and Topology.before_openstack('Newton'):
-            msg = "Got server fault"
-            expected_exception = exceptions.ServerFault
-        else:
-            # TODO(team) VSD-14421
-            # Need to change expected exception and error message
-            LOG.warning("VSD-14421: bad insertion mode: "
-                        "ServerFault iso BadRequest")
-            expected_exception = exceptions.ServerFault
-            msg = "Nuage API"
-
         self.assertRaisesRegex(
-            expected_exception,
-            msg,
+            self.expected_exception_from_topology,
+            'Error in REST call to VSD: Invalid input',
             self.nuage_network_client.create_redirection_target,
             **post_body
         )
@@ -648,16 +620,9 @@ class VSDManagedRedirectTargetTest(
         # Then I expect a failure
         rtport = self.create_port(network)
 
-        if NUAGE_FEATURES.ml2_limited_exceptions:
-            msg = "Got server fault"
-            expected_exception = exceptions.ServerFault
-        else:
-            msg = EXPECT_NO_MULTIPLE_RT_MSG
-            expected_exception = exceptions.BadRequest
-
         self.assertRaisesRegex(
-            expected_exception,
-            msg,
+            exceptions.BadRequest,
+            EXPECT_NO_MULTIPLE_RT_MSG,
             self._associate_multiple_rt_port,
             rtport,
             vsd_redirect_targets)
@@ -1235,40 +1200,31 @@ class VSDManagedPolicyGroupsTest(
         self.addCleanup(self.nuage_network_client.delete_redirection_target,
                         os_redirect_target['nuage_redirect_target']['id'])
 
-        if NUAGE_FEATURES.full_os_networking:
-            advfw_template = self.nuage_client.create_advfwd_entrytemplate(
-                constants.L2_DOMAIN,
-                vsd_l2_subnet[0]['ID']
-            )
-            self.addCleanup(self._delete_advfwd_entrytemplate,
-                            vsd_l2_subnet[0]['ID'], advfw_template[0]['ID'])
+        advfw_template = self.nuage_client.create_advfwd_entrytemplate(
+            constants.L2_DOMAIN,
+            vsd_l2_subnet[0]['ID']
+        )
+        self.addCleanup(self._delete_advfwd_entrytemplate,
+                        vsd_l2_subnet[0]['ID'], advfw_template[0]['ID'])
 
-            # When I try to use this security group in a
-            # redirect-target-rule-creation
-            rt_rule = self._create_redirect_target_rule(
-                os_redirect_target['nuage_redirect_target']['id'],
-                security_group['id'])
-            self.addCleanup(
-                self.nuage_network_client.delete_redirection_target_rule,
-                rt_rule['nuage_redirect_target_rule']['id'])
+        # When I try to use this security group in a
+        # redirect-target-rule-creation
+        rt_rule = self._create_redirect_target_rule(
+            os_redirect_target['nuage_redirect_target']['id'],
+            security_group['id'])
+        self.addCleanup(
+            self.nuage_network_client.delete_redirection_target_rule,
+            rt_rule['nuage_redirect_target_rule']['id'])
 
-            # When I retrieve the VSD-L2-Managed-Subnet
-            policy_group_list = \
-                self.nuage_network_client.list_nuage_policy_group_for_subnet(
-                    subnet['id'])
-            # I expect the only the policyGroup in my list: length may not
-            # be greater than one
-            self.assertEqual(1, len(policy_group_list['nuage_policy_groups']),
-                             message="Security groups are also in the "
-                                     "policy group list")
-        else:
-            # See OPENSTACK-1503: [ML2] Fails cleanup redirect_target_rule
-            self.assertRaisesRegex(
-                exceptions.NotFound,
-                "The resource could not be found.",
-                self._create_redirect_target_rule,
-                os_redirect_target['nuage_redirect_target']['id'],
-                security_group['id'])
+        # When I retrieve the VSD-L2-Managed-Subnet
+        policy_group_list = \
+            self.nuage_network_client.list_nuage_policy_group_for_subnet(
+                subnet['id'])
+        # I expect the only the policyGroup in my list: length may not
+        # be greater than one
+        self.assertEqual(1, len(policy_group_list['nuage_policy_groups']),
+                         message="Security groups are also in the "
+                                 "policy group list")
 
 
 ###############################################################################

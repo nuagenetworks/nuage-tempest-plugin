@@ -28,6 +28,11 @@ LOG = Topology.get_logger(__name__)
 
 class NuageExtSecGroup(test_security_groups_nuage.SecGroupTestNuageBase):
 
+    if Topology.from_nuage('20.5'):
+        expected_exception_from_topology = exceptions.BadRequest
+    else:
+        expected_exception_from_topology = exceptions.ServerFault
+
     @classmethod
     def setup_clients(cls):
         super(NuageExtSecGroup, cls).setup_clients()
@@ -268,7 +273,7 @@ class NuageExtSecGroup(test_security_groups_nuage.SecGroupTestNuageBase):
                   'router_id': esg_router['id'],
                   'extended_community_id': "4"}
         self.assertRaises(
-            exceptions.ServerFault,
+            self.expected_exception_from_topology,
             self.client.create_nuage_external_security_group,
             **kwargs)
         # Missing pararmeter: router/subnet ID in input
@@ -302,7 +307,7 @@ class NuageExtSecGroup(test_security_groups_nuage.SecGroupTestNuageBase):
                   'direction': 'egress',
                   'remote_external_group_id': ext_sg['id']}
         self.assertRaises(
-            exceptions.ServerFault,
+            self.expected_exception_from_topology,
             self.client.create_nuage_external_security_group_rule,
             **kwargs)
         # Invalid remote_group_id value
@@ -312,7 +317,7 @@ class NuageExtSecGroup(test_security_groups_nuage.SecGroupTestNuageBase):
                   'remote_external_group_id':
                   '11111111-1111-1111-1111111111111111'}
         self.assertRaises(
-            exceptions.ServerFault,
+            self.expected_exception_from_topology,
             self.client.create_nuage_external_security_group_rule,
             **kwargs)
         # Try deleting invalid external_secgroup_rule

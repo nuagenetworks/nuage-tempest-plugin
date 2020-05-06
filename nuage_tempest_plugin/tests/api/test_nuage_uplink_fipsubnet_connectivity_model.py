@@ -221,18 +221,11 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
                   'cidr': cidr,
                   'nuage_uplink': nuage_fipsubnet1[0]['parentID']}
         stripped_cidr = cidr.split('/')[0]
-        if Topology.from_openstack('Newton') and Topology.is_ml2:
-            self.assertRaisesRegex(
-                exceptions.BadRequest,
-                "Network {}/255.255.255.0 overlaps with "
-                "existing network ".format(stripped_cidr),
-                self.admin_subnets_client.create_subnet, **kwargs)
-        else:
-            self.assertRaisesRegex(
-                exceptions.ServerFault,
-                "Network {}/255.255.255.0 overlaps with "
-                "existing network ".format(stripped_cidr),
-                self.admin_subnets_client.create_subnet, **kwargs)
+        self.assertRaisesRegex(
+            exceptions.BadRequest,
+            'Network {}/255.255.255.0 overlaps with '
+            'existing network '.format(stripped_cidr),
+            self.admin_subnets_client.create_subnet, **kwargs)
 
     def test_fipsub_with_nuage_uplink_and_uplinksub_no_parent_id(self):
         self.skipTest("TODO(KRIS) FIXME getting:Cannot find zone with ID None")

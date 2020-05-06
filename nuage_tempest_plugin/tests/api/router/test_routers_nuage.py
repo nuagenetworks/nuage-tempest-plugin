@@ -48,6 +48,11 @@ class NuageRoutersTest(base.BaseNetworkTest):
 
     ext_net_id = CONF.network.public_network_id
 
+    if Topology.from_nuage('20.5'):
+        expected_exception_from_topology = exceptions.BadRequest
+    else:
+        expected_exception_from_topology = exceptions.ServerFault
+
     @classmethod
     def create_port(cls, network, **kwargs):
         if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
@@ -526,7 +531,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
         }
         # Create a router using new template and verify correct exception is
         # raised
-        self.assertRaises(exceptions.ServerFault,
+        self.assertRaises(self.expected_exception_from_topology,
                           self.routers_client.create_router,
                           name=data_utils.rand_name('router'),
                           admin_state_up=True,
@@ -548,8 +553,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
         rtr_template = {
             'nuage_router_template': nuage_template[0]['ID']
         }
-
-        self.assertRaises(exceptions.ServerFault,
+        self.assertRaises(self.expected_exception_from_topology,
                           self.routers_client.create_router,
                           name=data_utils.rand_name('router'),
                           admin_state_up=True,
@@ -1006,15 +1010,19 @@ class NuageRoutersAdminTest(NuageAdminNetworksTest):
     @decorators.attr(type='smoke')
     def test_router_backhaul_vnid_rt_rd_negative(self):
         # Incorrect backhaul-vnid value
-        self.assertRaises(exceptions.ServerFault,
+        if Topology.from_nuage('20.5'):
+            expected_exception = exceptions.BadRequest
+        else:
+            expected_exception = exceptions.ServerFault
+        self.assertRaises(expected_exception,
                           self.admin_routers_client.create_router,
                           name=data_utils.rand_name('router-'),
                           nuage_backhaul_vnid="0xb")
-        self.assertRaises(exceptions.ServerFault,
+        self.assertRaises(expected_exception,
                           self.admin_routers_client.create_router,
                           name=data_utils.rand_name('router-'),
                           nuage_backhaul_rt="-1:1")
-        self.assertRaises(exceptions.ServerFault,
+        self.assertRaises(expected_exception,
                           self.admin_routers_client.create_router,
                           name=data_utils.rand_name('router-'),
                           nuage_backhaul_rd="2:-3")

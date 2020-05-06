@@ -495,19 +495,11 @@ class VSDManagedL2DualStackDhcpDisabledTest(VSDManagedDualStackCommonBase):
                                     'ip_address': IPAddress(
                                         self.cidr6.first + 10)}]}
 
-        if Topology.from_openstack('Newton'):
-            expected_exception = tempest_exceptions.Conflict
-            expected_message = "IP address %s already allocated in subnet %s" \
-                % (IPAddress(self.cidr6.first + 10), ipv6_subnet['id'])
-        else:
-            expected_exception = tempest_exceptions.Conflict
-            expected_message = "Unable to complete operation for network %s." \
-                               " The IP address %s is in use." \
-                % (network['id'], IPAddress(self.cidr6.first + 10))
-
         self.assertRaisesRegex(
-            expected_exception,
-            expected_message,
+            tempest_exceptions.Conflict,
+            'IP address {} already allocated in '
+            'subnet {}'.format(IPAddress(self.cidr6.first + 10),
+                               ipv6_subnet['id']),
             self.create_port,
             network,
             **port_args)
