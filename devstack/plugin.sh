@@ -92,22 +92,17 @@ function configure_tempest_nuage {
     fi
 }
 
-# install_nuage_tempest_plugin
-function install_nuage_tempest_plugin {
-    setup_dev_lib "nuage-tempest-plugin"
-}
-
 if [[ "$1" == "stack" ]]; then
-    case "$2" in
-        install)
-            if [[ "$INSTALL_TEMPEST" == "True" ]]; then
-                echo_summary "Installing nuage-tempest-plugin"
-                install_nuage_tempest_plugin
-            fi
-            ;;
-        test-config)
-            echo_summary "Configuring nuage-tempest-plugin tempest options"
-            configure_tempest_nuage
-    esac
+    if [[ "$2" == "install" ]]; then
+        echo_summary "Installing Nuage tempest plugin"
+        pip_install -r $NUAGE_TEMPEST_DIR/requirements.txt -e $NUAGE_TEMPEST_DIR
+    elif [[ "$1" == "stack" && "$2" == "extra" ]]; then
+        configure_tempest_nuage
+    elif [[ "$1" == "stack" && "$2" == "test-config" ]]; then
+        configure_tempest_nuage
+    fi
+elif [[ "$1" == "unstack" ]]; then
+        # no-op
+        :
 fi
 
