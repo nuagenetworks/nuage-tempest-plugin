@@ -45,7 +45,7 @@ class FipAccessConsole(RemoteClient):
         cmd_out = self.ssh_client.exec_command(full_cmd)
         if cmd_out:
             LOG.debug('[{}] < \\\n'
-                      '{}'
+                      u'{}'
                       '[EOF]'.format(self.tag, cmd_out))
         else:
             LOG.debug('[{}] <'.format(self.tag))
@@ -206,7 +206,7 @@ class TenantServer(object):
         if not kwargs['user_data'].startswith('#!'):
             kwargs['user_data'] = '#!/bin/sh\n' + kwargs['user_data']
         LOG.debug('[user-data]\n'
-                  '{}'
+                  u'{}'
                   '[EOF]'.format(kwargs['user_data']))
 
         kwargs['user_data'] = b64encode(textwrap.dedent(

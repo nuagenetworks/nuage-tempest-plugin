@@ -3,19 +3,41 @@
     - name: Upgrade pip
       become: yes
       command: pip3 install --upgrade pip
+
     - name: Install pyOpenSSL
       become: yes
       pip:
         name: pyOpenSSL
+
     - name: Uninstall tox
       become: yes
       pip:
         name: tox
         state: absent
+
     - name: Install tox with pip3
       become: yes
       pip:
         name: tox
         state: present
         executable: pip3
+
+    - name: Make sure 'wheel' group exists
+      become: yes
+      group:
+        name: wheel
+        state: present
+
+    - name: Allow 'wheel' group to have passwordless sudo
+      become: yes
+      lineinfile:
+        dest: /etc/sudoers
+        state: present
+        regexp: '^%wheel'
+        line: '%wheel ALL=(ALL) NOPASSWD: ALL'
+        validate: 'visudo -cf %s'
+
+    - name: Add tempest user to wheel group
+      become: yes
+      user: name=tempest groups=wheel append=yes state=present createhome=yes
   environment: '{{ proxy_env }}'

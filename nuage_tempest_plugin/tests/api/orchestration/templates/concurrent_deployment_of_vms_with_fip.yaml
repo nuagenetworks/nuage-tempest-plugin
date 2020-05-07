@@ -26,6 +26,13 @@ parameters:
   flavor:
     type: string
     description: Flavor to use for servers
+  key_name:
+    type: string
+    default: ''
+  user_data:
+    type: string
+    description: User data to use pass to servers
+    default: ''
 
 resources:
   private_net:
@@ -63,6 +70,9 @@ resources:
       name: vm1
       image: { get_param: image }
       flavor: { get_param: flavor }
+      key_name: {get_param: key_name}
+      user_data_format: RAW
+      user_data: { get_param: user_data }
       networks:
         - port: { get_resource: vm1_port }
 
@@ -86,6 +96,9 @@ resources:
       name: vm2
       image: { get_param: image }
       flavor: { get_param: flavor }
+      key_name: {get_param: key_name}
+      user_data_format: RAW
+      user_data: { get_param: user_data }
       networks:
         - port: { get_resource: vm2_port }
 
@@ -109,6 +122,9 @@ resources:
       name: vm3
       image: { get_param: image }
       flavor: { get_param: flavor }
+      key_name: {get_param: key_name}
+      user_data_format: RAW
+      user_data: { get_param: user_data }
       networks:
         - port: { get_resource: vm3_port }
 
@@ -132,6 +148,9 @@ resources:
       name: vm4
       image: { get_param: image }
       flavor: { get_param: flavor }
+      key_name: {get_param: key_name}
+      user_data_format: RAW
+      user_data: { get_param: user_data }
       networks:
         - port: { get_resource: vm4_port }
 
@@ -155,6 +174,9 @@ resources:
       name: vm5
       image: { get_param: image }
       flavor: { get_param: flavor }
+      key_name: {get_param: key_name}
+      user_data_format: RAW
+      user_data: { get_param: user_data }
       networks:
         - port: { get_resource: vm5_port }
 
@@ -178,6 +200,9 @@ resources:
       name: vm6
       image: { get_param: image }
       flavor: { get_param: flavor }
+      key_name: {get_param: key_name}
+      user_data_format: RAW
+      user_data: { get_param: user_data }
       networks:
         - port: { get_resource: vm6_port }
 
@@ -201,6 +226,9 @@ resources:
       name: vm7
       image: { get_param: image }
       flavor: { get_param: flavor }
+      key_name: {get_param: key_name}
+      user_data_format: RAW
+      user_data: { get_param: user_data }
       networks:
         - port: { get_resource: vm7_port }
 
