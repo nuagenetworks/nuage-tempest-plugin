@@ -116,12 +116,12 @@
     vars: *vsd_ipam_vars
 
 - job:
-    name: networking-nuage-base
+    name: nuage-base
+    abstract: true
     parent: devstack-tempest
     # This currently works from stable/pike on
     branches: ^(?!stable/(newton|ocata)).*$
-    description: Base job for devstack/tempest based nuage jobs and python2.7.
-    nodeset: openstack-single-node-rhel7
+    description: Base abstract job for devstack/tempest based nuage jobs.
     required-projects:
       - opendev.org/openstack/devstack-gate
       - opendev.org/openstack/neutron-tempest-plugin
@@ -236,19 +236,41 @@
               default_image_is_advanced: true
 
 - job:
+    name: networking-nuage-base
+    parent: nuage-base
+    description: Base job for devstack/tempest based nuage jobs
+    branches: ^(stable|5.4|6.0)/(pike|queens|rocky|stein|train).*$
+    nodeset: openstack-single-node-centos7
+
+- job:
+    name: networking-nuage-base
+    parent: nuage-base
+    description: Base job for devstack/tempest based nuage jobs
+    branches: ^(?!(stable|5.4|6.0)/(pike|queens|rocky|stein|train)).*$
+    nodeset: openstack-single-node-centos
+
+- job:
     name: networking-nuage-base-py3
     parent: networking-nuage-base
     description: Base job for devstack/tempest based nuage jobs and python3.
-    # This currently works from stable/pike on
-    branches: ^(?!stable/(newton|ocata)).*$
-    # xenial version of python-openssl is too low
-    # once moved bionic this should go
+    # release <U run on centos 7 with no metadata
+    branches: ^(stable|5.4|6.0)/(pike|queens|rocky|stein|train).*$
     vars:
       devstack_localrc:
         USE_PYTHON3: True
         # INF-7814 nuage-metadata-agent runs under py2 and
         # misses dependencies to python-keystoneclient
         FORCE_CONFIG_DRIVE: True
+
+- job:
+    name: networking-nuage-base-py3
+    parent: networking-nuage-base
+    description: Base job for devstack/tempest based nuage jobs and python3.
+    # ussuri and above
+    branches: ^(?!(stable|5.4|6.0)/(pike|queens|rocky|stein|train)).*$
+    vars:
+      devstack_localrc:
+        USE_PYTHON3: True
 
 - job:
     name: networking-nuage-base-5.4
