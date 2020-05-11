@@ -590,17 +590,10 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
         net_name = data_utils.rand_name('network-')
         network = self.create_network(network_name=net_name)
 
-        if Topology.from_openstack('Newton'):
-            expected_exception = exceptions.BadRequest
-            expected_message = "Subnet with ip_version 6 can't be linked " \
-                               "to vsd subnet with IPType IPV4"
-        else:
-            expected_exception = exceptions.ServerFault
-            expected_message = "create_subnet_postcommit failed."
-
         self.assertRaisesRegex(
-            expected_exception,
-            expected_message,
+            exceptions.BadRequest,
+            "Subnet with ip_version 6 can't be linked "
+            "to vsd subnet with IPType IPV4",
             self.create_subnet,
             network,
             ip_version=6,
@@ -691,19 +684,11 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
                                     'ip_address': IPAddress(
                                         self.cidr6.first + 10)}]}
 
-        if Topology.from_openstack('Newton'):
-            expected_exception = exceptions.Conflict,
-            expected_message = "IP address %s already allocated in subnet %s" \
-                % (IPAddress(self.cidr6.first + 10), ipv6_subnet['id'])
-        else:
-            expected_exception = exceptions.Conflict,
-            expected_message = "Unable to complete operation for network %s." \
-                               " The IP address %s is in use." \
-                % (network['id'], IPAddress(self.cidr6.first + 10)),
-
         self.assertRaisesRegex(
-            expected_exception,
-            expected_message,
+            exceptions.Conflict,
+            'IP address {} already allocated '
+            'in subnet {}'.format(IPAddress(self.cidr6.first + 10),
+                                  ipv6_subnet['id']),
             self.create_port,
             network,
             **port_args)

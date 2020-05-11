@@ -226,23 +226,16 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
             floatingip_id_list.append(f['id'])
         self.assertIn(created_floating_ip['id'], floatingip_id_list)
 
-        if Topology.from_openstack('Newton') and Topology.is_ml2:
-            self.floating_ips_client.update_floatingip(
-                created_floating_ip['id'],
-                port_id=self.ports[3]['id'])
-            updated_floating_ip = self.floating_ips_client.show_floatingip(
-                created_floating_ip['id'])['floatingip']
-            self.assertEqual(updated_floating_ip['port_id'],
-                             self.ports[3]['id'])
-            self._verify_fip_on_vsd(
-                updated_floating_ip, updated_floating_ip['router_id'],
-                self.ports[3]['id'], self.subnet, True)
-        else:
-            # Associate floating IP to the other port
-            self.assertRaises(exceptions.ServerFault,
-                              self.floating_ips_client.update_floatingip,
-                              created_floating_ip['id'],
-                              port_id=self.ports[3]['id'])
+        self.floating_ips_client.update_floatingip(
+            created_floating_ip['id'],
+            port_id=self.ports[3]['id'])
+        updated_floating_ip = self.floating_ips_client.show_floatingip(
+            created_floating_ip['id'])['floatingip']
+        self.assertEqual(updated_floating_ip['port_id'],
+                         self.ports[3]['id'])
+        self._verify_fip_on_vsd(
+            updated_floating_ip, updated_floating_ip['router_id'],
+            self.ports[3]['id'], self.subnet, True)
 
     @decorators.attr(type='smoke')
     def test_floating_ip_delete_port(self):
