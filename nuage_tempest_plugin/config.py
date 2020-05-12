@@ -17,7 +17,6 @@ from oslo_config import cfg
 
 from nuage_tempest_plugin.lib.utils import constants
 
-
 nuage_vsd_group = cfg.OptGroup(name='nuage',
                                title='Nuage VSD config options')
 
@@ -94,5 +93,8 @@ NuageSutGroup = [
                default='nuage_internal',
                help="Currently active ipam driver. "
                     "Valid examples: nuage_internal, nuage_vsd_managed"),
+    cfg.BoolOpt('nuage_hybrid_mpls_enabled',
+                default=False,
+                help="Indicating whether nuage_hybrid_mpls is enabled."),
 
 ]

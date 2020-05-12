@@ -307,6 +307,8 @@
           $TEMPEST_CONFIG:
             neutron_plugin_options:
               available_type_drivers: flat,vlan,local,vxlan,nuage_hybrid_mpls
+            nuage_sut:
+              nuage_hybrid_mpls_enabled: True
       tempest_test_regex: '^(nuage_tempest_plugin|tempest\.api\.network|neutron_tempest_plugin\.(api|scenario))\..*\[(?=.*smoke)'
       tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|neutron_tempest_plugin\.api\.admin\.test_tag.*|nuage_tempest_plugin.*orchestration.*|nuage_tempest_plugin\.tests\.scenario\.connectivity\..*\..*AggrFlowsTest\..*|tempest\.api\.network\.test_ports.*test_show_port))'
 
@@ -454,6 +456,8 @@
               port_vnic_type: direct
             neutron_plugin_options:
               available_type_drivers: flat,vlan,local,vxlan,nuage_hybrid_mpls
+            nuage_sut:
+              nuage_hybrid_mpls_enabled: True
 
 - job:
     name: networking-nuage-tempest-sriov-vsdipam
