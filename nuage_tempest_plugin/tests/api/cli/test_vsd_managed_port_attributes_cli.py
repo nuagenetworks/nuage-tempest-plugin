@@ -549,7 +549,9 @@ class VSDManagedRedirectTargetCliTest(
             vsd_l2_subnet)
         # And I have created a redirection-target in the VSD-L2-Managed-Subnet
         # parameters for nuage redirection target
-        msg = 'Nuage API'
+        msg = ('Error in REST call to VSD: vPort Tag with endpoint type as '
+               'NONE/VIRTUAL_WIRE cannot have redundancy enabled and '
+               'trigger type as GARP')
         self.assertCommandFailed(
             msg,
             self._cli_create_redirect_target_with_args,
@@ -571,7 +573,8 @@ class VSDManagedRedirectTargetCliTest(
         vsd_l2_subnet, l2dom_template = self._create_vsd_l2_managed_subnet()
         cli_network, cli_subnet = self._cli_create_os_l2_vsd_managed_subnet(
             vsd_l2_subnet)
-        msg = 'Nuage API'
+        msg = ('Error in REST call to VSD: An L2 domain redirectiontarget '
+               'cannot have an L3 endpoint.')
         self.assertCommandFailed(
             msg,
             self._cli_create_redirect_target_with_args,
