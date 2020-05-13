@@ -19,11 +19,11 @@ from tempest.lib.common.utils import data_utils
 from tempest.lib.common.utils.data_utils import rand_name
 from tempest.test import decorators
 
-from . import base_nuage_gateway as base
-
+from nuage_tempest_plugin.lib.test.nuage_test import skip_because
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.lib.utils import exceptions
+from nuage_tempest_plugin.tests.api import base_nuage_gateway as base
 from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_networks as base_vsdman
 
@@ -524,6 +524,7 @@ class NuageGatewayTestRedundancy(base.BaseNuageGatewayTest,
         self.verify_vport_properties(gw_vport[0], vport, net['id'])
 
     @decorators.attr(type='smoke')
+    @skip_because(bug='OPENSTACK-2886')
     def test_vport_managed_l2_vsd_managed(self):
         name = data_utils.rand_name('l2domain-')
         cidr = IPNetwork('10.10.100.0/24')

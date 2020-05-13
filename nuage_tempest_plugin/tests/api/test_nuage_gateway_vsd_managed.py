@@ -13,16 +13,18 @@
 #    under the License.
 #
 
-from . import base_nuage_gateway as base
 
 from netaddr import IPNetwork
-from nuage_tempest_plugin.tests.api.vsd_managed \
-    import base_vsd_managed_networks as base_vsdman
 
 from tempest.lib.common.utils import data_utils
 from tempest.test import decorators
 
+
+from nuage_tempest_plugin.lib.test.nuage_test import skip_because
 from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.tests.api import base_nuage_gateway as base
+from nuage_tempest_plugin.tests.api.vsd_managed \
+    import base_vsd_managed_networks as base_vsdman
 
 LOG = Topology.get_logger(__name__)
 
@@ -112,6 +114,7 @@ class NuageGatewayTestVSDManaged(base.BaseNuageGatewayTest,
                                      post_body['network_id'])
 
     @decorators.attr(type='smoke')
+    @skip_because(bug='OPENSTACK-2886')
     def test_vport_managed_l2(self):
         name = data_utils.rand_name('l2domain-')
         cidr = IPNetwork('10.10.100.0/24')
@@ -176,6 +179,7 @@ class NuageGatewayTestVSDManaged(base.BaseNuageGatewayTest,
                                      post_body['network_id'])
 
     @decorators.attr(type='smoke')
+    @skip_because(bug='OPENSTACK-2886')
     def test_vport_managed_l2_dhcp_disabled(self):
         name = data_utils.rand_name('l2domain-')
         cidr = IPNetwork('10.10.100.0/24')
