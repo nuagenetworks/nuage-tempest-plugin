@@ -257,6 +257,12 @@ class TestFWaaS(fwaas_mixins.FWaaSClientMixin, NuageBaseTest):
                 enabled=False)
         self._wait_firewall_ready(ctx['fw']['id'])
 
+    def _reverse_rules_order(self, ctx):
+        self.firewall_policies_client.update_firewall_policy(
+            ctx['fw_policy']['id'],
+            firewall_rules=list(reversed(ctx['fw_policy']['firewall_rules'])))
+        self._wait_firewall_ready(ctx['fw']['id'])
+
     def _confirm_blocked_one_way(self, from_server, to_server, **_kwargs):
 
         # one way
@@ -407,3 +413,7 @@ class TestFWaaS(fwaas_mixins.FWaaSClientMixin, NuageBaseTest):
 
     def test_firewall_all_disabled_rules(self):
         self._test_firewall_basic(block=self._all_disabled_rules)
+
+    def test_firewall_order_rules(self):
+        self._test_firewall_basic(block=self._block_all_with_default_allow,
+                                  allow=self._reverse_rules_order)
