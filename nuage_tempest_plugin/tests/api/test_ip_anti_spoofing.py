@@ -3,6 +3,7 @@
 
 from collections import namedtuple
 from enum import Enum
+from netaddr import IPAddress
 from netaddr import IPNetwork
 
 from tempest.lib.common.utils import data_utils
@@ -74,6 +75,21 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
              cls.vip_param('1', '1', '0', '1'): cls.vip_action.vip,
              cls.vip_param('1', '1', '1', '1'): cls.vip_action.spoofing})
 
+    def _ensure_nuage_vip_port_vsd_ipam(self, allowed_address_pairs, subnet,
+                                        network):
+        if CONF.nuage_sut.ipam_driver == 'nuage_vsd_managed':
+            # Nuage vsd managed ipam requires nuage:vip port
+            fixed_ips = [
+                {'ip_address': aap['ip_address']} for aap
+                in allowed_address_pairs if
+                IPNetwork(aap['ip_address']).size == 1 and
+                IPAddress(aap['ip_address']) in IPNetwork(subnet['cidr'])
+            ]
+            port = self.create_port(network, name='nuage-vip',
+                                    device_owner='nuage:vip',
+                                    fixed_ips=fixed_ips)
+            self.addCleanup(self.ports_client.delete_port, port['id'])
+
     def _create_network_port_l2resources(self, ntw_security=True,
                                          port_security=True,
                                          port_name='port-1',
@@ -100,6 +116,8 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
         kwargs = {'name': port_name, 'network': network,
                   'fixed_ips': [{'ip_address': port_ip}]}
         if allowed_address_pairs:
+            self._ensure_nuage_vip_port_vsd_ipam(allowed_address_pairs,
+                                                 l2domain, network)
             kwargs.update({'allowed_address_pairs': allowed_address_pairs})
         if port_security is not None:
             if not port_security:
@@ -149,6 +167,8 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
         kwargs = {'name': port_name, 'network': network,
                   'fixed_ips': [{'ip_address': port_ip}]}
         if allowed_address_pairs:
+            self._ensure_nuage_vip_port_vsd_ipam(allowed_address_pairs,
+                                                 subnet, network)
             kwargs.update({'allowed_address_pairs': allowed_address_pairs})
         if port_security is not None:
             if not port_security:
@@ -197,6 +217,8 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
 
         kwargs = {'name': port_name, 'network': network}
         if allowed_address_pairs:
+            self._ensure_nuage_vip_port_vsd_ipam(allowed_address_pairs,
+                                                 subnet, network)
             kwargs.update({'allowed_address_pairs': allowed_address_pairs})
         if port_security is not None:
             if not port_security:
@@ -256,6 +278,8 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
 
         kwargs = {'name': port_name, 'network': network}
         if allowed_address_pairs:
+            self._ensure_nuage_vip_port_vsd_ipam(allowed_address_pairs,
+                                                 subnet, network)
             kwargs.update({'allowed_address_pairs': allowed_address_pairs})
         if port_security is not None:
             if not port_security:

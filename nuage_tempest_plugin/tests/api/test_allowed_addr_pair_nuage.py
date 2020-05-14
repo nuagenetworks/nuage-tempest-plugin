@@ -14,6 +14,7 @@
 #    under the License.
 
 from netaddr import IPAddress
+import testtools
 
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
@@ -81,7 +82,8 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
     def test_create_address_pair_on_l2domain_with_no_mac(self):
         # Create port with allowed address pair attribute
         # For /32 cidr
-        addrpair_port = self.create_port(self.network)
+        addrpair_port = self.create_port(self.network,
+                                         device_owner='nuage:vip')
         allowed_address_pairs = [{'ip_address':
                                   addrpair_port['fixed_ips'][0]['ip_address']}]
         port = self.create_port(network=self.network,
@@ -117,6 +119,9 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         self.assertEqual(n_constants.ENABLED,
                          nuage_vport[0]['addressSpoofing'])
 
+    @testtools.skipIf(CONF.nuage_sut.ipam_driver == 'nuage_vsd_managed',
+                      'This scenario cannot be reproduced with vsd ipam. '
+                      'Extra validation for vsd ipam prevents it.')
     def test_create_address_pair_on_l2domain_update_fixed_ip(self):
         # Create port with allowed address pair attribute
         # For /32 cidr
@@ -163,7 +168,8 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         # Create port with allowed address pair attribute
         # For /32 cidr
 
-        addrpair_port = self.create_port(self.network)
+        addrpair_port = self.create_port(self.network,
+                                         device_owner='nuage:vip')
         allowed_address_pairs = [{'ip_address':
                                   addrpair_port['fixed_ips'][0]['ip_address'],
                                   'mac_address':
@@ -269,7 +275,8 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
     @decorators.attr(type='smoke')
     def test_create_address_pair_on_l3subnet_with_mac(self):
         # Create port with allowed address pair attribute
-        addrpair_port = self.create_port(self.l3network)
+        addrpair_port = self.create_port(self.l3network,
+                                         device_owner='nuage:vip')
         allowed_address_pairs = [{'ip_address':
                                   addrpair_port['fixed_ips'][0]['ip_address'],
                                   'mac_address':
@@ -326,7 +333,8 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
     @decorators.attr(type='smoke')
     def test_create_address_pair_on_l3subnet_with_mac_routersubnetbind(self):
         # Create port with allowed address pair attribute
-        addrpair_port = self.create_port(self.l3network)
+        addrpair_port = self.create_port(self.l3network,
+                                         device_owner='nuage:vip')
         allowed_address_pairs = [{'ip_address':
                                   addrpair_port['fixed_ips'][0]['ip_address'],
                                   'mac_address':
@@ -380,7 +388,8 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
 
     def test_create_address_pair_on_l3subnet_with_no_mac(self):
         # Create port with allowed address pair attribute
-        addrpair_port = self.create_port(self.l3network)
+        addrpair_port = self.create_port(self.l3network,
+                                         device_owner='nuage:vip')
         allowed_address_pairs = [{'ip_address':
                                   addrpair_port['fixed_ips'][0]['ip_address']}]
         port = self.create_port(network=self.l3network,
@@ -501,7 +510,8 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
 
     @decorators.attr(type='smoke')
     def test_update_address_pair_on_l3subnet(self):
-        addrpair_port_1 = self.create_port(self.l3network)
+        addrpair_port_1 = self.create_port(self.l3network,
+                                           device_owner='nuage:vip')
         allowed_address_pairs = [
             {'ip_address': addrpair_port_1['fixed_ips'][0]['ip_address'],
              'mac_address': addrpair_port_1['mac_address']}]
@@ -543,7 +553,8 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
                              port['id']))
         # Update the address pairs
         # Create port with allowed address pair attribute
-        addrpair_port_2 = self.create_port(self.l3network)
+        addrpair_port_2 = self.create_port(self.l3network,
+                                           device_owner='nuage:vip')
         allowed_address_pairs = [
             {'ip_address': addrpair_port_2['fixed_ips'][0]['ip_address'],
              'mac_address': addrpair_port_2['mac_address']}]
@@ -591,7 +602,8 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         addrpair_port_1 = self.create_port(
             self.l3network,
             fixed_ips=[{'subnet_id': self.l3subnet['id'],
-                        'ip_address': str(ip)}])
+                        'ip_address': str(ip)}],
+            device_owner='nuage:vip')
         ip += 1
         allowed_address_pairs = [
             {'ip_address': addrpair_port_1['fixed_ips'][0]['ip_address'],
@@ -654,7 +666,8 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         addrpair_port_2 = self.create_port(
             self.l3network,
             fixed_ips=[{'subnet_id': self.l3subnet['id'],
-                        'ip_address': str(ip)}])
+                        'ip_address': str(ip)}],
+            device_owner='nuage:vip')
         ip += 1
         allowed_address_pairs = [
             {'ip_address': addrpair_port_2['fixed_ips'][0]['ip_address'],
@@ -767,7 +780,8 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         self.floating_ips_client.delete_floatingip(created_floating_ip['id'])
 
     def test_allowed_address_pair_extraroute(self):
-        addrpair_port = self.create_port(self.l3network)
+        addrpair_port = self.create_port(self.l3network,
+                                         device_owner='nuage:vip')
         allowed_address_pairs = [{'ip_address':
                                   addrpair_port['fixed_ips'][0]['ip_address'],
                                   'mac_address':

@@ -5,6 +5,7 @@ from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
 
 from netaddr import IPAddress
+from netaddr import IPNetwork
 
 from tempest.common import utils
 
@@ -25,6 +26,7 @@ MSG_INVALID_INPUT_FOR_AAP_IPS = "'%s' is not a valid IP address."
 ###############################################################################
 ###############################################################################
 
+CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
 
 
@@ -184,13 +186,27 @@ class BaseAllowedAddressPair(NuageBaseTest):
         if len(port_config['fixed-ips']) > 0:
             params.update({'fixed_ips': port_config['fixed-ips']})
 
+        # If nuage_vsd_managed ipam is enabled, a nuage:vip port is required
+        aap_port = None
+        if (CONF.nuage_sut.ipam_driver == 'nuage_vsd_managed' and
+                params.get('allowed_address_pairs')):
+            # Create nuage:vip port
+            fixed_ips = [
+                {'ip_address': aap['ip_address']} for aap
+                in params['allowed_address_pairs'] if
+                IPNetwork(aap['ip_address']).size == 1 and
+                (IPAddress(aap['ip_address']) in IPNetwork(subnet4['cidr']) or
+                 IPAddress(aap['ip_address']) in IPNetwork(subnet6['cidr']))
+            ]
+            aap_port = self.create_port(network, name=scenario + '-vip',
+                                        device_owner='nuage:vip',
+                                        fixed_ips=fixed_ips)
+
         port = self.create_port(
             network,
-            name=scenario, cleanup=False,
+            name=scenario,
             **params)
-
         try:
-
             kwargs = {}
             expected_allowed_address_pairs = []
             for pair in allowed_address_pairs:
@@ -245,6 +261,8 @@ class BaseAllowedAddressPair(NuageBaseTest):
                 self._verify_vip(nuage_vport, port)
         finally:
             self.ports_client.delete_port(port['id'])
+            if aap_port:
+                self.ports_client.delete_port(aap_port['id'])
 
     def _verify_vip(self, nuage_vport, port):
         for aap in port['allowed_address_pairs']:
