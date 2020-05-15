@@ -14,6 +14,7 @@
 #    under the License.
 from netaddr import IPAddress
 from netaddr import IPNetwork
+import testtools
 
 from tempest import test
 
@@ -414,6 +415,8 @@ class TestFWaaS(fwaas_mixins.FWaaSClientMixin, NuageBaseTest):
     def test_firewall_all_disabled_rules(self):
         self._test_firewall_basic(block=self._all_disabled_rules)
 
+    @testtools.skipIf(Topology.at_nuage('6.0') or Topology.at_nuage('5.4'),
+                      reason='VSD-42518')
     def test_firewall_order_rules(self):
         self._test_firewall_basic(block=self._block_all_with_default_allow,
                                   allow=self._reverse_rules_order)
