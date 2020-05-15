@@ -661,13 +661,19 @@
     required-projects:
       - openstack/neutron-fwaas
     vars:
-      tempest_test_regex: '^(neutron_fwaas|nuage_tempest_plugin\.tests\.api\.test_fwaas|nuage_tempest_plugin\.tests\.scenario\.test_fwaas)'
+      tempest_test_regex: '^(neutron_fwaas.*(test_fwaas_extensions|test_fwaas)\.|nuage_tempest_plugin\.tests\.api\.test_fwaas|nuage_tempest_plugin\.tests\.scenario\.test_fwaas)'
       devstack_plugins:
         neutron-fwaas: https://opendev.org/openstack/neutron-fwaas.git
       devstack_services:
         q-fwaas-v1: true
       devstack_localrc:
         FWAAS_PLUGIN: NuageFWaaS
+        USE_PYTHON3: false
+        FORCE_CONFIG_DRIVE: false
+        TEMPEST_PLUGINS: '"/opt/stack/nuage-tempest-plugin /opt/stack/neutron-fwaas"'
+      tempest_plugins:
+        - neutron-fwaas
+        - nuage-tempest-plugin
 
 - job:
     name: networking-nuage-vtep-vxlan
