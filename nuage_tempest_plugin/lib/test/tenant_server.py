@@ -501,8 +501,14 @@ class TenantServer(object):
             self.send('ip link set dev {} up || true'.format(device))
 
             if gateway_ip:
-                self.send('{} route add default via {} || true'.format(
-                    ip_v, gateway_ip))
+                # Add the default route if it does not exist yet.
+                # Multiple default routes are not possible so the first
+                # interface wins. Usually the default route is already in place
+                # as FIP access will be using it. Keeping this for backwards
+                # compatibility
+                self.send('({ip} route | grep ^default) || '
+                          '(sudo {ip} route add default via {gw})'
+                          .format(ip=ip_v, gw=gateway_ip), as_sudo=False)
 
         # with all config up now, validate for non-tentative
         self.wait_until_ip_configured(ip, assert_permanent=True)
@@ -551,12 +557,18 @@ class TenantServer(object):
         self.send('umount /mnt')
 
     def get_user_data_for_nic_prep(self, dhcp_client='udhcpc', manager=None):
-
+        # In an ideal world, interfaces are configured through metadata
+        # service/cloudinit without us having to add any user data.
+        # Problems:
+        #  1) Cirros does not support it properly
+        #  2) Before train, a static ip is configured by cloudinit even with
+        #     DHCP enabled
+        # That is why we have these abstractions configuring each nic
+        # manually and we had to modify /etc/cloud/cloud.cfg in the
+        # RHEL image to have 'network: config: disabled'
         if not dhcp_client:
-            # Not all images (e.g. RHEL 7-7) use DHCP client
-            # they instead configure statically through cloudinit
+            # configured statically through cloudinit
             return
-
         networks = self.get_server_networks(manager)
         s = ''
         nbr_nics = len(networks)
@@ -564,7 +576,6 @@ class TenantServer(object):
         for nic, network in enumerate(networks):
             if nic == 0:
                 continue   # nic 0 is auto-served
-
             # TODO(Kris) check each subnet separately for dhcp seems more
             #            suited?
             if self.force_dhcp or self.parent.is_dhcp_enabled(
@@ -578,19 +589,44 @@ class TenantServer(object):
                             '%s DHCP client unsupported' % dhcp_client)
                     s = '#!/bin/sh\n'
                     first_nic_prepared = False
+                is_ipv4 = self.parent.get_network_subnet(
+                    network, 4, manager=manager) is not None
+                is_ipv6 = self.parent.get_network_subnet(
+                    network, 6, manager=manager) is not None
+
+                if CONF.nuage_sut.use_network_scripts and is_ipv6:
+                    # On RHEL 6 (and apparently also rhel 7) a DHCPv6
+                    # client is correctly handled only by NetworkManager
+                    # and should not generally be run separately.
+                    # That is because DHCPv6, unlike DHCPv4,
+                    # is not a standalone network configuration
+                    # protocol but is always supposed to be used together with
+                    # router discovery.
+                    s += ('echo -e "'
+                          'DEVICE=eth{nic}\\n'
+                          'BOOTPROTO=dhcp\\n'
+                          'BOOTPROTOv6=dhcp\\n'
+                          'ONBOOT=yes\\n'
+                          'TYPE=Ethernet\\n'
+                          'IPV6INIT=yes\\n'
+                          'IPV4INIT={ipv4}\\n'
+                          'PERSISTENT_DHCLIENT=1\\n" '
+                          '> /etc/sysconfig/network-scripts/ifcfg-eth{nic}\n'
+                          .format(nic=nic, ipv4='yes' if is_ipv4 else 'no'))
+                    s += 'systemctl restart network\n'
+                    continue
+
                 if dhcp_client == 'udhcpc':
                     s += '/sbin/cirros-dhcpc up eth%s\n' % nic
                 else:
                     s += '/sbin/ip link set eth%s up\n' % nic
-                    if self.parent.get_network_subnet(network, 6,
-                                                      manager=manager):
+                    if is_ipv6:
                         s += '/bin/sleep 2\n'  # TODO(OPENSTACK-2666) this is
                         #                           current low-cost approach
                         #                              for v6 DAD to complete,
                         #                           but is platform-dependent
                         s += '/sbin/dhclient -1 -6 eth%s\n' % nic
-                    if self.parent.get_network_subnet(network, 4,
-                                                      manager=manager):
+                    if is_ipv4:
                         s += '/sbin/dhclient -1 eth%s\n' % nic
         return s
 
