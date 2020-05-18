@@ -94,6 +94,7 @@ class NuageHybridMplsTest(NuageBaseTest):
                                           manager=self.admin_manager)
 
         # L3 Subnet
+        network = self.create_network(manager=self.admin_manager, **kwargs)
         l3subnet = self.create_l3_subnet_tunnel_type_mpls()
         self.create_l3_vsd_managed_subnet(network, l3subnet,
                                           manager=self.admin_manager)
