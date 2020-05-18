@@ -3,6 +3,6 @@
   vars:
     devstack_base_dir: '/opt/stack'
   roles:
-    - role: fetch-subunit-output-nuage
+    - role: fetch-subunit-output
       zuul_work_dir: '{{ devstack_base_dir }}/tempest'
   environment: '{{ proxy_env }}'
