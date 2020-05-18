@@ -1,0 +1,40 @@
+- name: init stestr
+  command: "stesr init"
+  args:
+    chdir: "/opt/stack/tempest"
+  ignore_errors: yes
+
+- name: Generate subunit file
+  shell:
+    cmd: "/opt/stack/tempest/.tox/tempest/bin/stestr last --subunit >> {{ zuul_work_dir }}/testrepository.subunit"
+    chdir: "/opt/stack/tempest"
+
+- name: Generate testr_results.html file
+  command: "/usr/local/bin/subunit2html ./testrepository.subunit testr_results.html"
+  args:
+    chdir: "{{ zuul_work_dir }}"
+
+- name: Collect test-results
+  synchronize:
+    dest: "{{ zuul.executor.log_root }}"
+    mode: pull
+    src: "{{ zuul_work_dir }}/testr_results.html"
+    verify_host: true
+  when: not zuul_use_fetch_output
+
+- name: Copy test-results
+  copy:
+    dest: "{{ zuul_output_dir }}/logs/"
+    src: "{{ zuul_work_dir }}/testrepository.subunit"
+    remote_src: true
+  when: zuul_use_fetch_output
+
+- name: Return artifact to Zuul
+  zuul_return:
+    data:
+      zuul:
+        artifacts:
+          - name: "Unit Test Report"
+            url: "testr_results.html"
+            metadata:
+              type: unit_test_report
