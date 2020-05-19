@@ -422,6 +422,9 @@ class VSDManagedIPAMTest(nuage_test.NuageBaseTest):
         self.assertIn('10.0.0.10', reserved_ips)
         self.assertIn(fip2['floating_ip_address'], reserved_ips)
 
+        # Delete fip2 as it might clash with below test
+        self.delete_floatingip(fip2['id'])
+
         # Check that an error occurs when trying to reserve existing fip
         vmipreservation = self.vsd.vspk.NUVMIPReservation(
             ip_type='IPV4', ipv4_address='10.0.0.11')
