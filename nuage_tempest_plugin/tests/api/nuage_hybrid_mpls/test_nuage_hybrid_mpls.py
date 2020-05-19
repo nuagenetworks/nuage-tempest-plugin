@@ -35,19 +35,19 @@ class NuageHybridMplsTest(NuageBaseTest):
             raise cls.skipException('nuage_hybrid_mpls type driver '
                                     'not enabled in tempest.conf')
 
-    def create_l2_domain_tunnel_type_mpls(self):
+    def create_l2_domain_tunnel_type(self, tunnel_type):
         l2template = self.vsd_create_l2domain_template(
             cidr4=IPNetwork('100.0.0.0/24'),
             gateway4='100.0.0.1')
-        kwargs = {'l2_encap_type': 'MPLS'}
+        kwargs = {'l2_encap_type': tunnel_type}
         l2domain = self.vsd_create_l2domain(template=l2template, **kwargs)
         return l2domain
 
-    def create_l3_subnet_tunnel_type_mpls(self):
+    def create_l3_subnet_tunnel_type(self, tunnel_type):
         l3template = self.vsd_create_l3domain_template()
         l3domain = self.vsd_create_l3domain(template_id=l3template.id)
         zone = self.vsd_create_zone(domain=l3domain)
-        kwargs = {'l2_encap_type': 'MPLS'}
+        kwargs = {'l2_encap_type': tunnel_type}
         l3subnet = self.create_vsd_subnet(zone=zone,
                                           cidr4=IPNetwork('20.0.0.0/24'),
                                           gateway4='20.0.0.1',
@@ -87,7 +87,7 @@ class NuageHybridMplsTest(NuageBaseTest):
     @decorators.attr(type='smoke')
     def test_vsd_managed_subnet_tunnel_type_mpls(self):
         # L2 Domain
-        l2domain = self.create_l2_domain_tunnel_type_mpls()
+        l2domain = self.create_l2_domain_tunnel_type('MPLS')
         kwargs = {'provider:network_type': 'nuage_hybrid_mpls'}
         network = self.create_network(manager=self.admin_manager, **kwargs)
         self.create_l2_vsd_managed_subnet(network, l2domain,
@@ -95,13 +95,13 @@ class NuageHybridMplsTest(NuageBaseTest):
 
         # L3 Subnet
         network = self.create_network(manager=self.admin_manager, **kwargs)
-        l3subnet = self.create_l3_subnet_tunnel_type_mpls()
+        l3subnet = self.create_l3_subnet_tunnel_type('MPLS')
         self.create_l3_vsd_managed_subnet(network, l3subnet,
                                           manager=self.admin_manager)
 
     def test_vsd_managed_subnet_tunnel_type_mpls_neg(self):
         # L2 Domain
-        l2domain = self.create_l2_domain_tunnel_type_mpls()
+        l2domain = self.create_l2_domain_tunnel_type('MPLS')
         network = self.create_network()
         kwargs = {'vsd_l2domain': l2domain}
         msg = ('Bad request: Provided Nuage subnet has tunnel type MPLS '
@@ -113,10 +113,38 @@ class NuageHybridMplsTest(NuageBaseTest):
                                **kwargs)
 
         # L3 Subnet
-        l3subnet = self.create_l3_subnet_tunnel_type_mpls()
+        l3subnet = self.create_l3_subnet_tunnel_type('MPLS')
         kwargs = {'vsd_subnet': l3subnet}
         msg = ('Bad request: Provided Nuage subnet has tunnel type MPLS '
                'which is not supported by VXLAN networks')
+        self.assertRaisesRegex(exceptions.BadRequest,
+                               msg,
+                               self.create_l3_vsd_managed_subnet,
+                               network,
+                               **kwargs)
+
+    def test_vsd_managed_subnet_tunnel_type_vxlan_neg(self):
+        # L2 Domain
+        l2domain = self.create_l2_domain_tunnel_type('VXLAN')
+        kwargs = {'provider:network_type': 'nuage_hybrid_mpls'}
+        network = self.create_network(manager=self.admin_manager, **kwargs)
+
+        kwargs = {'vsd_l2domain': l2domain,
+                  "manager": self.admin_manager}
+        msg = ('Bad request: Provided Nuage subnet has tunnel type VXLAN '
+               'which is not supported by NUAGE_HYBRID_MPLS networks')
+        self.assertRaisesRegex(exceptions.BadRequest,
+                               msg,
+                               self.create_l2_vsd_managed_subnet,
+                               network,
+                               **kwargs)
+
+        # L3 Subnet
+        l3subnet = self.create_l3_subnet_tunnel_type('VXLAN')
+        kwargs = {'vsd_subnet': l3subnet,
+                  "manager": self.admin_manager}
+        msg = ('Bad request: Provided Nuage subnet has tunnel type VXLAN '
+               'which is not supported by NUAGE_HYBRID_MPLS networks')
         self.assertRaisesRegex(exceptions.BadRequest,
                                msg,
                                self.create_l3_vsd_managed_subnet,
@@ -218,7 +246,7 @@ class NuageHybridMplsTest(NuageBaseTest):
         network = self.create_network(manager=self.admin_manager, **kwargs)
 
         # L3 Subnet
-        l3subnet = self.create_l3_subnet_tunnel_type_mpls()
+        l3subnet = self.create_l3_subnet_tunnel_type('MPLS')
         self.create_l3_vsd_managed_subnet(network, l3subnet,
                                           manager=self.admin_manager)
 
