@@ -277,6 +277,7 @@
     parent: networking-nuage-base
     description: Base job for devstack/tempest based nuage jobs against 5.4 branches
     branches: ^(5.4/(pike|queens|rocky)).*$
+    nodeset: openstack-single-node-centos7
     # This currently works from pike on
     vars:
       vsp_release: '5.4'
