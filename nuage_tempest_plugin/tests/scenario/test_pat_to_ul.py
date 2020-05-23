@@ -24,8 +24,10 @@ CONF = Topology.get_conf()
 class NuagePatToUnderlayScenarioTest(NuageBaseTest):
 
     @classmethod
-    def resource_setup(cls):
-        super(NuagePatToUnderlayScenarioTest, cls).resource_setup()
+    def skip_checks(cls):
+        super(NuagePatToUnderlayScenarioTest, cls).skip_checks()
+        if not Topology.from_nuage('5.4'):
+            raise cls.skipException('Unsupported pre-5.4')
 
     def _test_pat_to_underlay_up_to_hv(self, nuage_underlay, should_succeed):
         local_ip = self.get_local_ip()

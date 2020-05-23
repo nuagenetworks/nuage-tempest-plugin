@@ -13,6 +13,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import testtools
+
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
@@ -160,6 +162,8 @@ class NuageExtSecGroup(test_security_groups_nuage.SecGroupTestNuageBase):
             list_resp['nuage_external_security_groups'][0],
             list_vsd_resp[0])
 
+    @testtools.skipIf(Topology.before_nuage('5.4'),
+                      'External sg rule protocol vrrp not supported pre-5.4')
     def test_create_show_list_delete_ext_secgroup_rule(self):
         router_name = data_utils.rand_name('router-')
         body = self.routers_client.create_router(name=router_name)

@@ -3,10 +3,12 @@
 
 from netaddr import IPAddress
 from netaddr import IPNetwork
+import testtools
 
 from tempest.lib import decorators
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.topology import Topology
 
 
 class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
@@ -168,6 +170,7 @@ class Ipv6VsdManagedConnectivityTest(NuageBaseTest):
             server2_pre_set_up=server)
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_icmp_connectivity_l3_vsd_managed_dualstack_link_shared_subnet(
             self):
         # Provision shared dualstack subnet in shared infrastructure

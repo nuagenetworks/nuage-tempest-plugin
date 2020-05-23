@@ -31,6 +31,12 @@ class NetpartitionsTest(NuageAdminNetworksTest):
     shared_infrastructure = 'Shared Infrastructure'
 
     @classmethod
+    def skip_checks(cls):
+        super(NetpartitionsTest, cls).skip_checks()
+        if not Topology.from_nuage('5.4'):
+            raise cls.skipException('Unsupported pre-5.4')
+
+    @classmethod
     def setup_clients(cls):
         super(NetpartitionsTest, cls).setup_clients()
         cls.client = NuageNetworkClientJSON(

@@ -29,7 +29,7 @@ CONF = Topology.get_conf()
 class BaremetalTrunkTest(network_mixin.NetworkMixin,
                          l3.L3Mixin, sg_mixin.SGMixin):
     credentials = ['admin']
-    personality = 'NUAGE_210_WBX_48_S'
+    personality = 'NUAGE_210_WBX_48_S' if Topology.at_nuage('5.4') else 'VSG'
 
     @classmethod
     def setUpClass(cls):

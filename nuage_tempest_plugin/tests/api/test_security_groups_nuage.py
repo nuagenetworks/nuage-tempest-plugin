@@ -16,6 +16,7 @@
 from six import iteritems
 
 import netaddr
+import testtools
 import uuid
 
 from tempest.api.network import base_security_groups as base
@@ -223,9 +224,15 @@ class SecGroupTestNuageBase(base.BaseSecGroupTest):
         self._create_nuage_port_with_security_group(security_group_id,
                                                     self.network['id'])
         if ipv6:
-            protocols = n_constants.IPV6_PROTO_NAME
+            if Topology.before_nuage('5.4'):
+                protocols = ['icmpv6']
+            else:
+                protocols = n_constants.IPV6_PROTO_NAME
         else:
-            protocols = n_constants.IPV4_PROTO_NAME
+            if Topology.before_nuage('5.4'):
+                protocols = ['tcp', 'udp', 'icmp']
+            else:
+                protocols = n_constants.IPV4_PROTO_NAME
         # Create rules for each protocol
         for protocol in protocols:
             if protocol == 'ipip' and Topology.before_openstack('Queens'):
@@ -538,22 +545,27 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
     def test_create_security_group_rule_in_multiple_domains(self):
         self._test_create_security_group_rule_in_multiple_domains()
 
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_create_port_with_max_security_groups(self):
         self._test_create_port_with_security_groups(
             n_constants.MAX_SG_PER_PORT)
 
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_create_port_with_overflow_security_groups_neg(self):
         self._test_create_port_with_security_groups(
             n_constants.MAX_SG_PER_PORT + 1, should_succeed=False)
 
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_update_port_with_max_security_groups(self):
         self._test_update_port_with_security_groups(
             n_constants.MAX_SG_PER_PORT)
 
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_update_port_with_overflow_security_groups_neg(self):
         self._test_update_port_with_security_groups(
             n_constants.MAX_SG_PER_PORT + 1, should_succeed=False)
 
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_create_security_group_rule_invalid_ip_prefix_negative(self):
         sg1_body, _ = self._create_security_group()
         sg_id = sg1_body['security_group']['id']
@@ -576,7 +588,7 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
                                self._create_nuage_port_with_security_group,
                                sg_id, self.network['id'])
 
-    # @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_create_security_group_rule_invalid_nw_macro_negative(self):
         sg1_body, _ = self._create_security_group()
         sg_id = sg1_body['security_group']['id']
@@ -599,6 +611,7 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
                                self._create_nuage_port_with_security_group,
                                sg_id, self.network['id'])
 
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_security_group_rule_invalid_ip_prefix_update_port_negative(self):
         sg1_body, _ = self._create_security_group()
         sg_id = sg1_body['security_group']['id']
@@ -643,8 +656,8 @@ class TestSecGroupTestNuageL2Domain(SecGroupTestNuageBase):
         self.assertEqual(nuage_policy_grps[0]['name'],
                          port['security_groups'][0])
 
-    def test_security_group_rule_invalid_nw_macro_update_port_negative(
-            self):
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
+    def test_security_group_rule_invalid_nw_macro_update_port_negative(self):
         sg1_body, _ = self._create_security_group()
         sg_id = sg1_body['security_group']['id']
         direction = 'ingress'
@@ -755,18 +768,22 @@ class TestSecGroupTestNuageL3Domain(SecGroupTestNuageBase):
     def test_create_security_group_rule_in_multiple_domains(self):
         self._test_create_security_group_rule_in_multiple_domains(l3=True)
 
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_create_port_with_max_security_groups(self):
         self._test_create_port_with_security_groups(
             n_constants.MAX_SG_PER_PORT)
 
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_create_port_with_overflow_security_groups_neg(self):
         self._test_create_port_with_security_groups(
             n_constants.MAX_SG_PER_PORT + 1, should_succeed=False)
 
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_update_port_with_max_security_groups(self):
         self._test_update_port_with_security_groups(
             n_constants.MAX_SG_PER_PORT)
 
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_update_port_with_overflow_security_groups_net(self):
         self._test_update_port_with_security_groups(
             n_constants.MAX_SG_PER_PORT + 1, should_succeed=False)
@@ -779,6 +796,12 @@ class SecGroupTestNuageL2DomainIPv6Test(SecGroupTestNuageBase):
     # TODO(KRIS) THIS NEEDS TO GO OUT BUT NEED TO FIGURE OUT HOW
     if netaddr.IPNetwork(CONF.network.project_network_v6_cidr).prefixlen < 64:
         _project_network_cidr = netaddr.IPNetwork('cafe:babe::/64')
+
+    @classmethod
+    def skip_checks(cls):
+        super(SecGroupTestNuageL2DomainIPv6Test, cls).skip_checks()
+        if not Topology.from_nuage('5.4'):
+            raise cls.skipException('Unsupported pre-5.4')
 
     @classmethod
     def resource_setup(cls):
@@ -845,6 +868,29 @@ class SecGroupTestNuageL3DomainIPv6Test(SecGroupTestNuageBase):
         finally:
             pass
         super(SecGroupTestNuageL3DomainIPv6Test, cls).resource_cleanup()
+
+    @classmethod
+    def create_subnet(cls, network, gateway='', cidr=None, mask_bits=None,
+                      ip_version=None, client=None, **kwargs):
+        if Topology.from_nuage('5.4'):
+            return super(SecGroupTestNuageL3DomainIPv6Test, cls).create_subnet(
+                network, gateway, cidr, mask_bits, ip_version, client,
+                **kwargs)
+        else:
+            # 5.3 and below
+            try:
+                return super(SecGroupTestNuageL3DomainIPv6Test,
+                             cls).create_subnet(
+                    network, gateway, cidr, mask_bits, ip_version, client,
+                    **kwargs)
+            except exceptions.BadRequest as e:
+                if 'IP Address 2001:db8::/64 is not valid or cannot be in ' \
+                   'reserved address space' in str(e):
+                    raise cls.skipException('Skipping in 5.3 or below as of'
+                                            ' VSD non-compatibility with'
+                                            ' 2001:db8:: reserved address')
+                else:
+                    raise
 
     @decorators.attr(type='smoke')
     def test_create_show_delete_security_group_rule(self):

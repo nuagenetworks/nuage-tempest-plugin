@@ -376,22 +376,25 @@ class NuageExtraDHCPOptionsOSManagedL2Test(NuageExtraDHCPOptionsBaseL2):
     #     self._check_nuage_crud_port_with_16_extra_dhcp_options()
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     @testtools.skipIf(Topology.before_openstack('queens'),
-                      'Unsupported pre queens')
+                      'Unsupported pre-queens')
     @nuage_test.header()
     def test_nuage_os_mgd_l2_port_with_numerical_opt_name(self):
         self._check_nuage_crud_port_with_numerical_opt_name()
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     @testtools.skipIf(Topology.before_openstack('queens'),
-                      'Unsupported pre queens')
+                      'Unsupported pre-queens')
     @nuage_test.header()
     def test_nuage_os_mgd_l2_delete_port_extra_dhcp_opt(self):
         self._check_nuage_delete_port_extra_dhcp_opt()
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     @testtools.skipIf(Topology.before_openstack('queens'),
-                      'Unsupported pre queens')
+                      'Unsupported pre-queens')
     @nuage_test.header()
     def test_nuage_os_mgd_l2_crud_ipv6_extra_dhcp_opt(self):
         self._check_nuage_crud_port_with_ipv6_opt()

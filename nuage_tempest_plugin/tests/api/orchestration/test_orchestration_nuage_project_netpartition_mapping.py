@@ -32,6 +32,12 @@ class NuageProjectNetpartitionMappingHeatTest(
         cls.plugin_admin_network_client = NuageNetworkClientJSON(
             cls.os_admin.auth_provider, **cls.os_admin.default_params)
 
+    @classmethod
+    def skip_checks(cls):
+        super(NuageProjectNetpartitionMappingHeatTest, cls).skip_checks()
+        if not Topology.from_nuage('5.4'):
+            raise cls.skipException('Unsupported pre-5.4')
+
     @decorators.attr(type='smoke')
     def test_project_netpartition_mapping_basic(self):
         """Verifies created neutron resources."""

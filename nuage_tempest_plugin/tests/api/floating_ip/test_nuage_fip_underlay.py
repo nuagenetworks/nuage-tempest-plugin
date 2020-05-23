@@ -14,12 +14,14 @@
 #    under the License.
 
 import netaddr
+import testtools
 
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import data_utils as nuage_data_utils
 
 from . import base_nuage_fip_underlay
@@ -117,6 +119,7 @@ class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
         self.admin_subnets_client.delete_subnet(sub1['id'])
 
     @nuage_test.header()
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_multiple_subnets_with_underlay_disabled(self):
         """test_multiple_subnets_with_underlay_disabled
 
@@ -164,6 +167,7 @@ class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
             self.admin_subnets_client.delete_subnet(sub['id'])
 
     @nuage_test.header()
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_update_external_subnet_with_wrong_gateway(self):
         underlay_states = [False, True]
         for underlay in underlay_states:

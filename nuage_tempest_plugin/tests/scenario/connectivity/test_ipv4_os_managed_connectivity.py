@@ -78,8 +78,8 @@ class Ipv4OsManagedConnectivityTest(NuageBaseTest):
     def test_icmp_connectivity_l3_os_managed(self):
         self._icmp_connectivity_l3_os_managed_by_name('test-server')
 
-    @testtools.skipUnless(sys.version_info >= (3, 0),
-                          reason='Skip with python 2')
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
+    @testtools.skipIf(sys.version_info < (3, 0), 'Skip with python 2')
     @decorators.attr(type='smoke')
     def test_icmp_connectivity_l3_os_managed_russian(self):
         # Let's serve some Russian horseradish...
@@ -88,8 +88,8 @@ class Ipv4OsManagedConnectivityTest(NuageBaseTest):
 
         self._icmp_connectivity_l3_os_managed_by_name(name)
 
-    @testtools.skipUnless(sys.version_info >= (3, 0),
-                          reason='Skip with python 2')
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
+    @testtools.skipIf(sys.version_info < (3, 0), 'Skip with python 2')
     @decorators.attr(type='smoke')
     def test_icmp_connectivity_l3_os_managed_line_tab(self):
         line_tab = u'\u000b'
@@ -164,6 +164,7 @@ class Ipv4OsManagedConnectivityTest(NuageBaseTest):
         self.assert_ping(server12, server1, network1)
         self.assert_ping(server12, server2, network2)
 
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_icmp_connectivity_multiple_subnets_in_shared_network(self):
         """test_icmp_connectivity_multiple_subnets_in_shared_network
 

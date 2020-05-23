@@ -106,6 +106,7 @@ class TrunkTest(NuageBaseTest):
             direction='ingress', ethertype='IPv4', protocol='tcp')
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_trunk_subport_lifecycle(self):
         """Test trunk creation and subport transition to ACTIVE status.
 

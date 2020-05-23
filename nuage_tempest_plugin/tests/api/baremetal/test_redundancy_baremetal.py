@@ -38,7 +38,7 @@ LOG = Topology.get_logger(__name__)
 class BaremetalRedcyTest(network_mixin.NetworkMixin,
                          l3.L3Mixin, sg_mixin.SGMixin):
     credentials = ['admin']
-    personality = 'NUAGE_210_WBX_32_Q'
+    personality = 'NUAGE_210_WBX_32_Q' if Topology.at_nuage('5.4') else 'VSG'
 
     @classmethod
     def setUpClass(cls):

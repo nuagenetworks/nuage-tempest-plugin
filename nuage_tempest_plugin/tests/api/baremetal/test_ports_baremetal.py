@@ -266,53 +266,53 @@ class BaremetalPortsTest(network_mixin.NetworkMixin,
         self._validate_interface(topology)
         self._validate_policygroup(topology, pg_name='PG_FOR_LESS_SECURITY')
 
-    # @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_l2_create_baremetal_port_with_max_security_groups(self):
         topology = self._create_topology(with_router=False,
                                          with_security_group=False)
         self._test_create_port_with_security_groups(
             topology, constants.MAX_SG_PER_PORT)
 
-    # @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_l2_create_baremetal_port_with_overflow_security_groups(self):
         topology = self._create_topology(with_router=False,
                                          with_security_group=False)
         self._test_create_port_with_security_groups(
             topology, constants.MAX_SG_PER_PORT + 1)
 
-    # @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_l2_update_baremetal_port_with_max_security_groups(self):
         topology = self._create_topology(with_router=False)
         self._test_update_port_with_security_groups(
             topology, constants.MAX_SG_PER_PORT)
 
-    # @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_l2_update_baremetal_port_with_overflow_security_groups_neg(self):
         topology = self._create_topology(with_router=False)
         self._test_update_port_with_security_groups(
             topology, constants.MAX_SG_PER_PORT + 1)
 
-    # @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_l3_create_baremetal_port_with_max_security_groups(self):
         topology = self._create_topology(with_router=True,
                                          with_security_group=False)
         self._test_create_port_with_security_groups(
             topology, constants.MAX_SG_PER_PORT)
 
-    # @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_l3_create_baremetal_port_with_overflow_security_groups_neg(self):
         topology = self._create_topology(with_router=True,
                                          with_security_group=False)
         self._test_create_port_with_security_groups(
             topology, constants.MAX_SG_PER_PORT + 1)
 
-    # @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_l3_update_baremetal_port_with_max_security_groups(self):
         topology = self._create_topology(with_router=True)
         self._test_update_port_with_security_groups(
             topology, constants.MAX_SG_PER_PORT)
 
-    # @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_l3_update_baremetal_port_with_overflow_security_groups_neg(self):
         topology = self._create_topology(with_router=True)
         self._test_update_port_with_security_groups(

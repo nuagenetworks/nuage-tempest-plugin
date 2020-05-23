@@ -28,8 +28,11 @@ class SecuredNetpartitionsTest(NuageBaseTest):
     @classmethod
     def skip_checks(cls):
         super(SecuredNetpartitionsTest, cls).skip_checks()
+        if Topology.before_nuage('5.4'):
+            msg = 'Unsupported pre-5.4'
+            raise cls.skipException(msg)
         if Topology.before_openstack('queens'):
-            msg = "Feature only available in queens and up."
+            msg = 'Unsupported pre-Queens'
             raise cls.skipException(msg)
 
     @classmethod

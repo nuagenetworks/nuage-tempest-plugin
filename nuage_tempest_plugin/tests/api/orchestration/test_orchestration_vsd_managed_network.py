@@ -2,6 +2,7 @@
 # All Rights Reserved.
 
 from netaddr import IPNetwork
+import testtools
 
 from tempest.lib.common.utils import data_utils
 
@@ -270,6 +271,7 @@ class OrchestrationVsdManagedNetworkTest(
                          "Shall end allocation pool at last address in "
                          "l2 domain")
 
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_link_subnet_to_vsd_l2domain_without_net_partition(self):
         """test_link_subnet_to_vsd_l2domain_without_net_partition
 

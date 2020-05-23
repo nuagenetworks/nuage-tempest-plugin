@@ -36,6 +36,29 @@ class NuageNetworksIpV6Test(tempest_test_networks.NetworksIpV6Test):
                 'OS Managed Dual Stack is not supported in this release')
 
     @classmethod
+    def create_subnet(cls, network, gateway='', cidr=None, mask_bits=None,
+                      ip_version=None, client=None, **kwargs):
+        if Topology.from_nuage('5.4'):
+            return super(NuageNetworksIpV6Test, cls).create_subnet(
+                network, gateway, cidr, mask_bits, ip_version, client,
+                **kwargs)
+        else:
+            # 5.3 and below
+            try:
+                return super(NuageNetworksIpV6Test,
+                             cls).create_subnet(
+                    network, gateway, cidr, mask_bits, ip_version, client,
+                    **kwargs)
+            except lib_exc.BadRequest as e:
+                if 'IP Address 2001:db8::/64 is not valid or cannot be in ' \
+                   'reserved address space' in str(e):
+                    raise cls.skipException('Skipping in 5.3 or below as of'
+                                            ' VSD non-compatibility with'
+                                            ' 2001:db8:: reserved address')
+                else:
+                    raise
+
+    @classmethod
     def delete_router_interface(cls, router_id, subnet_id):
         cls.routers_client.remove_router_interface(
             router_id, subnet_id=subnet_id)

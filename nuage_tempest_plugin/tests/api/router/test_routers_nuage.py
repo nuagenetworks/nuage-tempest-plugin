@@ -289,6 +289,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
 
     @utils.requires_ext(extension='extraroute', service='network')
     @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_update_extra_route(self):
         self.network = self.create_network()
         self.name = self.network['name']
@@ -334,6 +335,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
         self.assertEqual(nuage_static_route[0]['externalID'],
                          ExternalId(self.router['id']).at_cms_id())
 
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_extra_routes_neg(self):
         # Test rollback when invalid extra route is added
         self.network = self.create_network()
@@ -663,6 +665,7 @@ class NuageRoutersTest(base.BaseNetworkTest):
             filters='externalID', filter_value=create_body['router']['id'])
         self.assertEqual(rd, nuage_domain[0]['routeDistinguisher'])
 
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_create_router_in_shared_netpartition(self):
         netpart_name = 'Shared Infrastructure'
         kwargs = {
@@ -1046,8 +1049,8 @@ class NuageRoutersV6Test(NuageRoutersTest):
                          interface_port['fixed_ips'][0]['subnet_id'])
 
     @classmethod
-    def create_subnet(cls, network, gateway='', cidr=None, mask_bits=None,
-                      ip_version=None, client=None, **kwargs):
+    def _create_subnet(cls, network, gateway='', cidr=None, mask_bits=None,
+                       ip_version=None, client=None, **kwargs):
 
         if "enable_dhcp" not in kwargs:
             # NUAGE non-compliance: enforce enable_dhcp = False as
@@ -1059,6 +1062,28 @@ class NuageRoutersV6Test(NuageRoutersTest):
             return super(NuageRoutersV6Test, cls).create_subnet(
                 network, gateway, cidr, mask_bits,
                 ip_version, client, **kwargs)
+
+    @classmethod
+    def create_subnet(cls, network, gateway='', cidr=None, mask_bits=None,
+                      ip_version=None, client=None, **kwargs):
+        if Topology.from_nuage('5.4'):
+            return cls._create_subnet(
+                network, gateway, cidr, mask_bits, ip_version, client,
+                **kwargs)
+        else:
+            # 5.3 and below
+            try:
+                return cls._create_subnet(
+                    network, gateway, cidr, mask_bits, ip_version, client,
+                    **kwargs)
+            except exceptions.BadRequest as e:
+                if 'IP Address 2001:db8::/64 is not valid or cannot be in ' \
+                   'reserved address space' in str(e):
+                    raise cls.skipException('Skipping in 5.3 or below as of'
+                                            ' VSD non-compatibility with'
+                                            ' 2001:db8:: reserved address')
+                else:
+                    raise
 
     @decorators.attr(type='smoke')
     # OPENSTACK-1886: fails to remove router with only IPv6 subnet interface
@@ -1118,7 +1143,7 @@ class NuageRoutersV6Test(NuageRoutersTest):
                          router['id'])
 
     @utils.requires_ext(extension='extraroute', service='network')
-    # OPENSTACK-1887
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_update_delete_extra_route(self):
         # Create different cidr for each subnet to avoid cidr duplicate
         # The cidr starts from project_cidr

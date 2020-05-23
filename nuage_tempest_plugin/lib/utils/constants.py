@@ -128,8 +128,8 @@ SERVICE = 'applicationservices'
 # Gateway personality
 SW_GW_TYPES = ['VRSG', 'VRSB']
 
-# GW_TYPES_UNDER_TEST = ['VRSG', 'VSG', 'NUAGE_210_WBX_32_Q']  # TODO(Kris)
 GW_TYPES_UNDER_TEST = ['VRSG', 'NUAGE_210_WBX_32_Q']
+GW_TYPES_UNDER_TEST_5_3 = ['VRSG', 'VSG']
 
 # Vport type
 HOST_VPORT = 'HOST'

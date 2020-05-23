@@ -1,10 +1,13 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
 
+import testtools
+
 from tempest.lib import decorators
 from tempest.lib import exceptions as tempest_exceptions
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.topology import Topology
 
 
 class RouterAttachmentTest(NuageBaseTest):
@@ -43,6 +46,8 @@ class RouterAttachmentTest(NuageBaseTest):
         self.router_attach(router, subnet)
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'),
+                      'Unsupported pre-5.4')
     def test_router_attachment_with_ports(self):
         network = self.create_network()
         subnet = self.create_subnet(network)
@@ -60,6 +65,7 @@ class RouterAttachmentTest(NuageBaseTest):
                                port2)
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_router_detachment_with_subnet(self):
         network1 = self.create_network()
         network2 = self.create_network()
@@ -84,6 +90,7 @@ class RouterAttachmentTest(NuageBaseTest):
         self._validate_is_not_attached_to_router(subnet1, router1)
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_router_detachment_with_port(self):
         network1 = self.create_network()
         network2 = self.create_network()

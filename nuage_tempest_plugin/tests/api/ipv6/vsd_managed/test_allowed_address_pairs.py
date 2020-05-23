@@ -21,8 +21,8 @@ from tempest.test import decorators
 LOG = Topology.get_logger(__name__)
 
 
-class VSDManagedAllowedAddresPairsTest(BaseAllowedAddressPair,
-                                       BaseVSDManagedNetworksIPv6Test):
+class VSDManagedAllowedAddressPairsTest(BaseAllowedAddressPair,
+                                        BaseVSDManagedNetworksIPv6Test):
 
     @nuage_test.header()
     @decorators.attr(type='smoke')

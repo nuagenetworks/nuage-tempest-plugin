@@ -36,6 +36,10 @@ LOG = Topology.get_logger(__name__)
 class BaseNuageGatewayTest(NuageAdminNetworksTest):
     _interface = 'json'
 
+    gw_types_under_test = (n_constants.GW_TYPES_UNDER_TEST_5_3
+                           if Topology.before_nuage('5.4') else
+                           n_constants.GW_TYPES_UNDER_TEST)
+
     @staticmethod
     def is_hw_gateway_personality(personality):
         return personality not in n_constants.SW_GW_TYPES
@@ -70,7 +74,7 @@ class BaseNuageGatewayTest(NuageAdminNetworksTest):
 
     @classmethod
     def create_test_gateway_topology(cls):
-        for personality in n_constants.GW_TYPES_UNDER_TEST:
+        for personality in cls.gw_types_under_test:
             gw = cls.create_gateway(personality)
             cls.gateways.append(gw)
 

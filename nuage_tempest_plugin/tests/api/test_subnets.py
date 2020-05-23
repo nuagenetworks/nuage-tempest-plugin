@@ -13,6 +13,7 @@
 #    under the License.
 
 from netaddr import IPNetwork
+import testtools
 
 from tempest.lib import exceptions
 from tempest.test import decorators
@@ -44,6 +45,8 @@ class SubnetsTest(NuageAdminNetworksTest):
                 "20.0.0.0/24"), mask_bits=28)
             self.assertIsNotNone(subnet2, "Unable to create second subnet")
 
+    @testtools.skipIf(Topology.before_nuage('5.4'),
+                      'Unsupported pre-5.4')
     def test_router_attached_subnet_update_clear_gateway_negative(self):
         network = self.create_network()
         subnet = self.create_subnet(network)
@@ -66,6 +69,7 @@ class SubnetsTest(NuageAdminNetworksTest):
                                **kwargs)
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_subnet_delete_in_network_with_nuage_dhcp_ports(self):
         network = self.create_network()
         subnet1 = self.create_subnet(network)

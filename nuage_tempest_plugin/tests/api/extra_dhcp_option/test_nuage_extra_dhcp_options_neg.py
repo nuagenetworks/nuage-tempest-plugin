@@ -792,7 +792,7 @@ class NuageExtraDHCPOptionsNegativeTest(
 
     @decorators.attr(type='smoke')
     @testtools.skipIf(Topology.before_openstack('queens'),
-                      'Unsupported pre queens')
+                      'Unsupported pre-queens')
     @nuage_test.header()
     def test_nuage_create_port_with_dhcp_opts_wrong_numerical_option(self):
         # Try to create a port with bad extra dhcp options values
@@ -804,7 +804,7 @@ class NuageExtraDHCPOptionsNegativeTest(
 
     @decorators.attr(type='smoke')
     @testtools.skipIf(Topology.before_openstack('queens'),
-                      'Unsupported pre queens')
+                      'Unsupported pre-queens')
     @nuage_test.header()
     def test_nuage_create_port_with_dhcp_opts_mixed_numerical_option(self):
         extra_dhcp_opts = [

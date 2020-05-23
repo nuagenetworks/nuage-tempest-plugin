@@ -23,9 +23,10 @@ class TestNuageNetpartitionProjectMappingCLI(CLIClientTestCase):
     @classmethod
     def skip_checks(cls):
         super(TestNuageNetpartitionProjectMappingCLI, cls).skip_checks()
+        if Topology.before_nuage('5.4'):
+            raise cls.skipException('Unsupported pre-5.4')
         if Topology.before_openstack('queens'):
-            msg = "Feature only available in queens and up."
-            raise cls.skipException(msg)
+            raise cls.skipException('Unsupported pre-Queens')
 
     @classmethod
     def resource_setup(cls):

@@ -194,7 +194,7 @@ class PortsDirectTest(network_mixin.NetworkMixin,
                       topology_mixin.NetTopologyMixin):
 
     credentials = ['admin']
-    personality = 'NUAGE_210_WBX_48_S'
+    personality = 'NUAGE_210_WBX_48_S' if Topology.at_nuage('5.4') else 'VSG'
 
     @classmethod
     def setUpClass(cls):

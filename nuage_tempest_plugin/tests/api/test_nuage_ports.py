@@ -1,17 +1,19 @@
 # Copyright 2017 NOKIA
 # All Rights Reserved.
+
 from netaddr import IPNetwork
+import testtools
+
+from tempest.common import waiters
+from tempest.lib import exceptions
+from tempest.scenario import manager
+from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageAdminNetworksTest
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
-
-from tempest.common import waiters
-from tempest.lib import exceptions
-from tempest.scenario import manager
-from tempest.test import decorators
 
 CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
@@ -137,6 +139,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                                self.create_port,
                                network=network, fixed_ips=fixed_ips)
 
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_nuage_os_managed_subnet_port_create_with_nuage_policy_negative(
             self):
 
@@ -156,6 +159,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                                network=network,
                                nuage_policy_groups=['Random_value'])
 
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_nuage_os_managed_subnet_port_update_with_nuage_policy_negative(
             self):
 
@@ -1424,6 +1428,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                          nuage_vport[0]['addressSpoofing'])
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_nuage_port_update_fixed_ips_same_subnet_with_aap_router_detach(
             self):
         # Set up resources
@@ -1509,10 +1514,12 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             vsd_vport_parent['ID'],
             filters='externalID',
             filter_value=port['id'])
-        self.assertEqual(constants.ENABLED,
+        self.assertEqual(constants.ENABLED if Topology.from_nuage('5.4')
+                         else constants.INHERITED,
                          nuage_vport[0]['addressSpoofing'])
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_delete_unbound_port_with_hanging_vminterface(self):
         # OPENSTACK-2797
         network = self.create_network()

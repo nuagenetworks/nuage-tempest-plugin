@@ -15,6 +15,7 @@
 
 from netaddr import IPAddress
 from netaddr import IPNetwork
+import testtools
 
 from tempest.api.network import base
 from tempest.lib.common.utils import data_utils
@@ -194,6 +195,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
         self.link_subnet_l2(dhcp_option_3='10.10.100.2', create_server=True)
 
     @nuage_test.header(tags=['smoke'])
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_update_linked_subnet_l2(self):
         initial_pool = {"start": "10.10.100.10", "end": "10.10.100.20"}
         updated_pool = {"start": "10.10.100.5", "end": "10.10.100.25"}
@@ -678,6 +680,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
                 net_partition=Topology.def_netpartition)
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_link_subnet_with_diff_types_in_shared_infrastructure_l3(self):
         # create l3domain on VSD
         vsd_l3dom_tmplt = self.create_vsd_l3dom_template(
@@ -764,6 +767,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
                          vsd_managed_standard_subnet['cidr'])
 
     @nuage_test.header(tags=['smoke'])
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_link_vsd_dualstack_shared_subnet_l3(self):
         # create public dualstack l3 subnet in shared infrastructure
         shared_vsd_l3dom_tmplt = self.create_vsd_l3dom_template(

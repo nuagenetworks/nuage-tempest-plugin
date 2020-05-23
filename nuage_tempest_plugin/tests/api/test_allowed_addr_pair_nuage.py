@@ -14,6 +14,7 @@
 #    under the License.
 
 from netaddr import IPAddress
+import testtools
 import uuid
 
 from nuage_tempest_plugin.lib.test.nuage_test import skip_because
@@ -130,6 +131,7 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
         self.assertEqual(n_constants.ENABLED,
                          nuage_vport[0]['addressSpoofing'])
 
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_create_address_pair_on_l2domain_update_fixed_ip(self):
         # Create port with allowed address pair attribute
         # For /32 cidr

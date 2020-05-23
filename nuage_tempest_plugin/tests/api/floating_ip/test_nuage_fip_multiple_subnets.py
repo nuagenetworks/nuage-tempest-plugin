@@ -13,6 +13,12 @@ from nuage_tempest_plugin.lib.utils import data_utils
 
 class NuageMultipleSubnetsInExternalNetworkTest(nuage_test.NuageBaseTest):
 
+    @classmethod
+    def skip_checks(cls):
+        super(NuageMultipleSubnetsInExternalNetworkTest, cls).skip_checks()
+        if Topology.before_nuage('5.4'):
+            raise cls.skipException('Unsupported pre-5.4')
+
     @decorators.attr(type='smoke')
     def test_nuage_uplink_subsequent_subnets(self):
         """test_nuage_uplink_subsequent_subnets

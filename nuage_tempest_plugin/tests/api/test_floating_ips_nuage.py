@@ -15,12 +15,11 @@
 
 from netaddr import IPAddress
 from netaddr import IPNetwork
+import testtools
 import uuid
 
-from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants
-from nuage_tempest_plugin.services.nuage_client import NuageRestClient
+from testtools.matchers import ContainsDict
+from testtools.matchers import Equals
 
 from tempest.api.network import test_floating_ips
 from tempest.common.utils import net_utils
@@ -28,8 +27,10 @@ from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
-from testtools.matchers import ContainsDict
-from testtools.matchers import Equals
+from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import constants
+from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
 CONF = Topology.get_conf()
 
@@ -304,6 +305,7 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
             updated_floating_ip, updated_floating_ip['router_id'],
             port_other_router['id'], subnet2['id'], True)
 
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_floating_ip_disassociate_delete_router_associate(self):
         # Create topology
         network = self.create_network()

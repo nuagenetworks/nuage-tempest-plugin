@@ -13,12 +13,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
-
 from tempest.api.network import test_routers_negative as test_routers_negative
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions as lib_exc
+
+from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
+from nuage_tempest_plugin.lib.topology import Topology
 
 
 class NuageRoutersNegativeIpV6Test(test_routers_negative.RoutersNegativeTest):
@@ -32,9 +33,8 @@ class NuageRoutersNegativeIpV6Test(test_routers_negative.RoutersNegativeTest):
                 'OS Managed Dual Stack is not supported in this release')
 
     @classmethod
-    def create_subnet(cls, network, gateway='', cidr=None, mask_bits=None,
-                      ip_version=None, client=None, **kwargs):
-
+    def _create_subnet(cls, network, gateway='', cidr=None, mask_bits=None,
+                       ip_version=None, client=None, **kwargs):
         if "enable_dhcp" not in kwargs:
             # NUAGE non-compliance: enforce enable_dhcp = False as
             # the default option
@@ -45,6 +45,29 @@ class NuageRoutersNegativeIpV6Test(test_routers_negative.RoutersNegativeTest):
             return super(NuageRoutersNegativeIpV6Test, cls).create_subnet(
                 network, gateway, cidr, mask_bits,
                 ip_version, client, **kwargs)
+
+    @classmethod
+    def create_subnet(cls, network, gateway='', cidr=None, mask_bits=None,
+                      ip_version=None, client=None, **kwargs):
+
+        if Topology.from_nuage('5.4'):
+            return cls._create_subnet(
+                network, gateway, cidr, mask_bits, ip_version, client,
+                **kwargs)
+        else:
+            # 5.3 and below
+            try:
+                return cls._create_subnet(
+                    network, gateway, cidr, mask_bits, ip_version, client,
+                    **kwargs)
+            except lib_exc.BadRequest as e:
+                if 'IP Address 2001:db8::/64 is not valid or cannot be in ' \
+                   'reserved address space' in str(e):
+                    raise cls.skipException('Skipping in 5.3 or below as of'
+                                            ' VSD non-compatibility with'
+                                            ' 2001:db8:: reserved address')
+                else:
+                    raise
 
     @decorators.attr(type=['negative'])
     # OPENSTACK-1886: fails to remove router with only IPv6 subnet interface

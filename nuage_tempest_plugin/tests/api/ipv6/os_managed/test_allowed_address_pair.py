@@ -15,16 +15,16 @@
 
 from netaddr import IPAddress
 from six import iteritems
-
-from nuage_tempest_plugin.lib.utils import constants
-from nuage_tempest_plugin.tests.api.ipv6.test_allowed_address_pair \
-    import BaseAllowedAddressPair
+import testtools
 
 from tempest.api.network import test_allowed_address_pair as base_tempest
 from tempest.lib import decorators
 from tempest.lib import exceptions as tempest_exceptions
 
 from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import constants
+from nuage_tempest_plugin.tests.api.ipv6.test_allowed_address_pair \
+    import BaseAllowedAddressPair
 
 CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
@@ -53,6 +53,29 @@ class AllowedAddressPairIpV6NuageTest(
         cls.ip_address = port['fixed_ips'][1]['ip_address']
         cls.mac_address = port['mac_address']
 
+    @classmethod
+    def create_subnet(cls, network, gateway='', cidr=None, mask_bits=None,
+                      ip_version=None, client=None, **kwargs):
+        if Topology.from_nuage('5.4'):
+            return super(AllowedAddressPairIpV6NuageTest, cls).create_subnet(
+                network, gateway, cidr, mask_bits, ip_version, client,
+                **kwargs)
+        else:
+            # 5.3 and below
+            try:
+                return super(AllowedAddressPairIpV6NuageTest,
+                             cls).create_subnet(
+                    network, gateway, cidr, mask_bits, ip_version, client,
+                    **kwargs)
+            except tempest_exceptions.BadRequest as e:
+                if 'IP Address 2001:db8::/64 is not valid or cannot be in ' \
+                   'reserved address space' in str(e):
+                    raise cls.skipException('Skipping in 5.3 or below as of'
+                                            ' VSD non-compatibility with'
+                                            ' 2001:db8:: reserved address')
+                else:
+                    raise
+
 
 class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
     _ip_version = 6
@@ -73,19 +96,8 @@ class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
     """
     _interface = 'json'
 
-    @classmethod
-    def setup_clients(cls):
-        super(AllowedAddressPairIpV6OSManagedTest, cls).setup_clients()
-
-    @classmethod
-    def skip_checks(cls):
-        super(AllowedAddressPairIpV6OSManagedTest, cls).skip_checks()
-
-    @classmethod
-    def resource_setup(cls):
-        super(AllowedAddressPairIpV6OSManagedTest, cls).resource_setup()
-
     @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_create_port_with_aap_ipv6_moving_from_l2_to_l3_validation(self):
         network = self.create_network()
         # Create port with allowed address pair attribute
@@ -115,7 +127,10 @@ class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
 
         self.router_attach(router, subnet4, cleanup=False)
 
-        self._verify_l3_vport_by_id(router, port, constants.INHERITED,
+        self._verify_l3_vport_by_id(router, port,
+                                    constants.INHERITED
+                                    if Topology.from_nuage('5.4')
+                                    else constants.ENABLED,
                                     subnet4=subnet4)
 
         self.router_detach(router, subnet4)

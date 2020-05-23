@@ -16,6 +16,7 @@
 from future.utils import listitems
 
 import netaddr
+import testtools
 
 from tempest.api.network import base
 from tempest.api.network import test_networks
@@ -411,6 +412,7 @@ class NetworkNuageAdminTest(base.BaseAdminNetworkTest):
         self.assertFalse(int_network['router:external'])
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_make_network_with_routed_subnet_external(self):
         int_network = self.create_network()
         cidr = nuage_data_utils.gimme_a_cidr()

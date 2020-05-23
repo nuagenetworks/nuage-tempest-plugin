@@ -12,17 +12,17 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 from netaddr import IPNetwork
+import testtools
 
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.topology import Topology
-
 from nuage_tempest_plugin.tests.api.l2bridge.base_nuage_l2bridge \
     import BaseNuageL2Bridge
-
 from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_networks as base_vsd_managed
 
@@ -381,6 +381,9 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                    physnets)
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'),
+                      'Creating normal vm in l2bridged network is not '
+                      'supported pre-5.4')
     def test_nuage_l2bridge_add_segments_to_bridge_with_subnet_with_vm(self):
         physnets = [{
             'physnet_name': 'physnet1',
@@ -592,6 +595,9 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                physnets)
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'),
+                      'Creating normal vm in l2bridged network is not '
+                      'supported pre-5.4')
     def test_nuage_l2bridge_dual_ipv4(self):
         # Scenario 6
         physnets = [{
@@ -718,6 +724,9 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             self.assertEqual(expected_ext_id, dhcp_option.external_id)
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'),
+                      'Creating normal vm in l2bridged network is not '
+                      'supported pre-5.4')
     def test_nuage_l2bridge_dual_dualstack(self):
         # Scenario 5
         physnets = [{
@@ -839,6 +848,9 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                        enable_dhcp=False)
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'),
+                      'Creating normal vm in l2bridged network is not '
+                      'supported pre-5.4')
     def test_nuage_l2bridge_dualstack_ipv4(self):
         # Scenario 4
         physnets = [{
@@ -1085,6 +1097,9 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             self.assertIsNone(l2domain, 'L2domain was erronously created ')
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'),
+                      'Creating normal vm in l2bridged network is not '
+                      'supported pre-5.4')
     def test_nuage_l2bridge_ipv4_ipv6(self):
         # Scenario 8
         physnets = [{
@@ -1322,6 +1337,9 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             # Validate subnet mapping of second ipv6?
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'),
+                      'Creating normal vm in l2bridged network is not '
+                      'supported pre-5.4')
     def test_nuage_l2bridge_ipv4_ipv6_same_cidr(self):
         physnets = [{
             'physnet_name': 'physnet1',
@@ -1462,6 +1480,9 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             self._validate_l2domain_on_vsd(bridge, expected_ext_id, l2domain)
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'),
+                      'Creating normal vm in l2bridged network is not '
+                      'supported pre-5.4')
     def test_nuage_l2bridge_same_cidr_different_bridges_ipv4(self):
         physnets = [{
             'physnet_name': 'physnet1',
@@ -1601,6 +1622,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             self._validate_l2domain_on_vsd(bridge, expected_ext_id, l2domain)
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(Topology.before_nuage('5.4'), 'Unsupported pre-5.4')
     def test_nuage_l2bridge_same_cidr_one_bridged_other_non_bridged(self):
         physnets = [{
             'physnet_name': 'physnet1',
