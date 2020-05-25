@@ -239,8 +239,17 @@
     name: networking-nuage-base
     parent: nuage-base
     description: Base job for devstack/tempest based nuage jobs
-    branches: ^(stable|5.4|6.0)/(pike|queens|rocky|stein|train).*$
+    branches: ^(5.4|6.0)/(pike|queens|rocky|stein|train).*$
     nodeset: openstack-single-node-centos7
+
+- job:
+    name: networking-nuage-base
+    parent: nuage-base
+    description: Base job for devstack/tempest based nuage jobs
+    branches: ^(stable)/(pike|queens|rocky|stein|train).*$
+    nodeset: openstack-single-node-centos7
+    vars:
+      vsp_release: '20.5'
 
 - job:
     name: networking-nuage-base
