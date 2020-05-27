@@ -16,6 +16,7 @@ from netaddr import IPNetwork
 import testtools
 
 from tempest.common import utils as utils
+from tempest.lib.common.utils import data_utils as tempest_data_utils
 
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
@@ -49,6 +50,26 @@ CONFIGURE_VLAN_INTERFACE_COMMANDS = (
 class SriovBasicOpsTest(NuageBaseTest):
     force_tenant_isolation = False
 
+    ip_types = {(4,): 'IPV4', (6,): 'IPV6', (4, 6): 'DUALSTACK'}
+
+    @classmethod
+    def resource_setup(cls):
+        super(SriovBasicOpsTest, cls).resource_setup()
+        cls.aggregates = cls.admin_manager.aggregates_client.list_aggregates()
+
+        cls.hosts_vrs = [aggregate['hosts'] for aggregate in
+                         cls.aggregates['aggregates']
+                         if aggregate['metadata']['flavor'] == 'vrs'][0]
+
+        cls.hosts_sriov = [aggregate['hosts'] for aggregate in
+                           cls.aggregates['aggregates']
+                           if aggregate['metadata']['flavor'] == 'sriov'][0]
+
+        cls.availability_zones_vrs = ['nova:' + host for host
+                                      in cls.hosts_vrs]
+        cls.availability_zones_sriov = ['nova:' + host for host
+                                        in cls.hosts_sriov]
+
     @classmethod
     def skip_checks(cls):
         super(SriovBasicOpsTest, cls).skip_checks()
@@ -60,88 +81,212 @@ class SriovBasicOpsTest(NuageBaseTest):
             raise cls.skipException('Test requires switchdev offloading '
                                     'to be disabled')
 
-    def _create_server_with_virtio_port(self):
+    def _check_connectivity(self, ip_version=4):
+        connectivity_check_pairs = []
+
+        sriov_compute = self.availability_zones_sriov[0]
+        server_to = self._create_server_with_direct_port(
+            availability_zone=sriov_compute)
+
+        vrs_computes = [sriov_compute]
+        if any(self.availability_zones_vrs):
+            vrs_computes.append(self.availability_zones_vrs[0])
+        for availability_zone in vrs_computes:
+            server_from = self._create_server_with_virtio_port(
+                availability_zone=availability_zone)
+            connectivity_check_pairs.append((server_from, server_to))
+
+        for server_from, server_to in connectivity_check_pairs:
+            self.assert_ping(
+                server_from['server'],
+                ip_version=ip_version,
+                address=server_to['port']['fixed_ips'][0]['ip_address'])
+
+    def _create_server_with_virtio_port(self, availability_zone):
         port = self.create_port(self.network, security_groups=[
             self.secgroup['id']],
+            manager=self.admin_manager,
             **VIRTIO_ARGS)
         server = self.create_tenant_server(
+            availability_zone=availability_zone,
             ports=[port],
-            prepare_for_connectivity=True)
+            prepare_for_connectivity=True,
+            manager=self.admin_manager)
         return {'port': port, 'server': server}
 
-    def _create_server_with_direct_port(self):
+    def _create_server_with_direct_port(self, availability_zone):
         kwargs = {'config_drive': True}
         port = self.create_port(self.network,
-                                port_security_enabled=False)
+                                port_security_enabled=False,
+                                manager=self.admin_manager)
         server = self.create_tenant_server(
+            availability_zone=availability_zone,
             ports=[port],
             prepare_for_connectivity=False,  # explicit, as must be
+            manager=self.admin_manager,
             **kwargs)
         return {'port': port, 'server': server}
 
-    def _setup_resources(self, is_l3=True, ip_version=4):
+    def _create_vsd_domain(self, is_l3=True, ip_version=(4,)):
+        cidr4 = None
+        cidr6 = None
+        gateway4 = None
+        gateway6 = None
+        enable_dhcpv4 = False
+        enable_dhcpv6 = False
+
+        for ip_type in ip_version:
+            if ip_type == 4:
+                cidr4 = data_utils.gimme_a_cidr(ip_type)
+                gateway4 = str(cidr4[1])
+                enable_dhcpv4 = True
+            elif ip_type == 6:
+                cidr6 = data_utils.gimme_a_cidr(ip_type)
+                gateway6 = str(cidr6[1])
+                enable_dhcpv6 = True
+
+        kwargs = {}
+        if CONF.nuage_sut.gateway_type == 'cisco':
+            kwargs['ingress_replication_enabled'] = True
+
+        if is_l3:
+            l3template = self.vsd_create_l3domain_template()
+            self.domain = self.vsd_create_l3domain(template_id=l3template.id)
+            zone = self.vsd_create_zone(domain=self.domain)
+
+            self.l3subnet = self.create_vsd_subnet(
+                zone=zone,
+                cidr4=cidr4,
+                cidr6=cidr6,
+                gateway4=gateway4,
+                gateway6=gateway6,
+                enable_dhcpv4=enable_dhcpv4,
+                enable_dhcpv6=enable_dhcpv6,
+                ip_type=self.ip_types[ip_version],
+                **kwargs
+            )
+        else:
+            l2template = self.vsd_create_l2domain_template(
+                cidr4=cidr4,
+                cidr6=cidr6,
+                gateway4=gateway4,
+                gateway6=gateway6,
+                enable_dhcpv4=enable_dhcpv4,
+                enable_dhcpv6=enable_dhcpv6,
+                ip_type=self.ip_types[ip_version],
+            )
+
+            self.l2domain = self.vsd_create_l2domain(template=l2template,
+                                                     **kwargs)
+
+    def _setup_resources_vsd_mgd(self, is_l3=True, ip_version=(4,)):
+        self._create_vsd_domain(is_l3=is_l3, ip_version=ip_version)
+        domain = self.domain if is_l3 else self.l2domain
+        pg_name = tempest_data_utils.rand_name('pg-')
+        self.vsd.create_policy_group(domain, name=pg_name)
+        allow_ipv4 = 4 in ip_version
+        allow_ipv6 = 6 in ip_version
+        self.vsd.define_any_to_any_acl(domain, allow_ipv4=allow_ipv4,
+                                       allow_ipv6=allow_ipv6, stateful=True)
+
+        self.network = self.create_network(
+            manager=self.admin_manager,
+            tenant_id=self.manager.networks_client.tenant_id,
+            **NETWORK_ARGS)
+
+        if is_l3:
+            vsd_subnet = self.l3subnet
+            create_vsd_managed_subnet = self.create_l3_vsd_managed_subnet
+        else:
+            vsd_subnet = self.l2domain
+            create_vsd_managed_subnet = self.create_l2_vsd_managed_subnet
+
+        self.subnet = []
+        for ip_type in ip_version:
+            self.subnet.append(create_vsd_managed_subnet(
+                self.network, vsd_subnet, ip_version=ip_type,
+                manager=self.admin_manager))
+
+        self.secgroup = self.create_open_ssh_security_group(
+            manager=self.admin_manager)
+
+    def _setup_resources(self, is_l3=True, ip_version=(4,)):
         # setup basic topology for servers we can log into
         self.network = self.create_network(
             manager=self.admin_manager,
             tenant_id=self.manager.networks_client.tenant_id,
             **NETWORK_ARGS)
-        self.subnet = self.create_subnet(self.network,
-                                         ip_version=ip_version,
-                                         enable_dhcp=False)
+
+        self.subnet = []
+        for ip_type in ip_version:
+            self.subnet.append(self.create_subnet(self.network,
+                                                  ip_version=ip_type,
+                                                  manager=self.admin_manager))
+
         if is_l3:
-            router = self.create_public_router()
-            self.router_attach(router, self.subnet)
-        self.keypair = self.create_keypair()
-        self.secgroup = self._create_empty_security_group()
-        self.create_security_group_rule(
-            security_group=self.secgroup,
-            direction='ingress', ethertype='IPv4', protocol='tcp')
+            router = self.create_public_router(manager=self.admin_manager)
+            for subnet in self.subnet:
+                self.router_attach(router, subnet,
+                                   manager=self.admin_manager)
+
+        self.secgroup = self.create_open_ssh_security_group(
+            manager=self.admin_manager)
 
     def test_server_connectivity_l3(self):
         self._setup_resources()
-        server_to = self._create_server_with_direct_port()
-        server_from = self._create_server_with_virtio_port()
-
-        self.assert_ping(
-            server_from['server'],
-            server_to['server'],
-            address=server_to['port']['fixed_ips'][0]['ip_address'])
+        self._check_connectivity()
 
     def test_server_connectivity_l2(self):
         self._setup_resources(is_l3=False)
-        server_to = self._create_server_with_direct_port()
-        server_from = self._create_server_with_virtio_port()
-
-        self.assert_ping(
-            server_from['server'],
-            server_to['server'],
-            address=server_to['port']['fixed_ips'][0]['ip_address'])
+        self._check_connectivity()
 
     @nuage_test.skip_because(
         condition=Topology.before_nuage('6.0'))
     def test_server_connectivity_l3_ipv6(self):
-        self._setup_resources(ip_version=6)
-        server_to = self._create_server_with_direct_port()
-        server_from = self._create_server_with_virtio_port()
-
-        self.assert_ping(
-            server_from['server'],
-            server_to['server'],
-            ip_version=6,
-            address=server_to['port']['fixed_ips'][0]['ip_address'])
+        self._setup_resources(ip_version=(6,))
+        self._check_connectivity(ip_version=6)
 
     @nuage_test.skip_because(
         condition=Topology.before_nuage('6.0'))
     def test_server_connectivity_l2_ipv6(self):
-        self._setup_resources(is_l3=False, ip_version=6)
-        server_to = self._create_server_with_direct_port()
-        server_from = self._create_server_with_virtio_port()
+        self._setup_resources(is_l3=False, ip_version=(6,))
+        self._check_connectivity(ip_version=6)
 
-        self.assert_ping(
-            server_from['server'],
-            server_to['server'],
-            ip_version=6,
-            address=server_to['port']['fixed_ips'][0]['ip_address'])
+    def test_server_connectivity_l3_dual(self):
+        self._setup_resources(ip_version=(4, 6))
+        self._check_connectivity()
+
+    def test_server_connectivity_l2_dual(self):
+        self._setup_resources(is_l3=False, ip_version=(4, 6))
+        self._check_connectivity()
+
+    def test_server_connectivity_l3_vsd_mgd(self):
+        self._setup_resources_vsd_mgd()
+        self._check_connectivity()
+
+    def test_server_connectivity_l2_vsd_mgd(self):
+        self._setup_resources_vsd_mgd(is_l3=False)
+        self._check_connectivity()
+
+    @nuage_test.skip_because(
+        condition=Topology.before_nuage('6.0'))
+    def test_server_connectivity_l3_ipv6_vsd_mgd(self):
+        self._setup_resources_vsd_mgd(ip_version=(6,))
+        self._check_connectivity(ip_version=6)
+
+    @nuage_test.skip_because(
+        condition=Topology.before_nuage('6.0'))
+    def test_server_connectivity_l2_ipv6_vsd_mgd(self):
+        self._setup_resources_vsd_mgd(is_l3=False, ip_version=(6,))
+        self._check_connectivity(ip_version=6)
+
+    def test_server_connectivity_l3_dual_vsd_mgd(self):
+        self._setup_resources_vsd_mgd(ip_version=(4, 6))
+        self._check_connectivity()
+
+    def test_server_connectivity_l2_dual_vsd_mgd(self):
+        self._setup_resources_vsd_mgd(is_l3=False, ip_version=(4, 6))
+        self._check_connectivity()
 
 
 class SriovTrunkTest(NuageBaseTest):
