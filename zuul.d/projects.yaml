@@ -46,3 +46,7 @@
     orchestration:
       jobs:
         - heat-functional
+    octavia:
+      jobs:
+        - networking-nuage-octavia
+        - networking-nuage-octavia-standby

@@ -775,3 +775,68 @@
         nuage-tempest-plugin: https://github.com/nuagenetworks/nuage-tempest-plugin.git
       devstack_localrc:
         NEUTRON_CREATE_INITIAL_NETWORKS: false
+
+- job:
+    name: networking-nuage-octavia
+    parent: networking-nuage-base-py3
+    description: basic nuage octavia integration job
+    # This currently works from stable/pike on
+    branches: ^(?!stable/(newton|ocata)).*$
+    timeout: 18000
+    required-projects:
+      - openstack/octavia
+      - openstack/octavia-lib
+      - openstack/octavia-tempest-plugin
+      - openstack/python-octaviaclient
+    vars:
+      devstack_localrc:
+        DEFAULT_IMAGE_NAME: cirros
+        OCTAVIA_MGMT_SUBNET: 192.168.0.0/28
+        OCTAVIA_MGMT_SUBNET_START: 192.168.0.2
+        OCTAVIA_MGMT_SUBNET_END: 192.168.0.14
+        OCTAVIA_AMP_IMAGE_FILE: ~/devstack/files/amphora-x64-haproxy.qcow2
+        IMAGE_URLS: "http://openstack-infra.an.nuagenetworks.net/nuage-glance-images/cirros.qcow2, http://openstack-infra.an.nuagenetworks.net/nuage-glance-images/octavia/master/amphora-x64-haproxy.qcow2"
+      devstack_local_conf:
+        post-config:
+          $OCTAVIA_CONF:
+            DEFAULT:
+              debug: True
+        test-config:
+          $TEMPEST_CONFIG:
+            load_balancer:
+              # prevent octavia tempest plugin to choose ipv6 CIDR unsupported by VSD
+              vip_ipv6_subnet_cidr: cafe:b::/64
+              member_1_ipv6_subnet_cidr: cafe:ba::/64
+              member_2_ipv6_subnet_cidr: cafe:bab::/64
+      devstack_services:
+        octavia: true
+        o-api: true
+        o-cw: true
+        o-hm: true
+        o-hk: true
+        o-da: true
+      devstack_plugins:
+        octavia: https://opendev.org/openstack/octavia.git
+      tempest_plugins:
+        - octavia-tempest-plugin
+        - nuage-tempest-plugin
+      tempest_test_regex: octavia_tempest_plugin
+      # availability zone tests are a master only feature which is unstable
+      tempest_black_regex: 'octavia_tempest_plugin.tests.api.v2.test_availability_zone|octavia_tempest_plugin.tests.act_stdby_scenario.v2.test_active_standby.ActiveStandbyScenarioTest'
+      zuul_copy_output:
+        '/var/log/dib-build' : logs
+
+- job:
+    name: networking-nuage-octavia-standby
+    parent: networking-nuage-octavia
+    description: nuage octavia integration job for active-standby
+    # This currently works from stable/pike on
+    branches: ^(?!stable/(newton|ocata)).*$
+    timeout: 18000
+    vars:
+      tempest_concurrency: 1
+      devstack_local_conf:
+        post-config:
+          $OCTAVIA_CONF:
+            controller_worker:
+                loadbalancer_topology: ACTIVE_STANDBY
