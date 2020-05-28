@@ -584,6 +584,47 @@
       tempest_concurrency: 2
 
 - job:
+    name: networking-nuage-tempest-scenario-rhel
+    parent: networking-nuage-tempest-scenario
+    # This currently works from train on
+    branches: ^(?!(stable|5.4|6.0)/(pike|queens|rocky|stein)).*$
+    description: job running all scenario tests with RHEL VM's
+    vars:
+      tempest_concurrency: 2
+      devstack_localrc:
+        IMAGE_URLS: "http://openstack-infra.an.nuagenetworks.net/nuage-glance-images/rhel-7-7.qcow2"
+        DEFAULT_IMAGE_FILE_NAME: rhel-7-7.qcow2
+        DEFAULT_INSTANCE_USER: cloud-user
+        DEFAULT_INSTANCE_TYPE: m1.small  # or use ds1G
+      devstack_local_conf:
+        test-config:
+          $TEMPEST_CONFIG:
+            scenario:
+              # Interfaces with DHCP configured through cloud init network configuration
+              # instead of bash script in the nuage tempest plugin
+              dhcp_client: ''
+
+- job:
+    name: networking-nuage-tempest-scenario-rhel
+    parent: networking-nuage-tempest-scenario
+    # Variant for branches below train
+    branches: ^(stable|5.4|6.0)/(pike|queens|rocky|stein).*$
+    description: job running all scenario tests with RHEL VM's
+    vars:
+      tempest_concurrency: 2
+      devstack_localrc:
+        IMAGE_URLS: "http://openstack-infra.an.nuagenetworks.net/nuage-glance-images/rhel-7-7-no-network-init.qcow2"
+        DEFAULT_IMAGE_FILE_NAME: rhel-7-7-no-network-init.qcow2
+        DEFAULT_INSTANCE_USER: cloud-user
+        DEFAULT_INSTANCE_TYPE: m1.small  # or use ds1G
+      devstack_local_conf:
+        test-config:
+          $TEMPEST_CONFIG:
+            nuage_sut:
+              # Due to a cloud-init bug on branches below train (interfaces always statically configured)
+              use_network_scripts: true
+
+- job:
     name: networking-nuage-tempest-scenario-vsdipam
     parent: networking-nuage-tempest-scenario
     branches: ^(?!stable/(newton|ocata)).*$
