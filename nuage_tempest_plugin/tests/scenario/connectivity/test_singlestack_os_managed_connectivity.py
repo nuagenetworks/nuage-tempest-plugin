@@ -601,4 +601,7 @@ class OsMgdL3ConnectivityTestWithAggrFlowsTest(
                                     'starting 20.5')
 
     def test_icmp_connectivity_l3_os_managed(self):
+        if self._ip_version == 6:
+            self.skipTest('Skip because of OPENSTACK-2900')
+
         self._icmp_connectivity_l3_os_managed_by_name('test-server')
