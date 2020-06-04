@@ -725,7 +725,7 @@
       devstack_local_conf:
         post-config:
           $NEUTRON_CONF:
-            QUOTAS:
+            quotas:
               quota_router: 100
               quota_floatingip: 500
               quota_security_group: 150
