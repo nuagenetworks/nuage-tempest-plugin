@@ -758,7 +758,7 @@
     timeout: 21600
     vars:
       tempest_test_blacklist: ''
-      tempest_black_regex: '^(?:.*(neutron_tempest_plugin\.(api\.admin\.test_routers_ha\.RoutersTestHA\.(test_delete_ha_router_keeps_ha_network_segment_data|test_ha_router_creation)|scenario\.(test_mtu|test_trunk|test_network_v6\.TestGettingAddress\.test_multi_prefix))|tempest\.scenario\.(test_network_v6\.TestGettingAddress\.test_multi|test_network_basic_ops\.TestNetworkBasicOps\.(test_hotplug_nic|test_subnet_details|test_network_basic_ops|test_connectivity_between_vms_on_different_networks))).*)'
+      tempest_black_regex: '^(?:.*(neutron_tempest_plugin\.(api\.admin\.test_routers_ha\.RoutersTestHA\.(test_delete_ha_router_keeps_ha_network_segment_data|test_ha_router_creation)|scenario\.(test_mtu|test_trunk|test_network_v6\.TestGettingAddress\.test_multi_prefix))|tempest\.api\.network\.admin\.test_routers\.RoutersIpV6AdminTest\.test_create_router_set_gateway_with_fixed_ip|tempest\.scenario\.(test_network_v6\.TestGettingAddress\.test_multi|test_network_basic_ops\.TestNetworkBasicOps\.(test_hotplug_nic|test_subnet_details|test_network_basic_ops|test_connectivity_between_vms_on_different_networks))).*)'
       devstack_localrc:
         Q_ML2_TENANT_NETWORK_TYPE: vlan
 

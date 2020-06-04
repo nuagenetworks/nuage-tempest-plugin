@@ -39,9 +39,13 @@ neutron_tempest_plugin\.api\.test_routers\.Routers.*Test\.test_.*_router.*_with_
 # TODO(Kris) further analyse
 neutron_tempest_plugin\.api\.test_routers\.RoutersIpV6Test\.test_router_interface_status
 
+# Nuage doesn't support ipv6 external networks
+tempest\.api\.network\.admin\.test_routers\.RoutersIpV6AdminTest\.test_create_router_set_gateway_with_fixed_ip
+
 # Nuage doesn't support creating ports on external subnet
 tempest\.api\.network\.admin\.test_routers_negative\.RoutersAdminNegativeIpV6Test
 tempest\.api\.network\.admin\.test_routers_negative\.RoutersAdminNegativeTest
+tempest\.api\.network\.admin\.test_routers\.RoutersAdminTest\.test_create_router_set_gateway_with_fixed_ip
 
 # Nuage doesn't support ports with multiple ipv4 ips on different different subnets
 tempest\.api\.network\.test_ports\.PortsTestJSON\.test_create_update_port_with_second_ip
