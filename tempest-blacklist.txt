@@ -120,3 +120,7 @@ tempest.api.network.test_allowed_address_pair
 # Tests are copies from tempest.api.network.test_allowed_address_pair
 # TODO(Team) Move inheritance to neutron tempest plugin
 neutron_tempest_plugin.api.test_allowed_address_pair
+
+# Nuage does not support dhcp_stateless/slaac ra-mode
+neutron_tempest_plugin\.scenario\.test_ipv6\.IPv6Test.test_ipv6_hotplug_dhcpv6stateless
+neutron_tempest_plugin\.scenario\.test_ipv6\.IPv6Test.test_ipv6_hotplug_slaac
