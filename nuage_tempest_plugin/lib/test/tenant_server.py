@@ -528,26 +528,6 @@ class TenantServer(object):
     def bring_down_interface(self, interface):
         self.send('ip link set dev %s down' % interface)
 
-    def configure_sfc_vm(self, vlan):
-        self.send('ip link add link eth0 name eth0.%s type vlan id %s ' %
-                  (vlan, vlan))
-        self.send('ifconfig eth1 up')
-        self.send('udhcpc -i eth1')
-        ip = self.send("ifconfig eth0 | grep 'inet addr' "
-                       "| cut -d ':' -f 2 | cut -d ' ' -f 1")[0]
-        self.send('ifconfig eth0.%s %s up' % (vlan, ip))
-        self.send('ip link add link eth1 name eth1.%s type vlan id %s ' %
-                  (vlan, vlan))
-        ip = self.send("ifconfig eth1 | grep 'inet addr' "
-                       "| cut -d ':' -f 2 | cut -d ' ' -f 1")[0]
-        self.send('ifconfig eth1.%s %s up' % (vlan, ip))
-        self.send('brctl addbr br0')
-        self.send('brctl addif br0 eth0.%s' % vlan)
-        self.send('brctl addif br0 eth1.%s' % vlan)
-        self.send('ip link set br0 up')
-        self.send('ifconfig eth0.%s up' % vlan)
-        self.send('ifconfig eth1.%s up' % vlan)
-
     def mount_config_drive(self):
         blk_id_out = self.send('blkid | grep -i config-2')
         dev_name = re.match('([^:]+)', blk_id_out[0]).group()
