@@ -480,34 +480,59 @@ class TenantServer(object):
             self.needs_provisioning = False
             LOG.info('[{}] Provisioning complete'.format(self.tag))
 
-    def wait_until_ip_configured(self, ip, assert_permanent=False,
-                                 assert_true=False):
-        ip_configured = False
+    def wait_until_ip_established(self, ip, assert_permanent=False,
+                                  assert_true=False):
+        """wait_until_ip_established
+
+        This method is invoked to wait&query for a given IP to be established
+        on a given server, used to verify a server is fully set up for to be
+        exercised by this ip (e.g. using ping), before it actually is.
+
+        :param ip: the ip to query for, in string notation
+        :param assert_permanent: query for the ip to be declared as permanent
+                                 and fail when that is not the case
+        :param assert_true: fail when the ip is not established;
+                            implicitly set when assert_permanent is set.
+        :returns: boolean indication whether the ip got established or not.
+                A false result can only be obtained when nor assert_permanent
+                nor assert_true are set.
+        """
+        ip_established = False
         for _ in range(15):
             if assert_permanent:
-                ip_configured = bool(self.send('ip a '
-                                               '| grep "{}.* scope global" '
-                                               '| grep -v tentative '
-                                               '|| true'.format(ip)))
+                ip_established = bool(self.send('ip a '
+                                                '| grep "{}.* scope global" '
+                                                '| grep -v tentative '
+                                                '|| true'.format(ip)))
             else:
-                ip_configured = bool(self.send('ip a '
-                                               '| grep "{}.* scope global" '
-                                               '|| true'.format(ip)))
-            if ip_configured:
+                ip_established = bool(self.send('ip a '
+                                                '| grep "{}.* scope global" '
+                                                '|| true'.format(ip)))
+            if ip_established:
                 break
             else:
-                self.sleep(3, 'Waiting for ip {} to show up'.format(ip))
+                self.sleep(3, 'Waiting for ip {} to establish'.format(ip))
 
-        if assert_permanent or assert_true:
-            self.parent.assertTrue(ip_configured, 'IP {} did not show up '
-                                                  'on the server'.format(ip))
-
-        if ip_configured:
+        if ip_established:
             LOG.debug('[{}] {} confirmed as {}'.format(
                 self.tag,
-                ip, 'permanent' if assert_permanent else 'configured'))
+                ip, 'permanent' if assert_permanent else 'established'))
+        else:
+            if assert_permanent:
+                # check whether the IP is present, but never became permanent
+                ip_established = bool(self.send('ip a '
+                                                '| grep "{}.* scope global" '
+                                                '|| true'.format(ip)))
+                if ip_established:
+                    # it did -that means it remained tentative, i.e. DAD failed
+                    self.parent.fail('[{}] ip {} remained tentative '
+                                     '(DAD failed)'.format(self.tag, ip))
 
-        return ip_configured
+            if assert_true or assert_permanent and not ip_established:
+                self.parent.fail('[{}] ip {} failed to get '
+                                 'established'.format(self.tag, ip))
+
+        return ip_established
 
     def device_served_by_dhclient(self, device, ip_version,
                                   assert_true=False):
@@ -562,9 +587,9 @@ class TenantServer(object):
 
             # if so, nothing to do
             if not self.force_dhcp:
-                LOG.info('[{}] Validating {}/{} is set'.format(
+                LOG.info('[{}] Validating {}/{} got established'.format(
                     self.tag, ip, device))
-                self.wait_until_ip_configured(ip, assert_true=True)
+                self.wait_until_ip_established(ip, assert_true=True)
 
         else:
             # else, configure statically
@@ -579,7 +604,7 @@ class TenantServer(object):
                         '{} addr add {}/{} dev {}'.format(
                             ip_v, ip, mask_bits, device),
                         one_off_attempt=True) is None or
-                    not self.wait_until_ip_configured(ip)):
+                    not self.wait_until_ip_established(ip)):
                 self.send('{} addr del {}/{} dev {} || true'.format(
                     ip_v, ip, mask_bits, device))
                 attempt += 1
@@ -600,7 +625,7 @@ class TenantServer(object):
                           .format(ip=ip_v, gw=gateway_ip), as_sudo=False)
 
         # with all config up now, validate for non-tentative
-        self.wait_until_ip_configured(ip, assert_permanent=True)
+        self.wait_until_ip_established(ip, assert_permanent=True)
 
         LOG.info('[{}] Successfully set {}/{}'.format(self.tag, ip, device))
 
