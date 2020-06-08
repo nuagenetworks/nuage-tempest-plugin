@@ -23,6 +23,12 @@ CONF = Topology.get_conf()
 
 class UnicodeUserDataTest(NuageBaseTest):
 
+    @classmethod
+    def skip_checks(cls):
+        super(UnicodeUserDataTest, cls).skip_checks()
+        raise cls.skipException('TODO(Team) make tests run on supported '
+                                'topology only')
+
     def _test_unicode_userdata(self, l3=None, ip_versions=None):
         # Verifying that nuage-metadata-agent can handle user-data with
         # unicode.
