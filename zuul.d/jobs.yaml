@@ -724,13 +724,13 @@
 - job:
     name: networking-nuage-fwaas-v1
     parent: networking-nuage-base
-    branches: ".*(rocky|queens).*"
+    branches: '.*(queens|rocky).*'
     roles:
       - zuul: openstack/devstack
     required-projects:
       - openstack/neutron-fwaas
     vars:
-      tempest_test_regex: '^(neutron_fwaas.*(test_fwaas_extensions|test_fwaas)\.|nuage_tempest_plugin\.tests\.api\.test_fwaas|nuage_tempest_plugin\.tests\.scenario\.test_fwaas)'
+      tempest_test_regex: '^(neutron_fwaas.*(test_fwaas_extensions|test_fwaas)\.|nuage_tempest_plugin\.tests\.api\.test_fwaas|nuage_tempest_plugin\.tests\.scenario\.test_fwaas|nuage_tempest_plugin\.tests\.api\.cli\..*fwaas.*)'
       devstack_plugins:
         neutron-fwaas: https://opendev.org/openstack/neutron-fwaas.git
       devstack_services:
@@ -739,7 +739,7 @@
         FWAAS_PLUGIN: NuageFWaaS
         USE_PYTHON3: false
         FORCE_CONFIG_DRIVE: false
-        TEMPEST_PLUGINS: '"/opt/stack/nuage-tempest-plugin /opt/stack/neutron-fwaas"'
+        NETWORK_API_EXTENSIONS: "address-scope,agent,agent-resources-synced,allowed-address-pairs,auto-allocated-topology,availability_zone,availability_zone_filter,binding,binding-extended,default-subnetpools,dhcp_agent_scheduler,empty-string-filtering,ext-gw-mode,external-net,extra_dhcp_opt,extraroute,flavors,ip-substring-filtering,ip_allocation,l2_adjacency,multi-provider,net-mtu,net-mtu-writable,net-partition,net-topology,network-ip-availability,network_availability_zone,nuage-external-security-group,nuage-floatingip,nuage-gateway,nuage-l2bridge,nuage-network,nuage-policy-group,nuage-redirect-target,nuage-router,nuage-security-group,nuage-subnet,nuage-vsd-floatingip,pagination,port-mac-address-regenerate,port-security,port-security-groups-filtering,project-id,provider,quota_details,quotas,rbac-policies,rbac-security-groups,revision-if-match,router,security-group,segment,segments-peer-subnet-host-routes,service-type,sorting,standard-attr-description,standard-attr-revisions,standard-attr-segment,standard-attr-tag,standard-attr-timestamp,subnet-segmentid-writable,subnet-service-types,subnet_allocation,subnet_onboard,subnetpool-prefix-ops,trunk,trunk-details,vlan-transparent,vsd-resource,fwaas,fwaasrouterinsertion"
       tempest_plugins:
         - neutron-fwaas
         - nuage-tempest-plugin

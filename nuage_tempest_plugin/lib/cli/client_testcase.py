@@ -519,6 +519,14 @@ class CLIClientTestCase(test.BaseTestCase):
         return self.cli.neutron('nuage-l2bridge-create',
                                 params=the_params)
 
+    def create_firewall_rule_cli(self, *args):
+        return self.cli.neutron('firewall-rule-create',
+                                params=' '.join(args))
+
+    def delete_firewall_rule_cli(self, *args):
+        return self.cli.neutron('firewall-rule-delete',
+                                params=' '.join(args))
+
     def show_nuage_l2bridge_cli(self, *args):
         the_params = ''
         for arg in args:
