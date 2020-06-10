@@ -48,6 +48,7 @@ class VSDManagedRedirectTargetCliTest(
 
     @classmethod
     def skip_checks(cls):
+        super(VSDManagedRedirectTargetCliTest, cls).skip_checks()
         if Topology.from_nuage('0.0'):
             raise cls.skipException("OPENSTACK-2908")
 

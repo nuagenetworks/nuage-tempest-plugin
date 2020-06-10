@@ -19,6 +19,7 @@ class VSDManagedRedirectTargetTest(BaseVSDManagedNetworksIPv6Test):
 
     @classmethod
     def skip_checks(cls):
+        super(VSDManagedRedirectTargetTest, cls).skip_checks()
         if Topology.from_nuage('0.0'):
             raise cls.skipException("OPENSTACK-2908")
 
