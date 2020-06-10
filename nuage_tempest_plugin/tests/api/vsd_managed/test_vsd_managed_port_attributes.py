@@ -22,7 +22,6 @@ from tempest.test import decorators
 from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
-
 from nuage_tempest_plugin.tests.api.external_id.external_id \
     import ExternalId
 from nuage_tempest_plugin.tests.api.vsd_managed \
@@ -56,6 +55,11 @@ class VSDManagedRedirectTargetTest(
         expected_exception_from_topology = exceptions.BadRequest
     else:
         expected_exception_from_topology = exceptions.ServerFault
+
+    @classmethod
+    def skip_checks(cls):
+        if Topology.from_nuage('0.0'):
+            raise cls.skipException("OPENSTACK-2908")
 
     @classmethod
     def resource_setup(cls):

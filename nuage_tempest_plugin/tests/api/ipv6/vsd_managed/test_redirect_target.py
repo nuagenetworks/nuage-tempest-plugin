@@ -1,6 +1,7 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
 
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
     import BaseVSDManagedNetworksIPv6Test
@@ -15,6 +16,11 @@ from tempest.lib.common.utils import data_utils
 
 
 class VSDManagedRedirectTargetTest(BaseVSDManagedNetworksIPv6Test):
+
+    @classmethod
+    def skip_checks(cls):
+        if Topology.from_nuage('0.0'):
+            raise cls.skipException("OPENSTACK-2908")
 
     def _verify_redirect_target(self, rt, parent, parentinfo, postinfo):
         redirect_target = self.nuage_client.get_redirection_target(

@@ -47,6 +47,11 @@ class VSDManagedRedirectTargetCliTest(
         base_vsd_managed_port_attributes.BaseVSDManagedPortAttributes):
 
     @classmethod
+    def skip_checks(cls):
+        if Topology.from_nuage('0.0'):
+            raise cls.skipException("OPENSTACK-2908")
+
+    @classmethod
     def resource_setup(cls):
         super(VSDManagedRedirectTargetCliTest, cls).resource_setup()
         # cls.iacl_template = ''
