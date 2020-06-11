@@ -37,9 +37,8 @@ class AvrsOsManagedConnectivityTest(E2eTestBase):
 
     def dump_flows(self, hypervisor):
         """Dump flows on hypervisor"""
-        cmd = ('ssh heat-admin@{host_ip} "sudo fpcmd fp-vswitch-flows-json'
-               '"'.format(host_ip=hypervisor['host_ip']))
-        flows = json.loads(self.execute_from_shell(cmd))
+        flows = json.loads(self.execute_on_hypervisor(
+            hypervisor, 'sudo fpcmd fp-vswitch-flows-json'))
         return AvrsFlowQuery(flows)
 
     @nuage_test.skip_because(bug='OPENSTACK-2766')
