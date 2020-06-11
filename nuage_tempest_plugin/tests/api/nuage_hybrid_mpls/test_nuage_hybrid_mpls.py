@@ -127,7 +127,11 @@ class NuageHybridMplsTest(NuageBaseTest):
     def test_vsd_managed_subnet_tunnel_type_vxlan_neg(self):
         # L2 Domain
         l2domain = self.create_l2_domain_tunnel_type('VXLAN')
-        kwargs = {'provider:network_type': 'nuage_hybrid_mpls'}
+        segments = [{'provider:network_type': 'nuage_hybrid_mpls'},
+                    {'provider:network_type': 'vlan',
+                     'provider:segmentation_id': 210,
+                     'provider:physical_network': 'physnet2'}]
+        kwargs = {'segments': segments}
         network = self.create_network(manager=self.admin_manager, **kwargs)
 
         kwargs = {'vsd_l2domain': l2domain,
