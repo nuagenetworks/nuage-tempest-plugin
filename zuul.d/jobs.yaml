@@ -865,7 +865,8 @@
         - nuage-tempest-plugin
       tempest_test_regex: octavia_tempest_plugin
       # availability zone tests are a master only feature which is unstable
-      tempest_black_regex: 'octavia_tempest_plugin.tests.api.v2.test_availability_zone|octavia_tempest_plugin.tests.act_stdby_scenario.v2.test_active_standby.ActiveStandbyScenarioTest'
+      # ipv6 only vms are not reachable as they have no fip
+      tempest_black_regex: 'octavia_tempest_plugin.tests.api.v2.test_availability_zone|octavia_tempest_plugin.tests.scenario.v2.test_ipv6_traffic_ops.IPv6TrafficOperationsScenarioTest'
       zuul_copy_output:
         '/var/log/dib-build' : logs
 
