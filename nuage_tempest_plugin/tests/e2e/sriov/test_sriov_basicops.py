@@ -21,7 +21,6 @@ from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import data_utils
 
-
 LOG = Topology.get_logger(__name__)
 CONF = Topology.get_conf()
 
@@ -38,16 +37,11 @@ NETWORK_ARGS = {
 
 VIRTIO_ARGS = {'binding:vnic_type': 'normal'}
 
-
 CONFIGURE_VLAN_INTERFACE_COMMANDS = (
-    'sudo ip l a link %(itf)s name %(itf)s.%(tag)d type vlan id %(tag)d;'
+    'sudo ip link add link %(itf)s name %(itf)s.%(tag)d type vlan id %(tag)d;'
+    'sudo ip link set up dev %(itf)s.%(tag)d;'
     'sudo ip link set %(itf)s.%(tag)d address %(mac)s;'
-    'sudo ip l s up dev %(itf)s;'
-    'sudo ip l s up dev %(itf)s.%(tag)d')
-
-CONFIGURE_ITF_CMD = (
-    'sudo ip link set dev %(dev)s up;'
-    'sudo ip address add %(ip)s/%(len)d dev %(dev)s'
+    'sudo ip address add %(ip)s/%(len)d dev %(itf)s.%(tag)d'
 )
 
 
@@ -113,30 +107,12 @@ class SriovBasicOpsTest(NuageBaseTest):
 
     def test_server_connectivity_l2(self):
         self._setup_resources(is_l3=False)
-
         server_to = self._create_server_with_direct_port()
         server_from = self._create_server_with_virtio_port()
-        net = IPNetwork(self.subnet['cidr'])
-
-        # Configure second interface statically on server_from
-        dev = server_from['server'].console().get_nic_name_by_mac(
-            server_from['port']['mac_address']
-        )
-        self.assertIsNotNone(
-            dev,
-            message="Could not compute device name for secondary interface")
-
-        command = CONFIGURE_ITF_CMD % {
-            'ip': server_from['port']['fixed_ips'][0]['ip_address'],
-            'len': net.prefixlen,
-            'dev': dev
-        }
-        server_from['server'].send(command)
 
         self.assert_ping(
             server_from['server'],
             server_to['server'],
-            self.network,
             address=server_to['port']['fixed_ips'][0]['ip_address'])
 
     def test_server_connectivity_l3_ipv6(self):
@@ -144,53 +120,21 @@ class SriovBasicOpsTest(NuageBaseTest):
         server_to = self._create_server_with_direct_port()
         server_from = self._create_server_with_virtio_port()
 
-        net = IPNetwork(self.subnet['cidr'])
-
-        # Configure ipv6 address statically on server_from
-        dev = server_from['server'].console().get_nic_name_by_mac(
-            server_from['port']['mac_address']
-        )
-        self.assertIsNotNone(
-            dev,
-            message="Could not compute device name for interface")
-
-        command = CONFIGURE_ITF_CMD % {
-            'ip': server_from['port']['fixed_ips'][0]['ip_address'],
-            'len': net.prefixlen,
-            'dev': dev
-        }
-        server_from['server'].send(command)
         self.assert_ping(
             server_from['server'],
             server_to['server'],
+            ip_version=6,
             address=server_to['port']['fixed_ips'][0]['ip_address'])
 
     def test_server_connectivity_l2_ipv6(self):
         self._setup_resources(is_l3=False, ip_version=6)
-
         server_to = self._create_server_with_direct_port()
         server_from = self._create_server_with_virtio_port()
-        net = IPNetwork(self.subnet['cidr'])
-
-        # Configure second interface statically on server_from
-        dev = server_from['server'].console().get_nic_name_by_mac(
-            server_from['port']['mac_address']
-        )
-        self.assertIsNotNone(
-            dev,
-            message="Could not compute device name for secondary interface")
-
-        command = CONFIGURE_ITF_CMD % {
-            'ip': server_from['port']['fixed_ips'][0]['ip_address'],
-            'len': net.prefixlen,
-            'dev': dev
-        }
-        server_from['server'].send(command)
 
         self.assert_ping(
             server_from['server'],
             server_to['server'],
-            self.network,
+            ip_version=6,
             address=server_to['port']['fixed_ips'][0]['ip_address'])
 
 
@@ -285,9 +229,13 @@ class SriovTrunkTest(NuageBaseTest):
             'segmentation_id': vlan_tag}
         self.create_trunk(parent_port, [subport])
 
+        kwargs = {'config_drive': True,
+                  'user_data': '/sbin/ip route del default via {}\n'.format(
+                      self.subnet['gateway_ip'])}
         server = self.create_tenant_server(
             ports=[access_port, parent_port],
-            prepare_for_connectivity=True)
+            prepare_for_connectivity=True,
+            **kwargs)
 
         return {
             'server': server,
@@ -404,19 +352,16 @@ class SriovTrunkTest(NuageBaseTest):
                 message="Could not compute device name for interface")
 
             # Configure VLAN interfaces on server
-            command = CONFIGURE_VLAN_INTERFACE_COMMANDS % \
-                {'itf': dev,
-                 'tag': vlan_tag,
-                 'mac': server['subport']['mac_address']}
-            server['server'].send(command)
-            command = CONFIGURE_ITF_CMD % {
+            command = CONFIGURE_VLAN_INTERFACE_COMMANDS % {
+                'itf': dev,
+                'tag': vlan_tag,
+                'mac': server['trunkport']['mac_address'],
                 'ip': server['subport']['fixed_ips'][0]['ip_address'],
                 'len': net.prefixlen,
-                'dev': dev
             }
             server['server'].send(command)
 
-            out = servers[0]['server'].send(
+            out = server['server'].send(
                 'ip addr list')
             LOG.debug("Interfaces on server %s: %s", server, out)
 
