@@ -21,18 +21,27 @@ CONF = Topology.get_conf()
 
 class RestartOpenvSwitchScenarioTest(nuage_test.NuageBaseTest):
 
+    @classmethod
+    def skip_checks(cls):
+        super(RestartOpenvSwitchScenarioTest, cls).skip_checks()
+        if Topology.api_workers > 1:
+            raise cls.skipException('Skip OVS restart tests when multiple '
+                                    'workers are present')
+
     def _test_restart_openvswitch(self, l3=None, ip_versions=None):
         # Verifying that connectivity and metadata-agent functionality
         # preserved after restarting OpenvSwitch.
 
         # Provision OpenStack network resources
         network = self.create_network()
+        subnet = None
         for ip_version in ip_versions:
             subnet = self.create_subnet(
                 network, ip_version=ip_version,
                 mask_bits=24 if ip_version == 4 else 64,
                 enable_dhcp=True)
         if l3:
+            self.assertIsNotNone(subnet)
             router = self.create_router(
                 external_network_id=CONF.network.public_network_id
             )
