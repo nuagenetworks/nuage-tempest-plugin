@@ -40,4 +40,9 @@
     - name: Add tempest user to wheel group
       become: yes
       user: name=tempest groups=wheel append=yes state=present createhome=yes
+
+    - name: Workaround uwsgi 2.0.19
+      lineinfile:
+        path: /opt/stack/requirements/upper-constraints.txt
+        line: uwsgi===2.0.18
   environment: '{{ proxy_env }}'
