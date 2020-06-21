@@ -141,8 +141,8 @@ class DualstackOsMgdConnectivityWithAggrFlowsTest(
     def skip_checks(cls):
         super(DualstackOsMgdConnectivityWithAggrFlowsTest, cls).skip_checks()
         if Topology.before_nuage('20.5'):
-            raise cls.skipException('OS managed aggregate flows available'
-                                    'starting 20.5')
+            raise cls.skipException('OS managed aggregate flows are '
+                                    'unavailable before 20.5')
 
     def test_icmp_connectivity_l3_os_managed_dualstack(self):
         self._test_icmp_connectivity_os_managed_dualstack(is_l3=True)

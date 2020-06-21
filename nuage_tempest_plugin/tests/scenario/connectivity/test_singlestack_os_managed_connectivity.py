@@ -597,8 +597,8 @@ class OsMgdL3ConnectivityTestWithAggrFlowsTest(
     def skip_checks(cls):
         super(OsMgdL3ConnectivityTestWithAggrFlowsTest, cls).skip_checks()
         if Topology.before_nuage('20.5'):
-            raise cls.skipException('OS managed aggregate flows available'
-                                    'starting 20.5')
+            raise cls.skipException('OS managed aggregate flows are '
+                                    'unavailable before 20.5')
 
     def test_icmp_connectivity_l3_os_managed(self):
         if self._ip_version == 6:
