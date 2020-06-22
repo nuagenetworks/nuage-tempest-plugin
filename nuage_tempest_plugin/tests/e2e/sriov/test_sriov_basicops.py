@@ -85,7 +85,8 @@ class SriovBasicOpsTest(NuageBaseTest):
             tenant_id=self.manager.networks_client.tenant_id,
             **NETWORK_ARGS)
         self.subnet = self.create_subnet(self.network,
-                                         ip_version=ip_version)
+                                         ip_version=ip_version,
+                                         enable_dhcp=False)
         if is_l3:
             router = self.create_public_router()
             self.router_attach(router, self.subnet)
