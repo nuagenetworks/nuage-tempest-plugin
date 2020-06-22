@@ -108,5 +108,9 @@ NuageSutGroup = [
     cfg.BoolOpt('identify_hypervisors_by_flavor',
                 default=True,
                 help='Whether E2E tests should pick compute by aggregate '
-                     'flavor')
+                     'flavor'),
+    cfg.IntOpt('time_to_debug_on_failure',
+               default=0,
+               help='Time to debug (in secs) on failure, before running the '
+                    'test cleanup.')
 ]

@@ -101,6 +101,19 @@ def unstable_test(*args, **kwargs):
     return decor
 
 
+_MAX_LENGTH = 80
+
+
+def safe_repr(obj, short=False):
+    try:
+        result = repr(obj)
+    except Exception:
+        result = object.__repr__(obj)
+    if not short or len(result) < _MAX_LENGTH:
+        return result
+    return result[:_MAX_LENGTH] + ' [truncated]...'
+
+
 class NuageBaseTest(scenario_manager.NetworkScenarioTest):
 
     """NuageBaseTest
@@ -202,14 +215,45 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                 name = name[:-len(tag)]
         return name
 
+    def assertThat(self, matchee, matcher, message='', verbose=False):
+        """Assert that matchee is matched by matcher.
+
+        :param matchee: An object to match with matcher.
+        :param matcher: An object meeting the testtools.Matcher protocol.
+        :raises MismatchError: When matcher does not match thing.
+        """
+        mismatch_error = self._matchHelper(matchee, matcher, message, verbose)
+        if mismatch_error is not None:
+            self.pre_fail(message)
+            raise mismatch_error
+
+    def assertFalse(self, expr, msg=None):
+        """Check that the expression is false."""
+        if expr:
+            msg = self._formatMessage(msg, "%s is not false" % safe_repr(expr))
+            self.fail(msg)
+
+    def assertTrue(self, expr, msg=None):
+        """Check that the expression is true."""
+        if not expr:
+            msg = self._formatMessage(msg, "%s is not true" % safe_repr(expr))
+            self.fail(msg)
+
     def fail(self, msg):
-        self.preFailTest(msg)
+        self.pre_fail(msg)
         super(NuageBaseTest, self).fail(msg)
 
-    def preFailTest(self, msg):
+    def pre_fail(self, msg):
         # custom handling of a failed test
-        LOG.info('[{}] FATAL ERROR: {}'.format(self.test_name, msg))
-        # e.g. sleep statement can be added here, to pause the setup on failure
+        LOG.error('[{}] {}.{} FATAL ERROR: {}'.format(
+            self.test_name, self.long_cls_name, self.long_test_name, msg))
+        intervals_of_10_secs = int(
+            CONF.nuage_sut.time_to_debug_on_failure / 10)
+        for i in range(intervals_of_10_secs):
+            LOG.error('[{}] Giving time to debug {}.{} ({}/{}) : {}'.format(
+                self.test_name, self.long_cls_name, self.long_test_name,
+                i + 1, intervals_of_10_secs, msg))
+            time.sleep(10)
 
     @staticmethod
     # As reused by other classes, left as static and passing cls explicitly
@@ -1891,25 +1935,21 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
 
                 return success
 
-            return test_utils.call_until_true(ping_address, timeout, 1)
+            try:
+                return test_utils.call_until_true(ping_address, timeout, 1)
 
-        try:
-            self.assertEqual(should_pass, ping())
+            except lib_exc.SSHTimeout as ssh_e:
+                LOG.error('[{}] SSH Timeout! ({})'.format(self.test_name,
+                                                          ssh_e))
+                raise
 
-        except lib_exc.SSHTimeout as ssh_e:
-            LOG.error('[{}] SSH Timeout! ({})'.format(self.test_name, ssh_e))
-            raise
-
-        except AssertionError:
-            LOG.error('[{}] Ping {} > {} unexpectedly {}!'.format(
-                self.test_name,
-                server1.name, server2.name if server2 else address,
-                'FAILED' if should_pass else 'PASSED'))
-
-            # DEFINE ACTIONS HERE...
-            # self.sleep(300, 'Pausing for giving means to debug...',
-            #            tag=self.test_name)
-            raise
+        self.assertEqual(should_pass, ping(),
+                         '[{}] Ping {} > {} unexpectedly {}!'.format(
+                             self.test_name,
+                             server1.name,
+                             server2.name if server2 else address,
+                             'FAILED' if should_pass else 'PASSED')
+                         )
 
     def assertDictEqual(self, d1, d2, ignore, msg):
         for k in d1:

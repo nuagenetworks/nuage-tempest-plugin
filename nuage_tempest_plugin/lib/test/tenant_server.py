@@ -30,6 +30,7 @@ class FipAccessConsole(RemoteClient):
             pkey=tenant_server.keypair['private_key'],
             servers_client=tenant_server.parent.manager.servers_client)
         self.tag = tenant_server.tag
+        self.parent = tenant_server.parent
 
     def exec_command(self, cmd, ssh_shell_prologue=None):
         # Shell options below add more clearness on failures,
@@ -67,13 +68,12 @@ class FipAccessConsole(RemoteClient):
                 output[0] = cmd_out
                 return True
             except lib_exc.SSHExecCommandFailed as e:
-                LOG.debug('[{}] cmd timed out, got {}'.format(
+                LOG.debug('[{}] cmd failed, got {}'.format(
                     self.tag, e))
                 return False
             except Exception as e:
-                LOG.debug('[{}] cmd failed, got {} ({})'.format(
-                    self.tag, e, e.__class__.__name__))
-                raise
+                self.parent.fail('[{}] "{}" cmd failed, got {} ({})'.format(
+                    cmd, self.tag, e, e.__class__.__name__))
 
         if one_off_attempt:
             success = send_cmd()
@@ -353,7 +353,8 @@ class TenantServer(object):
                         backoff_time = max_backoff_time  # 3, 6, 10, 10, ...
                 if backoff_time == max_backoff_time:
                     count += 1
-                    self.parent.assertTrue(count < 10)  # limit
+                    self.parent.assertTrue(count < 10, 'Cloudinit did not '
+                                                       'complete on time')
                 self.sleep(backoff_time, 'Waiting for cloudinit to complete')
 
             # check the cloudinit completion time and add up to 3 secs if no
@@ -425,7 +426,8 @@ class TenantServer(object):
                 self.sleep(3, 'Waiting for ip {} to show up'.format(ip))
 
         if assert_permanent or assert_true:
-            self.parent.assertTrue(ip_configured)
+            self.parent.assertTrue(ip_configured, 'IP {} did not show up '
+                                                  'on the server'.format(ip))
 
         if ip_configured:
             LOG.debug('[{}] {} confirmed as {}'.format(
@@ -509,7 +511,8 @@ class TenantServer(object):
                     ip_v, ip, mask_bits, device))
                 attempt += 1
 
-            self.parent.assertTrue(attempt <= 2)
+            self.parent.assertTrue(attempt <= 2, 'Interface config did not '
+                                                 'succeed')
 
             self.send('ip link set dev {} up || true'.format(device))
 
