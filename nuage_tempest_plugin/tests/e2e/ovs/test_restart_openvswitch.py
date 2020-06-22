@@ -62,6 +62,14 @@ class RestartOpenvSwitchScenarioTest(nuage_test.NuageBaseTest):
         # check connectivity.
         self.assert_ping(server2, server1, network)
 
+        curl_cmd = 'curl http://169.254.169.254/2009-04-04/meta-data/hostname'
+        if CONF.compute_feature_enabled.metadata_service:
+            # verify metadata agent is working
+            result_1 = server1.send(curl_cmd)
+            self.assertIn(server1.name, result_1)
+            result_2 = server2.send(curl_cmd)
+            self.assertIn(server2.name, result_2)
+
         # restart openvswitch service
         # limitation: would only work on a devstack!
         self.execute_from_shell('sudo service openvswitch restart')
@@ -69,6 +77,13 @@ class RestartOpenvSwitchScenarioTest(nuage_test.NuageBaseTest):
 
         # check connectivity again
         self.assert_ping(server2, server1, network)
+
+        if CONF.compute_feature_enabled.metadata_service:
+            # verify metadata agent is working again
+            result_1 = server1.send(curl_cmd)
+            self.assertIn(server1.name, result_1)
+            result_2 = server2.send(curl_cmd)
+            self.assertIn(server2.name, result_2)
 
     def test_restart_openvswitch_l3_v4(self):
         self._test_restart_openvswitch(l3=True, ip_versions=[4])
