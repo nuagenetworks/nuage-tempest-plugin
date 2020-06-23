@@ -57,12 +57,6 @@ class VSDManagedRedirectTargetTest(
         expected_exception_from_topology = exceptions.ServerFault
 
     @classmethod
-    def skip_checks(cls):
-        super(VSDManagedRedirectTargetTest, cls).skip_checks()
-        if Topology.from_nuage('0.0'):
-            raise cls.skipException("OPENSTACK-2908")
-
-    @classmethod
     def resource_setup(cls):
         super(VSDManagedRedirectTargetTest, cls).resource_setup()
         # cls.iacl_template = ''
