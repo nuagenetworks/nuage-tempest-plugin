@@ -115,8 +115,7 @@ class NuageFipToVip(NuageBaseTest):
                           "have the correct device owner.")
         # Assert FIP associated to vport for fake vip neutron port
         vsd_subnet = self.vsd.get_subnet_from_domain(
-            by_network_id=subnet['network_id'],
-            cidr=subnet['cidr'])
+            by_subnet=subnet)
         nuage_vport_for_fake_vip = self.vsd.get_vport(
             subnet=vsd_subnet, by_port_id=vip_port['id'])
         self.assertIsNotNone(
@@ -333,8 +332,7 @@ class NuageFipToVip(NuageBaseTest):
         self.update_floatingip(floatingip=floating_ip,
                                port_id=AAP_port['id'])
         vsd_subnet = self.vsd.get_subnet_from_domain(
-            by_network_id=subnet['network_id'],
-            cidr=subnet['cidr'])
+            by_subnet=subnet)
         nuage_vport = self.vsd.get_vport(
             subnet=vsd_subnet, by_port_id=AAP_port['id'])
         self.assertIsNotNone(

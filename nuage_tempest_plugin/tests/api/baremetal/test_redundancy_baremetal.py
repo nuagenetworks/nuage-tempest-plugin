@@ -43,10 +43,10 @@ class BaremetalRedcyTest(network_mixin.NetworkMixin,
     @classmethod
     def setUpClass(cls):
         super(BaremetalRedcyTest, cls).setUpClass()
-        if (Topology.nuage_baremetal_driver ==
+        if (CONF.nuage_sut.nuage_baremetal_driver ==
                 constants.BAREMETAL_DRIVER_BRIDGE):
             cls.expected_vport_type = constants.VPORT_TYPE_BRIDGE
-        elif (Topology.nuage_baremetal_driver ==
+        elif (CONF.nuage_sut.nuage_baremetal_driver ==
               constants.BAREMETAL_DRIVER_HOST):
             cls.expected_vport_type = constants.VPORT_TYPE_HOST
         else:

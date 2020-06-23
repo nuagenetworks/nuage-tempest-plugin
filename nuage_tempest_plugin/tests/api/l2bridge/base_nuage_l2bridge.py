@@ -12,9 +12,11 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 from netaddr import IPNetwork
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 from tempest import config
@@ -116,8 +118,11 @@ class BaseNuageL2Bridge(NuageBaseTest):
                                  subnet=None):
         dhcp_options = self.vsd.get_l2domain_dhcp_options(l2domain)
         if subnet:
-            self.assertEqual(subnet['network_id'] + '_' + subnet['id'],
-                             l2domain.name)
+            if Topology.is_v5:
+                self.assertEqual(subnet['id'], l2domain.name)
+            else:
+                self.assertEqual(subnet['network_id'] + '_' + subnet['id'],
+                                 l2domain.name)
             self.assertEqual(subnet['name'], l2domain.description)
             for dhcp_option in dhcp_options:
                 self.assertEqual(self.ext_id(subnet['id']),
@@ -133,3 +138,7 @@ class BaseNuageL2Bridge(NuageBaseTest):
     @staticmethod
     def ext_id(ext_id):
         return ext_id + '@' + CONF.nuage.nuage_cms_id
+
+    def l2domain_ext_id(self, subnet):
+        return (self.ext_id(subnet['id']) if Topology.is_v5
+                else self.ext_id(subnet['network_id']))

@@ -502,7 +502,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         subnet_name = subnet_name or data_utils.rand_name('test-subnet-')
 
         # The cidr and mask_bits depend on the ip version.
-        ip_version = ip_version if ip_version is not None else cls._ip_version
+        ip_version = ip_version or cls._ip_version
         gateway_not_set = gateway == ''
 
         # fill in cidr and mask_bits if not set -- note that mask_bits is
@@ -613,18 +613,31 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                       'as there are many ({})'.format(ip_version,
                                                       len(subnets)))
 
-    def is_dhcp_enabled(self, network, require_all_subnets_to_match=False,
+    def is_dhcp_enabled(self, network, require_all_subnets_to_match=True,
                         manager=None):
+        """is_dhcp_enabled
+
+        Checks whether dhcp is enabled on a network; the criterion for that
+        defaults to all subnets to have dhcp enabled, by the
+        require_all_subnets_to_match flag passed.
+        When that flag is set False, only 1 subnet must have dhcp enabled
+        in order to comply, though.
+        """
+
+        def is_dhcp_enabled_on_subnet(sub):
+            return (sub['enable_dhcp'] and
+                    (sub['ip_version'] == 4 or Topology.has_dhcp_v6_support()))
+
         subnets = self.list_subnets(network_id=network['id'],
                                     manager=manager)
         if require_all_subnets_to_match:
             for subnet in subnets:
-                if not subnet['enable_dhcp']:
+                if not is_dhcp_enabled_on_subnet(subnet):
                     return False
             return True
         else:
             for subnet in subnets:
-                if subnet['enable_dhcp']:
+                if is_dhcp_enabled_on_subnet(subnet):
                     return True
             return False
 
@@ -1010,6 +1023,17 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         manager = manager or self.manager
         manager.floating_ips_client.delete_floatingip(floatingip_id)
 
+    def get_vsd_shared_network_resource(self, external_network_id):
+        floatingip_subnet_id = self.list_networks(
+            id=external_network_id)[0]['subnets'][0]
+        if Topology.is_v5:
+            return self.vsd.get_shared_network_resource(
+                by_fip_subnet_id=floatingip_subnet_id)
+        else:
+            return self.vsd.get_shared_network_resource(
+                vspk_filter='name is "{}"'.format(
+                    external_network_id + '_' + floatingip_subnet_id))
+
     def create_associate_vsd_managed_floating_ip(self, server, port_id=None,
                                                  vsd_domain=None,
                                                  vsd_subnet=None,
@@ -1017,14 +1041,8 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                                                  ip_address=None,
                                                  cleanup=True):
         external_network_id = external_network_id or self.ext_net_id
-        if not port_id:
-            port_id, ip4 = self._get_server_port_id_and_ip4(server)
-
-        floatingip_subnet_id = self.list_networks(
-            id=external_network_id)[0]['subnets'][0]
-        shared_network_resource_id = self.vsd.get_shared_network_resource(
-            vspk_filter='name is "{}"'.format(
-                external_network_id + '_' + floatingip_subnet_id)).id
+        shared_network_resource_id = self.get_vsd_shared_network_resource(
+            external_network_id).id
 
         # Create floating ip
         floating_ip = self.vsd.create_floating_ip(
@@ -1033,6 +1051,8 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             self.addCleanup(floating_ip.delete)
 
         # Associate floating ip
+        if not port_id:
+            port_id, _ = self._get_server_port_id_and_ip4(server)
         vport = self.vsd.get_vport(subnet=vsd_subnet, by_port_id=port_id)
         vport.associated_floating_ip_id = floating_ip.id
         vport.save()
@@ -1500,8 +1520,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                 return False
             if server_networks:
                 for net in server_networks:
-                    if not self.is_dhcp_enabled(
-                            net, require_all_subnets_to_match=True):
+                    if not self.is_dhcp_enabled(net):
                         return True
                 return False
             else:
@@ -1945,7 +1964,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             vm_interface = self.nuage_client.get_resource(
                 'vms',
                 filters='externalID',
-                filter_value=self.nuage_client.get_vsd_external_id(
+                filter_values=self.nuage_client.get_vsd_external_id(
                     dhcp_port['id']),
                 flat_rest_path=True)[0]['interfaces'][0]
             for idx, ip_type in enumerate(ip_types):

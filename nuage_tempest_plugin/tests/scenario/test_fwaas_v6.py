@@ -31,6 +31,13 @@ class TestFWaaS(fwaas_mixins.FWaaSClientMixin, NuageBaseTest):
 
     default_prepare_for_connectivity = True
 
+    @classmethod
+    def skip_checks(cls):
+        super(TestFWaaS, cls).skip_checks()
+        if not Topology.has_fwaas_v6_support():
+            msg = 'No fwaas v6 support.'
+            raise cls.skipException(msg)
+
     def setUp(self):
         super(TestFWaaS, self).setUp()
         required_exts = ['fwaas', 'security-group', 'router']
@@ -415,7 +422,7 @@ class TestFWaaS(fwaas_mixins.FWaaSClientMixin, NuageBaseTest):
     def test_firewall_all_disabled_rules(self):
         self._test_firewall_basic(block=self._all_disabled_rules)
 
-    @testtools.skipIf(Topology.at_nuage('6.0') or Topology.at_nuage('5.4'),
+    @testtools.skipIf(Topology.at_nuage('6.0') or Topology.up_to_nuage('5.4'),
                       reason='VSD-42518')
     def test_firewall_order_rules(self):
         self._test_firewall_basic(block=self._block_all_with_default_allow,

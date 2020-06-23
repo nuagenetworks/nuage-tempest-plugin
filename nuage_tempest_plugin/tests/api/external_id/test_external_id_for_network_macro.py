@@ -55,7 +55,7 @@ class ExternalIdForNetworkMacroTest(base.BaseAdminNetworkTest):
                 self.test.nuage_client.get_enterprise_net_macro(
                     netpart_name=self.net_partition['name'],
                     filters='externalID',
-                    filter_value=ExternalId(
+                    filter_values=ExternalId(
                         self.net_partition['id']).at_openstack())
 
             if NUAGE_FEATURES.os_managed_dualstack_subnets:

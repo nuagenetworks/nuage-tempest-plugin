@@ -14,16 +14,15 @@
 #    under the License.
 
 from netaddr import IPNetwork
+import testtools
 
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.topology import Topology
-
 from nuage_tempest_plugin.tests.api.l2bridge.base_nuage_l2bridge \
     import BaseNuageL2Bridge
-
 from nuage_tempest_plugin.tests.api.vsd_managed \
     import base_vsd_managed_networks as base_vsd_managed
 
@@ -308,7 +307,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             s16 = self.create_subnet(n1, subnet_name=name + '-subnet-16',
                                      manager=self.admin_manager,
                                      ip_version=6,
-                                     cidr=IPNetwork('cafe::babe/64'),
+                                     cidr=IPNetwork('cafe:babe::/64'),
                                      mask_bits=64)
             s24 = self.create_subnet(n2, subnet_name=name + '-subnet-2',
                                      manager=self.admin_manager,
@@ -317,7 +316,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             s26 = self.create_subnet(n2, subnet_name=name + '-subnet-26',
                                      manager=self.admin_manager,
                                      ip_version=6,
-                                     cidr=IPNetwork('cafe::babe/64'),
+                                     cidr=IPNetwork('cafe:babe::/64'),
                                      mask_bits=64)
 
             bridge = self.get_l2bridge(bridge['id'])
@@ -334,7 +333,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                     'ip_address': '10.10.1.10',
                     'subnet_id': s14['id']
                 }, {
-                    'ip_address': 'cafe::babe:3',
+                    'ip_address': 'cafe:babe::3',
                     'subnet_id': s16['id']
                 }]
             }
@@ -345,7 +344,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                     'ip_address': '10.10.1.11',
                     'subnet_id': s24['id']
                 }, {
-                    'ip_address': 'cafe::babe:4',
+                    'ip_address': 'cafe:babe::4',
                     'subnet_id': s26['id']
                 }]
             }
@@ -412,9 +411,9 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
         n2 = self.create_network(network_name=name + '-2',
                                  manager=self.admin_manager,
                                  **kwargs)
-        msg = ("Bad request: A network cannot be attached to an l2bridge"
-               " when neutron-dhcp-agent is enabled'")
         if self.is_dhcp_agent_present():
+            msg = ("Bad request: A network cannot be attached to an l2bridge"
+                   " when neutron-dhcp-agent is enabled'")
             self.assertRaisesRegex(exceptions.BadRequest,
                                    msg,
                                    self.create_subnet,
@@ -430,16 +429,18 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             self.create_subnet(n2, subnet_name=name + '-subnet-26',
                                manager=self.admin_manager,
                                ip_version=6,
-                               cidr=IPNetwork('cafe::babe/64'),
+                               cidr=IPNetwork('cafe:babe::/64'),
                                mask_bits=64)
             bridge = self.get_l2bridge(bridge['id'])
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            self.validate_l2domain_on_vsd(l2domain, ip_type='DUALSTACK',
-                                          bridge=bridge)
+            self.validate_l2domain_on_vsd(
+                l2domain, bridge=bridge,
+                # in 5.x, there is no single-stack v6, hence the n2 network
+                # is not created in VSD hence the L2 bridge stays as IPV4
+                ip_type='IPV4' if Topology.is_v5 else'DUALSTACK')
             self.assertEqual(self.ext_id(bridge['id']),
                              l2domain.external_id)
-
             kwargs = {
                 'fixed_ips': [{
                     'ip_address': '10.10.1.10',
@@ -448,7 +449,10 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             }
             p1 = self.create_port(n1, self.admin_manager,
                                   **kwargs)
-            self.assertEqual('cafe::/64', l2domain.ipv6_address)
+            if Topology.is_v5:
+                self.assertIsNone(l2domain.ipv6_address)
+            else:
+                self.assertEqual('cafe:babe::/64', l2domain.ipv6_address)
             vport_1 = self.vsd.get_vport(l2domain=l2domain,
                                          by_port_id=p1['id'])
             self.assertIsNotNone(vport_1,
@@ -516,7 +520,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                    n1, subnet_name=name + '-subnet-16',
                                    manager=self.admin_manager,
                                    ip_version=6,
-                                   cidr=IPNetwork('cafe::babe/64'),
+                                   cidr=IPNetwork('cafe:babe::/64'),
                                    mask_bits=64)
         else:
             s14 = self.create_subnet(n1, subnet_name=name + '-subnet-14',
@@ -526,7 +530,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             self.create_subnet(n1, subnet_name=name + '-subnet-16',
                                manager=self.admin_manager,
                                ip_version=6,
-                               cidr=IPNetwork('cafe::babe/64'),
+                               cidr=IPNetwork('cafe:babe::/64'),
                                mask_bits=64)
             s24 = self.create_subnet(n2, subnet_name=name2 + '-subnet-24',
                                      manager=self.admin_manager,
@@ -535,7 +539,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             self.create_subnet(n2, subnet_name=name2 + '-subnet-26',
                                manager=self.admin_manager,
                                ip_version=6,
-                               cidr=IPNetwork('cafe::babe/64'),
+                               cidr=IPNetwork('cafe:babe::/64'),
                                mask_bits=64)
             bridge = self.get_l2bridge(bridge['id'])
             bridge2 = self.get_l2bridge(bridge2['id'])
@@ -721,11 +725,11 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             # ipv6
             self.create_subnet(n1, subnet_name=name + '-subnet-1-ipv6',
                                manager=self.admin_manager,
-                               cidr=IPNetwork('cafe::/64'),
+                               cidr=IPNetwork('cafe:babe::/64'),
                                ip_version=6,
                                mask_bits=64)
             msg = ('Bad request: The cidr associated with nuage_l2bridge {} is'
-                   ' cafe::/64. 10::/64 is not compatible.').format(
+                   ' cafe:babe::/64. 10::/64 is not compatible.').format(
                 bridge['id'])
             self.assertRaisesRegex(exceptions.BadRequest,
                                    msg,
@@ -737,16 +741,16 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                    mask_bits=64)
             msg = ('Bad request: The gateway_ip associated with '
                    'nuage_l2bridge {} is'
-                   ' cafe::1. cafe::2 is not compatible.').format(
+                   ' cafe:babe::1. cafe:babe::2 is not compatible.').format(
                 bridge['id'])
             self.assertRaisesRegex(exceptions.BadRequest,
                                    msg,
                                    self.create_subnet,
                                    n2, subnet_name=name + '-subnet-2',
                                    manager=self.admin_manager,
-                                   cidr=IPNetwork('cafe::/64'),
+                                   cidr=IPNetwork('cafe:babe::/64'),
                                    ip_version=6,
-                                   gateway='cafe::2',
+                                   gateway='cafe:babe::2',
                                    mask_bits=64)
             msg = ('Bad request: The enable_dhcp associated with '
                    'nuage_l2bridge {} is'
@@ -757,7 +761,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                    self.create_subnet,
                                    n2, subnet_name=name + '-subnet-2',
                                    manager=self.admin_manager,
-                                   cidr=IPNetwork('cafe::/64'),
+                                   cidr=IPNetwork('cafe:babe::/64'),
                                    ip_version=6,
                                    enable_dhcp=False,
                                    mask_bits=64)
@@ -770,7 +774,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                    self.create_subnet,
                                    n2, subnet_name=name + '-subnet-2',
                                    manager=self.admin_manager,
-                                   cidr=IPNetwork('cafe::/64'),
+                                   cidr=IPNetwork('cafe:babe::/64'),
                                    ip_version=6,
                                    ipv6_ra_mode='dhcpv6-stateful',
                                    mask_bits=64)
@@ -783,7 +787,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                    self.create_subnet,
                                    n2, subnet_name=name + '-subnet-2',
                                    manager=self.admin_manager,
-                                   cidr=IPNetwork('cafe::/64'),
+                                   cidr=IPNetwork('cafe:babe::/64'),
                                    ip_version=6,
                                    ipv6_address_mode='dhcpv6-stateful',
                                    mask_bits=64)
@@ -825,11 +829,9 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
                                                mask_bits=24)
 
             non_bridge_l2domain1 = self.vsd.get_l2domain(
-                by_network_id=s1_non_bridge['network_id'],
-                cidr=s1_non_bridge['cidr'])
+                by_subnet=s1_non_bridge)
             non_bridge_l2domain2 = self.vsd.get_l2domain(
-                by_network_id=s2_non_bridge['network_id'],
-                cidr=s2_non_bridge['cidr'])
+                by_subnet=s2_non_bridge)
 
             self.assertNotEqual(bridge['nuage_subnet_id'],
                                 non_bridge_l2domain1.id)
@@ -896,7 +898,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             self.create_subnet(n1, subnet_name=name + '-subnet-16',
                                manager=self.admin_manager,
                                ip_version=6,
-                               cidr=IPNetwork('cafe::babe/64'),
+                               cidr=IPNetwork('cafe:babe::/64'),
                                mask_bits=64)
             s24 = self.create_subnet(n2, subnet_name=name2 + '-subnet-24',
                                      manager=self.admin_manager,
@@ -905,13 +907,11 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             self.create_subnet(n2, subnet_name=name2 + '-subnet-26',
                                manager=self.admin_manager,
                                ip_version=6,
-                               cidr=IPNetwork('cafe::babe/64'),
+                               cidr=IPNetwork('cafe:babe::/64'),
                                mask_bits=64)
             bridge = self.get_l2bridge(bridge['id'])
 
-            non_bridge_l2domain1 = self.vsd.get_l2domain(
-                by_network_id=s24['network_id'],
-                cidr=s24['cidr'])
+            non_bridge_l2domain1 = self.vsd.get_l2domain(by_subnet=s24)
             self.assertNotEqual(bridge['nuage_subnet_id'],
                                 non_bridge_l2domain1.id)
 
@@ -1008,13 +1008,16 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             s26 = self.create_subnet(n2, subnet_name=name2 + '-subnet-26',
                                      manager=self.admin_manager,
                                      ip_version=6,
-                                     cidr=IPNetwork('cafe::babe/64'),
+                                     cidr=IPNetwork('cafe:babe::/64'),
                                      mask_bits=64,
                                      cleanup=False)
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            self.validate_l2domain_on_vsd(l2domain, ip_type='DUALSTACK',
-                                          bridge=bridge)
+            self.validate_l2domain_on_vsd(
+                l2domain, bridge=bridge,
+                # in 5.x, there is no single-stack v6, hence the n2 network
+                # is not created in VSD hence the L2 bridge stays as IPV4
+                ip_type='IPV4' if Topology.is_v5 else 'DUALSTACK')
 
             self.delete_subnet(s26, manager=self.admin_manager)
             l2domain = self.vsd.get_l2domain(
@@ -1025,7 +1028,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             s16 = self.create_subnet(n1, subnet_name=name + '-subnet-16',
                                      manager=self.admin_manager,
                                      ip_version=6,
-                                     cidr=IPNetwork('cafe::babe/64'),
+                                     cidr=IPNetwork('cafe:babe::/64'),
                                      mask_bits=64,
                                      cleanup=False)
             l2domain = self.vsd.get_l2domain(
@@ -1046,7 +1049,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             self.create_subnet(n2, subnet_name=name2 + '-subnet-26',
                                manager=self.admin_manager,
                                ip_version=6,
-                               cidr=IPNetwork('cafe::babe/64'),
+                               cidr=IPNetwork('cafe:babe::/64'),
                                mask_bits=64)
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
@@ -1068,8 +1071,11 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             self.delete_subnet(s14, manager=self.admin_manager)
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
-            self.validate_l2domain_on_vsd(l2domain, ip_type='IPV6',
-                                          bridge=bridge)
+            if Topology.has_single_stack_v6_support():
+                self.validate_l2domain_on_vsd(l2domain, ip_type='IPV6',
+                                              bridge=bridge)
+            else:
+                self.assertIsNone(l2domain)
 
     @decorators.attr(type='smoke')
     def test_nuage_l2bridge_router_external_network_negative(self):
@@ -1184,7 +1190,7 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             s16 = self.create_subnet(n1, subnet_name=name + '-subnet-16',
                                      manager=self.admin_manager,
                                      ip_version=6,
-                                     cidr=IPNetwork('cafe::babe/64'),
+                                     cidr=IPNetwork('cafe:babe::/64'),
                                      mask_bits=64, cleanup=False)
 
             self.delete_subnet(s16, manager=self.admin_manager)
@@ -1196,6 +1202,8 @@ class TestNuageL2Bridge(BaseNuageL2Bridge,
             bridge = self.get_l2bridge(bridge['id'])
             self.assertEqual(bridge['nuage_subnet_id'], None)
 
+    @testtools.skipIf(Topology.is_v5, 'Updating bridge name is supported from '
+                                      '6.0 onwards only')
     def test_nuage_l2bridge_update_bridge_name(self):
         physnets = [{
             'physnet_name': 'physnet1',
@@ -1270,6 +1278,7 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
     # This class assumes that the following resources are available:
     # physnet1,200-201,vlan
     # physnet2,200-201,vlan
+
     @decorators.attr(type='smoke')
     def test_nuage_l2bridge_update_bridged_networks_with_subnets_neg(self):
         physnets = [{
@@ -1980,7 +1989,9 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
             self.validate_l2domain_on_vsd(
-                l2domain, ip_type='IPV{}'.format(self._ip_version),
+                l2domain,
+                ip_type=None if Topology.is_v5  # Unmanaged in 5.x
+                else 'IPV{}'.format(self._ip_version),
                 bridge=bridge)
             self.assertEqual(self.ext_id(bridge['id']),
                              l2domain.external_id)
@@ -2001,7 +2012,9 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
             self.validate_l2domain_on_vsd(
-                l2domain, ip_type='IPV{}'.format(self._ip_version),
+                l2domain,
+                ip_type=None if Topology.is_v5  # Unmanaged in 5.x
+                else'IPV{}'.format(self._ip_version),
                 bridge=bridge)
             self.assertEqual(self.ext_id(bridge['id']), l2domain.external_id)
 
@@ -2058,14 +2071,12 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
                                     ip_version=self._ip_version)
             bridge = self.get_l2bridge(bridge['id'])
 
-            l2domain2 = self.vsd.get_l2domain(
-                by_network_id=s2['network_id'], cidr=s2['cidr'],
-                ip_type=self._ip_version)
+            l2domain2 = self.vsd.get_l2domain(by_subnet=s2)
             self.assertNotEqual(bridge['nuage_subnet_id'],
                                 l2domain2.id)
             self.validate_l2domain_on_vsd(
                 l2domain2, ip_type='IPV{}'.format(self._ip_version), subnet=s2)
-            self.assertEqual(self.ext_id(s2['network_id']),
+            self.assertEqual(self.l2domain_ext_id(s2),
                              l2domain2.external_id)
 
             l2domain = self.vsd.get_l2domain(
@@ -2110,13 +2121,15 @@ class NuageL2BridgeV4Test(BaseNuageL2Bridge):
 
             self.validate_l2domain_on_vsd(
                 l2domain2, ip_type='IPV{}'.format(self._ip_version), subnet=s2)
-            self.assertEqual(self.ext_id(s2['network_id']),
+            self.assertEqual(self.l2domain_ext_id(s2),
                              l2domain2.external_id)
 
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
             self.validate_l2domain_on_vsd(
-                l2domain, ip_type='IPV{}'.format(self._ip_version),
+                l2domain,
+                ip_type=None if Topology.is_v5  # Unmanaged in 5.x
+                else 'IPV{}'.format(self._ip_version),
                 bridge=bridge)
             self.assertEqual(self.ext_id(bridge['id']),
                              l2domain.external_id)
@@ -2245,6 +2258,13 @@ class NuageL2BridgeV6Test(NuageL2BridgeV4Test):
     _segmentation_id_1 = 300
     _segmentation_id_2 = 301
 
+    @classmethod
+    def skip_checks(cls):
+        super(NuageL2BridgeV6Test, cls).skip_checks()
+        if not Topology.has_single_stack_v6_support():
+            msg = 'No single-stack v6 support.'
+            raise cls.skipException(msg)
+
     @decorators.attr(type='smoke')
     def test_nuage_l2bridge_non_normalized_ipv6(self):
         physnets = [{
@@ -2309,6 +2329,7 @@ class NuageL2BridgeV6Test(NuageL2BridgeV4Test):
                                mask_bits=self._mask_bits)
 
             bridge = self.get_l2bridge(bridge['id'])
+
             l2domain = self.vsd.get_l2domain(
                 vspk_filter='ID == "{}"'.format(bridge['nuage_subnet_id']))
             self.validate_l2domain_on_vsd(l2domain, ip_type='IPV6',

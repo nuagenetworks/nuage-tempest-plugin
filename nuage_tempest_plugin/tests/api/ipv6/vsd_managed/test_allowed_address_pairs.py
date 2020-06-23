@@ -49,7 +49,7 @@ class VSDManagedAllowedAddressPairsTest(BaseAllowedAddressPair,
             enable_dhcpv4=False, enable_dhcpv6=False)
         network, subnet4, subnet6 = self._given_network_linked_to_vsd_subnet(
             vsd_l2_subnet, cidr4=self.cidr4, cidr6=self.cidr6,
-            enable_dhcp=False)
+            enable_dhcp=Topology.is_v5)  # in v5, set enable_dhcp = True
         for scenario, port_config in iteritems(self.port_configs):
             LOG.info("TESTCASE scenario {}".format(scenario))
             self._check_crud_port(scenario, network, subnet4, subnet6,

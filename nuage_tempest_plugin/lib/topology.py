@@ -20,7 +20,6 @@ class Topology(object):
     is_ml2 = True
     api_workers = int(CONF.nuage_sut.api_workers)
     console_logging = CONF.nuage_sut.console_logging
-    nuage_baremetal_driver = CONF.nuage_sut.nuage_baremetal_driver
 
     vsd_server = CONF.nuage.nuage_vsd_server
     vsd_org = CONF.nuage.nuage_vsd_org
@@ -30,6 +29,8 @@ class Topology(object):
                    CONF.nuage.nuage_vsd_password)
     def_netpartition = CONF.nuage.nuage_default_netpartition
     cms_id = CONF.nuage.nuage_cms_id
+
+    is_v5 = nuage_release < Release('6.0')
 
     # - - - - - -
 
@@ -100,14 +101,6 @@ class Topology(object):
         return Topology.api_workers == 1
 
     @staticmethod
-    def telnet_console_access_to_vm_enabled():
-        return bool(CONF.nuage_sut.console_access_to_vm)
-
-    @staticmethod
-    def access_to_l2_supported():
-        return Topology.telnet_console_access_to_vm_enabled()
-
-    @staticmethod
     def neutron_restart_supported():
         return False  # assumed as non-applicable capability, which is correct
         #               for the standard jobs that run in CI
@@ -131,3 +124,43 @@ class Topology(object):
         return (CONF.network.port_vnic_type == 'direct' and
                 'switchdev' in CONF.network.port_profile.get('capabilities',
                                                              []))
+
+    @staticmethod
+    def has_single_stack_v6_support():
+        return not Topology.is_v5
+
+    @staticmethod
+    def has_full_dhcp_control_in_vsd():
+        return not Topology.is_v5
+
+    @staticmethod
+    def has_dhcp_v6_support():
+        return not Topology.is_v5
+
+    @staticmethod
+    def has_fwaas_v6_support():
+        return not Topology.is_v5
+
+    @staticmethod
+    def has_full_dhcp_options_support():
+        return not Topology.is_v5
+
+    @staticmethod
+    def has_domain_template_description_configured_support():
+        return not Topology.is_v5
+
+    @staticmethod
+    def has_utf8_netpartition_names_support():
+        return not Topology.is_v5
+
+    @staticmethod
+    def has_unified_pg_for_all_support():
+        return not Topology.is_v5
+
+    @staticmethod
+    def has_aggregate_flows_support():
+        return not Topology.is_v5
+
+    @staticmethod
+    def has_secured_netpartitions_support():
+        return Topology.from_openstack('queens')

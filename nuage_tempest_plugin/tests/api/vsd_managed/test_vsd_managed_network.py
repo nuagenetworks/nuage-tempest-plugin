@@ -1072,12 +1072,12 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
         nuage_vport = self.nuage_client.get_vport(constants.L2_DOMAIN,
                                                   vsd_l2dom['ID'],
                                                   filters='externalID',
-                                                  filter_value=port['id'])
+                                                  filter_values=port['id'])
         self.assertIsNotNone(nuage_vport, "vport should be created.")
 
         # External ID tests
         vsd_l2domains = self.nuage_client.get_l2domain(
-            filters='ID', filter_value=vsd_l2dom['ID'])
+            filters='ID', filter_values=vsd_l2dom['ID'])
         self.assertEqual(len(vsd_l2domains), 1,
                          "Failed to get vsd l2 domain")
         vsd_l2domain = vsd_l2domains[0]
@@ -1098,7 +1098,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
         nuage_vport = self.nuage_client.get_vport(constants.L2_DOMAIN,
                                                   vsd_l2dom['ID'],
                                                   filters='externalID',
-                                                  filter_value=port['id'])
+                                                  filter_values=port['id'])
         self.assertEqual('', nuage_vport, "vport should be deleted.")
 
         # Then I can delete the network
@@ -1106,7 +1106,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
 
         # Then the VSD managed network is still there
         vsd_l2domains = self.nuage_client.get_l2domain(
-            filters='ID', filter_value=vsd_l2dom['ID'])
+            filters='ID', filter_values=vsd_l2dom['ID'])
         self.assertEqual(len(vsd_l2domains), 1, "Failed to get vsd l2 domain")
 
     # HP - Unica scenario with DHCP-options defined in VSD
@@ -1298,6 +1298,8 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
                                net_partition=Topology.def_netpartition,
                                enable_dhcp=True)
 
+    @testtools.skipUnless(Topology.has_single_stack_v6_support(),
+                          'No single-stack v6 support.')
     @decorators.attr(type='smoke')
     def test_link_dhcp_subnet_with_no_dhcp_vsd_managed_l2_ipv6_neg(self):
         # Provision VSD managed network resources

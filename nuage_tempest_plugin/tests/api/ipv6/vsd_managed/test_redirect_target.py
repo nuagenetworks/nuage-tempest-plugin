@@ -19,7 +19,7 @@ class VSDManagedRedirectTargetTest(BaseVSDManagedNetworksIPv6Test):
     def _verify_redirect_target(self, rt, parent, parentinfo, postinfo):
         redirect_target = self.nuage_client.get_redirection_target(
             parent, parentinfo['ID'], filters='ID',
-            filter_value=rt['nuage_redirect_target']['id'])
+            filter_values=rt['nuage_redirect_target']['id'])
 
         self.assertEqual(
             str(redirect_target[0]['redundancyEnabled']),
@@ -87,7 +87,7 @@ class VSDManagedRedirectTargetTest(BaseVSDManagedNetworksIPv6Test):
             rtport['id'])
         vsd_vport = self.nuage_client.get_vport(
             parent, parentinfo['ID'], filters='externalID',
-            filter_value=port_ext_id)
+            filter_values=port_ext_id)
         self.assertEqual(
             redirect_vport[0]['ID'], vsd_vport[0]['ID'])
 
@@ -104,7 +104,7 @@ class VSDManagedRedirectTargetTest(BaseVSDManagedNetworksIPv6Test):
             rtport['id'])
         vsd_vport = self.nuage_client.get_vport(
             parent, parentinfo['ID'], filters='externalID',
-            filter_value=port_ext_id)
+            filter_values=port_ext_id)
         self.assertEqual(
             redirect_vport[0]['ID'], vsd_vport[0]['ID'])
 
@@ -215,7 +215,7 @@ class VSDManagedRedirectTargetTest(BaseVSDManagedNetworksIPv6Test):
         # and check on VSD
         vsd_redirect_target = self.nuage_client.get_redirection_target(
             constants.DOMAIN, vsd_l3_domain.id, filters='ID',
-            filter_value=os_redirect_target['nuage_redirect_target']['id'])
+            filter_values=os_redirect_target['nuage_redirect_target']['id'])
         self.assertIsNotNone(
             vsd_redirect_target,
             message="OS created redirect target not found on VSD")
@@ -231,7 +231,7 @@ class VSDManagedRedirectTargetTest(BaseVSDManagedNetworksIPv6Test):
         # and check on VSD
         vsd_redirect_target = self.nuage_client.get_redirection_target(
             constants.DOMAIN, vsd_l3_domain.id, filters='ID',
-            filter_value=os_redirect_target6['nuage_redirect_target']['id'])
+            filter_values=os_redirect_target6['nuage_redirect_target']['id'])
         self.assertIsNotNone(
             vsd_redirect_target,
             message="OS created redirect target not found on VSD")
@@ -284,7 +284,7 @@ class VSDManagedRedirectTargetTest(BaseVSDManagedNetworksIPv6Test):
         # And the redirect target on VSD is gone as well
         vsd_redirect_target = self.nuage_client.get_redirection_target(
             constants.DOMAIN, vsd_l3_domain.id, filters='ID',
-            filter_value=os_redirect_target['nuage_redirect_target']['id'])
+            filter_values=os_redirect_target['nuage_redirect_target']['id'])
         self.assertEqual(vsd_redirect_target, '')
 
         self.nuage_network_client.delete_redirection_target(
@@ -298,5 +298,5 @@ class VSDManagedRedirectTargetTest(BaseVSDManagedNetworksIPv6Test):
         # And the redirect target on VSD is gone as well
         vsd_redirect_target = self.nuage_client.get_redirection_target(
             constants.DOMAIN, vsd_l3_domain.id, filters='ID',
-            filter_value=os_redirect_target6['nuage_redirect_target']['id'])
+            filter_values=os_redirect_target6['nuage_redirect_target']['id'])
         self.assertEqual(vsd_redirect_target, '')

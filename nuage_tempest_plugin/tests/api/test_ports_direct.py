@@ -81,14 +81,11 @@ class SriovTopology(object):
     def vsd_vport_parent(self):
         if not getattr(self, '_vsd_vport_parent', False):
             subnet = self.subnet or self.subnetv6
-            filters = (['externalID', 'address'] if self.subnet else
-                       ['externalID', 'IPv6Address'])
-
+            filters, filter_values = self.vsd_client.get_subnet_filters(subnet)
             self._vsd_vport_parent = self.vsd_client.get_global_resource(
                 self.vsd_vport_parent_resource,
                 filters=filters,
-                filter_value=[subnet['network_id'],
-                              subnet['cidr']])[0]
+                filter_values=filter_values)[0]
         return self._vsd_vport_parent
 
     @property
@@ -112,7 +109,7 @@ class SriovTopology(object):
                 self.vsd_vport_parent_resource,
                 self.vsd_vport_parent['ID'],
                 filters='externalID',
-                filter_value=subnet['network_id'])
+                filter_values=subnet['id' if Topology.is_v5 else 'network_id'])
             self._vsd_direct_vport = vsd_vports[0] if vsd_vports else None
         return self._vsd_direct_vport
 
@@ -398,6 +395,8 @@ class PortsDirectTest(network_mixin.NetworkMixin,
         topology = self._create_topology(with_router=False)
         self._test_direct_port(topology, update=False)
 
+    @testtools.skipUnless(Topology.has_single_stack_v6_support(),
+                          'No single-stack v6 supported')
     def test_direct_port_l2_single_ipv6(self):
         topology = self._create_topology(with_router=False, ip_version=6)
         self._test_direct_port(topology, update=False)
@@ -761,7 +760,8 @@ class PortsDirectTest(network_mixin.NetworkMixin,
             topology.vsd_vport_parent_resource,
             topology.vsd_vport_parent['ID'],
             filters='externalID',
-            filter_value=topology.subnet['network_id'])
+            filter_values=(topology.subnet['id'] if Topology.is_v5
+                           else topology.subnet['network_id']))
         vsd_vports = [v for v in vsd_vports if v['ID'] !=
                       original_vport['ID']]
         self.assertNotEmpty(vsd_vports, "No new bridge port made for migrate")
@@ -912,10 +912,10 @@ class PortsDirectTest(network_mixin.NetworkMixin,
                    'pci_slot': '0000:03:10.6'}
         if not update:
             create_data.update(self.binding_data)
-        with self.switchport_mapping(do_delete=False, **mapping) as swtch_map:
+        with self.switchport_mapping(do_delete=False, **mapping) as switch_map:
             self.addCleanup(
                 self.switchport_mapping_client_admin.delete_switchport_mapping,
-                swtch_map['id'])
+                switch_map['id'])
             direct_port = self.create_port(topology.network['id'],
                                            cleanup=True,
                                            **create_data)
@@ -991,7 +991,12 @@ class PortsDirectTest(network_mixin.NetworkMixin,
         self._validate_vlan(topology, is_trunk, use_subport_check)
         self._validate_interface(topology)
         if not topology.vsd_managed:
-            self._validate_policygroup(topology, nr_vports=nr_vports)
+            if Topology.is_v5:
+                self._validate_policygroup(
+                    topology, pg_name='defaultPG-VSG-BRIDGE',
+                    nr_vports=nr_vports)
+            else:
+                self._validate_policygroup(topology, nr_vports=nr_vports)
 
     def _validate_direct_vport(self, topology):
         direct_vport = topology.vsd_direct_vport
@@ -1025,7 +1030,7 @@ class PortsDirectTest(network_mixin.NetworkMixin,
                 topology.vsd_direct_interface['IPAddress'],
                 matchers.Equals(neutron_port['fixed_ips'][0]['ip_address']))
 
-    def _validate_policygroup(self, topology, nr_vports=1):
+    def _validate_policygroup(self, topology, pg_name=None, nr_vports=1):
         expected_pgs = 1  # Expecting only one hardware
         if self.is_dhcp_agent_present():
             expected_pgs += 1  # Expecting one hardware and one software
@@ -1034,14 +1039,18 @@ class PortsDirectTest(network_mixin.NetworkMixin,
                         message="Unexpected amount of PGs found")
         vsd_policygroup = topology.vsd_policygroups[expected_pgs - 1]
         self.assertEqual(vsd_policygroup['type'], 'HARDWARE')
-        self.assertEqual(vsd_policygroup['name'],
-                         constants.NUAGE_PLCY_GRP_ALLOW_ALL_HW)
-        self.assertEqual(vsd_policygroup['description'],
-                         constants.NUAGE_PLCY_GRP_ALLOW_ALL_HW)
-        self.assertEqual(vsd_policygroup['externalID'],
-                         "hw:" +
-                         (ExternalId(constants.NUAGE_PLCY_GRP_ALLOW_ALL)
-                          .at_cms_id()))
+        if pg_name:
+            self.assertThat(vsd_policygroup['name'],
+                            matchers.Contains(pg_name))
+        else:
+            self.assertEqual(vsd_policygroup['name'],
+                             constants.NUAGE_PLCY_GRP_ALLOW_ALL_HW)
+            self.assertEqual(vsd_policygroup['description'],
+                             constants.NUAGE_PLCY_GRP_ALLOW_ALL_HW)
+            self.assertEqual(vsd_policygroup['externalID'],
+                             "hw:" +
+                             (ExternalId(constants.NUAGE_PLCY_GRP_ALLOW_ALL)
+                              .at_cms_id()))
 
         vsd_pg_vports = self.vsd_client.get_vport(constants.POLICYGROUP,
                                                   vsd_policygroup['ID'])

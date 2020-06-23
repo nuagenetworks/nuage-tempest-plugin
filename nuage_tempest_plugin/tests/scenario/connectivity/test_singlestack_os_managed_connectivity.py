@@ -379,6 +379,8 @@ class Ipv4OsMgdL3ConnectivityTest(SingleStackOsMgdConnectivityTestBase):
         self.assert_ping(server12, server1, network1)
         self.assert_ping(server12, server2, network2)
 
+    @testtools.skipIf(not Topology.has_full_dhcp_control_in_vsd(),
+                      'L3 with no DHCP is supported from 6.0 onwards only')
     @testtools.skipIf(not CONF.scenario.dhcp_client,
                       reason='IP statically configured through cloud-init')
     def test_icmp_connectivity_l3_os_managed_no_dhcp(self):
@@ -402,6 +404,8 @@ class Ipv4OsMgdL3ConnectivityTest(SingleStackOsMgdConnectivityTestBase):
         # Test connectivity between peer servers
         self.assert_ping(server1, server2, network)
 
+    @testtools.skipIf(not Topology.has_full_dhcp_control_in_vsd(),
+                      'L3 with no DHCP is supported from 6.0 onwards only')
     @testtools.skipIf(not CONF.scenario.dhcp_client,
                       reason='IP statically configured through cloud-init')
     def test_icmp_connectivity_l3_os_managed_no_dhcp_neg(self):
@@ -556,6 +560,13 @@ class Ipv6OsMgdL2ConnectivityTest(Ipv4OsMgdL2ConnectivityTest):
     _cidr1 = IPNetwork('cafe:babb::1/64')
     _cidr2 = IPNetwork('cafe:babc::1/64')
 
+    @classmethod
+    def skip_checks(cls):
+        super(Ipv6OsMgdL2ConnectivityTest, cls).skip_checks()
+        if not Topology.has_single_stack_v6_support():
+            msg = 'No single-stack v6 support.'
+            raise cls.skipException(msg)
+
     @testtools.skipIf(Topology.has_default_switchdev_port_profile(),
                       reason='VRS-35478')
     def test_icmp_connectivity_stateless_acl_os_managed_l2_neg(self):
@@ -573,6 +584,13 @@ class Ipv6OsMgdL3ConnectivityTest(Ipv4OsMgdL3ConnectivityTest):
     _ip_version = 6
     _cidr1 = IPNetwork('cafe:babb::1/64')
     _cidr2 = IPNetwork('cafe:babc::1/64')
+
+    @classmethod
+    def skip_checks(cls):
+        super(Ipv6OsMgdL3ConnectivityTest, cls).skip_checks()
+        if not Topology.has_single_stack_v6_support():
+            msg = 'No single-stack v6 support.'
+            raise cls.skipException(msg)
 
     def test_icmp_connectivity_multiple_subnets_in_shared_network(self):
         self.skipTest('Skip because shared network only supports IPv4')

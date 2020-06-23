@@ -261,3 +261,10 @@ class TrunkTestJSON(TrunkTestJSONBase):
 
 class TrunkTestJSONV6(TrunkTestJSON):
     _ip_version = 6
+
+    @classmethod
+    def skip_checks(cls):
+        super(TrunkTestJSONV6, cls).skip_checks()
+        if not Topology.has_single_stack_v6_support():
+            msg = 'No single-stack v6 support.'
+            raise cls.skipException(msg)

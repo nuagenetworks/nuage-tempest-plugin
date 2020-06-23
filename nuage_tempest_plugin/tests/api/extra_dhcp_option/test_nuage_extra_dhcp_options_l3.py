@@ -75,13 +75,11 @@ class NuageExtraDHCPOptionsOSManagedL3Test(
         cls.nuage_domain = cls.nuage_client.get_resource(
             constants.DOMAIN,
             filters='externalID',
-            filter_value=cls.nuage_client.get_vsd_external_id(
+            filter_values=cls.nuage_client.get_vsd_external_id(
                 cls.router['id']))
         cls.osmgd_l3_subnet = cls.nuage_client.get_domain_subnet(
             constants.DOMAIN, cls.nuage_domain[0]['ID'],
-            filters='externalID',
-            filter_value=cls.nuage_client.get_vsd_external_id(
-                cls.osmgd_l3_subnet['id']))
+            by_subnet=cls.osmgd_l3_subnet)
 
     # def test_nuage_l3_port_with_dhcp_opts_001_netmask(self):
     #     self._check_nuage_crud_port_with_dhcp_opts_001_netmask()
@@ -270,13 +268,13 @@ class NuageExtraDHCPOptionsOSManagedL3Test(
 
     @decorators.attr(type='smoke')
     @testtools.skipIf(Topology.before_openstack('queens'),
-                      'Unsupported pre queens')
+                      'Unsupported-pre queens')
     def test_nuage_l3_port_with_numerical_opt_name(self):
         self._check_nuage_crud_port_with_numerical_opt_name()
 
     @decorators.attr(type='smoke')
     @testtools.skipIf(Topology.before_openstack('queens'),
-                      'Unsupported pre queens')
+                      'Unsupported pre-queens')
     def test_nuage_l3_delete_port_extra_dhcp_opt(self):
         self._check_nuage_delete_port_extra_dhcp_opt()
 

@@ -37,6 +37,11 @@ CONF = Topology.get_conf()
 
 class BaseVSDManagedNetwork(NuageBaseTest):
 
+    if Topology.is_v5:
+        err_msg_base = 'Bad request: '
+    else:
+        err_msg_base = 'Bad request: Error in REST call to VSD: '
+
     @classmethod
     def setup_clients(cls):
         super(BaseVSDManagedNetwork, cls).setup_clients()
@@ -95,23 +100,31 @@ class BaseVSDManagedNetwork(NuageBaseTest):
                 vsd_shared_domain[0]['ID'])
 
     @classmethod
-    def create_vsd_dhcpmanaged_l2dom_template(cls, **kwargs):
+    def create_cls_vsd_dhcpmanaged_l2dom_template(cls, **kwargs):
         name = kwargs.get('name') or data_utils.rand_name('l2domain-IPAM')
         params = {
             'DHCPManaged': True,
+            'IPType': kwargs.get('IPType'),
             'address': str(kwargs['cidr'].ip),
             'netmask': str(kwargs['cidr'].netmask),
-            'gateway': kwargs.get('gateway'),
-            'IPv6Address': str(kwargs.get('cidrv6')),
-            'IPv6Gateway': kwargs.get('gatewayv6'),
-            'enableDHCPv4': kwargs.get('enableDHCPv4', True),
-            'enableDHCPv6': kwargs.get('enableDHCPv6', False),
-            'IPType': kwargs.get('IPType')
+            'gateway': kwargs.get('gateway')
         }
+        if not Topology.is_v5:
+            params['IPv6Address'] = str(kwargs.get('cidrv6'))
+            params['IPv6Gateway'] = kwargs.get('gatewayv6')
+            params['enableDHCPv4'] = kwargs.get('enableDHCPv4', True)
+            params['enableDHCPv6'] = kwargs.get('enableDHCPv6', False)
+
         vsd_l2dom_tmplt = cls.nuage_client.create_l2domaintemplate(
             name + '-template', params, kwargs.get('netpart_name'))
         cls.vsd_l2dom_templates.append(vsd_l2dom_tmplt)
         return vsd_l2dom_tmplt
+
+    def create_vsd_dhcpmanaged_l2dom_template(self, **kwargs):
+        if Topology.is_v5 and not kwargs.get('gateway'):
+            self.skipTest('DHCP cannot be disabled on mgd l2 domain in 5.x')
+        else:
+            return self.create_cls_vsd_dhcpmanaged_l2dom_template(**kwargs)
 
     @classmethod
     def create_vsd_dhcpunmanaged_l2dom_template(cls, **kwargs):
@@ -301,7 +314,7 @@ class BaseVSDManagedNetwork(NuageBaseTest):
         vm_details = self.nuage_client.get_resource(
             constants.VM,
             filters='externalID',
-            filter_value=self.nuage_client.get_vsd_external_id(vm_id),
+            filter_values=self.nuage_client.get_vsd_external_id(vm_id),
             flat_rest_path=True)[0]
         if type == 'DUALSTACK':
             return (vm_details.get('interfaces')[0]['IPAddress'],

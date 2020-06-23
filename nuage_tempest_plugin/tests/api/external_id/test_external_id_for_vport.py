@@ -50,8 +50,7 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
 
         def get_by_external_id(self):
             vsd_l2domains = self.test.nuage_client.get_l2domain(
-                filters=['externalID', 'address'],
-                filter_value=[self.subnet['network_id'], self.subnet['cidr']])
+                by_subnet=self.subnet)
 
             # should have exact 1 match
             self.test.assertEqual(len(vsd_l2domains), 1)
@@ -61,7 +60,7 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
                 parent=n_constants.L2_DOMAIN,
                 parent_id=self.vsd_l2domain['ID'],
                 filters='externalID',
-                filter_value=ExternalId(self.port['id']).at_cms_id())
+                filter_values=ExternalId(self.port['id']).at_cms_id())
 
             # should have exact 1 match
             self.test.assertEqual(len(vsd_vports), 1)
@@ -89,7 +88,7 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
                         resource_id=self.vsd_vport['ID'],
                         child_resource=n_constants.DHCPOPTION,
                         filters='externalID',
-                        filter_value=with_external_id)
+                        filter_values=with_external_id)
 
                 self.test.assertEqual(
                     len(vsd_dhcp_options), len(extra_dhcp_opts),
@@ -126,7 +125,7 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
                         resource_id=self.vsd_vport['parentID'],
                         child_resource=n_constants.POLICYGROUP,
                         filters='externalID',
-                        filter_value=with_external_id)
+                        filter_values=with_external_id)
 
                 self.test.assertEqual(1, len(vsd_security_policy_groups),
                                       "policy group not found by ExternalID")
@@ -153,7 +152,7 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
                     resource_id=vsd_ingress_acl_templates[0]['ID'],
                     child_resource=n_constants.INGRESS_ACL_ENTRY_TEMPLATE,
                     filters='locationID',
-                    filter_value=self.vsd_security_policy_group['ID'])
+                    filter_values=self.vsd_security_policy_group['ID'])
 
             if NUAGE_FEATURES.os_managed_dualstack_subnets:
                 self.test.assertEqual(
@@ -174,7 +173,7 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
                         resource_id=vsd_ingress_acl_templates[0]['ID'],
                         child_resource=n_constants.INGRESS_ACL_ENTRY_TEMPLATE,
                         filters='externalID',
-                        filter_value=with_external_id)
+                        filter_values=with_external_id)
 
                 if NUAGE_FEATURES.os_managed_dualstack_subnets:
                     self.test.assertEqual(
@@ -208,7 +207,7 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
                     resource_id=vsd_egress_acl_templates[0]['ID'],
                     child_resource=n_constants.EGRESS_ACL_ENTRY_TEMPLATE,
                     filters='locationID',
-                    filter_value=self.vsd_security_policy_group['ID'])
+                    filter_values=self.vsd_security_policy_group['ID'])
             if NUAGE_FEATURES.os_managed_dualstack_subnets:
                 self.test.assertEqual(
                     2, len(vsd_egress_security_policy_entries),
@@ -228,7 +227,7 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
                         resource_id=vsd_egress_acl_templates[0]['ID'],
                         child_resource=n_constants.EGRESS_ACL_ENTRY_TEMPLATE,
                         filters='externalID',
-                        filter_value=with_external_id)
+                        filter_values=with_external_id)
 
                 if NUAGE_FEATURES.os_managed_dualstack_subnets:
                     self.test.assertEqual(
@@ -281,8 +280,13 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
         # Delete
         vsd_vport.verify_cannot_delete()
 
-    def _build_policy_group_allow_all_external_id(self):
-        return ExternalId(n_constants.NUAGE_PLCY_GRP_ALLOW_ALL).at_cms_id()
+    @staticmethod
+    def _build_policy_group_allow_all_external_id(l2domain_id=None):
+        if Topology.is_v5:
+            assert l2domain_id
+            return "PG_FOR_LESS_SECURITY_%s_VM" % l2domain_id
+        else:
+            return ExternalId(n_constants.NUAGE_PLCY_GRP_ALLOW_ALL).at_cms_id()
 
     def test_port_without_port_security_matches_to_port(self):
         # Create a network
@@ -300,21 +304,34 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
 
         vsd_vport = self.MatchingVsdVPort(
             self, port, subnet).get_by_external_id()
-        vsd_vport.has_default_security_policy_group(
-            with_external_id=self._build_policy_group_allow_all_external_id())
-        vsd_vport.has_default_egress_policy_entries(
-            with_external_id=ExternalId(
-                n_constants.NUAGE_PLCY_GRP_ALLOW_ALL).at_cms_id())
-        vsd_vport.has_default_ingress_policy_entries(
-            with_external_id=ExternalId(
-                n_constants.NUAGE_PLCY_GRP_ALLOW_ALL).at_cms_id())
+
+        if Topology.is_v5:
+            vsd_vport.has_default_security_policy_group(
+                with_external_id=ExternalId(
+                    self._build_policy_group_allow_all_external_id(
+                        vsd_vport.vsd_vport['parentID'])).at_cms_id())
+            vsd_vport.has_default_egress_policy_entries(
+                with_external_id=ExternalId(subnet['id']).at_cms_id())
+            vsd_vport.has_default_ingress_policy_entries(
+                with_external_id=ExternalId(subnet['id']).at_cms_id())
+
+        else:
+            vsd_vport.has_default_security_policy_group(
+                with_external_id=self.
+                _build_policy_group_allow_all_external_id())
+            vsd_vport.has_default_egress_policy_entries(
+                with_external_id=ExternalId(
+                    n_constants.NUAGE_PLCY_GRP_ALLOW_ALL).at_cms_id())
+            vsd_vport.has_default_ingress_policy_entries(
+                with_external_id=ExternalId(
+                    n_constants.NUAGE_PLCY_GRP_ALLOW_ALL).at_cms_id())
 
         # Delete
         vsd_vport.verify_cannot_delete()
 
     # see OPENSTACK-1451
-    # after updating the port security enabled,
-    # ultiple default rules are created
+    # after updating the port security enabled,  multiple default rules are
+    # created
     def test_port_security_fix_openstack_1451_false(self):
         # Create a network
         name = data_utils.rand_name('network-')
@@ -333,16 +350,29 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
         self.ports_client.update_port(port['id'], port_security_enabled=True)
         self.ports_client.update_port(port['id'], port_security_enabled=False)
 
-        vsd_vport = self.MatchingVsdVPort(
-            self, port, subnet).get_by_external_id()
-        vsd_vport.has_default_security_policy_group(
-            with_external_id=self._build_policy_group_allow_all_external_id())
-        vsd_vport.has_default_egress_policy_entries(
-            with_external_id=ExternalId(
-                n_constants.NUAGE_PLCY_GRP_ALLOW_ALL).at_cms_id())
-        vsd_vport.has_default_ingress_policy_entries(
-            with_external_id=ExternalId(
-                n_constants.NUAGE_PLCY_GRP_ALLOW_ALL).at_cms_id())
+        if Topology.is_v5:
+            vsd_vport = self.MatchingVsdVPort(
+                self, port, subnet).get_by_external_id()
+            vsd_vport.has_default_security_policy_group(
+                with_external_id=ExternalId(
+                    self._build_policy_group_allow_all_external_id(
+                        vsd_vport.vsd_vport['parentID'])).at_cms_id())
+            vsd_vport.has_default_egress_policy_entries(
+                with_external_id=ExternalId(subnet['id']).at_cms_id())
+            vsd_vport.has_default_ingress_policy_entries(
+                with_external_id=ExternalId(subnet['id']).at_cms_id())
+        else:
+            vsd_vport = self.MatchingVsdVPort(
+                self, port, subnet).get_by_external_id()
+            vsd_vport.has_default_security_policy_group(
+                with_external_id=self.
+                _build_policy_group_allow_all_external_id())
+            vsd_vport.has_default_egress_policy_entries(
+                with_external_id=ExternalId(
+                    n_constants.NUAGE_PLCY_GRP_ALLOW_ALL).at_cms_id())
+            vsd_vport.has_default_ingress_policy_entries(
+                with_external_id=ExternalId(
+                    n_constants.NUAGE_PLCY_GRP_ALLOW_ALL).at_cms_id())
 
         # Delete
         vsd_vport.verify_cannot_delete()
@@ -371,14 +401,26 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
 
         vsd_vport = self.MatchingVsdVPort(
             self, port, subnet).get_by_external_id()
-        vsd_vport.has_default_security_policy_group(
-            with_external_id=self._build_policy_group_allow_all_external_id())
-        vsd_vport.has_default_egress_policy_entries(
-            with_external_id=ExternalId(
-                n_constants.NUAGE_PLCY_GRP_ALLOW_ALL).at_cms_id())
-        vsd_vport.has_default_ingress_policy_entries(
-            with_external_id=ExternalId(
-                n_constants.NUAGE_PLCY_GRP_ALLOW_ALL).at_cms_id())
+
+        if Topology.is_v5:
+            vsd_vport.has_default_security_policy_group(
+                with_external_id=ExternalId(
+                    self._build_policy_group_allow_all_external_id(
+                        vsd_vport.vsd_vport['parentID'])).at_cms_id())
+            vsd_vport.has_default_egress_policy_entries(
+                with_external_id=ExternalId(subnet['id']).at_cms_id())
+            vsd_vport.has_default_ingress_policy_entries(
+                with_external_id=ExternalId(subnet['id']).at_cms_id())
+        else:
+            vsd_vport.has_default_security_policy_group(
+                with_external_id=self.
+                _build_policy_group_allow_all_external_id())
+            vsd_vport.has_default_egress_policy_entries(
+                with_external_id=ExternalId(
+                    n_constants.NUAGE_PLCY_GRP_ALLOW_ALL).at_cms_id())
+            vsd_vport.has_default_ingress_policy_entries(
+                with_external_id=ExternalId(
+                    n_constants.NUAGE_PLCY_GRP_ALLOW_ALL).at_cms_id())
 
         # Delete
         vsd_vport.verify_cannot_delete()

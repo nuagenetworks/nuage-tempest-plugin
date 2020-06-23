@@ -124,8 +124,7 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
             self.update_subnet(subnet,
                                name="new-subnetname")
             nuage_subnet = self.vsd.get_subnet(
-                by_network_id=subnet['network_id'],
-                cidr=subnet['cidr'])
+                by_subnet=subnet)
             self.assertIsNotNone(nuage_subnet,
                                  "Unable to retrieve L3 subnet from VSD")
             self.assertEqual(pat_enabled, nuage_subnet.pat_enabled,
@@ -159,8 +158,7 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
                 subnet,
                 nuage_underlay=no_op_nuage_underlay)
             nuage_subnet = self.vsd.get_subnet(
-                by_network_id=subnet['network_id'],
-                cidr=subnet['cidr'])
+                by_subnet=subnet)
             self.assertIsNotNone(nuage_subnet,
                                  "Unable to retrieve L3 subnet from VSD")
             self.assertEqual(pat_enabled, nuage_subnet.pat_enabled,
@@ -211,7 +209,7 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
                 subnet,
                 nuage_underlay=nuage_underlay)
             nuage_subnet = self.vsd.get_subnet(
-                by_network_id=subnet['network_id'], cidr=subnet['cidr'])
+                by_subnet=subnet)
             self.assertIsNotNone(nuage_subnet,
                                  "Unable to retrieve L3 subnet from VSD")
             self.assertEqual(pat_enabled, nuage_subnet.pat_enabled,

@@ -20,6 +20,7 @@ from tempest import config
 from tempest.lib.common.utils import data_utils
 from tempest.test import decorators
 
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 
 from nuage_tempest_plugin.tests.api.vsd_managed \
@@ -27,6 +28,10 @@ from nuage_tempest_plugin.tests.api.vsd_managed \
 
 CONF = config.CONF
 LOG = logging.getLogger(__name__)
+
+SPOOFING_ENABLED = constants.ENABLED
+SPOOFING_DISABLED = (constants.INHERITED if Topology.is_v5
+                     else constants.DISABLED)
 
 
 class VSDManagedPortSecurity(
@@ -68,8 +73,8 @@ class VSDManagedPortSecurity(
             constants.SUBNETWORK,
             vsd_subnet[0]['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.ENABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_ENABLED,
                          nuage_vport[0]['addressSpoofing'])
 
     @decorators.attr(type='smoke')
@@ -97,8 +102,8 @@ class VSDManagedPortSecurity(
             constants.L2_DOMAIN,
             vsd_l2dom[0]['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.ENABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_ENABLED,
                          nuage_vport[0]['addressSpoofing'])
 
     @decorators.attr(type='smoke')
@@ -129,8 +134,8 @@ class VSDManagedPortSecurity(
             constants.L2_DOMAIN,
             vsd_l2dom[0]['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.ENABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_ENABLED,
                          nuage_vport[0]['addressSpoofing'])
 
     @decorators.attr(type='smoke')
@@ -168,8 +173,8 @@ class VSDManagedPortSecurity(
             constants.SUBNETWORK,
             vsd_subnet[0]['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.DISABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         update_body = {'security_groups': [],
                        'port_security_enabled': 'False'}
@@ -179,8 +184,8 @@ class VSDManagedPortSecurity(
             constants.SUBNETWORK,
             vsd_subnet[0]['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.ENABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_ENABLED,
                          nuage_vport[0]['addressSpoofing'])
         update_body = {'port_security_enabled': 'True'}
         self.ports_client.update_port(port['id'], **update_body)
@@ -189,8 +194,8 @@ class VSDManagedPortSecurity(
             constants.SUBNETWORK,
             vsd_subnet[0]['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.DISABLED,
+            filter_values=port['id'])
+        self.assertEqual(constants.DISABLED,  # ! (also in 5.x)
                          nuage_vport[0]['addressSpoofing'])
 
     @decorators.attr(type='smoke')
@@ -218,8 +223,8 @@ class VSDManagedPortSecurity(
             constants.L2_DOMAIN,
             vsd_l2dom[0]['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.DISABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         update_body = {'security_groups': [],
                        'port_security_enabled': 'False'}
@@ -229,8 +234,8 @@ class VSDManagedPortSecurity(
             constants.L2_DOMAIN,
             vsd_l2dom[0]['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.ENABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_ENABLED,
                          nuage_vport[0]['addressSpoofing'])
         update_body = {'port_security_enabled': 'True'}
         self.ports_client.update_port(port['id'], **update_body)
@@ -239,8 +244,8 @@ class VSDManagedPortSecurity(
             constants.L2_DOMAIN,
             vsd_l2dom[0]['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.DISABLED,
+            filter_values=port['id'])
+        self.assertEqual(constants.DISABLED,  # ! (also in 5.x)
                          nuage_vport[0]['addressSpoofing'])
 
     @decorators.attr(type='smoke')
@@ -270,8 +275,8 @@ class VSDManagedPortSecurity(
             constants.L2_DOMAIN,
             vsd_l2dom[0]['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.DISABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         update_body = {'security_groups': [],
                        'port_security_enabled': 'False'}
@@ -281,8 +286,8 @@ class VSDManagedPortSecurity(
             constants.L2_DOMAIN,
             vsd_l2dom[0]['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.ENABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_ENABLED,
                          nuage_vport[0]['addressSpoofing'])
         update_body = {'port_security_enabled': 'True'}
         self.ports_client.update_port(port['id'], **update_body)
@@ -291,6 +296,6 @@ class VSDManagedPortSecurity(
             constants.L2_DOMAIN,
             vsd_l2dom[0]['ID'],
             filters='externalID',
-            filter_value=port['id'])
-        self.assertEqual(constants.DISABLED,
+            filter_values=port['id'])
+        self.assertEqual(SPOOFING_DISABLED,
                          nuage_vport[0]['addressSpoofing'])

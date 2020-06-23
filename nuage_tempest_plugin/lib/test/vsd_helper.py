@@ -3,7 +3,6 @@
 
 import importlib
 from netaddr import IPAddress
-from netaddr import IPNetwork
 
 import re
 from six import iteritems
@@ -121,19 +120,23 @@ class VsdHelper(object):
             self.session()
         return self.default_enterprise
 
-    def external_id(self, id):
-        return id + '@' + self.cms_id
+    def external_id(self, obj_id):
+        return obj_id + '@' + self.cms_id
 
     @staticmethod
     def filter_str(keys, values):
         filter_str = ""
-        if not (isinstance(keys, list) and isinstance(values, list)):
+        if not isinstance(keys, list):
             keys = [keys]
+        if not isinstance(values, list):
             values = [values]
         for key, value in zip(keys, values):
             if filter_str:
-                filter_str += " and "
-            filter_str += "{} IS '{}'".format(key, value)
+                filter_str += " AND "
+            if isinstance(value, int):
+                filter_str += "{} IS {}".format(key, value)
+            else:
+                filter_str += "{} IS '{}'".format(key, value)
         return filter_str
 
     def get_external_id_filter(self, object_id):
@@ -155,8 +158,9 @@ class VsdHelper(object):
         template_name = name or data_utils.rand_name('test-l2template')
 
         params = {}
-        params.update({'enable_dhcpv4': enable_dhcpv4})
-        params.update({'enable_dhcpv6': enable_dhcpv6})
+        if not Topology.is_v5:
+            params.update({'enable_dhcpv4': enable_dhcpv4})
+            params.update({'enable_dhcpv6': enable_dhcpv6})
 
         if dhcp_managed:
             params['dhcp_managed'] = dhcp_managed
@@ -172,7 +176,9 @@ class VsdHelper(object):
                 netmask = str(cidr4.netmask)
             params.update({'netmask': netmask})
 
-            if not gateway4 and enable_dhcpv4:
+            if not gateway4 and (enable_dhcpv4 or Topology.is_v5):
+                # fill in gateway when dhcp is enabled only;
+                # or in v5, always fill it when a cidr is set ('managed')
                 gateway4 = str(IPAddress(cidr4) + 1)
             if gateway4:
                 params.update({'gateway': gateway4})
@@ -185,7 +191,9 @@ class VsdHelper(object):
                 netmask6 = str(cidr6.netmask)
             params.update({'netmask6': netmask6})
 
-            if not gateway6 and enable_dhcpv6:
+            if not gateway6 and (enable_dhcpv6 or Topology.is_v5):
+                # fill in gateway when dhcp is enabled only;
+                # or in v5, always fill it when a cidr is set ('managed')
                 gateway6 = str(IPAddress(cidr6) + 1)
             if gateway6:
                 params.update({'ipv6_gateway': gateway6})
@@ -240,30 +248,28 @@ class VsdHelper(object):
             enterprise = self.get_default_enterprise()
         return enterprise
 
-    def _get_vspk_filter_for_l2domain_or_domain_template(
-            self, vspk_filter=None,
-            by_id=None, by_subnet_id=None, by_network_id=None,
-            cidr=None, ip_type=4):
-        if not vspk_filter:
-            if by_id:
-                vspk_filter = 'ID is "{}"'.format(by_id)
-            elif by_subnet_id:
-                vspk_filter = self.get_external_id_filter(by_subnet_id)
-            elif by_network_id and cidr:
-                if ip_type == 6:
+    def _get_vspk_filter_for_subnet(self, by_id=None, by_subnet=None):
+        vspk_filter = None
+        if by_id:
+            vspk_filter = 'ID is "{}"'.format(by_id)
+        elif by_subnet:
+            if Topology.is_v5:
+                vspk_filter = self.get_external_id_filter(by_subnet['id'])
+            else:
+                if by_subnet['ip_version'] == 6:
                     vspk_filter = self.filter_str(
                         ['externalID', 'IPv6Address'],
-                        [self.external_id(by_network_id), cidr])
+                        [self.external_id(by_subnet['network_id']),
+                         by_subnet['cidr']])
                 else:
                     vspk_filter = self.filter_str(
                         ['externalID', 'address'],
-                        [self.external_id(by_network_id),
-                         cidr.split('/')[0]])
+                        [self.external_id(by_subnet['network_id']),
+                         by_subnet['cidr'].split('/')[0]])
         return vspk_filter
 
     def get_l2domain(self, enterprise=None, vspk_filter=None,
-                     by_id=None, by_subnet_id=None, by_network_id=None,
-                     cidr=None, ip_type=4):
+                     by_id=None, by_subnet=None):
         """get_l2domain
 
         @params: enterprise object or enterprise id
@@ -278,16 +284,13 @@ class VsdHelper(object):
             vspk_filter='externalID == "{}"'.format(ext_id))
         """
         enterprise = self._get_enterprise_or_default(enterprise)
-
-        if not vspk_filter:
-            vspk_filter = (
-                self._get_vspk_filter_for_l2domain_or_domain_template(
-                    vspk_filter=vspk_filter,
-                    by_id=by_id, by_subnet_id=by_subnet_id,
-                    by_network_id=by_network_id, cidr=cidr, ip_type=ip_type)
-            )
-
-        if not vspk_filter:
+        vspk_filter = (vspk_filter or
+                       self._get_vspk_filter_for_subnet(by_id=by_id,
+                                                        by_subnet=by_subnet))
+        if vspk_filter:
+            LOG.info('Retrieving l2 domain with filter: {}'.format(
+                vspk_filter))  # TODO(kris) remove me again
+        else:
             LOG.error('a qualifier is required')
             return None
 
@@ -295,8 +298,7 @@ class VsdHelper(object):
 
     def get_l2domain_template(self, enterprise=None, vspk_filter=None,
                               by_id=None,
-                              by_subnet_id=None, by_network_id=None,
-                              cidr=None, ip_type=4):
+                              by_subnet=None):
         """get_l2domain_template
 
         @params: enterprise object or enterprise id
@@ -311,16 +313,9 @@ class VsdHelper(object):
             vspk_filter='externalID == "{}"'.format(ext_id))
         """
         enterprise = self._get_enterprise_or_default(enterprise)
-
-        if not vspk_filter:
-            vspk_filter = (
-                self._get_vspk_filter_for_l2domain_or_domain_template(
-                    vspk_filter=vspk_filter, by_id=by_id,
-                    by_subnet_id=by_subnet_id, by_network_id=by_network_id,
-                    cidr=cidr,
-                    ip_type=ip_type)
-            )
-
+        vspk_filter = (vspk_filter or
+                       self._get_vspk_filter_for_subnet(by_id=by_id,
+                                                        by_subnet=by_subnet))
         if not vspk_filter:
             LOG.error('a qualifier is required')
             return None
@@ -380,11 +375,9 @@ class VsdHelper(object):
     def delete_l3domain(self, l3dom_id):
         return self.nuage_rest_client.delete_domain(l3dom_id)
 
-    def get_l3_domain_by_network_id_and_cidr(self, by_network_id, cidr,
-                                             ip_type=4):
+    def get_l3_domain_by_subnet(self, by_subnet):
         # get the subnet
-        subnet = self.get_subnet_from_domain(by_network_id=by_network_id,
-                                             cidr=cidr, ip_type=ip_type)
+        subnet = self.get_subnet_from_domain(by_subnet=by_subnet)
         if not subnet:
             return None
 
@@ -792,7 +785,7 @@ class VsdHelper(object):
         return zone
 
     def get_subnet(self, zone=None, vspk_filter=None, by_id=None,
-                   by_subnet_id=None, by_network_id=None, cidr=None):
+                   by_subnet=None):
         """get_subnet
 
         @params: zone object or zone id
@@ -817,22 +810,10 @@ class VsdHelper(object):
         elif by_id:
             subnet = self.get_subnet(vspk_filter='ID is "{}"'.format(by_id))
 
-        elif by_subnet_id:
-            subnet = self.get_subnet(
-                zone, self.get_external_id_filter(by_subnet_id))
+        elif by_subnet:
+            vspk_filter = self._get_vspk_filter_for_subnet(by_subnet=by_subnet)
+            subnet = self.get_subnet(zone, vspk_filter)
 
-        elif by_network_id and cidr:
-            if IPNetwork(cidr).version == 6:
-                vspk_filter = self.filter_str(
-                    ['externalID', 'IPv6Address'],
-                    [self.external_id(by_network_id), cidr])
-                subnet = self.get_subnet(zone, vspk_filter)
-            else:
-                vspk_filter = self.filter_str(
-                    ['externalID', 'address'],
-                    [self.external_id(by_network_id),
-                     cidr.split('/')[0]])
-                subnet = self.get_subnet(zone, vspk_filter)
         else:
             LOG.error('a qualifier is required')
             return None
@@ -847,8 +828,7 @@ class VsdHelper(object):
         return zone, domain
 
     def get_subnet_from_domain(self, domain=None, vspk_filter=None,
-                               by_subnet_id=None, by_network_id=None,
-                               cidr=None, ip_type=4):
+                               by_subnet=None):
         """get_subnet_from_domain
 
         @params: domain object or domain id
@@ -870,21 +850,9 @@ class VsdHelper(object):
                 subnet = self.session().user.subnets.get_first(
                     filter=vspk_filter)
 
-        elif by_subnet_id:
-            subnet = self.get_subnet_from_domain(
-                domain, self.get_external_id_filter(by_subnet_id))
-        elif by_network_id and cidr:
-            if ip_type == 6:
-                vspk_filter = self.filter_str(
-                    ['externalID', 'IPv6Address'],
-                    [self.external_id(by_network_id), cidr])
-                subnet = self.get_subnet_from_domain(domain, vspk_filter)
-            else:
-                vspk_filter = self.filter_str(
-                    ['externalID', 'address'],
-                    [self.external_id(by_network_id),
-                     cidr.split('/')[0]])
-                subnet = self.get_subnet_from_domain(domain, vspk_filter)
+        elif by_subnet:
+            vspk_filter = self._get_vspk_filter_for_subnet(by_subnet=by_subnet)
+            subnet = self.get_subnet_from_domain(domain, vspk_filter)
         else:
             LOG.error('a qualifier is required')
             return None

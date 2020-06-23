@@ -1,7 +1,10 @@
+import testtools
+
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions
 
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
     import BaseVSDManagedNetworksIPv6Test
 
@@ -9,6 +12,8 @@ from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
 class VSDManagedIPv6L2DomainDHCPManagedTest(BaseVSDManagedNetworksIPv6Test):
     dhcp_managed = True
 
+    @testtools.skipUnless(Topology.has_single_stack_v6_support(),
+                          'No single-stack v6 support.')
     @decorators.attr(type='smoke')
     def test_create_vsd_managed_ipv6_l2domain_with_ipv4_cidr_neg(self):
         vsd_l2domain_template = self.vsd_create_l2domain_template(

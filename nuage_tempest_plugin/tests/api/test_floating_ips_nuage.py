@@ -17,9 +17,8 @@ from netaddr import IPAddress
 from netaddr import IPNetwork
 import uuid
 
-from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants
-from nuage_tempest_plugin.services.nuage_client import NuageRestClient
+from testtools.matchers import ContainsDict
+from testtools.matchers import Equals
 
 from tempest.api.network import test_floating_ips
 from tempest.common.utils import net_utils
@@ -27,8 +26,9 @@ from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
-from testtools.matchers import ContainsDict
-from testtools.matchers import Equals
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import constants
+from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
 CONF = Topology.get_conf()
 
@@ -70,16 +70,13 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
         # verifying on Domain level that the floating ip is added
         nuage_domain = self.nuage_client.get_l3domain(
             filters='externalID',
-            filter_value=router_id)
+            filter_values=router_id)
         nuage_domain_fip = self.nuage_client.get_floatingip(
             constants.DOMAIN, nuage_domain[0]['ID'])
         if associated:
             # verifying on vminterface level that the floating ip is associated
-            subnet_ext_id = self.nuage_client.get_vsd_external_id(
-                subnet['network_id'])
             vsd_subnets = self.nuage_client.get_domain_subnet(
-                None, None, ['externalID', 'address'],
-                [subnet_ext_id, self.subnet['cidr']])
+                None, None, by_subnet=subnet)
             nuage_vport = self.nuage_client.get_vport(constants.SUBNETWORK,
                                                       vsd_subnets[0]['ID'],
                                                       'externalID',
@@ -439,11 +436,8 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
         self.assertIsNone(fip.get('nuage_fip_rate'))
 
         # Check vsd
-        subnet_ext_id = self.nuage_client.get_vsd_external_id(
-            self.subnet['network_id'])
         vsd_subnets = self.nuage_client.get_domain_subnet(
-            None, None, ['externalID', 'address'],
-            [subnet_ext_id, self.subnet['cidr']])
+            None, None, by_subnet=self.subnet)
         self.assertEqual(1, len(vsd_subnets))
         vports = self.nuage_client.get_vport(constants.SUBNETWORK,
                                              vsd_subnets[0]['ID'],
@@ -491,11 +485,8 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
         self.assertIsNotNone(fip.get('nuage_egress_fip_rate_kbps'))
 
         # Check vsd
-        subnet_ext_id = self.nuage_client.get_vsd_external_id(
-            self.subnet['network_id'])
         vsd_subnets = self.nuage_client.get_domain_subnet(
-            None, None, ['externalID', 'address'],
-            [subnet_ext_id, self.subnet['cidr']])
+            None, None, by_subnet=self.subnet)
         self.assertEqual(1, len(vsd_subnets))
         vports = self.nuage_client.get_vport(constants.SUBNETWORK,
                                              vsd_subnets[0]['ID'],
@@ -523,7 +514,7 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
 
         vsd_l3domain = self.nuage_client.get_l3domain(
             filters='externalID',
-            filter_value=fip['router_id'])
+            filter_values=fip['router_id'])
         vsd_fips = self.nuage_client.get_floatingip(
             constants.DOMAIN, vsd_l3domain[0]['ID'])
         for vsd_fip in vsd_fips:

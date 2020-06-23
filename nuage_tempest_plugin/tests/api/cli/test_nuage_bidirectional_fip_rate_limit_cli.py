@@ -78,7 +78,7 @@ class TestNuageBidiFRLCliWODefault(BaseNuageFipRateLimit):
             created_floating_ip['router_id'])
         nuage_domain = self.nuage_client.get_l3domain(
             filters='externalID',
-            filter_value=external_id)
+            filter_values=external_id)
         nuage_domain_fip = self.nuage_client.get_floatingip(
             constants.DOMAIN, nuage_domain[0]['ID'])
 
@@ -96,9 +96,7 @@ class TestNuageBidiFRLCliWODefault(BaseNuageFipRateLimit):
 
         # Check vsd
         vsd_subnets = self.nuage_client.get_domain_subnet(
-            None, None,
-            filters=['externalID', 'address'],
-            filter_value=[subnet['network_id'], subnet['cidr']])
+            None, None, by_subnet=subnet)
         self.assertEqual(1, len(vsd_subnets))
         vports = self.nuage_client.get_vport(
             constants.SUBNETWORK,

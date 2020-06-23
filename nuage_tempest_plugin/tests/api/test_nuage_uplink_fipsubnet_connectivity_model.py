@@ -140,11 +140,12 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
         self.addCleanup(self.delete_fip_subnet, fipsub1['id'])
 
         nuage_fipsubnet1 = self.nuage_client.get_sharedresource(
-            filters=['externalID', 'address'],
-            filter_value=[fipsub1['network_id'],
-                          fipsub1['cidr']])
-        self.assertEqual(fipsub1['network_id'] + '_' + fipsub1['id'],
-                         nuage_fipsubnet1[0]['name'])
+            by_subnet=fipsub1)
+        if Topology.is_v5:
+            self.assertEqual(fipsub1['id'], nuage_fipsubnet1[0]['name'])
+        else:
+            self.assertEqual(fipsub1['network_id'] + '_' + fipsub1['id'],
+                             nuage_fipsubnet1[0]['name'])
 
         # Create uplink subnet on VSD
         self.create_gateway_port_vlan()
@@ -161,10 +162,9 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
                                          nuage_fipsubnet1[0]['parentID'])
         self.addCleanup(self.delete_fip_subnet, fipsub2['id'])
         nuage_fipsubnet2 = self.nuage_client.get_sharedresource(
-            filters=['externalID', 'address'],
-            filter_value=[fipsub2['network_id'],
-                          fipsub2['cidr']])
-        self.assertEqual(fipsub2['network_id'] + '_' + fipsub2['id'],
+            by_subnet=fipsub2)
+        self.assertEqual(fipsub2['id'] if Topology.is_v5
+                         else fipsub2['network_id'] + '_' + fipsub2['id'],
                          nuage_fipsubnet2[0]['name'])
         self.assertEqual(nuage_fipsubnet1[0]['parentID'],
                          nuage_fipsubnet2[0]['parentID'])
@@ -180,11 +180,12 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
         fipsub_show = body['subnet']
         # Get FIP parentID in VSD
         nuage_fipsubnet = self.nuage_client.get_sharedresource(
-            filters=['externalID', 'address'],
-            filter_value=[fipsub['network_id'],
-                          fipsub['cidr']])
-        self.assertEqual(fipsub_show['network_id'] + '_' + fipsub_show['id'],
-                         nuage_fipsubnet[0]['name'])
+            by_subnet=fipsub)
+        if Topology.is_v5:
+            self.assertEqual(fipsub_show['id'], nuage_fipsubnet[0]['name'])
+        else:
+            self.assertEqual(fipsub_show['network_id'] + '_' +
+                             fipsub_show['id'], nuage_fipsubnet[0]['name'])
         self.assertEqual(fipsub_show['nuage_uplink'],
                          nuage_fipsubnet[0]['parentID'])
 
@@ -212,9 +213,7 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
         fipsub1 = self.create_fip_subnet(cidr)
         self.addCleanup(self.delete_fip_subnet, fipsub1['id'])
         nuage_fipsubnet1 = self.nuage_client.get_sharedresource(
-            filters=['externalID', 'address'],
-            filter_value=[fipsub1['network_id'],
-                          fipsub1['cidr']])
+            by_subnet=fipsub1)
         kwargs = {'name': fipsub_name,
                   'network_id': pubnet['id'],
                   'ip_version': 4,
@@ -238,9 +237,8 @@ class FloatingIPTestAdminNuage(base.BaseAdminNetworkTest):
         fipsub1 = self.create_fip_subnet(cidr,
                                          uplink_subnet[0]['parentID'])
         self.addCleanup(self.delete_fip_subnet, fipsub1['id'])
-        fip_ext_id = self.nuage_client.get_vsd_external_id(fipsub1['id'])
         nuage_fipsubnet1 = self.nuage_client.get_sharedresource(
-            filters='externalID', filter_value=fip_ext_id)
+            by_subnet=fipsub1)
         self.assertEqual(fipsub1['id'], nuage_fipsubnet1[0]['name'])
         self.assertEqual(uplink_subnet[0]['parentID'],
                          nuage_fipsubnet1[0]['parentID'])

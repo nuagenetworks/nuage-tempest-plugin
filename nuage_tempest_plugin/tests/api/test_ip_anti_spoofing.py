@@ -5,6 +5,7 @@ from collections import namedtuple
 from enum import Enum
 from netaddr import IPAddress
 from netaddr import IPNetwork
+import testtools
 
 from tempest.lib.common.utils import data_utils
 from tempest import test
@@ -17,6 +18,10 @@ from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.tests.api.external_id.external_id import ExternalId
 
 CONF = Topology.get_conf()
+
+SPOOFING_ENABLED = n_constants.ENABLED
+SPOOFING_DISABLED = (n_constants.INHERITED if Topology.is_v5
+                     else n_constants.DISABLED)
 
 
 # Enum for the IP MAC anti spoofing or VIP creation actions
@@ -109,15 +114,15 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
             #     kwargs.update({'port_security_enabled': 'True'})
         network = self.networks_client.create_network(**kwargs)['network']
         self.addCleanup(self.networks_client.delete_network, network['id'])
-        l2domain = self._create_subnet(network, name=l2domain_name,
-                                       net_partition=netpart, cidr=cidr)
-        self.addCleanup(self.subnets_client.delete_subnet, l2domain['id'])
-        port_ip = str(IPNetwork(l2domain['cidr']).network + 10)
+        subnet = self._create_subnet(network, name=l2domain_name,
+                                     net_partition=netpart, cidr=cidr)
+        self.addCleanup(self.subnets_client.delete_subnet, subnet['id'])
+        port_ip = str(IPNetwork(subnet['cidr']).network + 10)
         kwargs = {'name': port_name, 'network': network,
                   'fixed_ips': [{'ip_address': port_ip}]}
         if allowed_address_pairs:
             self._ensure_nuage_vip_port_vsd_ipam(allowed_address_pairs,
-                                                 l2domain, network)
+                                                 subnet, network)
             kwargs.update({'allowed_address_pairs': allowed_address_pairs})
         if port_security is not None:
             if not port_security:
@@ -128,7 +133,7 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
 
         port = self.create_port(**kwargs)
         self.addCleanup(self.ports_client.delete_port, port['id'])
-        return network, l2domain, port
+        return network, subnet, port
 
     def _create_network_port_l3resources(self, ntw_security=True,
                                          port_security=True,
@@ -300,11 +305,11 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
     def _verify_vip_and_anti_spoofing(self, port, vsd_port, vip_params):
         # Case where only the anti-spoofing is enabled
         if self.get_vip_action(vip_params) == self.vip_action.spoofing:
-            self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
-            self.assertEqual(vsd_port.name, port['id'])
+            self.assertEqual(SPOOFING_ENABLED, vsd_port.address_spoofing)
+            self.assertEqual(port['id'], vsd_port.name)
         # Case where VIP gets created. Verify the ip and mac of VIP
         if self.get_vip_action(vip_params) == self.vip_action.vip:
-            self.assertEqual(vsd_port.address_spoofing, 'DISABLED')
+            self.assertEqual(SPOOFING_DISABLED, vsd_port.address_spoofing)
             vsd_vips = vsd_port.virtual_ips.get()
 
             for os_vip in port['allowed_address_pairs']:
@@ -314,13 +319,12 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
 
         # Case where no action occurs on VSD for given AAP
         if self.get_vip_action(vip_params) == self.vip_action.no_vip:
-            self.assertEqual(vsd_port.address_spoofing, 'DISABLED')
+            self.assertEqual(SPOOFING_DISABLED, vsd_port.address_spoofing)
 
     # vsd getters
 
     def _get_vsd_l2dom_port(self, subnet, port):
-        vsd_l2domain = self.vsd.get_l2domain(
-            by_network_id=subnet['network_id'], cidr=subnet['cidr'])
+        vsd_l2domain = self.vsd.get_l2domain(by_subnet=subnet)
         self.assertIsNotNone(vsd_l2domain)
         vsd_ports = vsd_l2domain.vports.get()
         vsd_port = None
@@ -334,8 +338,7 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
     def _get_vsd_router_subnet_port(self, router, subnet, port):
         vsd_l3dom = self.vsd.get_domain(by_router_id=router['id'])
         self.assertIsNotNone(vsd_l3dom)
-        vsd_sub = self.vsd.get_subnet(
-            by_network_id=subnet['network_id'], cidr=subnet['cidr'])
+        vsd_sub = self.vsd.get_subnet(by_subnet=subnet)
         self.assertIsNotNone(vsd_sub)
         vsd_port = self.vsd.get_vport(subnet=vsd_sub, by_port_id=port['id'])
         self.assertIsNotNone(vsd_port)
@@ -368,18 +371,32 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
 
     def _check_pg_for_no_security_set(self, vsd_domain, vsd_port):
         vsd_port_pg = vsd_port.policy_groups.get_first()
-        vsd_dom_pgs = vsd_domain.policy_groups.get()
-        pg_cnt = len(vsd_dom_pgs)
-        self.assertEqual(1, pg_cnt)
-        vsd_dom_pg = vsd_dom_pgs[0]
-        self.assertEqual(vsd_port_pg.id, vsd_dom_pg.id)
-        self.assertEqual(vsd_dom_pg.name,
-                         n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
-        self.assertEqual(vsd_dom_pg.description,
-                         n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
-        self.assertEqual(vsd_dom_pg.external_id,
-                         ExternalId(n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
-                         .at_cms_id())
+        vsd_l3dom_pgs = vsd_domain.policy_groups.get()
+        pg_cnt = len(vsd_l3dom_pgs)
+        if Topology.has_unified_pg_for_all_support():
+            self.assertEqual(1, pg_cnt)
+            vsd_l3dom_pg = vsd_l3dom_pgs[0]
+            self.assertEqual(vsd_port_pg.id, vsd_l3dom_pg.id)
+            self.assertEqual(vsd_l3dom_pg.name,
+                             n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
+            self.assertEqual(vsd_l3dom_pg.description,
+                             n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
+            self.assertEqual(vsd_l3dom_pg.external_id,
+                             ExternalId(n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
+                             .at_cms_id())
+        else:
+            if self.is_dhcp_agent_present():
+                self.assertTrue(1 <= pg_cnt <= 2)
+            else:
+                self.assertEqual(1, pg_cnt)
+            vsd_l3dom_pg = None
+            for l3dom_pg in vsd_l3dom_pgs:
+                self.assertEqual(l3dom_pg.name[:21], 'PG_FOR_LESS_SECURITY_')
+                if vsd_domain.id in l3dom_pg.external_id:
+                    vsd_l3dom_pg = l3dom_pg
+            self.assertIsNotNone(vsd_l3dom_pg)
+            self.assertEqual(vsd_port_pg.name, vsd_l3dom_pg.name)
+
         # Check the two ingress and egress rules
         self._verify_ingress_egress_rules(vsd_port_pg)
 
@@ -415,11 +432,11 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
             ntw_security=False, port_security=False,
             l2domain_name='l2dom1-1',
             port_name='port1-1')
-        self.assertEqual(network['port_security_enabled'], False)
-        self.assertEqual(port['port_security_enabled'], False)
+        self.assertFalse(network['port_security_enabled'])
+        self.assertFalse(port['port_security_enabled'])
         vsd_l2domain, vsd_port = self._get_vsd_l2dom_port(l2domain, port)
-        self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
-        self.assertEqual(vsd_port.name, port['id'])
+        self.assertEqual(SPOOFING_ENABLED, vsd_port.address_spoofing)
+        self.assertEqual(port['id'], vsd_port.name)
         self._check_pg_for_no_security_set(vsd_l2domain, vsd_port)
 
     @decorators.attr(type='smoke')
@@ -429,11 +446,11 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         network, l2domain, port = self._create_network_port_l2resources(
             l2domain_name='l2domdefault-1',
             port_name='portdefault-1')
-        self.assertEqual(network['port_security_enabled'], True)
-        self.assertEqual(port['port_security_enabled'], True)
+        self.assertTrue(network['port_security_enabled'])
+        self.assertTrue(port['port_security_enabled'])
         vsd_l2domain, vsd_port = self._get_vsd_l2dom_port(l2domain, port)
-        self.assertEqual(vsd_port.address_spoofing, 'DISABLED')
-        self.assertEqual(vsd_port.name, port['id'])
+        self.assertEqual(SPOOFING_DISABLED, vsd_port.address_spoofing)
+        self.assertEqual(port['id'], vsd_port.name)
 
     @decorators.attr(type='smoke')
     def test_create_delete_sec_ntw_port_l3domain(self):
@@ -443,12 +460,12 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
             router_name='routerdefault-1',
             subnet_name='subnetdefault-1',
             port_name='portdefault-1')
-        self.assertEqual(network['port_security_enabled'], True)
-        self.assertEqual(port['port_security_enabled'], True)
+        self.assertTrue(network['port_security_enabled'])
+        self.assertTrue(port['port_security_enabled'])
         vsd_l3dom, vsd_sub, vsd_port = self._get_vsd_router_subnet_port(
             router, subnet, port)
-        self.assertEqual(vsd_port.address_spoofing, 'DISABLED')
-        self.assertEqual(vsd_port.name, port['id'])
+        self.assertEqual(SPOOFING_DISABLED, vsd_port.address_spoofing)
+        self.assertEqual(port['id'], vsd_port.name)
 
     @decorators.attr(type='smoke')
     def test_create_delete_sec_disabled_ntw_l2domain(self):
@@ -458,11 +475,11 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
             ntw_security=False,
             l2domain_name='l2dom2-1',
             port_name='port2-1')
-        self.assertEqual(network['port_security_enabled'], False)
-        self.assertEqual(port['port_security_enabled'], False)
+        self.assertFalse(network['port_security_enabled'])
+        self.assertFalse(port['port_security_enabled'])
         vsd_l2domain, vsd_port = self._get_vsd_l2dom_port(l2domain, port)
-        self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
-        self.assertEqual(vsd_port.name, port['id'])
+        self.assertEqual(SPOOFING_ENABLED, vsd_port.address_spoofing)
+        self.assertEqual(port['id'], vsd_port.name)
         self._check_pg_for_no_security_set(vsd_l2domain, vsd_port)
 
     def test_create_delete_sec_disabled_port_l2domain(self):
@@ -472,11 +489,11 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
             ntw_security=True, port_security=False,
             l2domain_name='l2dom3-1',
             port_name='port3-1')
-        self.assertEqual(network['port_security_enabled'], True)
-        self.assertEqual(port['port_security_enabled'], False)
+        self.assertTrue(network['port_security_enabled'])
+        self.assertFalse(port['port_security_enabled'])
         vsd_l2domain, vsd_port = self._get_vsd_l2dom_port(l2domain, port)
-        self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
-        self.assertEqual(vsd_port.name, port['id'])
+        self.assertEqual(SPOOFING_ENABLED, vsd_port.address_spoofing)
+        self.assertEqual(port['id'], vsd_port.name)
         self._check_pg_for_no_security_set(vsd_l2domain, vsd_port)
 
     def test_create_delete_sec_disabled_ntw_port_l3domain(self):
@@ -488,12 +505,12 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
             router_name='router4-1',
             subnet_name='subnet4-1',
             port_name='port4-1')
-        self.assertEqual(network['port_security_enabled'], False)
-        self.assertEqual(port['port_security_enabled'], False)
+        self.assertFalse(network['port_security_enabled'])
+        self.assertFalse(port['port_security_enabled'])
         vsd_l3dom, vsd_sub, vsd_port = self._get_vsd_router_subnet_port(
             router, subnet, port)
-        self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
-        self.assertEqual(vsd_port.name, port['id'])
+        self.assertEqual(SPOOFING_ENABLED, vsd_port.address_spoofing)
+        self.assertEqual(port['id'], vsd_port.name)
         self._check_pg_for_no_security_set(vsd_l3dom, vsd_port)
 
     def test_create_delete_sec_disabled_ntw_l3domain(self):
@@ -505,12 +522,12 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
             router_name='router5-1',
             subnet_name='subnet5-1',
             port_name='port5-1')
-        self.assertEqual(network['port_security_enabled'], False)
-        self.assertEqual(port['port_security_enabled'], False)
+        self.assertFalse(network['port_security_enabled'])
+        self.assertFalse(port['port_security_enabled'])
         vsd_l3dom, vsd_sub, vsd_port = self._get_vsd_router_subnet_port(
             router, subnet, port)
-        self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
-        self.assertEqual(vsd_port.name, port['id'])
+        self.assertEqual(SPOOFING_ENABLED, vsd_port.address_spoofing)
+        self.assertEqual(port['id'], vsd_port.name)
         self._check_pg_for_no_security_set(vsd_l3dom, vsd_port)
 
     def test_create_delete_sec_disabled_port_l3domain(self):
@@ -522,12 +539,12 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
             router_name='router6-1',
             subnet_name='subnet6-1',
             port_name='port6-1')
-        self.assertEqual(network['port_security_enabled'], True)
-        self.assertEqual(port['port_security_enabled'], False)
+        self.assertTrue(network['port_security_enabled'])
+        self.assertFalse(port['port_security_enabled'])
         vsd_l3dom, vsd_sub, vsd_port = self._get_vsd_router_subnet_port(
             router, subnet, port)
-        self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
-        self.assertEqual(vsd_port.name, port['id'])
+        self.assertEqual(SPOOFING_ENABLED, vsd_port.address_spoofing)
+        self.assertEqual(port['id'], vsd_port.name)
         self._check_pg_for_no_security_set(vsd_l3dom, vsd_port)
 
     @decorators.attr(type='smoke')
@@ -539,11 +556,11 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
             ntw_security=False, port_security=True,
             l2domain_name='l2dom7-1',
             port_name='port7-1')
-        self.assertEqual(network['port_security_enabled'], False)
-        self.assertEqual(port['port_security_enabled'], False)
+        self.assertFalse(network['port_security_enabled'])
+        self.assertFalse(port['port_security_enabled'])
         vsd_l2domain, vsd_port = self._get_vsd_l2dom_port(l2domain, port)
-        self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
-        self.assertEqual(vsd_port.name, port['id'])
+        self.assertEqual(SPOOFING_ENABLED, vsd_port.address_spoofing)
+        self.assertEqual(port['id'], vsd_port.name)
         self._check_pg_for_no_security_set(vsd_l2domain, vsd_port)
 
         # Update the network and create a new port
@@ -561,12 +578,12 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
             ntw_security=True, port_security=True,
             l2domain_name='l2dom8-1',
             port_name='port8-1')
-        self.assertEqual(network['port_security_enabled'], True)
-        self.assertEqual(port_1['port_security_enabled'], True)
+        self.assertTrue(network['port_security_enabled'])
+        self.assertTrue(port_1['port_security_enabled'])
 
         vsd_l2domain, vsd_port_1 = self._get_vsd_l2dom_port(l2domain, port_1)
-        self.assertEqual(vsd_port_1.address_spoofing, 'DISABLED')
-        self.assertEqual(vsd_port_1.name, port_1['id'])
+        self.assertEqual(SPOOFING_DISABLED, vsd_port_1.address_spoofing)
+        self.assertEqual(port_1['id'], vsd_port_1.name,)
         port_1_pg = vsd_port_1.policy_groups.get_first()
         self.assertNotEqual(port_1_pg.name,
                             n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
@@ -578,12 +595,16 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         port_2 = self.create_port(**kwargs)
         self.addCleanup(self.ports_client.delete_port, port_2['id'])
         vsd_l2domain, vsd_port_2 = self._get_vsd_l2dom_port(l2domain, port_2)
-        self.assertEqual(vsd_port_1.address_spoofing, 'DISABLED')
-        self.assertEqual(vsd_port_2.address_spoofing, 'ENABLED')  # No sure why
-        self.assertEqual(vsd_port_1.name, port_1['id'])
+        self.assertEqual(SPOOFING_DISABLED, vsd_port_1.address_spoofing)
+        self.assertEqual(vsd_port_2.address_spoofing, SPOOFING_ENABLED)
+        self.assertEqual(port_1['id'], vsd_port_1.name,)
         self.assertEqual(vsd_port_2.name, port_2['id'])
         port_2_pg = vsd_port_2.policy_groups.get_first()
-        self.assertEqual(port_2_pg.name, n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
+        if Topology.has_unified_pg_for_all_support():
+            self.assertEqual(port_2_pg.name,
+                             n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
+        else:
+            self.assertEqual(port_2_pg.name[:21], 'PG_FOR_LESS_SECURITY_')
 
     @decorators.attr(type='smoke')
     def test_update_port_from_sec_disabled_to_enabled_l2domain(self):
@@ -594,12 +615,12 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
             ntw_security=True, port_security=False,
             l2domain_name='l2dom9-1',
             port_name='port9-1')
-        self.assertEqual(network['port_security_enabled'], True)
-        self.assertEqual(port['port_security_enabled'], False)
+        self.assertTrue(network['port_security_enabled'])
+        self.assertFalse(port['port_security_enabled'])
 
         vsd_l2domain, vsd_port = self._get_vsd_l2dom_port(l2domain, port)
-        self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
-        self.assertEqual(vsd_port.name, port['id'])
+        self.assertEqual(SPOOFING_ENABLED, vsd_port.address_spoofing)
+        self.assertEqual(port['id'], vsd_port.name)
         self._check_pg_for_no_security_set(vsd_l2domain, vsd_port)
 
         # Update the port
@@ -607,8 +628,9 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
                                              port_security_enabled='True')
         port = body['port']
         vsd_l2domain, vsd_port = self._get_vsd_l2dom_port(l2domain, port)
-        self.assertEqual(vsd_port.address_spoofing, 'DISABLED')
-        self.assertEqual(vsd_port.name, port['id'])
+        self.assertEqual(n_constants.DISABLED,  # ! even in 5.x
+                         vsd_port.address_spoofing)
+        self.assertEqual(port['id'], vsd_port.name)
 
         port_pg = vsd_port.policy_groups.get_first()
         self.assertIsNone(port_pg)
@@ -618,24 +640,24 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         # L2domain testcase for updating the port-security-enabled flag
         # from True to False at port level. Network level flag set to
         # True by default
-        network, l2domain, port = self._create_network_port_l2resources(
+        network, subnet, port = self._create_network_port_l2resources(
             ntw_security=True, port_security=True,
             l2domain_name='l2dom10-1',
             port_name='port10-1')
-        self.assertEqual(network['port_security_enabled'], True)
-        self.assertEqual(port['port_security_enabled'], True)
-        vsd_l2domain, vsd_port = self._get_vsd_l2dom_port(l2domain, port)
-        self.assertEqual(vsd_port.address_spoofing, 'DISABLED')
-        self.assertEqual(vsd_port.name, port['id'])
+        self.assertTrue(network['port_security_enabled'])
+        self.assertTrue(port['port_security_enabled'])
+        vsd_l2domain, vsd_port = self._get_vsd_l2dom_port(subnet, port)
+        self.assertEqual(SPOOFING_DISABLED, vsd_port.address_spoofing)
+        self.assertEqual(port['id'], vsd_port.name)
 
         # Update the port
         self.ports_client.update_port(port['id'], security_groups=[])
         body = self.ports_client.update_port(port['id'],
                                              port_security_enabled='False')
         port = body['port']
-        vsd_l2domain, vsd_port = self._get_vsd_l2dom_port(l2domain, port)
-        self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
-        self.assertEqual(vsd_port.name, port['id'])
+        vsd_l2domain, vsd_port = self._get_vsd_l2dom_port(subnet, port)
+        self.assertEqual(SPOOFING_ENABLED, vsd_port.address_spoofing)
+        self.assertEqual(port['id'], vsd_port.name)
         self._check_pg_for_no_security_set(vsd_l2domain, vsd_port)
 
     def test_update_ntw_from_sec_disabled_to_enabled_l3domain(self):
@@ -649,12 +671,12 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
                 router_name='router11-1',
                 subnet_name='subnet11-1',
                 port_name='port11-1')
-        self.assertEqual(network['port_security_enabled'], False)
+        self.assertFalse(network['port_security_enabled'])
         self.assertEqual(port_1['port_security_enabled'], False)
         vsd_l3dom, vsd_sub, vsd_port_1 = self._get_vsd_router_subnet_port(
             router, subnet, port_1)
-        self.assertEqual(vsd_port_1.address_spoofing, 'ENABLED')
-        self.assertEqual(vsd_port_1.name, port_1['id'])
+        self.assertEqual(SPOOFING_ENABLED, vsd_port_1.address_spoofing)
+        self.assertEqual(port_1['id'], vsd_port_1.name,)
         self._check_pg_for_no_security_set(vsd_l3dom, vsd_port_1)
 
         # Update the network and create a new port
@@ -665,16 +687,21 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         self.addCleanup(self.ports_client.delete_port, port_2['id'])
         vsd_l3dom, vsd_sub, vsd_port_2 = self._get_vsd_router_subnet_port(
             router, subnet, port_2)
-        self.assertEqual(vsd_port_1.address_spoofing, 'ENABLED')
-        self.assertEqual(vsd_port_2.address_spoofing, 'DISABLED')
-        self.assertEqual(vsd_port_1.name, port_1['id'])
+        self.assertEqual(SPOOFING_ENABLED, vsd_port_1.address_spoofing)
+        self.assertEqual(vsd_port_2.address_spoofing, SPOOFING_DISABLED)
+        self.assertEqual(port_1['id'], vsd_port_1.name,)
         self.assertEqual(vsd_port_2.name, port_2['id'])
 
         port_1_pg = vsd_port_1.policy_groups.get_first()
         port_2_pg = vsd_port_2.policy_groups.get_first()
-        self.assertEqual(port_1_pg.name, n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
-        self.assertNotEqual(port_2_pg.name,
-                            n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
+        if Topology.has_unified_pg_for_all_support():
+            self.assertEqual(
+                port_1_pg.name, n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
+            self.assertNotEqual(port_2_pg.name,
+                                n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
+        else:
+            self.assertEqual(port_1_pg.name[:21], 'PG_FOR_LESS_SECURITY_')
+            self.assertNotEqual(port_2_pg.name[:21], 'PG_FOR_LESS_SECURITY_')
 
     def test_update_ntw_from_sec_enabled_to_disabled_l3domain(self):
         # L3domain testcase for updating the port-security-enabled flag
@@ -687,12 +714,12 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
                 router_name='router12-1',
                 subnet_name='subnet12-1',
                 port_name='port12-1')
-        self.assertEqual(network['port_security_enabled'], True)
+        self.assertTrue(network['port_security_enabled'])
         self.assertEqual(port_1['port_security_enabled'], True)
         vsd_l3dom, vsd_sub, vsd_port_1 = self._get_vsd_router_subnet_port(
             router, subnet, port_1)
-        self.assertEqual(vsd_port_1.address_spoofing, 'DISABLED')
-        self.assertEqual(vsd_port_1.name, port_1['id'])
+        self.assertEqual(SPOOFING_DISABLED, vsd_port_1.address_spoofing)
+        self.assertEqual(port_1['id'], vsd_port_1.name,)
         port_1_pg = vsd_port_1.policy_groups.get_first()
         self.assertNotEqual(port_1_pg.name,
                             n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
@@ -705,14 +732,17 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         self.addCleanup(self.ports_client.delete_port, port_2['id'])
         vsd_l3dom, vsd_sub, vsd_port_2 = self._get_vsd_router_subnet_port(
             router, subnet, port_2)
-        self.assertEqual(vsd_port_1.address_spoofing, 'DISABLED')  # ???
-        self.assertEqual(vsd_port_2.address_spoofing, 'ENABLED')
-        self.assertEqual(vsd_port_1.name, port_1['id'])
+        self.assertEqual(SPOOFING_DISABLED, vsd_port_1.address_spoofing)
+        self.assertEqual(vsd_port_2.address_spoofing, SPOOFING_ENABLED)
+        self.assertEqual(port_1['id'], vsd_port_1.name,)
         self.assertEqual(vsd_port_2.name, port_2['id'])
 
         port_2_pg = vsd_port_2.policy_groups.get_first()
-        self.assertEqual(port_2_pg.name,
-                         n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
+        if Topology.has_unified_pg_for_all_support():
+            self.assertEqual(port_2_pg.name,
+                             n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
+        else:
+            self.assertEqual(port_2_pg.name[:21], 'PG_FOR_LESS_SECURITY_')
 
     @decorators.attr(type='smoke')
     def test_update_port_from_sec_disabled_to_enabled_l3domain(self):
@@ -725,12 +755,12 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
             router_name='router13-1',
             subnet_name='subnet13-1',
             port_name='port13-1')
-        self.assertEqual(network['port_security_enabled'], True)
-        self.assertEqual(port['port_security_enabled'], False)
+        self.assertTrue(network['port_security_enabled'])
+        self.assertFalse(port['port_security_enabled'])
         vsd_l3dom, vsd_sub, vsd_port = self._get_vsd_router_subnet_port(
             router, subnet, port)
-        self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
-        self.assertEqual(vsd_port.name, port['id'])
+        self.assertEqual(SPOOFING_ENABLED, vsd_port.address_spoofing)
+        self.assertEqual(port['id'], vsd_port.name)
         self._check_pg_for_no_security_set(vsd_l3dom, vsd_port)
 
         # Update the port
@@ -739,8 +769,9 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         updated_port = body['port']
         vsd_l3dom, vsd_sub, vsd_port = self._get_vsd_router_subnet_port(
             router, subnet, updated_port)
-        self.assertEqual(vsd_port.address_spoofing, 'DISABLED')
-        self.assertEqual(vsd_port.name, port['id'])
+        self.assertEqual(n_constants.DISABLED,  # ! even in 5.x
+                         vsd_port.address_spoofing)
+        self.assertEqual(port['id'], vsd_port.name)
 
         port_pg = vsd_port.policy_groups.get_first()
         self.assertIsNone(port_pg)
@@ -756,12 +787,12 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
             router_name='router14-1',
             subnet_name='subnet14-1',
             port_name='port14-1')
-        self.assertEqual(network['port_security_enabled'], True)
-        self.assertEqual(port['port_security_enabled'], True)
+        self.assertTrue(network['port_security_enabled'])
+        self.assertTrue(port['port_security_enabled'])
         vsd_l3dom, vsd_sub, vsd_port = self._get_vsd_router_subnet_port(
             router, subnet, port)
-        self.assertEqual(vsd_port.address_spoofing, 'DISABLED')
-        self.assertEqual(vsd_port.name, port['id'])
+        self.assertEqual(SPOOFING_DISABLED, vsd_port.address_spoofing)
+        self.assertEqual(port['id'], vsd_port.name)
 
         # Update the port
         self.ports_client.update_port(port['id'], security_groups=[])
@@ -770,10 +801,12 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         port = body['port']
         vsd_l3dom, vsd_sub, vsd_port = self._get_vsd_router_subnet_port(
             router, subnet, port)
-        self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
-        self.assertEqual(vsd_port.name, port['id'])
+        self.assertEqual(SPOOFING_ENABLED, vsd_port.address_spoofing)
+        self.assertEqual(port['id'], vsd_port.name)
         self._check_pg_for_no_security_set(vsd_l3dom, vsd_port)
 
+    @testtools.skipIf(not Topology.has_unified_pg_for_all_support(),
+                      'Unified PG_ALLOW_ALL is not supported in this release')
     @decorators.attr(type='smoke')
     def test_port_only_one_pg_allow_all_in_one_domain(self):
         network1, l2domain1, port1 = self._create_network_port_l2resources(
@@ -968,8 +1001,8 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         self.assertEqual(port['allowed_address_pairs'][0]['ip_address'],
                          allowed_address_pairs[0]['ip_address'])
         vsd_l2domain, vsd_port = self._get_vsd_l2dom_port(subnet, port)
-        self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
-        self.assertEqual(vsd_port.name, port['id'])
+        self.assertEqual(SPOOFING_ENABLED, vsd_port.address_spoofing)
+        self.assertEqual(port['id'], vsd_port.name)
 
     def test_anti_spoofing_for_params_1_0_1_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
@@ -1035,8 +1068,8 @@ class IpAntiSpoofingTest(IpAntiSpoofingTestBase):
         self.assertEqual(port['allowed_address_pairs'][0]['mac_address'],
                          allowed_address_pairs[0]['mac_address'])
         vsd_l2domain, vsd_port = self._get_vsd_l2dom_port(subnet, port)
-        self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
-        self.assertEqual(vsd_port.name, port['id'])
+        self.assertEqual(SPOOFING_ENABLED, vsd_port.address_spoofing)
+        self.assertEqual(port['id'], vsd_port.name)
 
     def test_anti_spoofing_for_params_1_1_1_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having full cidr(/32 IP),
@@ -1694,8 +1727,8 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         subnet, port = self._create_l2resources(
             ntw_name, sub_name, port_name, addr_pr=allowed_addr_pair)
         vsd_l2domain, vsd_port = self._get_vsd_l2dom_port(subnet, port)
-        self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
-        self.assertEqual(vsd_port.name, port['id'])
+        self.assertEqual(SPOOFING_ENABLED, vsd_port.address_spoofing)
+        self.assertEqual(port['id'], vsd_port.name)
 
     def test_anti_spoofing_for_params_1_0_1_1_l2domain(self):
         # IP Anti Spoofing tests for vip parameters having cidr(not /32 IP),
@@ -1749,8 +1782,8 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         subnet, port = self._create_l2resources(
             ntw_name, sub_name, port_name, addr_pr=allowed_addr_pair)
         vsd_l2domain, vsd_port = self._get_vsd_l2dom_port(subnet, port)
-        self.assertEqual(vsd_port.address_spoofing, 'ENABLED')
-        self.assertEqual(vsd_port.name, port['id'])
+        self.assertEqual(SPOOFING_ENABLED, vsd_port.address_spoofing)
+        self.assertEqual(port['id'], vsd_port.name)
 
     # KRIS OK
     def test_anti_spoofing_for_params_1_1_1_1_l2domain(self):

@@ -9,11 +9,13 @@ from netaddr import IPNetwork
 from tempest.lib import decorators
 from tempest.lib import exceptions as tempest_exceptions
 
+import testtools
 from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
 
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as nuage_constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.tests.api.external_id.external_id \
@@ -32,13 +34,16 @@ MSG_GATEWAY_NOT_VALID_ON_SUBNET = 'Gateway is not valid on subnet'
 MSG_GATEWAY_INVALID_IP_ADDRESS = ("Invalid input for gateway_ip. "
                                   "Reason: '%s' is not a valid IP address.")
 
-MSG_INVALID_IPV6_NETMASK = ('Bad request: Error in REST call to VSD:'
-                            ' Invalid IPv6 netmask. Netmask can only be'
-                            ' between a minimum 64 and maximum 64 length.')
+MSG_BASE = ('Bad request: ' if Topology.is_v5
+            else 'Bad request: Error in REST call to VSD: ')
+MSG_INVALID_IPV6_NETMASK = (
+    MSG_BASE + 'Invalid IPv6 netmask. Netmask can only be between a '
+               'minimum 64 and maximum {} length.'.format(
+                   128 if Topology.is_v5 else 64))
 
-MSG_RESERVED_IPV6_ADDRESS = ('Bad request: Error in REST call to VSD: '
-                             'IP Address %s is not valid or cannot be in '
-                             'reserved address space.')
+MSG_RESERVED_IPV6_ADDRESS = (
+    MSG_BASE + 'IP Address %s is not valid or cannot be in reserved '
+               'address space.')
 
 MSG_INVALID_GATEWAY_FOR_IP_TYPE = ("Invalid input for operation: gateway_ip "
                                    "'%s' does not match the ip_version '6'")
@@ -62,17 +67,33 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
         super(OsManagedDualStackL2SubnetsTest, cls).setup_clients()
         cls.nuage_client = NuageRestClient()
 
-    def _verify_ipv6_subnet_with_vsd_l2_domain(self, subnet, external_id,
-                                               cidr):
-        vsd_l2_domain = self.vsd.get_l2domain(by_network_id=external_id,
-                                              cidr=cidr)
+    def _verify_ipv6_subnet_with_vsd_l2_domain(self, subnet, by_subnet):
+        """_verify_ipv6_subnet_with_vsd_l2_domain
+
+        Verifies the VSD l2 domain defined by 'by_subnet' with the openstack
+        subnet 'subnet'.
+
+        @param by_subnet: the subnet via which the l2 domain will be retrieved
+        @param subnet: the subnet to compare the L2 domain with
+        """
+        vsd_l2_domain = self.vsd.get_l2domain(by_subnet=by_subnet)
         self.assertIsNotNone(vsd_l2_domain)
-        self.assertEqual('DUALSTACK', vsd_l2_domain.ip_type)
         self.assertIsNone(subnet['ipv6_ra_mode'])
         self.assertIsNone(subnet['ipv6_address_mode'])
-        self.assertEqual(subnet['cidr'], vsd_l2_domain.ipv6_address)
-        if subnet.get('enable_dhcp'):
-            self.assertTrue(vsd_l2_domain.enable_dhcpv6)
+        if Topology.has_single_stack_v6_support():
+            self.assertEqual('DUALSTACK', vsd_l2_domain.ip_type)
+            self.assertEqual(subnet['cidr'], vsd_l2_domain.ipv6_address)
+            self.assertEqual(subnet['enable_dhcp'],
+                             vsd_l2_domain.enable_dhcpv6)
+        else:
+            if subnet['enable_dhcp'] or by_subnet['enable_dhcp']:
+                self.assertEqual('DUALSTACK', vsd_l2_domain.ip_type)
+                self.assertEqual(subnet['cidr'], vsd_l2_domain.ipv6_address)
+            else:
+                self.assertIsNone(vsd_l2_domain.ip_type)
+                self.assertIsNone(vsd_l2_domain.ipv6_address)
+
+        if subnet['enable_dhcp']:
             filters = {
                 'device_owner': 'network:dhcp:nuage',
                 'network_id': subnet['network_id']
@@ -83,12 +104,15 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
                 if fixed_ip['subnet_id'] == subnet['id']:
                     self.assertEqual(fixed_ip['ip_address'],
                                      vsd_l2_domain.ipv6_gateway)
+        elif Topology.is_v5:
+            self.assertEqual(subnet['enable_dhcp'] or by_subnet['enable_dhcp'],
+                             vsd_l2_domain.dhcp_managed)
         else:
-            self.assertFalse(vsd_l2_domain.enable_dhcpv6)
+            self.assertTrue(vsd_l2_domain.dhcp_managed)
             self.assertIsNone(vsd_l2_domain.ipv6_gateway)
+
         self.assertFalse(subnet['vsd_managed'])
-        self.assertTrue(vsd_l2_domain.dhcp_managed)
-        self.assertEqual(subnet['enable_dhcp'], vsd_l2_domain.enable_dhcpv6)
+
         # TODO(waelj) VSD-20971 / VSD-21874
         # self.assertFalse(vsd_l2_domain.dualStackDynamicIPAllocation,
         #                  "VSD should not allocated IPv6 address")
@@ -99,7 +123,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
             nuage_constants.L2_DOMAIN,
             vsd_l2domain.id,
             filters='externalID',
-            filter_value=port['id'])
+            filter_values=port['id'])
         self.assertEqual(
             len(nuage_vports), 1,
             "Must find one VPort matching port: %s" % port['name'])
@@ -170,7 +194,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
 
         # Then a VSD L2 domain is created with type IPv4
         vsd_l2_domain = self.vsd.get_l2domain(
-            by_network_id=ipv4_subnet['network_id'], cidr=ipv4_subnet['cidr'])
+            by_subnet=ipv4_subnet)
         self.assertIsNotNone(vsd_l2_domain)
         self.assertEqual("IPV4", vsd_l2_domain.ip_type)
 
@@ -181,7 +205,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
 
         # Then the VSD L2 domain is changed to IPtype DualStack
         self._verify_ipv6_subnet_with_vsd_l2_domain(
-            ipv6_subnet, ipv4_subnet['network_id'], ipv4_subnet['cidr'])
+            ipv6_subnet, ipv4_subnet)
         port = self.create_port(network)
         self._verify_port(port, subnet4=ipv4_subnet, subnet6=None),
         self._verify_vport_in_l2_domain(port, vsd_l2_domain)
@@ -199,8 +223,10 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
         ipv6_subnet = self.create_subnet(network, ip_version=6,
                                          enable_dhcp=True)
         self._verify_ipv6_subnet_with_vsd_l2_domain(
-            ipv6_subnet, ipv4_subnet['network_id'], ipv4_subnet['cidr'])
+            ipv6_subnet, ipv4_subnet)
 
+    @testtools.skipUnless(Topology.has_dhcp_v6_support(),
+                          'No dhcp v6 supported')
     @decorators.attr(type='smoke')
     def test_os_managed_dual_stack_subnet_with_dns_server(self):
         # Provision OpenStack network
@@ -210,12 +236,9 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
                   4: {'dns_nameservers': ['8.8.4.4', '8.8.8.8']}}
 
         ipv4_subnet = self.create_subnet(network, **kwargs[4])
-
         ipv6_subnet = self.create_subnet(network, ip_version=6,
                                          enable_dhcp=True, **kwargs[6])
-        vsd_l2_domain = self.vsd.get_l2domain(
-            vspk_filter='externalID == "{}"'.format(
-                ExternalId(network['id']).at_cms_id()))
+        vsd_l2_domain = self.vsd.get_l2domain(by_subnet=ipv4_subnet)
 
         nuage_dhcpv4opt = self.nuage_client.get_dhcpoption(
             nuage_constants.L2_DOMAIN, vsd_l2_domain.id,
@@ -254,6 +277,9 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
     ###########################################################################
     # Special cases
     ###########################################################################
+    @testtools.skipIf(Topology.is_v5,
+                      'IPv6 CIDRs are fully restricted by default from 6.0 '
+                      'onwards only, i.e. when expert mode is left disabled')
     def test_os_managed_subnet_with_invalid_ipv6_prefixlen_neg(self):
         # Provision OpenStack network
         network = self.create_network()
@@ -269,10 +295,14 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
                 mask_bits=IPNetwork(ipv6_cidr).prefixlen,
                 gateway=ipv6_gateway)
 
+    @testtools.skipUnless(Topology.has_single_stack_v6_support(),
+                          'No single-stack v6 supported')
     @decorators.attr(type='smoke')
     def test_os_managed_dhcp_subnet_ipv6_first(self):
         self._test_os_managed_subnet_ipv6_first(enable_dhcp=True)
 
+    @testtools.skipUnless(Topology.has_single_stack_v6_support(),
+                          'No single-stack v6 supported')
     @decorators.attr(type='smoke')
     def test_os_managed_no_dhcp_subnet_ipv6_first(self):
         self._test_os_managed_subnet_ipv6_first(enable_dhcp=False)
@@ -296,13 +326,14 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
         }
         self.assertEqual(vsd_l2_domain.ip_type, 'IPV6')
         dhcp_ports = self.ports_client.list_ports(**filters)['ports']
+        if Topology.has_dhcp_v6_support():
+            self.assertEqual(enable_dhcp,
+                             vsd_l2_domain.enable_dhcpv6)
         if enable_dhcp:
-            self.assertTrue(vsd_l2_domain.enable_dhcpv6)
             self.assertEqual(1, len(dhcp_ports))
             self.assertEqual(dhcp_ports[0]['fixed_ips'][0]['subnet_id'],
                              ipv6_subnet['id'])
         else:
-            self.assertFalse(vsd_l2_domain.enable_dhcpv6)
             self.assertEqual(0, len(dhcp_ports))
 
         # Verify port/Vport
@@ -314,9 +345,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
         ipv4_subnet = self.create_subnet(network, enable_dhcp=enable_dhcp)
 
         # Verify the L2Dom is Dualstack now
-        vsd_l2_domain = self.vsd.get_l2domain(
-            vspk_filter='externalID == "{}"'.format(
-                ExternalId(ipv6_subnet['network_id']).at_cms_id()))
+        vsd_l2_domain = self.vsd.get_l2domain(by_subnet=ipv6_subnet)
         self.assertIsNotNone(vsd_l2_domain)
         self.assertEqual(vsd_l2_domain.ip_type, 'DUALSTACK')
         dhcp_ports = self.ports_client.list_ports(**filters)['ports']
@@ -334,9 +363,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
         # Delete Subnet/Port
         self.delete_port(portv6)
         self.delete_subnet(ipv6_subnet)
-        vsd_l2_domain = self.vsd.get_l2domain(
-            vspk_filter='externalID == "{}"'.format(
-                ExternalId(ipv4_subnet['network_id']).at_cms_id()))
+        vsd_l2_domain = self.vsd.get_l2domain(by_subnet=ipv4_subnet)
 
         # Verify the L2Dom
         self.assertIsNotNone(vsd_l2_domain)
@@ -366,9 +393,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
             network, ip_version=4, enable_dhcp=enable_dhcp, cleanup=False)
 
         # Verify L2Dom
-        vsd_l2_domain = self.vsd.get_l2domain(
-            vspk_filter='externalID == "{}"'.format(
-                ExternalId(ipv4_subnet['network_id']).at_cms_id()))
+        vsd_l2_domain = self.vsd.get_l2domain(by_subnet=ipv4_subnet)
         self.assertIsNotNone(vsd_l2_domain)
         if enable_dhcp:
             self.assertEqual(vsd_l2_domain.ip_type, 'IPV4')
@@ -383,9 +408,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
                                          ip_version=6)
 
         # Verify the L2Dom is Dualstack now
-        vsd_l2_domain = self.vsd.get_l2domain(
-            vspk_filter='externalID == "{}"'.format(
-                ExternalId(ipv4_subnet['network_id']).at_cms_id()))
+        vsd_l2_domain = self.vsd.get_l2domain(by_subnet=ipv4_subnet)
         self.assertIsNotNone(vsd_l2_domain)
         if enable_dhcp:
             self.assertEqual(vsd_l2_domain.ip_type, 'DUALSTACK')
@@ -393,14 +416,15 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
         # Delete v4 Subnet/Port
         self.delete_port(portv4)
         self.delete_subnet(ipv4_subnet)
-        vsd_l2_domain = self.vsd.get_l2domain(
-            vspk_filter='externalID == "{}"'.format(
-                ExternalId(ipv6_subnet['network_id']).at_cms_id()))
+        vsd_l2_domain = self.vsd.get_l2domain(by_subnet=ipv6_subnet)
 
         # Verify the L2Dom
-        self.assertIsNotNone(vsd_l2_domain)
-        if enable_dhcp:
-            self.assertEqual(vsd_l2_domain.ip_type, 'IPV6')
+        if Topology.has_single_stack_v6_support():
+            self.assertIsNotNone(vsd_l2_domain)
+            if enable_dhcp:
+                self.assertEqual(vsd_l2_domain.ip_type, 'IPV6')
+        else:
+            self.assertIsNone(vsd_l2_domain)
 
     @decorators.attr(type='smoke')
     # OPENSTACK-1926
@@ -474,7 +498,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
 
         # Then the VSD L2 domain is changed to IPtype DualStack
         self._verify_ipv6_subnet_with_vsd_l2_domain(
-            ipv6_subnet, ipv4_subnet['network_id'], ipv4_subnet['cidr'])
+            ipv6_subnet, ipv4_subnet)
 
     @decorators.attr(type='smoke')
     def test_os_managed_dual_stack_subnet_no_gateway(self):
@@ -487,8 +511,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
 
         # Then a VSD L2 domain is created with type IPv4
         vsd_l2_domain = self.vsd.get_l2domain(
-            by_network_id=ipv4_subnet['network_id'],
-            cidr=ipv4_subnet['cidr'])
+            by_subnet=ipv4_subnet)
         self.assertIsNotNone(vsd_l2_domain)
         self.assertEqual("IPV4", vsd_l2_domain.ip_type)
 
@@ -502,7 +525,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
 
         # Then the VSD L2 domain is changed to IPtype DualStack
         self._verify_ipv6_subnet_with_vsd_l2_domain(
-            ipv6_subnet, ipv4_subnet['network_id'], ipv4_subnet['cidr'])
+            ipv6_subnet, ipv4_subnet)
 
         port = self.create_port(network)
         self._verify_port(port, subnet4=ipv4_subnet, subnet6=None),
@@ -519,11 +542,12 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
         self.assertIsNotNone(ipv4_subnet)
 
         # Then a VSD L2 domain is created with type IPv4
-        vsd_l2_domain = self.vsd.get_l2domain(
-            vspk_filter='externalID == "{}"'.format(
-                ExternalId(ipv4_subnet['network_id']).at_cms_id()))
+        vsd_l2_domain = self.vsd.get_l2domain(by_subnet=ipv4_subnet)
         self.assertIsNotNone(vsd_l2_domain)
-        self.assertEqual(vsd_l2_domain.ip_type, 'IPV4')
+        if Topology.is_v5:
+            self.assertIsNone(vsd_l2_domain.ip_type)
+        else:
+            self.assertEqual(vsd_l2_domain.ip_type, 'IPV4')
 
         # When I add an IPv6 subnet
         ipv6_subnet = self.create_subnet(
@@ -534,7 +558,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
 
         # Then the VSD L2 domain is changed to IPtype DualStack
         self._verify_ipv6_subnet_with_vsd_l2_domain(
-            ipv6_subnet, ipv4_subnet['network_id'], ipv4_subnet['cidr'])
+            ipv6_subnet, ipv4_subnet)
 
         port = self.create_port(network)
         self.assertIsNotNone(port)
@@ -549,12 +573,11 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
 
         # Then a VSD L2 domain is created with type IPv4
         vsd_l2_domain = self.nuage_client.get_l2domain(
-            filters=['externalID', 'address'],
-            filter_value=[ipv4_subnet['network_id'], ipv4_subnet['cidr']])
+            by_subnet=ipv4_subnet)[0]
         self.assertIsNotNone(vsd_l2_domain)
-        self.assertIsNotNone(vsd_l2_domain[0])
-        self.assertFalse(vsd_l2_domain[0]['dualStackDynamicIPAllocation'],
-                         "VSD should not allocated IPv6 address")
+        self.assertFalse(vsd_l2_domain['dynamicIpv6Address' if Topology.is_v5
+                         else 'dualStackDynamicIPAllocation'],
+                         'VSD should not allocated IPv6 address')
 
         # When I add an IPv6 subnet
         ipv6_cidr = IPNetwork('cafe:babe::/64')
@@ -572,11 +595,11 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
         self.assertIsNotNone(ipv6_subnet)
 
         vsd_l2_domain = self.nuage_client.get_l2domain(
-            filters=['externalID', 'address'],
-            filter_value=[ipv4_subnet['network_id'], ipv4_subnet['cidr']])[0]
+            by_subnet=ipv4_subnet)[0]
         self.assertIsNotNone(vsd_l2_domain)
-        self.assertFalse(vsd_l2_domain['dualStackDynamicIPAllocation'],
-                         "VSD should not allocated IPv6 address")
+        self.assertFalse(vsd_l2_domain['dynamicIpv6Address' if Topology.is_v5
+                         else 'dualStackDynamicIPAllocation'],
+                         'VSD should not allocated IPv6 address')
 
         # When I create a port outside the pool, it should succeed
         ip_out_of_ipv6_allocation_pool = IPAddress('cafe:babe::b:0:0:0')
@@ -642,7 +665,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
 
             # Then the VSD L2 domain is changed to IPtype DualStack
             self._verify_ipv6_subnet_with_vsd_l2_domain(
-                ipv6_subnet, ipv4_subnet['network_id'], ipv4_subnet['cidr'])
+                ipv6_subnet, by_subnet=ipv4_subnet)
 
             # And I create a port in the network
             port = self.create_port(network, cleanup=False)
@@ -674,7 +697,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
 
         # Then the VSD L2 domain is changed to IPtype DualStack
         self._verify_ipv6_subnet_with_vsd_l2_domain(
-            ipv6_subnet, ipv4_subnet['network_id'], ipv4_subnet['cidr'])
+            ipv6_subnet, ipv4_subnet)
 
         # Update attributes
         subnet_attributes = {'name': "updated name",
@@ -690,14 +713,13 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
                         Equals(ipv6_subnet_updated['description']))
 
         vsd_l2_domain = self.vsd.get_l2domain(
-            vspk_filter='externalID == "{}"'.format(
-                ExternalId(ipv4_subnet['network_id']).at_cms_id()))
+            by_subnet=ipv4_subnet)
         self.assertIsNotNone(vsd_l2_domain)
 
         # L2 domain description should match with network name
         # if it is dualstack
-        self.assertThat(vsd_l2_domain.description, Equals(network['name']))
-        pass
+        self.assertThat(vsd_l2_domain.description, Equals(
+            ipv4_subnet['name'] if Topology.is_v5 else network['name']))
 
     @decorators.attr(type='smoke')
     # OPENSTACK-1943
@@ -718,7 +740,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
 
         # Then the VSD L2 domain is changed to DualStack
         self._verify_ipv6_subnet_with_vsd_l2_domain(
-            ipv6_subnet, ipv4_subnet['network_id'], ipv4_subnet['cidr'])
+            ipv6_subnet, ipv4_subnet)
 
         # Update attributes
         subnet_attributes = {'gateway_ip': None}
@@ -729,8 +751,7 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
             **subnet_attributes)
 
         self._verify_ipv6_subnet_with_vsd_l2_domain(
-            ipv6_subnet_updated, ipv4_subnet['network_id'],
-            ipv4_subnet['cidr'])
+            ipv6_subnet_updated, ipv4_subnet)
         self.assertIsNone(ipv6_subnet_updated['gateway_ip'])
 
     ###########################################################################
@@ -740,21 +761,29 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
     @decorators.attr(type='smoke')
     def test_os_managed_dual_stack_create_ipv6_only_port_neg(self):
         network = self.create_network()
-
         ipv6_subnet = self.create_subnet(network, ip_version=6,
                                          enable_dhcp=False)
 
-        port1 = self.create_port(network)
-        self._verify_port(port1, subnet4=None, subnet6=ipv6_subnet)
+        if Topology.has_single_stack_v6_support():
+            port1 = self.create_port(network)
+            self._verify_port(port1, subnet4=None, subnet6=ipv6_subnet)
 
-        port_ip = IPAddress(port1['fixed_ips'][0]['ip_address'])
-        port_args = {
-            'fixed_ips': [{'ip_address': port_ip + 10},
-                          {'ip_address': port_ip + 11}]}
+            port_ip = IPAddress(port1['fixed_ips'][0]['ip_address'])
+            port_args = {
+                'fixed_ips': [{'ip_address': port_ip + 10},
+                              {'ip_address': port_ip + 11}]}
 
-        port2 = self.create_port(network, **port_args)
-        self._verify_port(port2, subnet4=None, subnet6=ipv6_subnet)
+            port2 = self.create_port(network, **port_args)
+            self._verify_port(port2, subnet4=None, subnet6=ipv6_subnet)
+        else:
+            self.assertRaisesRegex(
+                tempest_exceptions.BadRequest,
+                "Port can't be a pure ipv6 port. Need ipv4 fixed ip.",
+                self.create_port,
+                network)
 
+    @testtools.skipIf(not Topology.has_single_stack_v6_support(),
+                      'No singe-stack v6 supported')
     @decorators.attr(type='smoke')
     def test_os_managed_dual_stack_update_port_to_ipv6_only(self):
         network = self.create_network()
@@ -853,19 +882,28 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
         # Provision OpenStack network
         network = self.create_network()
 
-        # # When I create an IPv4 subnet
-        # ipv4_subnet = self.create_subnet(network)
-        # self.assertIsNotNone(ipv4_subnet)
-
         # When I add an IPv6 subnet
         ipv6_subnet = self.create_subnet(
             network, ip_version=6, enable_dhcp=False)
         self.assertIsNotNone(ipv6_subnet)
 
-        ipv6_subnet = self.create_subnet(
-            network, cidr=IPNetwork("2fbe:4568:a:b::/64"), mask_bits=64,
-            ip_version=6, enable_dhcp=False)
-        self.assertIsNotNone(ipv6_subnet)
+        if Topology.has_single_stack_v6_support():
+            ipv6_subnet = self.create_subnet(
+                network, cidr=IPNetwork("2fbe:4568:a:b::/64"), mask_bits=64,
+                ip_version=6, enable_dhcp=False)
+            self.assertIsNotNone(ipv6_subnet)
+        else:
+            # When I add an a second IPv6 subnet, it should fail
+            self.assertRaisesRegex(
+                tempest_exceptions.BadRequest,
+                "A network with an ipv6 subnet may only have maximum "
+                "1 ipv4 and 1 ipv6 subnet",
+                self.create_subnet,
+                network,
+                cidr=IPNetwork("2fbe:4568:a:b::/64"),
+                mask_bits=64,
+                ip_version=6,
+                enable_dhcp=False)
 
     @decorators.attr(type='negative')
     def test_dual_stack_subnet_multiple_ipv4_subnets_neg(self):
@@ -881,8 +919,12 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
             network, ip_version=6, enable_dhcp=False)
         self.assertIsNotNone(ipv6_subnet)
 
-        msg = ("A network can only have maximum 1 ipv4 and 1 ipv6 subnet "
-               "existing together")
+        if Topology.is_v5:
+            msg = ('A network with an ipv6 subnet may only have maximum 1 ipv4'
+                   ' and 1 ipv6 subnet')
+        else:
+            msg = ('A network can only have maximum 1 ipv4 and 1 ipv6 subnet'
+                   ' existing together')
         self.assertRaisesRegex(
             tempest_exceptions.BadRequest,
             msg,
@@ -905,8 +947,12 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
         ipv4_subnet2 = self.create_subnet(network)
         self.assertIsNotNone(ipv4_subnet2)
 
-        msg = ("A network can only have maximum 1 ipv4 and 1 ipv6 subnet "
-               "existing together")
+        if Topology.is_v5:
+            msg = ('A network with an ipv6 subnet may only have maximum 1 '
+                   'ipv4 and 1 ipv6 subnet')
+        else:
+            msg = ('A network can only have maximum 1 ipv4 and 1 ipv6 subnet '
+                   'existing together')
 
         # When I add an IPv6 subnet, it should fail
         self.assertRaisesRegex(
@@ -996,7 +1042,8 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
             (   # Reserved addresses: 6to4
                 "2002:5f74:c4a5:b82e::/120",
                 "2002:5f74:c4a5:b82e::1",
-                MSG_INVALID_IPV6_NETMASK),
+                (MSG_RESERVED_IPV6_ADDRESS % '2002:5f74:c4a5:b82e::/120')
+                if Topology.is_v5 else MSG_INVALID_IPV6_NETMASK),
             (
                 "2001:5f74:c4a5:b82e::/63",
                 "2001:5f74:c4a5:b82e::1",

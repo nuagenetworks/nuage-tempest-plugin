@@ -43,9 +43,19 @@ class ExternalIdForL3domainTest(base.BaseAdminNetworkTest):
             self.vsd_zones = None
             self.vsd_subnets = None
 
+        @staticmethod
+        def expected_ext_id(subnet):
+            return ExternalId(subnet['id'] if Topology.is_v5
+                              else subnet['network_id']).at_cms_id()
+
+        @staticmethod
+        def expected_name(subnet):
+            return (subnet['id'] if Topology.is_v5 else
+                    subnet['network_id'] + '_' + subnet['id'])
+
         def get_by_external_id(self):
             vsd_l3domains = self.test.nuage_client.get_l3domain(
-                filters='externalID', filter_value=self.router['id'])
+                filters='externalID', filter_values=self.router['id'])
 
             # should have exact 1 match
             self.test.assertEqual(len(vsd_l3domains), 1)
@@ -74,8 +84,7 @@ class ExternalIdForL3domainTest(base.BaseAdminNetworkTest):
 
             found = False
             for l3_subnet in self.vsd_subnets:
-                if (l3_subnet['name'] ==
-                        subnet['network_id'] + '_' + subnet['id']):
+                if l3_subnet['name'] == self.expected_name(subnet):
                     self.test.assertEqual(
                         shared, self.is_parent_public_zone(l3_subnet))
                     found = True
@@ -88,7 +97,7 @@ class ExternalIdForL3domainTest(base.BaseAdminNetworkTest):
                     # search globally by external ID
                     vsd_subnets = self.test.nuage_client.get_domain_subnet(
                         parent=None, parent_id='',
-                        filters='externalID', filter_value=with_external_id)
+                        filters='externalID', filter_values=with_external_id)
                     self.test.assertEqual(
                         1, len(vsd_subnets), "Subnet not found by ExternalID")
                     self.test.assertEqual(
@@ -141,7 +150,7 @@ class ExternalIdForL3domainTest(base.BaseAdminNetworkTest):
                             parent=n_constants.ZONE,
                             parent_id=zone['ID'],
                             filters='externalID',
-                            filter_value=with_external_id)
+                            filter_values=with_external_id)
                     self.test.assertEqual(
                         1, len(vsd_permissions),
                         "VSD Permission not found by ExternalID")
@@ -165,7 +174,7 @@ class ExternalIdForL3domainTest(base.BaseAdminNetworkTest):
                 vsd_groups = self.test.nuage_client.get_resource(
                     resource=n_constants.GROUP,
                     filters='externalID',
-                    filter_value=with_external_id)
+                    filter_values=with_external_id)
 
                 self.test.assertEqual(
                     1, len(vsd_groups), "Group not found by ExternalID")
@@ -176,7 +185,7 @@ class ExternalIdForL3domainTest(base.BaseAdminNetworkTest):
             # vsd user object has external ID
             vsd_users = self.test.nuage_client.get_user(
                 filters='userName',
-                filter_value=self.router['tenant_id'])
+                filter_values=self.router['tenant_id'])
 
             self.test.assertEqual(
                 1, len(vsd_users), "User not found by VSD parent ID")
@@ -191,7 +200,7 @@ class ExternalIdForL3domainTest(base.BaseAdminNetworkTest):
                 vsd_users = self.test.nuage_client.get_resource(
                     resource=n_constants.USER,
                     filters='externalID',
-                    filter_value=with_external_id)
+                    filter_values=with_external_id)
 
                 self.test.assertEqual(
                     1, len(vsd_users), "User not found by ExternalID")
@@ -219,7 +228,7 @@ class ExternalIdForL3domainTest(base.BaseAdminNetworkTest):
                         resource_id=self.vsd_l3domain['ID'],
                         child_resource=n_constants.EGRESS_ACL_TEMPLATE,
                         filters='externalID',
-                        filter_value=with_external_id)
+                        filter_values=with_external_id)
 
                 self.test.assertEqual(
                     1, len(vsd_egress_acl_templates),
@@ -249,7 +258,7 @@ class ExternalIdForL3domainTest(base.BaseAdminNetworkTest):
                         resource_id=self.vsd_l3domain['ID'],
                         child_resource=n_constants.INGRESS_ACL_TEMPLATE,
                         filters='externalID',
-                        filter_value=with_external_id)
+                        filter_values=with_external_id)
 
                 self.test.assertEqual(
                     1, len(vsd_ingress_acl_templates),
@@ -280,7 +289,7 @@ class ExternalIdForL3domainTest(base.BaseAdminNetworkTest):
                         resource_id=self.vsd_l3domain['ID'],
                         child_resource=n_constants.INGRESS_ADV_FWD_TEMPLATE,
                         filters='externalID',
-                        filter_value=with_external_id)
+                        filter_values=with_external_id)
 
                 self.test.assertEqual(
                     1, len(vsd_forwarding_policy_templates),
@@ -369,7 +378,7 @@ class ExternalIdForL3domainTest(base.BaseAdminNetworkTest):
         vsd_l3domain.has_zones(
             with_external_id=ExternalId(router['id']).at_cms_id())
         vsd_l3domain.has_subnet(
-            with_external_id=ExternalId(subnet['network_id']).at_cms_id(),
+            with_external_id=vsd_l3domain.expected_ext_id(subnet),
             subnet=subnet)
 
         # Delete

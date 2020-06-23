@@ -9,8 +9,6 @@ import subprocess
 from netaddr import IPAddress
 from netaddr import IPNetwork
 from oslo_utils import uuidutils
-from vspk import v5_0 as vspk5
-from vspk import v6 as vspk6
 
 from tempest.lib.common.utils import data_utils
 
@@ -21,6 +19,15 @@ from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.lib.utils import data_utils as nuage_data_utils
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
+
+from vspk import v5_0 as vspk5
+try:
+    from vspk import v6 as vspk6
+except ImportError as e:
+    if Topology.before_nuage('6.0'):
+        pass  # be tolerant
+    else:
+        raise
 
 CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
@@ -551,10 +558,7 @@ class UpgradeTo60Test(NuageBaseTest, L3Mixin,
                 network, ip_version=4,
                 enable_dhcp=False)
             self._resources['l2_subnets'].append(subnet)
-            l2_dom = self.vsd.get_l2domain(
-                by_subnet_id=subnet['id'],
-                # by_network_id=network['id'],
-                cidr=subnet['cidr'], ip_type=subnet['ip_version'])
+            l2_dom = self.vsd.get_l2domain(by_subnet=subnet)
             self.assertIsNotNone(l2_dom)
 
             # create 5 vports with vminterfaces
@@ -745,9 +749,7 @@ class UpgradeTo60Test(NuageBaseTest, L3Mixin,
         self.vsd._session = None
         self.vsd.vspk = vspk6
 
-        l2dom1 = self.vsd.get_l2domain(
-            by_network_id=subnet1['network_id'],
-            cidr=subnet1['cidr'], ip_type=subnet1['ip_version'])
+        l2dom1 = self.vsd.get_l2domain(by_subnet=subnet1)
 
         policy_groups = l2dom1.policy_groups.get()
         self.assertEqual(1, len(policy_groups))
@@ -761,9 +763,7 @@ class UpgradeTo60Test(NuageBaseTest, L3Mixin,
 
         vports = policy_groups[0].vports.get()
         self.assertEqual(2, len(vports))
-        l2dom2 = self.vsd.get_l2domain(
-            by_network_id=subnet2['network_id'],
-            cidr=subnet2['cidr'], ip_type=subnet2['ip_version'])
+        l2dom2 = self.vsd.get_l2domain(by_subnet=subnet2)
 
         policy_groups = l2dom2.policy_groups.get()
         self.assertEqual(1, len(policy_groups))
@@ -828,23 +828,20 @@ class UpgradeTo60Test(NuageBaseTest, L3Mixin,
                     network = self.get_network(subnet['network_id'])
                     self.create_port(network)
                     if '5' in branch:
-                        l2_domain = self.vsd.get_l2domain(
-                            by_network_id=subnet['id'],
-                            cidr=subnet['cidr'], ip_type=subnet['ip_version'])
+                        Topology.is_v5 = True  # temporarily overrule ...
+                        l2_domain = self.vsd.get_l2domain(by_subnet=subnet)
+                        Topology.is_v5 = False  # set back
                     else:
-                        l2_domain = self.vsd.get_l2domain(
-                            by_network_id=subnet['network_id'],
-                            cidr=subnet['cidr'], ip_type=subnet['ip_version'])
+                        l2_domain = self.vsd.get_l2domain(by_subnet=subnet)
                 self.router_attach(router, subnet)
 
             if '5' in branch:
-                l3_domain = self.vsd.get_l3_domain_by_network_id_and_cidr(
-                    by_network_id=subnet['id'],
-                    cidr=subnet['cidr'], ip_type=subnet['ip_version'])
+                Topology.is_v5 = True  # temporarily overrule ...
+                l3_domain = self.vsd.get_l3_domain_by_subnet(by_subnet=subnet)
+                Topology.is_v5 = False  # set back
             else:
-                l3_domain = self.vsd.get_l3_domain_by_network_id_and_cidr(
-                    by_network_id=subnet['network_id'],
-                    cidr=subnet['cidr'], ip_type=subnet['ip_version'])
+                l3_domain = self.vsd.get_l3_domain_by_subnet(
+                    by_subnet=subnet)
 
             # policy group that has the most vports before upgrade
             assert l3_domain
@@ -966,9 +963,7 @@ class UpgradeTo60Test(NuageBaseTest, L3Mixin,
                     "Pure v6 subnet warning haven't logged correctly for: "
                     "{}.".format(subnet['id']))
             else:
-                l2dom = self.vsd.get_l2domain(
-                    by_network_id=subnet['network_id'],
-                    cidr=subnet['cidr'], ip_type=subnet['ip_version'])
+                l2dom = self.vsd.get_l2domain(by_subnet=subnet)
                 self.assertIsNotNone(l2dom)
                 self._verify_l2_dom(l2dom, subnet)
                 self._resources['l2_domains'].append(l2dom)
@@ -1003,16 +998,14 @@ class UpgradeTo60Test(NuageBaseTest, L3Mixin,
                     "{}.".format(subnet['id']))
             else:
                 nuage_l3_subnet = self.vsd.get_subnet(
-                    by_network_id=subnet['network_id'],
-                    cidr=subnet['cidr'])
+                    by_subnet=subnet)
                 self.assertIsNotNone(nuage_l3_subnet)
                 self._verify_l3_nuage_subnet(nuage_l3_subnet, subnet)
                 self._resources['nuage_l3_subnets'].append(nuage_l3_subnet)
 
         for external_subnet in self._resources['external_subnets']:
             nuage_l3_subnet = self.vsd.get_subnet(
-                by_network_id=external_subnet['network_id'],
-                cidr=external_subnet['cidr'])
+                by_subnet=external_subnet)
             self.assertIsNotNone(nuage_l3_subnet)
 
         for port in self._resources['l2_ports']:

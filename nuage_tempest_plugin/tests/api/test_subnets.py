@@ -143,19 +143,19 @@ class SubnetsTest(NuageAdminNetworksTest):
         net_name = data_utils.rand_name('test-subnet-net-')
         sub_name = data_utils.rand_name('test-subnet-sub-')
         network = self.create_network(network_name=net_name)
-        self.create_subnet(network, name=sub_name)
-        l2_domains = self.nuage_rest_client.get_l2domain(filters="externalID",
-                                                         filter_value=network[
-                                                             "id"])
+        subnet = self.create_subnet(network, name=sub_name)
+        l2_domains = self.nuage_rest_client.get_l2domain(
+            by_subnet=subnet)
         l2_domain_templates = self.nuage_rest_client.get_l2domaintemplate(
-            filters="externalID", filter_value=network["id"])
-        msg = "Descriptions of L2 Domain and L2 Domain Template should " \
-              "match Subnet name "
-
+            by_subnet=subnet)
         self.assertEqual(1, len(l2_domains))
         self.assertEqual(1, len(l2_domain_templates))
         self.assertEqual(l2_domains[0]["templateID"],
                          l2_domain_templates[0]["ID"])
 
+        msg = "Descriptions of L2 Domain and L2 Domain Template should " \
+              "match Subnet name "
         self.assertEqual(sub_name, l2_domains[0]["description"], msg)
-        self.assertEqual(sub_name, l2_domain_templates[0]["description"], msg)
+        if Topology.has_domain_template_description_configured_support():
+            self.assertEqual(sub_name, l2_domain_templates[0]["description"],
+                             msg)

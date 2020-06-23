@@ -15,10 +15,7 @@
 
 from netaddr import IPAddress
 from six import iteritems
-
-from nuage_tempest_plugin.lib.utils import constants
-from nuage_tempest_plugin.tests.api.ipv6.test_allowed_address_pair \
-    import BaseAllowedAddressPair
+import testtools
 
 from tempest.api.network import test_allowed_address_pair as base_tempest
 from tempest.lib.common.utils import test_utils
@@ -26,6 +23,9 @@ from tempest.lib import decorators
 from tempest.lib import exceptions as tempest_exceptions
 
 from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import constants
+from nuage_tempest_plugin.tests.api.ipv6.test_allowed_address_pair \
+    import BaseAllowedAddressPair
 
 CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
@@ -34,6 +34,10 @@ VALID_MAC_ADDRESS = 'fa:fa:3e:e8:e8:01'
 MSG_INVALID_IP_ADDRESS_FOR_SUBNET = "IP address %s is not a valid IP for " \
                                     "the specified subnet."
 MSG_INVALID_INPUT_FOR_AAP_IPS = "'%s' is not a valid IP address."
+
+SPOOFING_ENABLED = constants.ENABLED
+SPOOFING_DISABLED = (constants.INHERITED if Topology.is_v5
+                     else constants.DISABLED)
 
 
 class AllowedAddressPairNuageTest(
@@ -104,6 +108,12 @@ class AllowedAddressPairIpV6NuageTest(AllowedAddressPairNuageTest):
 
     _ip_version = 6
 
+    @classmethod
+    def skip_checks(cls):
+        super(AllowedAddressPairIpV6NuageTest, cls).skip_checks()
+        if not Topology.has_single_stack_v6_support():
+            raise cls.skipException('No single-stack v6 support')
+
 
 class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
     _ip_version = 6
@@ -123,18 +133,6 @@ class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
         api_extensions
     """
     _interface = 'json'
-
-    @classmethod
-    def setup_clients(cls):
-        super(AllowedAddressPairIpV6OSManagedTest, cls).setup_clients()
-
-    @classmethod
-    def skip_checks(cls):
-        super(AllowedAddressPairIpV6OSManagedTest, cls).skip_checks()
-
-    @classmethod
-    def resource_setup(cls):
-        super(AllowedAddressPairIpV6OSManagedTest, cls).resource_setup()
 
     @decorators.attr(type='smoke')
     def test_create_port_with_aap_ipv6_moving_from_l2_to_l3_validation(self):
@@ -164,7 +162,7 @@ class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
         # Confirm port was created with allowed address pair attribute
         self._verify_port(
             port, subnet4=subnet4, subnet6=subnet6)
-        self._verify_l2_vport_by_id(port, constants.ENABLED,
+        self._verify_l2_vport_by_id(port, SPOOFING_ENABLED,
                                     subnet4=subnet4)
         router = self.create_router()
 
@@ -175,15 +173,15 @@ class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
 
         self.router_attach(router, subnet4)
 
-        self._verify_l3_vport_by_id(router, port, constants.DISABLED,
+        self._verify_l3_vport_by_id(router, port, SPOOFING_DISABLED,
                                     subnet4=subnet4)
 
         self.router_detach(router, subnet4)
-        self._verify_l2_vport_by_id(port, constants.ENABLED,
+        self._verify_l2_vport_by_id(port, SPOOFING_ENABLED,
                                     subnet4=subnet4)
 
         self.router_attach(router, subnet4)
-        self._verify_l3_vport_by_id(router, port, constants.DISABLED,
+        self._verify_l3_vport_by_id(router, port, SPOOFING_DISABLED,
                                     subnet4=subnet4)
         self.assertRaisesRegex(
             tempest_exceptions.Conflict,
@@ -216,6 +214,8 @@ class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
                                self.delete_subnet,
                                subnet6)
 
+    @testtools.skipUnless(Topology.has_single_stack_v6_support(),
+                          'No single-stack v6 support')
     def test_delete_v4_subnet_with_ip_as_vip_in_v6_subnet_neg(self):
         network = self.create_network()
         subnet4 = self.create_subnet(
@@ -288,7 +288,7 @@ class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
             port = self.create_port(network, **port_args)
             self._verify_port(
                 port, subnet4=subnet4, subnet6=subnet6)
-            self._verify_l2_vport_by_id(port, constants.ENABLED,
+            self._verify_l2_vport_by_id(port, SPOOFING_ENABLED,
                                         subnet4=subnet4)
         for ipv6, msg in invalid_ipv6:
             port_args = {'allowed_address_pairs': [
@@ -347,8 +347,7 @@ class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
         subnet6 = self.create_subnet(
             network, ip_version=6, enable_dhcp=False)
 
-        vsd_l2_domain = self.vsd.get_l2domain(
-            by_network_id=subnet4['network_id'], cidr=subnet4['cidr'])
+        vsd_l2_domain = self.vsd.get_l2domain(by_subnet=subnet4)
         for scenario, port_config in iteritems(self.port_configs):
             LOG.info("TESTCASE scenario {}".format(scenario))
             self._check_crud_port(scenario, network, subnet4, subnet6,
@@ -367,8 +366,7 @@ class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
         domain = self.vsd.get_domain(by_router_id=router['id'])
         zone = self.vsd.get_zone(domain=domain, by_router_id=router['id'])
         vsd_subnet = self.vsd.get_subnet(zone=zone,
-                                         by_network_id=subnet4['network_id'],
-                                         cidr=subnet4['cidr'])
+                                         by_subnet=subnet4)
         for scenario, port_config in iteritems(self.port_configs):
             LOG.info("TESTCASE scenario {}".format(scenario))
             self._check_crud_port(scenario, network, subnet4, subnet6,

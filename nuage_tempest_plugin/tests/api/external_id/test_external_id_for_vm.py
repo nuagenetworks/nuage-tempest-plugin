@@ -41,7 +41,7 @@ class ExternalIdForVmTest(
         def get_by_external_id(self):
             vsd_vms = self.test.nuage_client.get_vm(
                 parent=None, parent_id='',
-                filters='externalID', filter_value=self.vm['id'])
+                filters='externalID', filter_values=self.vm['id'])
 
             # should have exact 1 match
             self.test.assertEqual(len(vsd_vms), 1)
@@ -58,7 +58,7 @@ class ExternalIdForVmTest(
         def get_by_uuid(self):
             vsd_vms = self.test.nuage_client.get_vm(
                 parent=None, parent_id='',
-                filters='UUID', filter_value=self.vm['id'])
+                filters='UUID', filter_values=self.vm['id'])
 
             # should have exact 1 match
             self.test.assertEqual(len(vsd_vms), 1)

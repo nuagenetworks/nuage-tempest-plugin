@@ -29,10 +29,6 @@ class TestNuageBidirectionalFipRateLimit(
         public_network_id which is the id for the external network present
     """
 
-    @classmethod
-    def resource_setup(cls):
-        super(TestNuageBidirectionalFipRateLimit, cls).resource_setup()
-
     @decorators.attr(type='smoke')
     def test_create_floatingip_with_rate_limit_normal_value(self):
         fip = self._create_fip_with_fip_rate_limit(self.ports[0], 2000, 3000)

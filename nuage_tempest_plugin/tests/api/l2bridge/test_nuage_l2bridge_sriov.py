@@ -75,6 +75,10 @@ class TestNuageL2BridgeSRIOV(BaseNuageL2Bridge,
             cls.nuage_client.delete_l2domaintemplate(
                 vsd_l2dom_template['ID'])
 
+    @staticmethod
+    def get_bridge_port_ext_id_base(subnet):
+        return subnet['id'] if Topology.is_v5 else subnet['network_id']
+
     def _validate_bridge_config(self, bridge, name, phys_nets):
         self.assertEqual(name, bridge['name'])
         self.assertEqual(len(phys_nets), len(bridge['physnets']))
@@ -193,8 +197,9 @@ class TestNuageL2BridgeSRIOV(BaseNuageL2Bridge,
                 self.create_port(n1, self.admin_manager,
                                  **kwargs)
 
-                vport_1 = self.vsd.get_vport(l2domain=l2domain,
-                                             by_port_id=s1['network_id'])
+                vport_1 = self.vsd.get_vport(
+                    l2domain=l2domain,
+                    by_port_id=self.get_bridge_port_ext_id_base(s1))
                 self.assertIsNotNone(vport_1,
                                      "Vport not created for port in network 1")
 
@@ -259,8 +264,9 @@ class TestNuageL2BridgeSRIOV(BaseNuageL2Bridge,
                 self.create_port(n2, self.admin_manager,
                                  **kwargs)
 
-                vport_2 = self.vsd.get_vport(l2domain=l2domain,
-                                             by_port_id=s2['network_id'])
+                vport_2 = self.vsd.get_vport(
+                    l2domain=l2domain,
+                    by_port_id=self.get_bridge_port_ext_id_base(s2))
                 self.assertIsNotNone(vport_2,
                                      "Vport not created for port in network 2")
                 policygroups = vport_2.policy_groups.get()
@@ -269,11 +275,13 @@ class TestNuageL2BridgeSRIOV(BaseNuageL2Bridge,
                                  "policygroup.")
                 ingress = vport_2.ingress_acl_entry_templates.get(
                     filter=self.vsd.get_external_id_filter(
-                        constants.NUAGE_PLCY_GRP_ALLOW_ALL)
+                        bridge['id'] if Topology.is_v5
+                        else constants.NUAGE_PLCY_GRP_ALLOW_ALL)
                 )
                 egress = vport_2.egress_acl_entry_templates.get(
                     filter=self.vsd.get_external_id_filter(
-                        constants.NUAGE_PLCY_GRP_ALLOW_ALL)
+                        bridge['id'] if Topology.is_v5
+                        else constants.NUAGE_PLCY_GRP_ALLOW_ALL)
                 )
                 self.assertEqual(2, len(ingress),
                                  "Port should use exactly 2 "

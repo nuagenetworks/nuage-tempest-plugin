@@ -21,6 +21,10 @@ from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
 CONF = Topology.get_conf()
 
+SPOOFING_ENABLED = n_constants.ENABLED
+SPOOFING_DISABLED = (n_constants.INHERITED if Topology.is_v5
+                     else n_constants.DISABLED)
+
 
 class PortsScaleTest(NuageBaseTest):
 
@@ -56,26 +60,23 @@ class PortsScaleTest(NuageBaseTest):
         nuage_domain = self.nuage_client.get_resource(
             n_constants.DOMAIN,
             filters='externalID',
-            filter_value=l3domain_ext_id)
+            filter_values=l3domain_ext_id)
         nuage_subnet = self.nuage_client.get_domain_subnet(
-            n_constants.DOMAIN, nuage_domain[0]['ID'],
-            filters=['externalID', 'address'],
-            filter_value=[subnet['network_id'],
-                          subnet['cidr']])
+            n_constants.DOMAIN, nuage_domain[0]['ID'], by_subnet=subnet)
         for port_id in portids_to_aap:
             port_ext_id = self.nuage_client.get_vsd_external_id(port_id)
             nuage_vport = self.nuage_client.get_vport(
                 n_constants.SUBNETWORK,
                 nuage_subnet[0]['ID'],
                 filters='externalID',
-                filter_value=port_ext_id)
-            self.assertEqual(n_constants.DISABLED,
+                filter_values=port_ext_id)
+            self.assertEqual(SPOOFING_DISABLED,
                              nuage_vport[0]['addressSpoofing'])
             nuage_vip = self.nuage_client.get_virtual_ip(
                 n_constants.VPORT,
                 nuage_vport[0]['ID'],
                 filters='virtualIP',
-                filter_value=str(portids_to_aap[port_id][0]['ip_address']))
+                filter_values=str(portids_to_aap[port_id][0]['ip_address']))
             self.assertEqual(portids_to_aap[port_id][0]['mac_address'],
                              nuage_vip[0]['MAC'])
             self.assertEqual(nuage_vip[0]['externalID'],

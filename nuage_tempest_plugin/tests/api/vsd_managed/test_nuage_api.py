@@ -12,11 +12,13 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 import netaddr
 
 from tempest.lib.common.utils import data_utils
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
@@ -39,23 +41,25 @@ class NuageApiTest(NuageBaseTest):
         self.assertEqual('L2', domain_json.get('type'))
         self.assertEqual(vspk_domain.parent_id,
                          domain_json.get('net_partition_id'))
-        self.assertEqual(vspk_domain.dhcp_managed,
-                         domain_json.get('dhcp_managed'))
-        self.assertEqual(vspk_domain.ip_type, domain_json.get('ip_version'))
-        l2dom_address = netaddr.IPNetwork(
-            vspk_domain.address + '/' + vspk_domain.netmask)
-        self.assertEqual(str(l2dom_address), domain_json.get('cidr'))
-        self.assertEqual(vspk_domain.ipv6_address,
-                         domain_json.get('ipv6_cidr'))
-        self.assertEqual(vspk_domain.ipv6_gateway,
-                         domain_json.get('ipv6_gateway'))
+        if Topology.has_full_dhcp_control_in_vsd():
+            self.assertEqual(vspk_domain.dhcp_managed,
+                             domain_json.get('dhcp_managed'))
+            self.assertEqual(vspk_domain.ip_type,
+                             domain_json.get('ip_version'))
+            l2dom_address = netaddr.IPNetwork(
+                vspk_domain.address + '/' + vspk_domain.netmask)
+            self.assertEqual(str(l2dom_address), domain_json.get('cidr'))
+            self.assertEqual(vspk_domain.ipv6_address,
+                             domain_json.get('ipv6_cidr'))
+            self.assertEqual(vspk_domain.ipv6_gateway,
+                             domain_json.get('ipv6_gateway'))
 
-        dhcp_option = vspk_domain.dhcp_options.get_first()
-        if dhcp_option:
-            self.assertEqual(dhcp_option.actual_values[0],
-                             domain_json['gateway'])
-        else:
-            self.assertIsNone(domain_json.get('gateway'))
+            dhcp_option = vspk_domain.dhcp_options.get_first()
+            if dhcp_option:
+                self.assertEqual(dhcp_option.actual_values[0],
+                                 domain_json['gateway'])
+            else:
+                self.assertIsNone(domain_json.get('gateway'))
 
     def _verify_l3domain(self, domain_json, vspk_domain):
         self.assertEqual(vspk_domain.id, domain_json.get('id'))
@@ -182,8 +186,7 @@ class NuageApiTest(NuageBaseTest):
         network = self.create_network()
         subnet = self.create_subnet(network)
         self.router_attach(router, subnet)
-        vspk_subnet = self.vsd.get_subnet(by_network_id=subnet['network_id'],
-                                          cidr=subnet['cidr'])
+        vspk_subnet = self.vsd.get_subnet(by_subnet=subnet)
         vsd_api_subnet = self.NuageNetworksClient.get_vsd_subnet(
             vspk_subnet.id)['vsd_subnet']
         # Find the zone

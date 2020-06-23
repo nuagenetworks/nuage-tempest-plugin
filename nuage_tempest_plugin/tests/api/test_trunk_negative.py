@@ -16,6 +16,7 @@ from oslo_utils import uuidutils
 from tempest.lib import decorators
 from tempest.lib import exceptions as lib_exc
 
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.tests.api import test_trunk
 
 
@@ -241,3 +242,10 @@ class TrunkTestJSON(test_trunk.TrunkTestJSONBase):
 
 class TrunkTestJSONV6(TrunkTestJSON):
     _ip_version = 6
+
+    @classmethod
+    def skip_checks(cls):
+        super(TrunkTestJSONV6, cls).skip_checks()
+        if not Topology.has_single_stack_v6_support():
+            msg = 'No single-stack v6 support.'
+            raise cls.skipException(msg)

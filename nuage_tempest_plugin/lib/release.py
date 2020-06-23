@@ -4,9 +4,9 @@ import re
 
 @functools.total_ordering
 class Release(object):
-    release_regex = re.compile("^([a-zA-Z]+)?[\D]*"
-                               "((\d+(\.(?=\d))?){2,})?[\D]*"
-                               "((\d+(\.(?=\d))?)*)$")
+    release_regex = re.compile(r'^([a-zA-Z]+)?[\D]*'
+                               r'((\d+(\.(?=\d))?){2,})?[\D]*'
+                               r'((\d+(\.(?=\d))?)*)$')
 
     def __init__(self, release_string):
         self._parse_release(release_string)

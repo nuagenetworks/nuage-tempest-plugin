@@ -26,6 +26,7 @@ class OsManagedDualStackOrchestrationTest(NuageBaseOrchestrationTest):
         if not NUAGE_FEATURES.os_managed_dualstack_subnets:
             raise cls.skipException(
                 'OS Managed Dual Stack is not supported in this release')
+        raise cls.skipException('TODO(OPENSTACK-2907) Fix tests')
 
     @classmethod
     def get_full_template_path(cls, name, ext='yaml'):

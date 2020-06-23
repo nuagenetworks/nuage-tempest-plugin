@@ -41,10 +41,19 @@ SEVERAL_VSD_CLAIMED_FIPS = 3
 
 VALID_MAC_ADDRESS = 'fa:fa:3e:e8:e8:c0'
 
+SPOOFING_ENABLED = constants.ENABLED
+SPOOFING_DISABLED = (constants.INHERITED if Topology.is_v5
+                     else constants.DISABLED)
+
 
 class VSDManagedRedirectTargetCliTest(
         client_testcase.CLIClientTestCase,
         base_vsd_managed_port_attributes.BaseVSDManagedPortAttributes):
+
+    if Topology.from_nuage('6.0'):
+        base_err_msg = 'Error in REST call to VSD: '
+    else:
+        base_err_msg = 'Nuage API: '
 
     @classmethod
     def resource_setup(cls):
@@ -80,7 +89,7 @@ class VSDManagedRedirectTargetCliTest(
         # to be present in the VSD as well ;-)
         vsd_redirect_target = self.nuage_client.get_redirection_target(
             constants.L2_DOMAIN, vsd_l2_subnet[0]['ID'], filters='ID',
-            filter_value=nuage_redirect_target['id'])
+            filter_values=nuage_redirect_target['id'])
         self.assertNotEmpty(vsd_redirect_target,
                             "Redirect target not present on VSD")
 
@@ -112,9 +121,8 @@ class VSDManagedRedirectTargetCliTest(
         # And the reditrect-target is also deleted on the VSD
         vsd_redirect_target = self.nuage_client.get_redirection_target(
             constants.L2_DOMAIN, vsd_l2_subnet[0]['ID'], filters='ID',
-            filter_value=nuage_redirect_target['id'])
+            filter_values=nuage_redirect_target['id'])
         self.assertEqual(vsd_redirect_target, '')
-        pass
 
     def test_cli_create_delete_vsd_redirection_target_l2_mgd_subnet(self):
         # Given I have a VSD-L2-Managed-Subnet in openstack
@@ -162,7 +170,7 @@ class VSDManagedRedirectTargetCliTest(
         # Verifying RT is deleted from VSD
         vsd_redirect_target = self.nuage_client.get_redirection_target(
             constants.L2_DOMAIN, vsd_l2_subnet[0]['ID'], filters='ID',
-            filter_value=vsd_redirect_target[0]['ID'])
+            filter_values=vsd_redirect_target[0]['ID'])
         self.assertEqual(vsd_redirect_target, '')
 
     def test_cli_create_delete_several_redirection_targets_l2_mgd_subnet(self):
@@ -229,7 +237,7 @@ class VSDManagedRedirectTargetCliTest(
             # And the redirect-target on VSD is also gone
             vsd_redirect_target = self.nuage_client.get_redirection_target(
                 constants.L2_DOMAIN, vsd_l2_subnet[0]['ID'], filters='ID',
-                filter_value=os_redirect_targets[i]['id'])
+                filter_values=os_redirect_targets[i]['id'])
             self.assertEqual(vsd_redirect_target, '')
             # When I delete the VSD created redirect-target
             self.nuage_client.delete_redirect_target(
@@ -243,10 +251,9 @@ class VSDManagedRedirectTargetCliTest(
             # And the redirect-target on VSD is also gone
             vsd_redirect_target = self.nuage_client.get_redirection_target(
                 constants.L2_DOMAIN, vsd_l2_subnet[0]['ID'], filters='ID',
-                filter_value=vsd_redirect_targets[i][
+                filter_values=vsd_redirect_targets[i][
                     'nuage_redirect_target']['id'])
             self.assertEqual(vsd_redirect_target, '')
-        pass
 
     def test_cli_create_delete_os_redirection_target_l3_mgd_subnet(self):
         # Given I have a VSD-L3-Managed-Subnet in openstack
@@ -264,7 +271,7 @@ class VSDManagedRedirectTargetCliTest(
         # check on VSD
         vsd_redirect_target = self.nuage_client.get_redirection_target(
             constants.DOMAIN, vsd_l3_domain[0]['ID'], filters='ID',
-            filter_value=os_redirect_target['id'])
+            filter_values=os_redirect_target['id'])
         self.assertIsNotNone(vsd_redirect_target,
                              message="OS created redirect target not found "
                                      "on VSD")
@@ -296,7 +303,7 @@ class VSDManagedRedirectTargetCliTest(
         # And the redirect target on VSD is gone as well
         vsd_redirect_target = self.nuage_client.get_redirection_target(
             constants.DOMAIN, vsd_l3_domain[0]['ID'], filters='ID',
-            filter_value=os_redirect_target['id'])
+            filter_values=os_redirect_target['id'])
         self.assertEqual(vsd_redirect_target, '')
 
     def test_cli_create_delete_vsd_redirection_target_l3_mgd_subnet(self):
@@ -345,9 +352,8 @@ class VSDManagedRedirectTargetCliTest(
         # Verifying RT is deleted from VSD
         vsd_redirect_target = self.nuage_client.get_redirection_target(
             constants.DOMAIN, vsd_l3_domain[0]['ID'], filters='ID',
-            filter_value=vsd_redirect_target[0]['ID'])
+            filter_values=vsd_redirect_target[0]['ID'])
         self.assertEqual(vsd_redirect_target, '')
-        pass
 
     def test_cli_create_delete_several_redirection_targets_l3_mgd_subnet(self):
         os_redirect_targets = []
@@ -415,7 +421,7 @@ class VSDManagedRedirectTargetCliTest(
             # And the redirect-target on VSD is also gone
             vsd_redirect_target = self.nuage_client.get_redirection_target(
                 constants.DOMAIN, vsd_l3_domain[0]['ID'], filters='ID',
-                filter_value=os_redirect_targets[i]['id'])
+                filter_values=os_redirect_targets[i]['id'])
             self.assertEqual(vsd_redirect_target, '')
             # When I delete the VSD created redirect-target
             self.delete_redirect_target(vsd_redirect_targets[i][
@@ -431,10 +437,9 @@ class VSDManagedRedirectTargetCliTest(
             # And the redirect-target on VSD is also gone
             vsd_redirect_target = self.nuage_client.get_redirection_target(
                 constants.DOMAIN, vsd_l3_domain[0]['ID'], filters='ID',
-                filter_value=vsd_redirect_targets[i][
+                filter_values=vsd_redirect_targets[i][
                     'nuage_redirect_target']['id'])
             self.assertEqual(vsd_redirect_target, '')
-        pass
 
     def test_cli_create_os_redirection_target_same_name_diff_l2_mgd_subnet(
             self):
@@ -475,7 +480,6 @@ class VSDManagedRedirectTargetCliTest(
             os_redirect_target_x['id'], cli_subnet_x)
         self.assertTrue(my_rt_found_x,
                         "Did not find my redirect-target in the list")
-        pass
 
     @decorators.attr(type=['negative'])
     def test_cli_create_os_redirection_target_same_name_same_l2_mgd_subnet_neg(
@@ -501,7 +505,6 @@ class VSDManagedRedirectTargetCliTest(
             self._cli_create_nuage_redirect_target_in_l2_subnet,
             cli_subnet,
             name)
-        pass
 
     @decorators.attr(type=['negative'])
     def test_cli_associate_two_port_same_l2_os_redirection_target_neg(self):
@@ -549,9 +552,9 @@ class VSDManagedRedirectTargetCliTest(
             vsd_l2_subnet)
         # And I have created a redirection-target in the VSD-L2-Managed-Subnet
         # parameters for nuage redirection target
-        msg = ('Error in REST call to VSD: vPort Tag with endpoint type as '
-               'NONE/VIRTUAL_WIRE cannot have redundancy enabled and '
-               'trigger type as GARP')
+        msg = self.base_err_msg + (
+            'vPort Tag with endpoint type as NONE/VIRTUAL_WIRE cannot have '
+            'redundancy enabled and trigger type as GARP')
         self.assertCommandFailed(
             msg,
             self._cli_create_redirect_target_with_args,
@@ -573,8 +576,8 @@ class VSDManagedRedirectTargetCliTest(
         vsd_l2_subnet, l2dom_template = self._create_vsd_l2_managed_subnet()
         cli_network, cli_subnet = self._cli_create_os_l2_vsd_managed_subnet(
             vsd_l2_subnet)
-        msg = ('Error in REST call to VSD: An L2 domain redirectiontarget '
-               'cannot have an L3 endpoint.')
+        msg = self.base_err_msg + (
+            'An L2 domain redirectiontarget cannot have an L3 endpoint.')
         self.assertCommandFailed(
             msg,
             self._cli_create_redirect_target_with_args,
@@ -799,7 +802,7 @@ class VSDManagedPolicyGroupsCLITest(
                           cli_subnet_y['id'], cli_subnet_x['id']))
 
         # And vice versa
-        # When I retrieve the polic groups of VSD-L2-Managed-Subnet_y
+        # When I retrieve the policy groups of VSD-L2-Managed-Subnet_y
         policy_group_list_y = self.list_nuage_policy_group_for_subnet(
             cli_subnet_y['id'])
         # I expect policyGroup_y in my list
@@ -1029,11 +1032,11 @@ class VSDManagedAllowedAddresPairsCLITest(
             constants.L2_DOMAIN,
             vsd_l2_subnet[0]['ID'],
             filters='externalID',
-            filter_value=port_ext_id)
+            filter_values=port_ext_id)
         self.assertIsNone(nuage_vport[0]['multiNICVPortID'],
                           "multiNICVPortID is not empty while it should be")
         # And address address spoofing is disabled on vport in VSD
-        self.assertEqual(constants.ENABLED,
+        self.assertEqual(SPOOFING_ENABLED,
                          nuage_vport[0]['addressSpoofing'])
         # When I delete the allowed address  pair from the port
         # ToDo: check removal when bug 1351979 is solved in Mitaka
@@ -1077,11 +1080,11 @@ class VSDManagedAllowedAddresPairsCLITest(
             constants.L2_DOMAIN,
             vsd_l2_subnet[0]['ID'],
             filters='externalID',
-            filter_value=port_ext_id)
+            filter_values=port_ext_id)
         self.assertIsNone(nuage_vport[0]['multiNICVPortID'],
                           "multiNICVPortID is not empty while it should be")
         # And address address spoofing is disabled on vport in VSD
-        self.assertEqual(constants.ENABLED,
+        self.assertEqual(SPOOFING_ENABLED,
                          nuage_vport[0]['addressSpoofing'])
         # When I delete the allowed address pair from the port
         # ToDo: check removal when bug 1351979 is solved in Mitaka
@@ -1123,11 +1126,11 @@ class VSDManagedAllowedAddresPairsCLITest(
             constants.SUBNETWORK,
             vsd_l3_subnet[0]['ID'],
             filters='externalID',
-            filter_value=port_ext_id)
+            filter_values=port_ext_id)
         self.assertIsNone(nuage_vport[0]['multiNICVPortID'],
                           "multiNICVPortID is not empty while it should be")
         # # And address address spoofing is disabled on vport in VSD
-        # self.assertEqual(constants.ENABLED,
+        # self.assertEqual(SPOOFING_ENABLED,
         #                  nuage_vport[0]['addressSpoofing'])
         # When I delete the allowed address  pair from the port
         # ToDo: check removal when bug 1351979 is solved in Mitaka
@@ -1170,16 +1173,18 @@ class VSDManagedAllowedAddresPairsCLITest(
             constants.SUBNETWORK,
             vsd_l3_subnet[0]['ID'],
             filters='externalID',
-            filter_value=port_ext_id)
+            filter_values=port_ext_id)
         self.assertIsNone(nuage_vport[0]['multiNICVPortID'],
                           "multiNICVPortID is not empty while it should be")
         # And address address spoofing is disabled on vport in VSD
-        self.assertEqual(constants.DISABLED,
+        AAP_DISABLED = (constants.INHERITED if Topology.is_v5
+                        else SPOOFING_DISABLED)
+        self.assertEqual(AAP_DISABLED,
                          nuage_vport[0]['addressSpoofing'])
         # When I delete the allowed address  pair from the port
         # ToDo: check removal when bug 1351979 is solved in Mitaka
         # self._remove_allowed_addres_pair_from_port(addrpair_port)
-        # # I expect it ot be gone fro the show port response
+        # # I expect it to be gone from the show port response
         # show_port = self.show_port(addrpair_port['id'])
         # self.assertEmpty(show_port['port']['allowed_address_pairs'],
         #                  "Removed allowed-address-pair stil present in " \
@@ -1521,8 +1526,8 @@ class VSDManagedAssociateFIPCLITest(
         # When I try to associate the same claimed flaoting IP to another port
         port_2 = self.create_port(cli_network)
         # I expect a failure
-        msg = ('Bad request: Error in REST call to VSD: Floating IP %s is '
-               'already in use' % claimed_fip[0]['address'])
+        msg = self.err_msg_base + 'Floating IP {} is already in use'.format(
+            claimed_fip[0]['address'])
         if NUAGE_FEATURES.ml2_limited_exceptions:
             if Topology.at_openstack('kilo'):
                 msg = "update_port_postcommit failed"

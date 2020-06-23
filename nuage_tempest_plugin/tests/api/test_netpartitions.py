@@ -12,12 +12,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import testtools
+
 from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageAdminNetworksTest
 from nuage_tempest_plugin.lib.test import vsd_helper
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.lib.utils import data_utils as nuage_data_utils
 from nuage_tempest_plugin.services import nuage_client
@@ -71,6 +74,13 @@ class NetpartitionsTest(NuageAdminNetworksTest):
         body = self.client.delete_netpartition(np_id)
         self.assertEqual('204', body.response['status'])
 
+    @staticmethod
+    def _expected_l2domain_name(network, subnet):
+        if Topology.is_v5:
+            return subnet['id']
+        else:
+            return network['id'] + '_' + subnet['id']
+
     @decorators.attr(type='smoke')
     def test_create_list_verify_delete_netpartition(self):
         name = data_utils.rand_name('tempest-np')
@@ -79,19 +89,21 @@ class NetpartitionsTest(NuageAdminNetworksTest):
         net_partition = self.nuage_client.get_global_resource(
             resource=constants.NET_PARTITION,
             filters='externalID',
-            filter_value=name + '@openstack')
+            filter_values=(
+                    (netpart['id'] if Topology.is_v5 else name) +
+                    '@openstack'))
         self.assertEqual(name, net_partition[0]['name'])
         default_l2dom_template = self.nuage_client.get_resource(
             resource=constants.L2_DOMAIN_TEMPLATE,
             filters='externalID',
-            filter_value=netpart['id'] + '@openstack',
+            filter_values=netpart['id'] + '@openstack',
             netpart_name=name)
         self.assertIsNot(expected='', observed=default_l2dom_template,
                          message='Default L2Domain Template Not Found')
         default_dom_template = self.nuage_client.get_resource(
             resource=constants.DOMAIN_TEMPLATE,
             filters='externalID',
-            filter_value=netpart['id'] + '@openstack',
+            filter_values=netpart['id'] + '@openstack',
             netpart_name=name)
         self.assertIsNot(expected='', observed=default_dom_template,
                          message='Default Domain Template Not Found')
@@ -100,7 +112,7 @@ class NetpartitionsTest(NuageAdminNetworksTest):
             resource_id=default_dom_template[0]['ID'],
             child_resource=constants.ZONE_TEMPLATE,
             filters='externalID',
-            filter_value=netpart['id'] + '@openstack')
+            filter_values=netpart['id'] + '@openstack')
         self.assertEqual(2, len(zone_templates))
         body = self.client.list_netpartition()
         netpartition_id_list = []
@@ -111,6 +123,9 @@ class NetpartitionsTest(NuageAdminNetworksTest):
         self.assertIn(netpart['id'], netpartition_id_list)
         self.assertIn(netpart['name'], netpartition_name_list)
 
+    @testtools.skipIf(not Topology.has_utf8_netpartition_names_support(),
+                      'Net-partitions names with utf8 characters are not '
+                      'supported in this release')
     def test_create_netpartition_utf_notation_16_neg(self):
         name = self.russian_horseradish + data_utils.rand_name('ascii')
         msg = 'Invalid netpartition name: Only ascii names are allowed'
@@ -120,6 +135,9 @@ class NetpartitionsTest(NuageAdminNetworksTest):
             self._create_netpartition,
             name)
 
+    @testtools.skipIf(not Topology.has_utf8_netpartition_names_support(),
+                      'Net-partitions names with utf8 characters are not '
+                      'supported in this release')
     def test_create_netpartition_utf_notation_32_neg(self):
         name = self.collision_symbol + data_utils.rand_name('ascii')
         msg = 'Invalid netpartition name: Only ascii names are allowed'
@@ -129,6 +147,9 @@ class NetpartitionsTest(NuageAdminNetworksTest):
             self._create_netpartition,
             name)
 
+    @testtools.skipIf(not Topology.has_utf8_netpartition_names_support(),
+                      'Net-partitions names with utf8 characters are not '
+                      'supported in this release')
     def test_create_netpartition_utf_notation_short_neg(self):
         name = self.n_tilde_symbol + data_utils.rand_name('ascii')
         msg = 'Invalid netpartition name: Only ascii names are allowed'
@@ -171,13 +192,9 @@ class NetpartitionsTest(NuageAdminNetworksTest):
         self.addCleanup(self.admin_subnets_client.delete_subnet,
                         ext_subnet['id'])
         # check the vsd
-        nuage_subnet = self.vsd.get_subnet(
-            by_network_id=ext_subnet['network_id'],
-            cidr=ext_subnet['cidr'])
-        l3domain = self.vsd.get_l3_domain_by_network_id_and_cidr(
-            ext_subnet['network_id'],
-            ext_subnet['cidr'])
-        self.assertEqual(ext_network['id'] + '_' + ext_subnet['id'],
+        nuage_subnet = self.vsd.get_subnet(by_subnet=ext_subnet)
+        l3domain = self.vsd.get_l3_domain_by_subnet(by_subnet=ext_subnet)
+        self.assertEqual(self._expected_l2domain_name(ext_network, ext_subnet),
                          nuage_subnet.name)
         shared_netpart_id = self.nuage_client.get_net_partition(
             self.shared_infrastructure)[0]['ID']
@@ -200,10 +217,8 @@ class NetpartitionsTest(NuageAdminNetworksTest):
                         int_subnet['id'])
         # check the vsd
         nuage_l2dom = self.vsd.get_l2domain(
-            enterprise=netpart['name'],
-            by_network_id=int_subnet['network_id'],
-            cidr=int_subnet['cidr'])
-        self.assertEqual(int_network['id'] + '_' + int_subnet['id'],
+            enterprise=netpart['name'], by_subnet=int_subnet)
+        self.assertEqual(self._expected_l2domain_name(int_network, int_subnet),
                          nuage_l2dom.name)
         self.assertEqual(netpart['id'], nuage_l2dom.parent_id)
 
@@ -241,13 +256,9 @@ class NetpartitionsTest(NuageAdminNetworksTest):
         self.addCleanup(self.admin_subnets_client.delete_subnet,
                         ext_subnet['id'])
         # check the vsd
-        nuage_subnet = self.vsd.get_subnet(
-            by_network_id=ext_subnet['network_id'],
-            cidr=ext_subnet['cidr'])
-        l3domain = self.vsd.get_l3_domain_by_network_id_and_cidr(
-            ext_subnet['network_id'],
-            ext_subnet['cidr'])
-        self.assertEqual(ext_network['id'] + '_' + ext_subnet['id'],
+        nuage_subnet = self.vsd.get_subnet(by_subnet=ext_subnet)
+        l3domain = self.vsd.get_l3_domain_by_subnet(by_subnet=ext_subnet)
+        self.assertEqual(self._expected_l2domain_name(ext_network, ext_subnet),
                          nuage_subnet.name)
         shared_netpart_id = self.nuage_client.get_net_partition(
             self.shared_infrastructure)[0]['ID']
@@ -290,13 +301,9 @@ class NetpartitionsTest(NuageAdminNetworksTest):
         self.addCleanup(self.admin_subnets_client.delete_subnet,
                         ext_subnet['id'])
         # check the vsd
-        nuage_subnet = self.vsd.get_subnet(
-            by_network_id=ext_subnet['network_id'],
-            cidr=ext_subnet['cidr'])
-        l3domain = self.vsd.get_l3_domain_by_network_id_and_cidr(
-            ext_subnet['network_id'],
-            ext_subnet['cidr'])
-        self.assertEqual(ext_network['id'] + '_' + ext_subnet['id'],
+        nuage_subnet = self.vsd.get_subnet(by_subnet=ext_subnet)
+        l3domain = self.vsd.get_l3_domain_by_subnet(by_subnet=ext_subnet)
+        self.assertEqual(self._expected_l2domain_name(ext_network, ext_subnet),
                          nuage_subnet.name)
         shared_netpart_id = self.nuage_client.get_net_partition(
             self.shared_infrastructure)[0]['ID']

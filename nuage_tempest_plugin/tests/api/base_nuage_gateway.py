@@ -291,7 +291,8 @@ class BaseNuageGatewayTest(NuageAdminNetworksTest):
         if expected_vport['type'] == n_constants.BRIDGE_VPORT:
             self.assertEqual(actual_vport['externalID'],
                              self.nuage_client.get_vsd_external_id(
-                                 network_id))
+                                 expected_vport['subnet'] if Topology.is_v5
+                                 else network_id))
         else:
             self.assertEqual(actual_vport['externalID'],
                              self.nuage_client.get_vsd_external_id(

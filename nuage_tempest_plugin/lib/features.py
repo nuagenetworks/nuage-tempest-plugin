@@ -45,8 +45,7 @@ class NuageFeatures(object):
             self.project_name_in_vsd = Topology.from_nuage('5.1')
             self.stateless_security_groups = Topology.from_nuage('5.2')
             self.route_to_underlay = Topology.from_nuage('5.2')
-            self.switchdev_offload = (Topology.from_nuage('5.4') and
-                                      Topology.from_openstack('queens'))
+            self.switchdev_offload = Topology.from_nuage('6.0')
 
     def _log_features(self):
 

@@ -11,6 +11,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 from netaddr import IPNetwork
 
 from tempest.lib.common.utils import data_utils
@@ -19,11 +20,19 @@ from tempest.lib import exceptions
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
 
 class SecuredNetpartitionsTest(NuageBaseTest):
+
+    @classmethod
+    def skip_checks(cls):
+        super(SecuredNetpartitionsTest, cls).skip_checks()
+        if not Topology.has_secured_netpartitions_support():
+            msg = 'Secured netpartitions are not supported in this release'
+            raise cls.skipException(msg)
 
     @classmethod
     def setup_clients(cls):
@@ -83,7 +92,8 @@ class SecuredNetpartitionsTest(NuageBaseTest):
         # Show the deleted mapping
         self.assertRaisesRegex(
             exceptions.NotFound,
-            'project_net_partition_mapping .* could not be found',
+            ('net_partition' if Topology.is_v5
+             else 'project_net_partition_mapping') + ' .* could not be found',
             self.plugin_admin_network_client.
             show_project_netpartition_mappings,
             project_id)
@@ -204,9 +214,7 @@ class SecuredNetpartitionsTest(NuageBaseTest):
         # Verify port creation is possible
         self.create_port(network)
         # Find subnet on VSD, use default netpartition to find it
-        vsd_subnet = self.vsd.get_l2domain(
-            by_network_id=network['id'],
-            cidr=subnet['cidr'])
+        vsd_subnet = self.vsd.get_l2domain(by_subnet=subnet)
         self.assertIsNotNone(vsd_subnet, 'l2domain not found under expected, '
                                          'mapped netpartition.')
         router = self.create_router(name, no_net_partition=True)
@@ -244,9 +252,7 @@ class SecuredNetpartitionsTest(NuageBaseTest):
         # Find subnet on VSD
         enterprise = self.vsd.get_enterprise_by_name(netpart['name'])
         vsd_subnet = self.vsd.get_l2domain(
-            enterprise=enterprise,
-            by_network_id=network['id'],
-            cidr=subnet['cidr'])
+            enterprise=enterprise, by_subnet=subnet)
         self.assertIsNotNone(vsd_subnet, 'l2domain not found under expected, '
                                          'mapped netpartition.')
 
@@ -270,9 +276,7 @@ class SecuredNetpartitionsTest(NuageBaseTest):
         # Verify port creation is possible
         self.create_port(network)
         # Find subnet on VSD, use default netpartition to find it
-        vsd_subnet = self.vsd.get_l2domain(
-            by_network_id=network['id'],
-            cidr=subnet['cidr'])
+        vsd_subnet = self.vsd.get_l2domain(by_subnet=subnet)
         self.assertIsNotNone(vsd_subnet, 'l2domain not found under expected, '
                                          'mapped netpartition.')
         router = self.create_router(name, no_net_partition=True)

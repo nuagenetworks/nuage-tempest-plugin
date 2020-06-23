@@ -21,8 +21,8 @@ class NuageDomainTunnelTypeNegativeTest(
         reported_value = invalid_value if invalid_value != '' else 'None'
         self.assertRaisesRegex(
             exceptions.BadRequest,
-            'Invalid input for tunnel_type. '
-            'Reason: {} is not in'.format(reported_value),
+            'Invalid input for tunnel_type. Reason: {} is not in'.format(
+                reported_value),
             self._do_create_router_with_domain_tunnel_type,
             invalid_value)
 

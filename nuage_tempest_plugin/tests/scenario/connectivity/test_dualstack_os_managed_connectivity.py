@@ -2,6 +2,7 @@
 # All Rights Reserved.
 
 import testscenarios
+import testtools
 
 from tempest.test import decorators
 
@@ -63,6 +64,7 @@ class DualstackOsMgdConnectivityTest(DualstackOsMgdConnectivityTestBase):
     def test_icmp_connectivity_l3_os_managed_dualstack(self):
         self._test_icmp_connectivity_os_managed_dualstack(is_l3=True)
 
+    @testtools.skipIf(Topology.is_v5, 'Not business critical for 5.x')
     def test_icmp_connectivity_os_managed_dualstack_128_sg_prefix(self):
         network = self.create_network()
         ipv4_subnet = self.create_subnet(network)

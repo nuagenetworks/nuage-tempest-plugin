@@ -163,8 +163,7 @@ class NuageHybridMplsSriov(NuageBaseTest,
                                 cleanup=True, **kwargs)
         self.assertEqual(vif_type, port['binding:vif_type'])
         if not l3subnet:
-            l2domain = self.vsd.get_l2domain(by_network_id=network["id"],
-                                             cidr=subnet["cidr"])
+            l2domain = self.vsd.get_l2domain(by_subnet=subnet)
             assert_vport(self.vsd.get_vport(l2domain=l2domain,
                                             by_port_id=network['id']))
         else:
@@ -230,7 +229,6 @@ class NuageHybridMplsSriov(NuageBaseTest,
                                         should_succeed=False, **kwargs)
 
     def test_os_vxlan_sriov_with_unmanaged_gateway_neg(self):
-
         network, subnet, gw_port = self._create_os_topology(
             self.unmanaged_gateway, network_type='vxlan')
 

@@ -12,9 +12,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import testtools
+
+from tempest.test import decorators
+
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
-from tempest.test import decorators
 
 LOG = Topology.get_logger(__name__)
 CONF = Topology.get_conf()
@@ -61,19 +64,27 @@ class DNSScenarioTest(nuage_test.NuageBaseTest):
     def test_dns_up_to_vm_l2_v4(self):
         self._test_dns_up_to_vm(ip_versions=[4], is_l3=False)
 
+    @testtools.skipIf(not Topology.has_single_stack_v6_support(),
+                      'No singe-stack v6 supported')
     def test_dns_up_to_vm_l2_v6(self):
         self._test_dns_up_to_vm(ip_versions=[6], is_l3=False)
 
     def test_dns_up_to_vm_l3_v4(self):
         self._test_dns_up_to_vm(ip_versions=[4], is_l3=True)
 
+    @testtools.skipIf(not Topology.has_single_stack_v6_support(),
+                      'No singe-stack v6 supported')
     @decorators.attr(type='smoke')
     def test_dns_up_to_vm_l3_v6(self):
         self._test_dns_up_to_vm(ip_versions=[6], is_l3=True)
 
+    @testtools.skipUnless(Topology.has_dhcp_v6_support(),
+                          'No dhcp v6 supported')
     def test_dns_up_to_vm_l2_dualstack(self):
         self._test_dns_up_to_vm(ip_versions=[6, 4], is_l3=False)
 
+    @testtools.skipUnless(Topology.has_dhcp_v6_support(),
+                          'No dhcp v6 supported')
     @decorators.attr(type='smoke')
     def test_dns_up_to_vm_l3_dualstack(self):
         self._test_dns_up_to_vm(ip_versions=[6, 4], is_l3=True)
