@@ -137,9 +137,7 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
 
         # Verify the floating ip exists in the list of all floating_ips
         floating_ips = self.floating_ips_client.list_floatingips()
-        floatingip_id_list = list()
-        for f in floating_ips['floatingips']:
-            floatingip_id_list.append(f['id'])
+        floatingip_id_list = [fip['id'] for fip in floating_ips['floatingips']]
         self.assertIn(created_floating_ip['id'], floatingip_id_list)
 
         # Disassociate floating IP from the port
@@ -568,11 +566,15 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
         self.assertIsNotNone(floating_ip, "Unabe to create floating ip")
         msg = 'floating ip cannot be associated to port %s ' \
               'because it has multiple ipv4 or multiple ipv6ips' % port['id']
+        # Neutron does not allow you to attach a fip to a port with multiple
+        # ipv4 ips without specifying which one you attach.
         self.assertRaisesRegex(exceptions.BadRequest,
                                msg,
                                self.floating_ips_client.update_floatingip,
                                floating_ip['id'],
-                               port_id=port['id'])
+                               port_id=port['id'],
+                               fixed_ip_address=str(
+                                   IPAddress(cidr4.first) + 4))
         # 2. Assigning multiple ip address to a port with fip
         port = self.create_port(network=network)
         floating_ip = self.create_floatingip(

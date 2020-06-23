@@ -47,6 +47,9 @@ def safe_body(body, maxlen=5000):
 
 class NuageRestClient(object):
 
+    # Cache netpartitions
+    netpartitions = {}
+
     def __init__(self):
         server = Topology.vsd_server
         self.def_netpart_name = (
@@ -271,15 +274,22 @@ class NuageRestClient(object):
         if extra_params:
             data.update(extra_params)
         res_path = self.build_resource_path(constants.NET_PARTITION)
-        return self.post(res_path, data)
+        netpartition = self.post(res_path, data)
+        self.netpartitions[name] = netpartition
+        return netpartition
 
     def delete_net_partition(self, np_id):
         return self.delete_resource(constants.NET_PARTITION, np_id)
 
     def get_net_partition(self, net_part_name):
-        res_path = self.build_resource_path(constants.NET_PARTITION)
-        extra_headers = self.get_extra_headers('name', net_part_name)
-        return self.get(res_path, extra_headers)
+        if net_part_name not in self.netpartitions:
+            # Caching makes this more efficient, however recreating
+            # netpartition with same name will not work.
+            res_path = self.build_resource_path(constants.NET_PARTITION)
+            extra_headers = self.get_extra_headers('name', net_part_name)
+            self.netpartitions[net_part_name] = self.get(res_path,
+                                                         extra_headers)
+        return self.netpartitions[net_part_name]
 
     # Network
     # EnterpriseNetworkMacro

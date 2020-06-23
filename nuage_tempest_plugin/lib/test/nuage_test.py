@@ -487,7 +487,10 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         return vsd_subnet
 
     @classmethod
-    def create_cls_network(cls, network_name, manager, cleanup=True, **kwargs):
+    def create_cls_network(cls, network_name=None, manager=None,
+                           cleanup=True, **kwargs):
+        network_name = network_name or data_utils.rand_name('test-network')
+        manager = manager or cls.manager
         body = manager.networks_client.create_network(
             name=network_name, **kwargs)
         network = body['network']
