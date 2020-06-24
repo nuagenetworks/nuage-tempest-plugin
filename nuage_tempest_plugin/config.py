@@ -102,6 +102,13 @@ NuageSutGroup = [
                      'for network interface configuration in VM\'s. '
                      'This is needed e.g. when using DHCPv6 with RHEL VM\'s'
                      'Not supported for cirros.'),
+    cfg.StrOpt('compute_login_username',
+               default='heat-admin',
+               help='Compute login username'),
+    cfg.BoolOpt('identify_hypervisors_by_flavor',
+                default=True,
+                help='Whether E2E tests should pick compute by aggregate '
+                     'flavor'),
     cfg.BoolOpt('force_config_drive',
                 default=None,
                 help='Set to True or False to force spawning guest VMs under '

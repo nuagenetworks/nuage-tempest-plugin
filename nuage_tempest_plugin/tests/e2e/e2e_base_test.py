@@ -66,6 +66,7 @@ class E2eTestBase(NuageBaseTest):
     @classmethod
     def setUpClass(cls):
         super(E2eTestBase, cls).setUpClass()
+        cls.hypervisors = cls.get_hypervisors()
 
     def setUp(self):
         """Setup test topology"""
@@ -133,20 +134,23 @@ class E2eTestBase(NuageBaseTest):
     @classmethod
     def get_hypervisors(cls, aggregate_instance_extra_specs_flavor=''):
         hvs = cls.hv_client.list_hypervisors(detail=True)['hypervisors']
-        if aggregate_instance_extra_specs_flavor:
+        if (CONF.nuage_sut.identify_hypervisors_by_flavor and
+                aggregate_instance_extra_specs_flavor):
             aggregates = cls.aggregates_client.list_aggregates()['aggregates']
             my_aggregate = next(
                 (a for a in aggregates if a['metadata'].get('flavor') ==
                  aggregate_instance_extra_specs_flavor), None)
             hvs = [hv for hv in hvs if hv['hypervisor_hostname'] in
                    my_aggregate['hosts']] if my_aggregate else []
+        else:
+            hvs = [hv for hv in hvs if hv['status'] == 'enabled']
         return hvs
 
     @classmethod
     def get_hypervisor(cls, server):
         server = server.get_server_details()
         return next(
-            hv for hv in cls.get_hypervisors()
+            hv for hv in cls.hypervisors
             if (hv['hypervisor_hostname'] ==
                 server['OS-EXT-SRV-ATTR:hypervisor_hostname']))
 
@@ -155,15 +159,21 @@ class E2eTestBase(NuageBaseTest):
         """Dump flows on hypervisor"""
         pass
 
-    def restart_openvswitch(self, hypervisor):
-        cmd = ('ssh heat-admin@{host_ip} "sudo service openvswitch restart"'
-               .format(host_ip=hypervisor['host_ip']))
+    def execute_on_hypervisor(self, hypervisor, cmd):
+        hyp = hypervisor['host_ip']
+        if hyp == '127.0.0.1':  # CBIS 18
+            hyp = hypervisor['hypervisor_hostname']
+        cmd = 'ssh {}@{} "{}"'.format(CONF.nuage_sut.compute_login_username,
+                                      hyp, cmd)
         return self.execute_from_shell(cmd)
 
+    def restart_openvswitch(self, hypervisor):
+        return self.execute_on_hypervisor(hypervisor,
+                                          'sudo service openvswitch restart')
+
     def restart_avrs(self, hypervisor):
-        cmd = ('ssh heat-admin@{host_ip} "sudo service avrs restart"'
-               .format(host_ip=hypervisor['host_ip']))
-        return self.execute_from_shell(cmd)
+        return self.execute_on_hypervisor(hypervisor,
+                                          'sudo service avrs restart')
 
     def _get_server_extra_args(self):
         """Force config drive for L2 to work around metadata agent issue"""
@@ -177,7 +187,7 @@ class E2eTestBase(NuageBaseTest):
         ip_version = connectivity_check_kwargs['ip_version']
         LOG.info('Verify ICMP/IPv{} traffic'.format(ip_version))
         self.assert_icmp_connectivity(**connectivity_check_kwargs)
-        if (ip_version == 6 and not self.is_icmpv6_offload_supported):
+        if ip_version == 6 and not self.is_icmpv6_offload_supported:
             LOG.info('skipping ICMPv6 offloading checks as they are not '
                      'supported by CX-5')
         else:

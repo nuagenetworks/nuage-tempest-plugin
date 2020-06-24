@@ -2007,8 +2007,10 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
     def execute_from_shell(command, success_expected=True, pause=None):
         output = None
         try:
+            LOG.debug('Executing: {}'.format(command))
             output = (subprocess.check_output(
                 command, shell=True)).decode('utf-8')
+            LOG.debug('Output: {}'.format(output))
         except subprocess.CalledProcessError:
             if success_expected:
                 raise
