@@ -156,8 +156,10 @@ class TenantServer(object):
     def sleep(self, seconds=1, msg=None):
         self.parent.sleep(seconds, msg, tag=self.tag)
 
-    def init_console(self):
+    def init_console(self, validate=True):
         self._vm_console = FipAccessConsole(self)
+        if validate:
+            self.validate_authentication()
 
     def has_console(self):
         return bool(self._vm_console)
@@ -165,9 +167,7 @@ class TenantServer(object):
     def console(self):
         if not self._vm_console:
             self.init_console()
-            self.validate_authentication()
-            self.wait_for_cloudinit_to_complete()
-            self.provision()
+            self.prepare_for_connectivity()
         return self._vm_console
 
     @property
@@ -331,8 +331,13 @@ class TenantServer(object):
             self.console()  # doing more than authentication check alone
             #                 (i.e. completing all steps), which is good
 
+    def prepare_for_connectivity(self):
+        self.wait_for_cloudinit_to_complete()
+        self.provision()
+
     def wait_for_cloudinit_to_complete(self):
-        if (not self.cloudinit_complete and
+        if (self.set_to_prepare_for_connectivity and
+                not self.cloudinit_complete and
                 not self.waiting_for_cloudinit_completion):
             LOG.info('[{}] Waiting for cloudinit to complete'.format(self.tag))
             self.waiting_for_cloudinit_completion = True

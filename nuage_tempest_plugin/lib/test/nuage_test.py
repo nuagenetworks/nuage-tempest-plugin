@@ -269,8 +269,8 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         if network_name is None:
             network_name = to_server.get_server_networks()[0]['name']
 
-        if to_server.needs_provisioning:
-            to_server.provision()
+        to_server.prepare_for_connectivity()
+
         to = IPAddress(to_server.get_server_ip_in_network(
             network_name, ip_version))
 
@@ -294,8 +294,8 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         if network_name is None:
             network_name = to_server.get_server_networks()[0]['name']
 
-        if to_server.needs_provisioning:
-            to_server.provision()
+        to_server.prepare_for_connectivity()
+
         to_ip = IPAddress(to_server.get_server_ip_in_network(
             network_name, ip_version))
 
@@ -1786,14 +1786,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         ip_version = ip_version if ip_version else self._ip_version
 
         if server2:
-            if server2.set_to_prepare_for_connectivity:
-                # this may be a reason alone to declare a server a to prepare
-                # fip connectivity : making sure it completed on cloudinit
-                server2.wait_for_cloudinit_to_complete()
-
-                # furthermore, if provisioning is needed, provision
-                if server2.needs_provisioning:
-                    server2.provision()
+            server2.prepare_for_connectivity()
 
             if address:
                 dest = address
@@ -1804,9 +1797,6 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         else:
             assert address
             dest = address
-
-        if server1.needs_provisioning:
-            server1.provision()
 
         def ping():
 
