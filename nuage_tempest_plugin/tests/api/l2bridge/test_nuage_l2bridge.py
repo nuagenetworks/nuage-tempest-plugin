@@ -2262,7 +2262,7 @@ class NuageL2BridgeV6Test(NuageL2BridgeV4Test):
     def skip_checks(cls):
         super(NuageL2BridgeV6Test, cls).skip_checks()
         if not Topology.has_single_stack_v6_support():
-            msg = 'No single-stack v6 support.'
+            msg = 'There is no single-stack v6 support in current release'
             raise cls.skipException(msg)
 
     @decorators.attr(type='smoke')

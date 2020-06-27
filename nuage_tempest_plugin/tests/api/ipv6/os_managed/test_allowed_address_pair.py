@@ -112,7 +112,8 @@ class AllowedAddressPairIpV6NuageTest(AllowedAddressPairNuageTest):
     def skip_checks(cls):
         super(AllowedAddressPairIpV6NuageTest, cls).skip_checks()
         if not Topology.has_single_stack_v6_support():
-            raise cls.skipException('No single-stack v6 support')
+            raise cls.skipException('There is no single-stack v6 support '
+                                    'in current release')
 
 
 class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
@@ -214,8 +215,8 @@ class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
                                self.delete_subnet,
                                subnet6)
 
-    @testtools.skipUnless(Topology.has_single_stack_v6_support(),
-                          'No single-stack v6 support')
+    @testtools.skipIf(not Topology.has_single_stack_v6_support(),
+                      'There is no single-stack v6 support in current release')
     def test_delete_v4_subnet_with_ip_as_vip_in_v6_subnet_neg(self):
         network = self.create_network()
         subnet4 = self.create_subnet(

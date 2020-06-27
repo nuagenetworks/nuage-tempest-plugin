@@ -564,7 +564,7 @@ class Ipv6OsMgdL2ConnectivityTest(Ipv4OsMgdL2ConnectivityTest):
     def skip_checks(cls):
         super(Ipv6OsMgdL2ConnectivityTest, cls).skip_checks()
         if not Topology.has_single_stack_v6_support():
-            msg = 'No single-stack v6 support.'
+            msg = 'There is no single-stack v6 support in current release'
             raise cls.skipException(msg)
 
     @testtools.skipIf(Topology.has_default_switchdev_port_profile(),
@@ -589,7 +589,7 @@ class Ipv6OsMgdL3ConnectivityTest(Ipv4OsMgdL3ConnectivityTest):
     def skip_checks(cls):
         super(Ipv6OsMgdL3ConnectivityTest, cls).skip_checks()
         if not Topology.has_single_stack_v6_support():
-            msg = 'No single-stack v6 support.'
+            msg = 'There is no single-stack v6 support in current release'
             raise cls.skipException(msg)
 
     def test_icmp_connectivity_multiple_subnets_in_shared_network(self):

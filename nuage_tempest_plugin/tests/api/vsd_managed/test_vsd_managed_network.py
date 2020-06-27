@@ -1298,8 +1298,8 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
                                net_partition=Topology.def_netpartition,
                                enable_dhcp=True)
 
-    @testtools.skipUnless(Topology.has_single_stack_v6_support(),
-                          'No single-stack v6 support.')
+    @testtools.skipIf(not Topology.has_single_stack_v6_support(),
+                      'There is no single-stack v6 support in current release')
     @decorators.attr(type='smoke')
     def test_link_dhcp_subnet_with_no_dhcp_vsd_managed_l2_ipv6_neg(self):
         # Provision VSD managed network resources

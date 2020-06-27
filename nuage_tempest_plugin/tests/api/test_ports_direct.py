@@ -395,8 +395,8 @@ class PortsDirectTest(network_mixin.NetworkMixin,
         topology = self._create_topology(with_router=False)
         self._test_direct_port(topology, update=False)
 
-    @testtools.skipUnless(Topology.has_single_stack_v6_support(),
-                          'No single-stack v6 supported')
+    @testtools.skipIf(not Topology.has_single_stack_v6_support(),
+                      'There is no single-stack v6 support in current release')
     def test_direct_port_l2_single_ipv6(self):
         topology = self._create_topology(with_router=False, ip_version=6)
         self._test_direct_port(topology, update=False)

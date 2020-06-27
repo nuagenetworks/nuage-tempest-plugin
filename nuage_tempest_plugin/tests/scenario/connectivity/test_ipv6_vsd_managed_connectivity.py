@@ -99,7 +99,7 @@ class Ipv6L3VsdManagedConnectivityTest(NuageBaseTest):
     def skip_checks(cls):
         super(Ipv6L3VsdManagedConnectivityTest, cls).skip_checks()
         if not Topology.has_single_stack_v6_support():
-            msg = 'No single-stack v6 support.'
+            msg = 'There is no single-stack v6 support in current release'
             raise cls.skipException(msg)
 
     @staticmethod
