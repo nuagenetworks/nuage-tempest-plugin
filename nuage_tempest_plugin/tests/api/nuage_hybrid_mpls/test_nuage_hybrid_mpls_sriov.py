@@ -25,12 +25,15 @@ from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 CONF = Topology.get_conf()
 
 
-class NuageHybridMplsSriov(NuageBaseTest,
-                           topology_mixin.NetTopologyMixin):
+class NuageHybridMplsSriovTest(NuageBaseTest,
+                               topology_mixin.NetTopologyMixin):
 
     @classmethod
     def skip_checks(cls):
-        super(NuageHybridMplsSriov, cls).skip_checks()
+        super(NuageHybridMplsSriovTest, cls).skip_checks()
+        if Topology.before_nuage('20.5'):
+            raise cls.skipException('nuage_hybrid_mpls is supported from '
+                                    '20.5 onwards only')
         if not CONF.nuage_sut.nuage_hybrid_mpls_enabled:
             raise cls.skipException('nuage_hybrid_mpls type driver '
                                     'not enabled in tempest.conf')
@@ -42,12 +45,12 @@ class NuageHybridMplsSriov(NuageBaseTest,
 
     @classmethod
     def setup_clients(cls):
-        super(NuageHybridMplsSriov, cls).setup_clients()
+        super(NuageHybridMplsSriovTest, cls).setup_clients()
         cls.nuage_client = NuageRestClient()
 
     @classmethod
     def resource_setup(cls):
-        super(NuageHybridMplsSriov, cls).resource_setup()
+        super(NuageHybridMplsSriovTest, cls).resource_setup()
         cls.vsg_gateway = cls.nuage_client.create_gateway(
             data_utils.rand_name(name='vsg'),
             data_utils.rand_name(name='sys_id'), 'VSG')[0]
@@ -57,7 +60,7 @@ class NuageHybridMplsSriov(NuageBaseTest,
 
     @classmethod
     def resource_cleanup(cls):
-        super(NuageHybridMplsSriov, cls).resource_cleanup()
+        super(NuageHybridMplsSriovTest, cls).resource_cleanup()
         cls.nuage_client.delete_gateway(cls.vsg_gateway['ID'])
         cls.nuage_client.delete_gateway(cls.unmanaged_gateway['ID'])
 

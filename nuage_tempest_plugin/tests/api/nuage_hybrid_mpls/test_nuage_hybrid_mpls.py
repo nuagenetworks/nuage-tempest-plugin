@@ -31,6 +31,9 @@ class NuageHybridMplsTest(NuageBaseTest):
     @classmethod
     def skip_checks(cls):
         super(NuageHybridMplsTest, cls).skip_checks()
+        if Topology.before_nuage('20.5'):
+            raise cls.skipException('nuage_hybrid_mpls is supported from '
+                                    '20.5 onwards only')
         if not CONF.nuage_sut.nuage_hybrid_mpls_enabled:
             raise cls.skipException('nuage_hybrid_mpls type driver '
                                     'not enabled in tempest.conf')
