@@ -295,14 +295,14 @@ class OsManagedDualStackL2SubnetsTest(NuageBaseTest,
                 mask_bits=IPNetwork(ipv6_cidr).prefixlen,
                 gateway=ipv6_gateway)
 
-    @testtools.skipUnless(Topology.has_single_stack_v6_support(),
-                          'No single-stack v6 supported')
+    @testtools.skipIf(not Topology.has_single_stack_v6_support(),
+                      'There is no single-stack v6 support in current release')
     @decorators.attr(type='smoke')
     def test_os_managed_dhcp_subnet_ipv6_first(self):
         self._test_os_managed_subnet_ipv6_first(enable_dhcp=True)
 
-    @testtools.skipUnless(Topology.has_single_stack_v6_support(),
-                          'No single-stack v6 supported')
+    @testtools.skipIf(not Topology.has_single_stack_v6_support(),
+                      'There is no single-stack v6 support in current release')
     @decorators.attr(type='smoke')
     def test_os_managed_no_dhcp_subnet_ipv6_first(self):
         self._test_os_managed_subnet_ipv6_first(enable_dhcp=False)

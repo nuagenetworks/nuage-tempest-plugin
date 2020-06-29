@@ -15,8 +15,8 @@ from nuage_tempest_plugin.tests.api.ipv6.vsd_managed.base_nuage_networks \
 class VSDManagedIPv6SubnetL3Test(BaseVSDManagedNetworksIPv6Test):
     dhcp_managed = True
 
-    @testtools.skipUnless(Topology.has_single_stack_v6_support(),
-                          'No single-stack v6 support')
+    @testtools.skipIf(not Topology.has_single_stack_v6_support(),
+                      'There is no single-stack v6 support in current release')
     @decorators.attr(type='smoke')
     def test_create_vsd_managed_ipv6_subnet_with_ipv4_cidr_neg(self):
         name = data_utils.rand_name('l3domain-')

@@ -363,5 +363,5 @@ class NuageExtraDHCPOptionsOSv6ManagedL2Test(
     def skip_checks(cls):
         super(NuageExtraDHCPOptionsOSv6ManagedL2Test, cls).skip_checks()
         if not Topology.has_single_stack_v6_support():
-            msg = 'No single-stack v6 support.'
+            msg = 'There is no single-stack v6 support in current release'
             raise cls.skipException(msg)

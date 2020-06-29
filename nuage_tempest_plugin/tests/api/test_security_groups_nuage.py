@@ -793,7 +793,7 @@ class SecGroupTestNuageBaseV6(SecGroupTestNuageBase):
     def skip_checks(cls):
         super(SecGroupTestNuageBaseV6, cls).skip_checks()
         if not Topology.has_single_stack_v6_support():
-            msg = 'No single-stack v6 support.'
+            msg = 'There is no single-stack v6 support in current release'
             raise cls.skipException(msg)
 
     @classmethod

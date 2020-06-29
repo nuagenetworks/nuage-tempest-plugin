@@ -13,6 +13,7 @@
 #    under the License.
 
 from tempest.test import decorators
+import testtools
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
@@ -70,10 +71,14 @@ class UnicodeUserDataTest(NuageBaseTest):
         self._test_unicode_userdata(l3=False, ip_versions=[4])
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(not Topology.has_single_stack_v6_support(),
+                      'There is no single-stack v6 support in current release')
     def test_unicode_userdata_l3_v6(self):
         self._test_unicode_userdata(l3=True, ip_versions=[6])
 
     @decorators.attr(type='smoke')
+    @testtools.skipIf(not Topology.has_single_stack_v6_support(),
+                      'There is no single-stack v6 support in current release')
     def test_unicode_userdata_l2_v6(self):
         self._test_unicode_userdata(l3=False, ip_versions=[6])
 
