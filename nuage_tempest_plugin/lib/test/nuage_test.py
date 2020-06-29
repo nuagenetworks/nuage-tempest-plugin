@@ -1030,9 +1030,9 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             return self.vsd.get_shared_network_resource(
                 by_fip_subnet_id=floatingip_subnet_id)
         else:
-            return self.vsd.get_shared_network_resource(
-                vspk_filter='name is "{}"'.format(
-                    external_network_id + '_' + floatingip_subnet_id))
+            floatingip_subnet = self.get_subnet(floatingip_subnet_id,
+                                                manager=self.admin_manager)
+            return self.vsd.get_subnet(by_subnet=floatingip_subnet)
 
     def create_associate_vsd_managed_floating_ip(self, server, port_id=None,
                                                  vsd_domain=None,
