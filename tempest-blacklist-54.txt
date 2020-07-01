@@ -1,0 +1,134 @@
+# Exclude slow tests
+.*\[.*\bslow\b.*\]
+
+# Nuage does not use q-dhcp by default
+neutron_tempest_plugin\.api\.admin\.test_dhcp_agent_scheduler
+neutron_tempest_plugin\.api\.admin\.test_agent_management
+tempest\.api\.network\.admin\.test_agent_management
+tempest\.api\.network\.admin\.test_dhcp_agent_scheduler
+
+# Nuage does not support creation of of BOOTP options via non-standard DHCP extensions such as dnsmasq server-ip-address
+neutron_tempest_plugin\.api\.test_extra_dhcp_options\.ExtraDHCPOptionsTestJSON
+tempest\.api\.network\.test_extra_dhcp_options\.ExtraDHCPOptionsTestJSON
+neutron_tempest_plugin\.api\.test_extra_dhcp_options\.ExtraDHCPOptionsIpV6TestJSON
+tempest\.api\.network\.test_extra_dhcp_options\.ExtraDHCPOptionsIpV6TestJSON
+
+# Nuage doesn't allow for ipv6 2001:db8 (doc purpose) addresses since this is not a valid IP range for us
+neutron_tempest_plugin\.api\.test_subnetpools\.SubnetPoolsTestV6\.test_create_dual_stack_subnets_from_subnetpools
+neutron_tempest_plugin\.api\.test_subnetpools\.SubnetPoolsTestV6\.test_create_subnet_from_pool_with_default_prefixlen
+neutron_tempest_plugin\.api\.test_subnetpools\.SubnetPoolsTestV6\.test_create_subnet_from_pool_with_prefixlen
+neutron_tempest_plugin\.api\.test_subnetpools\.SubnetPoolsTestV6\.test_create_subnet_from_pool_with_quota
+neutron_tempest_plugin\.api\.test_subnetpools\.SubnetPoolsTestV6\.test_create_subnet_from_pool_with_subnet_cidr
+
+# Nuage requires ports to be used for trunk to be on networks with attached subnets;
+# trunk and tag trunk tests use ports on a networks with no subnet
+neutron_tempest_plugin\.api\.test_trunk
+neutron_tempest_plugin\.api\.admin.test_tag\.TagFilterTrunkTestJSON
+neutron_tempest_plugin\.api\.admin\.test_tag\.TagTrunkTestJSON
+neutron_tempest_plugin\.scenario\.test_trunk\.TrunkTest\.test_trunk_subport_lifecycle
+
+# In new Nuage Underlay mode, neutron SNAT refers to SNAT in overlay which Nuage doesn't support.
+# Therefore, below tests would normally run when neutron SNAT default is set to False,
+# however the tests are written wrongly to assume the default always to be True (TODO(upstream) those should be fixed)
+tempest\.api\.network\.admin\.test_routers\.Routers.*Test\.test_create_router_with_default_snat_value
+neutron_tempest_plugin\.api\.test_routers\.Routers.*Test\.test_create_router_with_default_snat_value
+# Also, below tests which set neutron SNAT explicitly to True in the test, don't pass.
+tempest\.api\.network\.admin\.test_routers\.Routers.*Test\.test_.*_router.*_with_snat_explicit.*
+neutron_tempest_plugin\.api\.test_routers\.Routers.*Test\.test_.*_router.*_with_snat_explicit.*
+
+# TODO(Kris) further analyse
+neutron_tempest_plugin\.api\.test_routers\.RoutersIpV6Test\.test_router_interface_status
+
+# Nuage doesn't support ipv6 external networks
+tempest\.api\.network\.admin\.test_routers\.RoutersIpV6AdminTest\.test_create_router_set_gateway_with_fixed_ip
+
+# Nuage doesn't support creating ports on external subnet
+tempest\.api\.network\.admin\.test_routers_negative\.RoutersAdminNegativeIpV6Test
+tempest\.api\.network\.admin\.test_routers_negative\.RoutersAdminNegativeTest
+tempest\.api\.network\.admin\.test_routers\.RoutersAdminTest\.test_create_router_set_gateway_with_fixed_ip
+
+# Nuage doesn't support ports with multiple ipv4 ips on different different subnets
+tempest\.api\.network\.test_ports\.PortsTestJSON\.test_create_update_port_with_second_ip
+
+# Nuage doesn't support updating port's ip to different subnet within that network.
+tempest\.api\.network\.test_ports\.PortsTestJSON\.test_update_port_with_security_group_and_extra_attributes
+tempest\.api\.network\.test_ports\.PortsTestJSON\.test_update_port_with_two_security_groups_and_extra_attributes
+tempest\.api\.network\.test_ports\.PortsIpV6TestJSON\.test_create_update_port_with_second_ip
+tempest\.api\.network\.test_ports\.PortsIpV6TestJSON\.test_update_port_with_security_group_and_extra_attributes
+tempest\.api\.network\.test_ports\.PortsIpV6TestJSON\.test_update_port_with_two_security_groups_and_extra_attributes
+
+# Nuage doesn't support multi-ip FIP (i.e. no FIP support on ports that have multiple ips)
+tempest\.api\.network\.test_floating_ips\.FloatingIPTestJSON\.test_create_update_floatingip_with_port_multiple_ip_address
+
+# Nuage doesn't support IPv6 dhcp-stateful only
+tempest\.api\.network\.test_networks\.NetworksIpV6Test
+tempest\.api\.network\.test_ports\.PortsIpV6TestJSON\.test_create_port_in_allowed_allocation_pools
+tempest\.api\.network\.test_dhcp_ipv6\.NetworksTestDHCPv6\.test_dhcpv6_64_subnets
+tempest\.api\.network\.test_dhcp_ipv6\.NetworksTestDHCPv6\.test_dhcpv6_stateless_eui64
+tempest\.api\.network\.test_dhcp_ipv6\.NetworksTestDHCPv6\.test_dhcpv6_stateless_no_ra
+tempest\.api\.network\.test_dhcp_ipv6\.NetworksTestDHCPv6\.test_dhcpv6_two_subnets
+
+# Nuage doesn't support pinging nuage:dhcp port (in l2)
+tempest\.scenario\.test_network_basic_ops\.TestNetworkBasicOps\.test_hotplug_nic
+
+# Nuage datapath is keeping existing conntrackd tracked connections open until no longer tracked;
+# this causes a timing behavior different than some upstream tests expect.
+tempest\.scenario\.test_security_groups_basic_ops\.TestSecurityGroupsBasicOps\.test_cross_tenant_traffic
+tempest\.scenario\.test_server_basic_ops\.TestServerBasicOps\.test_server_basic_ops
+neutron_tempest_plugin\.scenario\.test_security_groups\.NetworkSecGroupTest\.test_default_sec_grp_scenarios
+
+# Nuage doesn't support pinging public subnet interface ip on router from VM
+# when there is no FIP attached to VMs.
+neutron_tempest_plugin\.scenario\.test_floatingip\.DefaultSnatToExternal\.test_snat_external_ip
+
+# Nuage doesn't support Net MTU
+neutron_tempest_plugin\.scenario\.test_mtu\.NetworkWritableMtuTest\.test_connectivity_min_max_mtu
+
+# Nuage doesn't support attaching a subnet to multiple routers
+neutron_tempest_plugin\.scenario\.test_connectivity\.NetworkConnectivityTest\.test_connectivity_through_2_routers
+neutron_tempest_plugin\.api\.test_routers\.RoutersIpV6Test\.test_network_attached_with_two_routers
+neutron_tempest_plugin\.api\.test_routers\.RoutersTest\.test_network_attached_with_two_routers
+
+# Test attempt to add a second ip from same subnet to a neutron port while fip is assigned to it
+# This is blocked explicitly by our ml2 mech driver
+tempest\.api\.compute\.servers\.test_attach_interfaces\.AttachInterfacesUnderV243Test\.test_add_remove_fixed_ip
+
+# Test updates port from allowing ssh(TCP) and ICMP rules to
+# allowing only ssh(TCP) rules. As part of validating the port
+# update, test initiates ICMP traffic which does not fail
+# although port does not have any ICMP allow rules. (VRS-8575)
+neutron_tempest_plugin\.scenario\.test_security_groups\.NetworkSecGroupTest\.test_two_sec_groups
+
+# OPENSTACK-2695
+tempest\.api\.compute\.servers\.test_device_tagging\.TaggedAttachmentsTest\.test_tagged_attachment
+tempest\.api\.compute\.servers\.test_server_actions\.ServerActionsTestJSON\.test_reboot_server_hard
+tempest\.api\.compute\.servers\.test_server_actions\.ServerActionsTestJSON\.test_resize_server_revert
+tempest\.api\.compute\.servers\.test_server_actions\.ServerActionsTestJSON\.test_resize_server_revert_with_volume_attached
+tempest\.api\.compute\.servers\.test_servers_negative\.ServersNegativeTestJSON\.test_pause_paused_server
+tempest\.api\.compute\.servers\.test_server_rescue_negative\.ServerRescueNegativeTestJSON\.test_rescue_paused_instance
+tempest\.api\.compute\.admin\.test_migrations\.MigrationsAdminTest\.test_resize_server_revert_deleted_flavor
+
+# IPv6 Classes
+neutron_tempest_plugin\.api\.test_network_ip_availability\.NetworksIpAvailabilityIPv6Test
+neutron_tempest_plugin\.api\.test_allowed_address_pair\.AllowedAddressPairIpV6TestJSON
+tempest\.api\.network\.test_allowed_address_pair\.AllowedAddressPairIpV6TestJSON
+tempest\.api\.network\.test_dhcp_ipv6\.NetworksTestDHCPv6
+tempest\.api\.network\.test_ports\.PortsIpV6TestJSON
+tempest\.api\.network\.test_routers\.RoutersIpV6Test
+
+# Nuage attributes are included in a create, but not in a show api call
+tempest\.api\.network\.test_ports.*test_show_port
+
+# Neutron Security Group Qouata test can only run in isolation
+neutron_tempest_plugin\.api\.test_security_groups\.SecGroupQuotaTest
+
+# Tests are inherited into nuage_tempest_plugin
+# nuage_tempest_plugin\.tests\.api\.ipv6\.os_managed\.test_allowed_address_pair
+tempest\.api\.network\.test_allowed_address_pair
+# Tests are copies from tempest.api.network.test_allowed_address_pair
+# TODO(Team) Move inheritance to neutron tempest plugin
+neutron_tempest_plugin\.api\.test_allowed_address_pair
+
+# Nuage does not support dhcp_stateless/slaac ra-mode
+neutron_tempest_plugin\.scenario\.test_ipv6\.IPv6Test.test_ipv6_hotplug_dhcpv6stateless
+neutron_tempest_plugin\.scenario\.test_ipv6\.IPv6Test.test_ipv6_hotplug_slaac
