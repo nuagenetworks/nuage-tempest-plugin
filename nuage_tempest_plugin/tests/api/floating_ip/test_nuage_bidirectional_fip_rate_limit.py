@@ -40,7 +40,10 @@ class TestNuageBidirectionalFipRateLimit(
 
     # OPENSTACK-1583
     def test_create_floatingip_with_rate_limit_minimal_value(self):
-        self._create_fip_with_fip_rate_limit(self.ports[0], '0', '0')
+        if Topology.before_nuage('20.10'):
+            self._create_fip_with_fip_rate_limit(self.ports[0], '0', '0')
+        else:
+            self._create_fip_with_fip_rate_limit(self.ports[0], '1', '1')
 
     def test_create_floatingip_with_rate_limit_maximal_value(self):
         self._create_fip_with_fip_rate_limit(self.ports[0],
@@ -63,7 +66,10 @@ class TestNuageBidirectionalFipRateLimit(
 
     def test_update_floatingip_with_rate_limit_minimal_value(self):
         fip = self._create_fip_with_fip_rate_limit(self.ports[0], 2000, 5000)
-        self._update_fip_with_fip_rate_limit(self.ports[0], fip, 0, 0)
+        if Topology.before_nuage('20.10'):
+            self._update_fip_with_fip_rate_limit(self.ports[0], fip, 0, 0)
+        else:
+            self._update_fip_with_fip_rate_limit(self.ports[0], fip, 1, 1)
 
     def test_update_floatingip_with_rate_limit_unlimited_value(self):
         fip = self._create_fip_with_fip_rate_limit(self.ports[0], 3000, 5000)
@@ -113,7 +119,7 @@ class TestNuageBidirectionalFipRateLimit(
 
     # OPENSTACK-1583
     def test_create_floatingip_with_rate_limit_minimal_value_ingress(self):
-        self._create_fip_with_fip_rate_limit(self.ports[0], '0')
+        self._create_fip_with_fip_rate_limit(self.ports[0], '1')
 
     def test_create_floatingip_with_rate_limit_maximal_value_ingress(self):
         self._create_fip_with_fip_rate_limit(self.ports[0], constants.MAX_INT)
@@ -127,7 +133,7 @@ class TestNuageBidirectionalFipRateLimit(
 
     def test_update_floatingip_with_rate_limit_minimal_value_ingress(self):
         fip = self._create_fip_with_fip_rate_limit(self.ports[0], 2000)
-        self._update_fip_with_fip_rate_limit(self.ports[0], fip, 0)
+        self._update_fip_with_fip_rate_limit(self.ports[0], fip, 1)
 
     def test_update_floatingip_with_rate_limit_unlimited_value_ingress(self):
         fip = self._create_fip_with_fip_rate_limit(self.ports[0], 3000)
@@ -155,7 +161,7 @@ class TestNuageBidirectionalFipRateLimit(
     # OPENSTACK-1583
     def test_create_floatingip_with_rate_limit_minimal_value_egress(self):
         self._create_fip_with_fip_rate_limit(
-            self.ports[0], egress_rate_limit='0')
+            self.ports[0], egress_rate_limit='1')
 
     def test_create_floatingip_with_rate_limit_maximal_value_egress(self):
         self._create_fip_with_fip_rate_limit(
@@ -173,7 +179,7 @@ class TestNuageBidirectionalFipRateLimit(
         fip = self._create_fip_with_fip_rate_limit(
             self.ports[0], egress_rate_limit=2000)
         self._update_fip_with_fip_rate_limit(
-            self.ports[0], fip, egress_rate_limit=0)
+            self.ports[0], fip, egress_rate_limit=1)
 
     def test_update_floatingip_with_rate_limit_unlimited_value_egress(self):
         fip = self._create_fip_with_fip_rate_limit(
