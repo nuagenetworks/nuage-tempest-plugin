@@ -17,6 +17,7 @@ import testtools
 
 from tempest.common import utils as utils
 
+from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import data_utils
@@ -115,6 +116,8 @@ class SriovBasicOpsTest(NuageBaseTest):
             server_to['server'],
             address=server_to['port']['fixed_ips'][0]['ip_address'])
 
+    @nuage_test.skip_because(
+        condition=Topology.before_nuage('6.0'))
     def test_server_connectivity_l3_ipv6(self):
         self._setup_resources(ip_version=6)
         server_to = self._create_server_with_direct_port()
@@ -126,6 +129,8 @@ class SriovBasicOpsTest(NuageBaseTest):
             ip_version=6,
             address=server_to['port']['fixed_ips'][0]['ip_address'])
 
+    @nuage_test.skip_because(
+        condition=Topology.before_nuage('6.0'))
     def test_server_connectivity_l2_ipv6(self):
         self._setup_resources(is_l3=False, ip_version=6)
         server_to = self._create_server_with_direct_port()
