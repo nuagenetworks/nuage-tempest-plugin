@@ -116,11 +116,16 @@ neutron_tempest_plugin\.api\.test_security_groups\.SecGroupQuotaTest
 
 # Tests are inherited into nuage_tempest_plugin
 # nuage_tempest_plugin.tests.api.ipv6.os_managed.test_allowed_address_pair
-tempest.api.network.test_allowed_address_pair
+tempest.api.network\.test_allowed_address_pair
 # Tests are copies from tempest.api.network.test_allowed_address_pair
 # TODO(Team) Move inheritance to neutron tempest plugin
-neutron_tempest_plugin.api.test_allowed_address_pair
+neutron_tempest_plugin\.api\.test_allowed_address_pair
 
 # Nuage does not support dhcp_stateless/slaac ra-mode
 neutron_tempest_plugin\.scenario\.test_ipv6\.IPv6Test.test_ipv6_hotplug_dhcpv6stateless
 neutron_tempest_plugin\.scenario\.test_ipv6\.IPv6Test.test_ipv6_hotplug_slaac
+
+# Nuage does not support stateful ICMP rules. And will always make ICMP
+# rules for both direction
+# OPENSTACK-2918
+neutron_tempest_plugin\.scenario\.test_scenario_security_groups\.NetworkSecGroupTest\.test_intra_sg_isolation
