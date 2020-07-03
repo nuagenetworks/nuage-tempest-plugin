@@ -874,17 +874,46 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         return secgroup
     # -------------- copy of upstream but added cleanup support ---------------
 
-    def create_open_ssh_security_group(self, sg_name=None, manager=None,
-                                       stateful=True, cleanup=True):
+    def create_security_group(self, manager=None, cleanup=True, **kwargs):
         manager = manager or self.manager
-        if not self.ssh_security_group:
-            self.ssh_security_group = self._create_security_group(
+        client = manager.security_groups_client
+        sg = {'name': data_utils.rand_name('security-group')}
+        sg.update(kwargs)
+        sg = client.create_security_group(**sg)['security_group']
+        if cleanup:
+            self.addCleanup(self.delete_security_group, sg['id'],
+                            manager=manager)
+        return sg
+
+    def get_security_group(self, sg_id, manager=None):
+        manager = manager or self.manager
+        client = manager.security_groups_client
+        return client.show_security_group(sg_id)['security_group']
+
+    def delete_security_group(self, sg_id, manager=None):
+        manager = manager or self.manager
+        client = manager.security_groups_client
+        try:
+            client.delete_security_group(sg_id)
+        except lib_exc.NotFound:
+            pass
+
+    def create_open_ssh_security_group(self, sg_name=None, manager=None,
+                                       stateful=True, no_cache=False,
+                                       cleanup=True):
+        manager = manager or self.manager
+        if not self.ssh_security_group or no_cache:
+            sg = self._create_security_group(
                 namestart=sg_name or 'tempest-open-ssh',
                 security_group_rules_client=(
                     manager.security_group_rules_client),
                 security_groups_client=manager.security_groups_client,
                 stateful=stateful,
                 cleanup=cleanup)
+            if no_cache:
+                return sg
+            else:
+                self.ssh_security_group = sg
         return self.ssh_security_group
 
     def create_security_group_rule(self, security_group=None, manager=None,
@@ -901,6 +930,14 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         security_group_rules_client = manager.security_group_rules_client
         return self._create_security_group_rule(
             security_group, security_group_rules_client, **kwargs)
+
+    def delete_security_group_rule(self, sg_rule_id, manager=None):
+        manager = manager or self.manager
+        client = manager.security_group_rules_client
+        try:
+            client.delete_security_group_rule(sg_rule_id)
+        except lib_exc.NotFound:
+            pass
 
     def create_tcp_rule(self, sec_grp, direction, ip_version, manager=None):
         if direction == 'egress':
@@ -1971,27 +2008,6 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                     self.assertIsNone(vm_interface['IPv6Address'])
                 else:
                     self.assertIsNone(vm_interface['IPAddress'])
-
-    def create_security_group(self, manager=None, cleanup=True, **kwargs):
-        manager = manager or self.manager
-        client = manager.security_groups_client
-        sg = {'name': data_utils.rand_name('security-group')}
-        sg.update(kwargs)
-        sg = client.create_security_group(**sg)['security_group']
-        if cleanup:
-            self.addCleanup(self.delete_security_group, sg['id'],
-                            manager=manager)
-        return sg
-
-    def delete_security_group(self, sg_id, ignore_not_found=True,
-                              manager=None):
-        manager = manager or self.manager
-        client = manager.security_groups_client
-        try:
-            client.delete_security_group(sg_id)
-        except lib_exc.NotFound:
-            if not ignore_not_found:
-                raise
 
     @staticmethod
     def execute_from_shell(command, success_expected=True, pause=None):
