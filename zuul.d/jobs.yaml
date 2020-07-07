@@ -41,81 +41,6 @@
     post-run: playbooks/post-tempest.yaml
 
 - job:
-    name: tempest-full
-    parent: networking-nuage-base
-    # This currently works from stable/pike on.
-    # Before stable/pike, legacy version of tempest-full
-    # 'legacy-tempest-dsvm-neutron-full' run.
-    branches: ^(?!stable/(newton|ocata)).*$
-    description: |
-      Base integration test with Neutron networking and py27.
-      Former names for this job where:
-        * legacy-tempest-dsvm-neutron-full
-        * gate-tempest-dsvm-neutron-full-ubuntu-xenial
-    timeout: 14400
-    vars:
-      tempest_test_regex: '^(tempest|neutron_tempest_plugin)\.(api|scenario)'
-      tempest_test_blacklist: "{{devstack_base_dir}}/nuage-tempest-plugin/tempest-blacklist.txt"
-      tempest_concurrency: 2
-
-- job:
-    name: tempest-full-vsdipam
-    parent: tempest-full
-    branches: ^(?!stable/(newton|ocata)).*$
-    vars: &vsd_ipam_vars
-      devstack_localrc:
-        NUAGE_IPAM_DRIVER: "nuage_vsd_managed"
-      devstack_local_conf:
-        test-config:
-          $TEMPEST_CONFIG:
-            nuage_sut:
-              ipam_driver: nuage_vsd_managed
-
-
-- job:
-    name: tempest-full-5.4
-    parent: networking-nuage-base-5.4
-    # This currently works from pike on.
-    branches: ^(5.4/(pike|queens|rocky)).*$
-    description: Upstream tests running against Nuage
-    timeout: 14400
-    vars:
-      tempest_test_regex: '^(tempest|neutron_tempest_plugin)\.(api|scenario)'
-      tempest_test_blacklist: "{{devstack_base_dir}}/nuage-tempest-plugin/tempest-blacklist.txt"
-      tempest_concurrency: 2
-
-- job:
-    name: tempest-full-py3
-    parent: networking-nuage-base-py3
-    # This currently works from stable/pike on.
-    # Before stable/pike, legacy version of tempest-full
-    # 'legacy-tempest-dsvm-neutron-full' run.
-    branches: ^(?!stable/(newton|ocata)).*$
-    description: |
-      Base integration test with Neutron networking and py3.
-      Former names for this job where:
-        * legacy-tempest-dsvm-py35
-        * gate-tempest-dsvm-py35
-    timeout: 14400
-    vars:
-      devstack_services:
-        s-account: false
-        s-container: false
-        s-object: false
-        s-proxy: false
-        # without Swift, c-bak cannot run (in the Gate at least)
-        c-bak: false
-      tempest_test_regex: '^(tempest|neutron_tempest_plugin)\.(api|scenario)'
-      tempest_test_blacklist: "{{devstack_base_dir}}/nuage-tempest-plugin/tempest-blacklist.txt"
-      tempest_concurrency: 2
-
-- job:
-    name: tempest-full-py3-vsdipam
-    parent: tempest-full-py3
-    branches: ^(?!stable/(newton|ocata)).*$
-    vars: *vsd_ipam_vars
-
-- job:
     name: nuage-base
     abstract: true
     parent: devstack-tempest
@@ -166,6 +91,7 @@
         NUAGE_METADATA_SHARED_SECRET: sharedsecret
         NUAGE_PAT: legacy_disabled
         OVS_BRIDGE: alubr0
+        USE_PYTHON3: True
       devstack_plugins:
         nuage-openstack-neutron: https://github.com/nuagenetworks/nuage-openstack-neutron.git
         nuage-openstack-neutronclient: https://github.com/nuagenetworks/nuage-openstack-neutronclient.git
@@ -214,6 +140,7 @@
           $NEUTRON_CONF:
             DEFAULT:
               vlan_transparent: true
+              enable_snat_by_default: false
             quotas:
               # A negative value means unlimited. (integer value)
               quota_network: 1000
@@ -238,76 +165,13 @@
 - job:
     name: networking-nuage-base
     parent: nuage-base
-    description: Base job for devstack/tempest based nuage jobs
-    branches: ^(5.4|6.0)/(pike|queens|rocky|stein|train).*$
-    nodeset: openstack-single-node-centos7
-
-- job:
-    name: networking-nuage-base
-    parent: nuage-base
-    description: Base job for devstack/tempest based nuage jobs
-    branches: ^(stable)/(pike|queens|rocky|stein|train).*$
+    description: Base job for nuage based job on 5.4 branch
+    branches: ^(5.4)
     nodeset: openstack-single-node-centos7
     vars:
-      vsp_release: '20.5'
-
-- job:
-    name: networking-nuage-base
-    parent: nuage-base
-    description: Base job for devstack/tempest based nuage jobs
-    branches: ^(?!(stable|5.4|6.0)/(pike|queens|rocky|stein|train)).*$
-    nodeset: openstack-single-node-centos
-
-- job:
-    name: networking-nuage-base-py3
-    parent: networking-nuage-base
-    description: Base job for devstack/tempest based nuage jobs and python3.
-    # release <U run on centos 7 with no metadata
-    branches: ^(stable|5.4|6.0)/(pike|queens|rocky).*$
-    vars:
+      vsp_release: "5.4"
       devstack_localrc:
-        USE_PYTHON3: True
-        # INF-7814 nuage-metadata-agent runs under py2 and
-        # misses dependencies to python-keystoneclient
-        FORCE_CONFIG_DRIVE: True
-
-- job:
-    # Job Variant for stein and train as el7 does not run metadata agent on py3
-    name: networking-nuage-base-py3
-    parent: networking-nuage-base
-    description: Base job for devstack/tempest based nuage jobs and python3.
-    branches: ^(stable|5.4|6.0)/(stein|train).*$
-    vars:
-      devstack_localrc:
-        USE_PYTHON3: True
-        # INF-7814 nuage-metadata-agent runs under py2 and
-        # misses dependencies to python-keystoneclient
-        FORCE_CONFIG_DRIVE: True
-      devstack_local_conf:
-        test-config:
-          $TEMPEST_CONFIG:
-            compute-feature-enabled:
-              metadata_service: False
-
-- job:
-    name: networking-nuage-base-py3
-    parent: networking-nuage-base
-    description: Base job for devstack/tempest based nuage jobs and python3.
-    # ussuri and above
-    branches: ^(?!(stable|5.4|6.0)/(pike|queens|rocky|stein|train)).*$
-    vars:
-      devstack_localrc:
-        USE_PYTHON3: True
-
-- job:
-    name: networking-nuage-base-5.4
-    parent: networking-nuage-base
-    description: Base job for devstack/tempest based nuage jobs against 5.4 branches
-    branches: ^(5.4/(pike|queens|rocky)).*$
-    nodeset: openstack-single-node-centos7
-    # This currently works from pike on
-    vars:
-      vsp_release: '5.4'
+        USE_PYTHON3: false
       devstack_local_conf:
         post-config:
           $NEUTRON_CONF:
@@ -317,16 +181,106 @@
           $TEMPEST_CONFIG:
             network:
               project_network_v6_cidr: '2003::/48'
-    required-projects:
-      - name: OpenStack/nuage-tempest-plugin
-        override-checkout: '5.4'
+      tempest_test_blacklist: "{{devstack_base_dir}}/nuage-tempest-plugin/tempest-blacklist-54.txt"
+
+- job:
+    name: networking-nuage-base
+    parent: nuage-base
+    description: Base job for nuage based job on 6.0|stable/queens|rocky branch
+    branches: ^(6.0|stable)/(queens|rocky)
+    nodeset: openstack-single-node-centos7
+    vars:
+      vsp_release: "{{ zuul.branch.split('/')[0] if 'stable' not in zuul.branch else '20.5' }}"
+      devstack_localrc:
+        USE_PYTHON3: false
+      tempest_test_blacklist: "{{devstack_base_dir}}/nuage-tempest-plugin/tempest-blacklist.txt"
+
+- job:
+    name: networking-nuage-base
+    parent: nuage-base
+    description: Base job for nuage based job on 6.0|stable/stein|train branch
+    branches: ^(6.0|stable)/(stein|train)
+    nodeset: openstack-single-node-centos7
+    vars:
+      vsp_release: "{{ zuul.branch.split('/')[0] if 'stable' not in zuul.branch else '20.5' }}"
+      devstack_localrc:
+        # INF-7814 nuage-metadata-agent runs under py2 and
+        # misses dependencies to python-keystoneclient
+        FORCE_CONFIG_DRIVE: True
+      devstack_local_conf:
+        test-config:
+          $TEMPEST_CONFIG:
+            compute-feature-enabled:
+              metadata_service: False
+      tempest_test_blacklist: "{{devstack_base_dir}}/nuage-tempest-plugin/tempest-blacklist.txt"
+
+- job:
+    name: networking-nuage-base
+    parent: nuage-base
+    description: Base job for nuage based job
+    branches: ^(?!(stable|5.4|6.0)/(pike|queens|rocky|stein|train)).*$
+    nodeset: openstack-single-node-centos
+    vars:
+      vsp_release: '0.0'
+      tempest_test_blacklist: "{{devstack_base_dir}}/nuage-tempest-plugin/tempest-blacklist.txt"
+
+- job:
+    name: tempest-full
+    parent: networking-nuage-base
+    # This currently works from stable/pike on.
+    # Before stable/pike, legacy version of tempest-full
+    # 'legacy-tempest-dsvm-neutron-full' run.
+    branches: .*
+    description: |
+      Base integration test with upstream tempest.
+    timeout: 14400
+    vars:
+      devstack_services:
+        s-account: false
+        s-container: false
+        s-object: false
+        s-proxy: false
+        # without Swift, c-bak cannot run (in the Gate at least)
+        c-bak: false
+      tempest_test_regex: '^(tempest|neutron_tempest_plugin)\.(api|scenario)'
+      tempest_concurrency: 2
+
+# workaround for usage in upstream
+- job:
+    name: tempest-full-py3
+    parent: tempest-full
+    branches: .*
+
+# Temporarily needed as workaround for merge-ability
+- job:
+    name: tempest-full-5.4
+    parent: tempest-full
+    branches: .*
+
+- job:
+    name: tempest-full-vsdipam
+    parent: tempest-full
+    branches: ^(?!stable/(newton|ocata)).*$
+    vars: &vsd_ipam_vars
+      devstack_localrc:
+        NUAGE_IPAM_DRIVER: "nuage_vsd_managed"
+      devstack_local_conf:
+        test-config:
+          $TEMPEST_CONFIG:
+            nuage_sut:
+              ipam_driver: nuage_vsd_managed
+
+# Temporarily needed as workaround for merge-ability
+- job:
+    name: tempest-full-py3-vsdipam
+    parent: tempest-full-vsdipam
+    branches: .*
 
 - job:
     name: networking-nuage-tempest-smoke
     parent: networking-nuage-base
     description: job used in gate testing smoke annotated tests
-    # This currently works from stable/pike on
-    branches: ^(?!stable/(newton|ocata)).*$
+    branches: ^(?!(5.4|6.0))
     vars:
       devstack_localrc: &mpls-type-driver-devstack
         Q_ML2_PLUGIN_TYPE_DRIVERS: vxlan,vlan,flat,nuage_hybrid_mpls
@@ -341,42 +295,35 @@
       tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|neutron_tempest_plugin\.api\.admin\.test_tag.*|nuage_tempest_plugin.*orchestration.*|nuage_tempest_plugin\.tests\.scenario\.connectivity\..*\..*AggrFlowsTest\..*|tempest\.api\.network\.test_ports.*test_show_port))'
 
 - job:
+    name: networking-nuage-tempest-smoke
+    parent: networking-nuage-base
+    description: job used in gate testing smoke annotated tests
+    branches: ^(5.4|6.0)
+    vars:
+      tempest_test_regex: '^(nuage_tempest_plugin|tempest\.api\.network|neutron_tempest_plugin\.(api|scenario))\..*\[(?=.*smoke)'
+      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|neutron_tempest_plugin\.api\.admin\.test_tag.*|nuage_tempest_plugin.*orchestration.*|nuage_tempest_plugin\.tests\.scenario\.connectivity\..*\..*AggrFlowsTest\..*|tempest\.api\.network\.test_ports.*test_show_port))'
+
+# Temporarily needed as workaround for merge-ability
+- job:
+    name: networking-nuage-tempest-smoke-py3
+    parent: networking-nuage-base
+    branches: .*
+
+- job:
     name: networking-nuage-tempest-smoke-vsdipam
     parent: networking-nuage-tempest-smoke
     branches: ^(?!stable/(newton|ocata)).*$
     vars: *vsd_ipam_vars
 
-- job:
-    name: networking-nuage-tempest-smoke-py3
-    parent: networking-nuage-base-py3
-    description: job used in gate testing smoke annotated tests
-    # This currently works from stable/pike on
-    branches: ^(?!stable/(newton|ocata)).*$
-    vars:
-      devstack_localrc: *mpls-type-driver-devstack
-      devstack_local_conf: *mpls-type-driver-tempest
-      tempest_test_regex: '^(nuage_tempest_plugin|tempest\.api\.network|neutron_tempest_plugin\.(api|scenario))\..*\[(?=.*smoke)'
-      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|neutron_tempest_plugin\.api\.admin\.test_tag.*|nuage_tempest_plugin.*orchestration.*|nuage_tempest_plugin\.tests\.scenario\.connectivity\..*\..*AggrFlowsTest\..*|tempest\.api\.network\.test_ports.*test_show_port))'
-
+# Temporarily needed as workaround for merge-ability
 - job:
     name: networking-nuage-tempest-smoke-py3-vsdipam
-    parent: networking-nuage-tempest-smoke-py3
-    branches: ^(?!stable/(newton|ocata)).*$
-    vars: *vsd_ipam_vars
-
-- job:
-    name: networking-nuage-tempest-smoke-5.4
-    parent: networking-nuage-base-5.4
-    description: job used in gate testing smoke annotated tests
-    # This currently works from pike on
-    branches: ^(5.4/(pike|queens|rocky)).*$
-    vars:
-      tempest_test_regex: '^(nuage_tempest_plugin|tempest\.api\.network|neutron_tempest_plugin\.(api|scenario))\..*\[(?=.*smoke)'
-      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|neutron_tempest_plugin\.api\.admin\.test_tag.*|nuage_tempest_plugin.*orchestration.*))'
+    parent: networking-nuage-tempest-smoke-vsdipam
+    branches: .*
 
 - job:
     name: networking-nuage-tempest-qdhcp
-    parent: networking-nuage-tempest-smoke-py3
+    parent: networking-nuage-tempest-smoke
     description: job running smoke annotated tests agains q-dhcp enabled deployment
     # This currently works from stable/pike on
     branches: ^(?!stable/(newton|ocata)).*$
@@ -386,17 +333,11 @@
       devstack_services:
         q-dhcp: true
 
+# Temporarily needed as workaround for merge-ability
 - job:
     name: networking-nuage-tempest-qdhcp-5.4
-    parent: networking-nuage-tempest-smoke-5.4
-    description: job running smoke annotated tests agains q-dhcp enabled deployment
-    # This currently works from stable/pike on
-    branches: ^(?!stable/(newton|ocata)).*$
-    vars:
-      devstack_localrc:
-        NEUTRON_AGENT: nuagevrs
-      devstack_services:
-        q-dhcp: true
+    parent: networking-nuage-tempest-qdhcp
+    branches: .*
 
 - job:
     name: networking-nuage-tempest-virtio
@@ -411,44 +352,33 @@
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\..*'
       tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway|nuage_hybrid_mpls\.test_nuage_hybrid_mpls_sriov).*))'
 
+# Temporarily needed as workaround for merge-ability
+- job:
+    name: networking-nuage-tempest-virtio-py3
+    parent: networking-nuage-tempest-virtio
+    branches: .*
+
+# Temporarily needed as workaround for merge-ability
+- job:
+    name: networking-nuage-tempest-virtio-5.4
+    parent: networking-nuage-tempest-virtio
+    branches: .*
+
 - job:
     name: networking-nuage-tempest-virtio-vsdipam
     parent: networking-nuage-tempest-virtio
     branches: ^(?!stable/(newton|ocata)).*$
     vars: *vsd_ipam_vars
 
-- job:
-    name: networking-nuage-tempest-virtio-5.4
-    parent: networking-nuage-base-5.4
-    description: job running all virtio tests on 5.4 branches
-    # This currently works from pike on
-    branches: ^(5.4/(pike|queens|rocky)).*$
-    vars:
-      tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\..*'
-      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway|nuage_hybrid_mpls).*))'
-
-- job:
-    name: networking-nuage-tempest-virtio-py3
-    parent: networking-nuage-base-py3
-    description: job running all virtio tests with py3
-    # This currently works from stable/pike on
-    branches: ^(?!stable/(newton|ocata)).*$
-    timeout: 18000
-    vars:
-      devstack_localrc: *mpls-type-driver-devstack
-      devstack_local_conf: *mpls-type-driver-tempest
-      tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\..*'
-      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway|nuage_hybrid_mpls\.test_nuage_hybrid_mpls_sriov).*))'
-
+# Temporarily needed as workaround for merge-ability
 - job:
     name: networking-nuage-tempest-virtio-py3-vsdipam
-    parent: networking-nuage-tempest-virtio-py3
-    branches: ^(?!stable/(newton|ocata)).*$
-    vars: *vsd_ipam_vars
+    parent: networking-nuage-tempest-virtio-vsdipam
+    branches: .*
 
 - job:
     name: networking-nuage-tempest-api-switchdev
-    parent: networking-nuage-tempest-virtio-py3
+    parent: networking-nuage-tempest-virtio
     branches: ^(?!stable/(newton|ocata)).*$
     vars:
       devstack_localrc:
@@ -463,10 +393,9 @@
 
 - job:
     name: networking-nuage-tempest-sriov
-    parent: networking-nuage-base-py3
+    parent: networking-nuage-base
     description: job running api tests against nuage sriov mech driver
-    # This currently works from stable/pike on
-    branches: ^(?!stable/(newton|ocata)).*$
+    branches: ^(?!5.4)
     required-projects:
       - OpenStack/networking-testsriov
     vars:
@@ -488,15 +417,11 @@
               nuage_hybrid_mpls_enabled: True
 
 - job:
-    name: networking-nuage-tempest-sriov-vsdipam
-    parent: networking-nuage-tempest-sriov
-    vars: *vsd_ipam_vars
-
-- job:
-    name: networking-nuage-tempest-sriov-5.4
-    parent: networking-nuage-base-5.4
-    description: job running api tests against nuage sriov mech driver for 5.4 branches
-    branches: ^(5.4/(pike|queens|rocky)).*$
+    name: networking-nuage-tempest-sriov
+    parent: networking-nuage-base
+    description: job running api tests against nuage sriov mech driver
+    # This currently works from stable/pike on
+    branches: ^(5.4)
     required-projects:
       - OpenStack/networking-testsriov
     vars:
@@ -511,6 +436,18 @@
             network:
               port_vnic_type: direct
 
+# Temporarily needed as workaround for merge-ability
+- job:
+    name: networking-nuage-tempest-sriov-5.4
+    parent: networking-nuage-tempest-sriov
+    branches: .*
+
+
+- job:
+    name: networking-nuage-tempest-sriov-vsdipam
+    parent: networking-nuage-tempest-sriov
+    vars: *vsd_ipam_vars
+
 - job:
     name: networking-nuage-tempest-sriov-flat-vlan
     parent: networking-nuage-tempest-sriov
@@ -521,15 +458,11 @@
       devstack_localrc:
         NUAGE_SRIOV_ALLOW_EXISTING_FLAT_VLAN: true
 
+# Temporarily needed as workaround for merge-ability
 - job:
     name: networking-nuage-tempest-sriov-flat-vlan-5.4
-    parent: networking-nuage-tempest-sriov-5.4
-    # This currently works from stable/pike on
-    branches: ^(?!stable/(newton|ocata)).*$
-    description: job running api tests against nuage sriov mech driver with allow_existing_flat_vlan
-    vars:
-      devstack_localrc:
-        NUAGE_SRIOV_ALLOW_EXISTING_FLAT_VLAN: true
+    parent: networking-nuage-tempest-sriov-flat-vlan
+    branches: .*
 
 - job:
     name: networking-nuage-tempest-sriov-switchdev
@@ -549,30 +482,19 @@
       tempest_black_regex: '^nuage_tempest_plugin\.tests\.api\.test_ports\.PortsTest\.test_.*_with_vm.*'
 
 - job:
-    name: networking-nuage-tempest-sriov-switchdev-5.4
-    parent: networking-nuage-tempest-sriov-5.4
-    description: job running api tests against nuage sriov mech driver with switchdev capability
-    # This currently works from stable/pike on
-    branches: ^(?!stable/(newton|ocata)).*$
-    vars:
-      devstack_localrc:
-        NUAGE_USE_SWITCHDEV: true
-      devstack_local_conf:
-        test-config:
-          $TEMPEST_CONFIG:
-            network:
-              port_profile: capabilities:[switchdev]
-      tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.test_ports\..*'
-      tempest_black_regex: '^nuage_tempest_plugin\.tests\.api\.test_ports\.PortsTest\.test_.*_with_vm.*'
-
-- job:
     name: networking-nuage-tempest-baremetal
-    parent: networking-nuage-base-py3
+    parent: networking-nuage-base
     description: job running all baremetal tests
     # This currently works from stable/pike on
     branches: ^(?!stable/(newton|ocata)).*$
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.baremetal\..*'
+
+# Temporarily needed as workaround for merge-ability
+- job:
+    name: networking-nuage-tempest-baremetal-5.4
+    parent: networking-nuage-tempest-baremetal
+    branches: .*
 
 - job:
     name: networking-nuage-tempest-baremetal-vsdipam
@@ -581,25 +503,35 @@
     vars: *vsd_ipam_vars
 
 - job:
-    name: networking-nuage-tempest-baremetal-5.4
-    parent: networking-nuage-base-5.4
-    description: job running all baremetal tests on 5.4 branches
-    # This currently works from pike on
-    branches: ^(5.4/(pike|queens|rocky)).*$
-    vars:
-      tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.baremetal\..*'
-
-- job:
     name: networking-nuage-tempest-scenario
-    parent: networking-nuage-base-py3
+    parent: networking-nuage-base
     description: job running all scenario tests
     # This currently works from stable/pike on
-    branches: ^(?!stable/(newton|ocata)).*$
+    branches: ^(?!5.4)
     timeout: 18000
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.scenario\..*'
       tempest_black_regex: '^nuage_tempest_plugin\.tests\.scenario\.connectivity\..*\..*AggrFlowsTest\..*'
       tempest_concurrency: 2
+
+- job:
+    name: networking-nuage-tempest-scenario
+    parent: networking-nuage-base
+    description: job running all scenario tests
+    # This currently works from stable/pike on
+    branches: ^(5.4)
+    timeout: 18000
+    vars:
+      tempest_test_regex: '^nuage_tempest_plugin\.tests\.scenario\..*'
+      tempest_black_regex: '^nuage_tempest_plugin\.tests\.scenario\.connectivity\..*\..*AggrFlowsTest\..*'
+      tempest_concurrency: 2
+
+# Temporarily needed as workaround for merge-ability
+- job:
+    name: networking-nuage-tempest-scenario-5.4
+    parent: networking-nuage-tempest-scenario
+    branches: .*
+
 
 - job:
     name: networking-nuage-tempest-scenario-rhel
@@ -648,34 +580,21 @@
     branches: ^(?!stable/(newton|ocata)).*$
     vars: *vsd_ipam_vars
 
-- job:
-    name: networking-nuage-tempest-scenario-5.4
-    parent: networking-nuage-base-5.4
-    description: job running all scenario tests on 5.4 branches
-    # This currently works from pike on
-    branches: ^(5.4/(pike|queens|rocky)).*$
-    timeout: 18000
-    vars:
-      tempest_test_regex: '^nuage_tempest_plugin\.tests\.scenario\..*'
-      tempest_concurrency: 2
 
 - job:
     name: networking-nuage-tempest-cli
-    parent: networking-nuage-base-py3
+    parent: networking-nuage-base
     description: job running all cli tests
     # This currently works from stable/pike on
-    branches: ^(?!stable/(newton|ocata)).*$
+    branches: .*
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.cli\..*'
 
+# Temporarily needed as workaround for merge-ability
 - job:
     name: networking-nuage-tempest-cli-5.4
-    parent: networking-nuage-base-5.4
-    description: job running all cli tests on 5.4 branches
-    # This currently works from pike on
-    branches: ^(5.4/(pike|queens|rocky)).*$
-    vars:
-      tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.cli\..*'
+    parent: networking-nuage-tempest-cli
+    branches: .*
 
 - job:
     name: networking-nuage-tempest-aggregateflows
@@ -689,27 +608,18 @@
 
 - job:
     name: networking-nuage-tempest-scale
-    parent: networking-nuage-base-py3
-    description: job running all scale tests
-    # This currently works from stable/pike on
-    branches: ^(?!stable/(newton|ocata)).*$
-    vars:
-      tempest_test_regex: '^nuage_tempest_plugin\.tests\.scale\..*'
-
-- job:
-    name: networking-nuage-tempest-scale-5.4
-    parent: networking-nuage-base-5.4
+    parent: networking-nuage-base
     description: job running all scale tests on 5.4 branches
     # This currently works from pike on
-    branches: ^(5.4/(pike|queens|rocky)).*$
+    branches: .*
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.scale\..*'
 
 - job:
-    name: networking-nuage-tempest-lbaas-5.4
-    parent: networking-nuage-base-5.4
+    name: networking-nuage-tempest-lbaas
+    parent: networking-nuage-base
     description: Legacy lbaas run
-    branches: ^(5.4/(pike|queens|rocky)).*$
+    branches: ^(5.4)
     required-projects:
       - opendev.org/openstack/neutron-lbaas
     vars:
@@ -720,6 +630,12 @@
         neutron-lbaas: https://opendev.org/openstack/neutron-lbaas.git
       tempest_plugins:
         - neutron-lbaas
+
+# Temporarily needed as workaround for merge-ability
+- job:
+    name: networking-nuage-tempest-lbaas-5.4
+    parent: networking-nuage-tempest-lbaas
+    branches: .*
 
 - job:
     name: networking-nuage-fwaas-v1
@@ -746,7 +662,7 @@
 
 - job:
     name: networking-nuage-vtep-vxlan
-    parent: tempest-full-py3
+    parent: tempest-full
     branches: ^(?!stable/(newton|ocata)).*$
     required-projects:
       - OpenStack/networking-testsriov
@@ -791,6 +707,7 @@
               quota_security_group_rule: 1000
             DEFAULT:
               enable_dvr: false
+              enable_snat_by_default: true
           /$NEUTRON_CORE_PLUGIN_CONF:
             ml2:
               type_drivers: flat,vlan,local,vxlan
@@ -839,7 +756,7 @@
 
 - job:
     name: networking-nuage-octavia
-    parent: networking-nuage-base-py3
+    parent: networking-nuage-base
     description: basic nuage octavia integration job
     # This currently works from stable/pike on
     branches: ^(?!stable/(newton|ocata)).*$

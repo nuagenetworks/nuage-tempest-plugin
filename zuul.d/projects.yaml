@@ -2,15 +2,15 @@
     check:
       jobs:
         - openstack-tox-pep8
-        - networking-nuage-tempest-smoke-py3
+        - networking-nuage-tempest-smoke
     gate:
       jobs:
         - openstack-tox-pep8
-        - networking-nuage-tempest-smoke-py3
+        - networking-nuage-tempest-smoke
     full:
       jobs:
-        - networking-nuage-tempest-virtio-py3
-        - networking-nuage-tempest-virtio-py3-vsdipam
+        - networking-nuage-tempest-virtio
+        - networking-nuage-tempest-virtio-vsdipam
         - networking-nuage-tempest-sriov
         - networking-nuage-tempest-baremetal
         - networking-nuage-tempest-scenario
@@ -20,7 +20,7 @@
         - networking-nuage-tempest-qdhcp
     virtio:
       jobs:
-        - networking-nuage-tempest-virtio-py3
+        - networking-nuage-tempest-virtio
     baremetal:
       jobs:
         - networking-nuage-tempest-baremetal
