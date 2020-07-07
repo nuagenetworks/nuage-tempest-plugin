@@ -251,12 +251,6 @@
     parent: tempest-full
     branches: .*
 
-# Temporarily needed as workaround for merge-ability
-- job:
-    name: tempest-full-5.4
-    parent: tempest-full
-    branches: .*
-
 - job:
     name: tempest-full-vsdipam
     parent: tempest-full
@@ -269,12 +263,6 @@
           $TEMPEST_CONFIG:
             nuage_sut:
               ipam_driver: nuage_vsd_managed
-
-# Temporarily needed as workaround for merge-ability
-- job:
-    name: tempest-full-py3-vsdipam
-    parent: tempest-full-vsdipam
-    branches: .*
 
 - job:
     name: networking-nuage-tempest-smoke
@@ -303,23 +291,11 @@
       tempest_test_regex: '^(nuage_tempest_plugin|tempest\.api\.network|neutron_tempest_plugin\.(api|scenario))\..*\[(?=.*smoke)'
       tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|neutron_tempest_plugin\.api\.admin\.test_tag.*|nuage_tempest_plugin.*orchestration.*|nuage_tempest_plugin\.tests\.scenario\.connectivity\..*\..*AggrFlowsTest\..*|tempest\.api\.network\.test_ports.*test_show_port))'
 
-# Temporarily needed as workaround for merge-ability
-- job:
-    name: networking-nuage-tempest-smoke-py3
-    parent: networking-nuage-base
-    branches: .*
-
 - job:
     name: networking-nuage-tempest-smoke-vsdipam
     parent: networking-nuage-tempest-smoke
     branches: ^(?!stable/(newton|ocata)).*$
     vars: *vsd_ipam_vars
-
-# Temporarily needed as workaround for merge-ability
-- job:
-    name: networking-nuage-tempest-smoke-py3-vsdipam
-    parent: networking-nuage-tempest-smoke-vsdipam
-    branches: .*
 
 - job:
     name: networking-nuage-tempest-qdhcp
@@ -332,12 +308,6 @@
         NEUTRON_AGENT: nuagevrs
       devstack_services:
         q-dhcp: true
-
-# Temporarily needed as workaround for merge-ability
-- job:
-    name: networking-nuage-tempest-qdhcp-5.4
-    parent: networking-nuage-tempest-qdhcp
-    branches: .*
 
 - job:
     name: networking-nuage-tempest-virtio
@@ -352,29 +322,11 @@
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\..*'
       tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway|nuage_hybrid_mpls\.test_nuage_hybrid_mpls_sriov).*))'
 
-# Temporarily needed as workaround for merge-ability
-- job:
-    name: networking-nuage-tempest-virtio-py3
-    parent: networking-nuage-tempest-virtio
-    branches: .*
-
-# Temporarily needed as workaround for merge-ability
-- job:
-    name: networking-nuage-tempest-virtio-5.4
-    parent: networking-nuage-tempest-virtio
-    branches: .*
-
 - job:
     name: networking-nuage-tempest-virtio-vsdipam
     parent: networking-nuage-tempest-virtio
     branches: ^(?!stable/(newton|ocata)).*$
     vars: *vsd_ipam_vars
-
-# Temporarily needed as workaround for merge-ability
-- job:
-    name: networking-nuage-tempest-virtio-py3-vsdipam
-    parent: networking-nuage-tempest-virtio-vsdipam
-    branches: .*
 
 - job:
     name: networking-nuage-tempest-api-switchdev
@@ -436,13 +388,6 @@
             network:
               port_vnic_type: direct
 
-# Temporarily needed as workaround for merge-ability
-- job:
-    name: networking-nuage-tempest-sriov-5.4
-    parent: networking-nuage-tempest-sriov
-    branches: .*
-
-
 - job:
     name: networking-nuage-tempest-sriov-vsdipam
     parent: networking-nuage-tempest-sriov
@@ -457,12 +402,6 @@
     vars:
       devstack_localrc:
         NUAGE_SRIOV_ALLOW_EXISTING_FLAT_VLAN: true
-
-# Temporarily needed as workaround for merge-ability
-- job:
-    name: networking-nuage-tempest-sriov-flat-vlan-5.4
-    parent: networking-nuage-tempest-sriov-flat-vlan
-    branches: .*
 
 - job:
     name: networking-nuage-tempest-sriov-switchdev
@@ -489,12 +428,6 @@
     branches: ^(?!stable/(newton|ocata)).*$
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.baremetal\..*'
-
-# Temporarily needed as workaround for merge-ability
-- job:
-    name: networking-nuage-tempest-baremetal-5.4
-    parent: networking-nuage-tempest-baremetal
-    branches: .*
 
 - job:
     name: networking-nuage-tempest-baremetal-vsdipam
@@ -525,13 +458,6 @@
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.scenario\..*'
       tempest_black_regex: '^nuage_tempest_plugin\.tests\.scenario\.connectivity\..*\..*AggrFlowsTest\..*'
       tempest_concurrency: 2
-
-# Temporarily needed as workaround for merge-ability
-- job:
-    name: networking-nuage-tempest-scenario-5.4
-    parent: networking-nuage-tempest-scenario
-    branches: .*
-
 
 - job:
     name: networking-nuage-tempest-scenario-rhel
@@ -590,12 +516,6 @@
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.cli\..*'
 
-# Temporarily needed as workaround for merge-ability
-- job:
-    name: networking-nuage-tempest-cli-5.4
-    parent: networking-nuage-tempest-cli
-    branches: .*
-
 - job:
     name: networking-nuage-tempest-aggregateflows
     parent: networking-nuage-tempest-scenario
@@ -630,12 +550,6 @@
         neutron-lbaas: https://opendev.org/openstack/neutron-lbaas.git
       tempest_plugins:
         - neutron-lbaas
-
-# Temporarily needed as workaround for merge-ability
-- job:
-    name: networking-nuage-tempest-lbaas-5.4
-    parent: networking-nuage-tempest-lbaas
-    branches: .*
 
 - job:
     name: networking-nuage-fwaas-v1
