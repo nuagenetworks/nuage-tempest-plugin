@@ -108,10 +108,5 @@ NuageSutGroup = [
     cfg.BoolOpt('identify_hypervisors_by_flavor',
                 default=True,
                 help='Whether E2E tests should pick compute by aggregate '
-                     'flavor'),
-    cfg.BoolOpt('force_config_drive',
-                default=None,
-                help='Set to True or False to force spawning guest VMs under '
-                     'test with configdrive or not. Newton does not support '
-                     'this flag in nova.conf')
+                     'flavor')
 ]
