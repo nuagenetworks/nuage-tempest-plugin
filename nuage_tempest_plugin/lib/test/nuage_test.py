@@ -1045,12 +1045,13 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             **ruleset)
 
     def create_public_router(self, router_name=None, manager=None,
-                             cleanup=True):
+                             cleanup=True, no_net_partition=False):
         return self.create_router(
             router_name=router_name,
             external_network_id=self.ext_net_id,
             manager=manager,
-            cleanup=cleanup)
+            cleanup=cleanup,
+            no_net_partition=no_net_partition)
 
     def create_router(self, router_name=None, admin_state_up=True,
                       external_network_id=None, enable_snat=None,
@@ -1611,8 +1612,8 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                              start_web_server=False,
                              web_server_port=80,
                              force_dhcp_config=False,
-                             manager=None,
-                             cleanup=True,
+                             manager=None, cleanup=True,
+                             no_net_partition=False,
                              cleanup_fip_infra=None,
                              **kwargs):
 
@@ -1694,7 +1695,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             if prepare:
                 ports = self.prepare_fip_topology(
                     name, networks, ports, security_groups, manager,
-                    cleanup_fip_infra)
+                    cleanup_fip_infra, no_net_partition=no_net_partition)
                 networks = []
                 security_groups = []
                 provisioning_needed |= needs_provisioning(server_ports=ports)
@@ -1861,7 +1862,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
 
     def prepare_fip_topology(
             self, server_name, networks, ports, security_groups=None,
-            manager=None, cleanup=True):
+            manager=None, cleanup=True, no_net_partition=False):
 
         LOG.info('[{}] Preparing FIP topology for {}'.format(
             self.test_tag, server_name))
@@ -1895,7 +1896,8 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             mask_bits=fip_cidr.prefixlen, ip_version=4, manager=manager,
             cleanup=cleanup)
         router = self.create_public_router(router_name=server_name,
-                                           manager=manager, cleanup=cleanup)
+                                           manager=manager, cleanup=cleanup,
+                                           no_net_partition=no_net_partition)
         self.router_attach(router, subnet, manager=manager, cleanup=cleanup)
 
         open_ssh_sg = self.create_open_ssh_security_group(
