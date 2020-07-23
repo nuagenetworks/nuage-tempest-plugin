@@ -12,8 +12,6 @@ from tempest.lib.common.utils import data_utils
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
-LOG = Topology.get_logger(__name__)
-
 
 def fetch_by_id(fetcher, obj_id):
     return fetcher.fetch(filter='ID is "{}"'.format(obj_id))[2]
@@ -287,13 +285,6 @@ class VsdHelper(object):
         vspk_filter = (vspk_filter or
                        self._get_vspk_filter_for_subnet(by_id=by_id,
                                                         by_subnet=by_subnet))
-        if vspk_filter:
-            LOG.info('Retrieving l2 domain with filter: {}'.format(
-                vspk_filter))  # TODO(kris) remove me again
-        else:
-            LOG.error('a qualifier is required')
-            return None
-
         return enterprise.l2_domains.get_first(filter=vspk_filter)
 
     def get_l2domain_template(self, enterprise=None, vspk_filter=None,
@@ -316,10 +307,6 @@ class VsdHelper(object):
         vspk_filter = (vspk_filter or
                        self._get_vspk_filter_for_subnet(by_id=by_id,
                                                         by_subnet=by_subnet))
-        if not vspk_filter:
-            LOG.error('a qualifier is required')
-            return None
-
         return enterprise.l2_domain_templates.get_first(filter=vspk_filter)
 
     ###
@@ -401,7 +388,11 @@ class VsdHelper(object):
                               vspk_filter='name == "{}"'.format(name))
         self.vsd.get_l3domain(vspk_filter='externalID == "{}"'.format(ext_id))
         """
-        if vspk_filter:
+        if by_router_id:
+            domain = self.get_l3domain(
+                enterprise, self.get_external_id_filter(by_router_id))
+
+        else:
             if enterprise and not isinstance(enterprise,
                                              self.vspk.NUEnterprise):
                 # get enterprise by _name_
@@ -412,15 +403,6 @@ class VsdHelper(object):
 
             domain = enterprise.domains.get_first(filter=vspk_filter)
 
-        elif by_router_id:
-            domain = self.get_l3domain(
-                enterprise, self.get_external_id_filter(by_router_id))
-        else:
-            LOG.error('a qualifier is required')
-            return None
-        if not domain:
-            LOG.warning('could not fetch the domain matching the filter "{}"'
-                        .format(vspk_filter))
         return domain
 
     def create_zone(self, name=None, domain=None, **kwargs):
@@ -707,11 +689,8 @@ class VsdHelper(object):
         vport = domain.vports.get_first(
             filter='externalID == "{}"'.format(
                 vport_id + "@" + Topology.cms_id))
-        if vport:
-            vip_port = vport.virtual_ips.get_first()
-            return vip_port
-        else:
-            return None
+
+        return vport.virtual_ips.get_first() if vport else None
 
     def get_domain_template(self, enterprise=None, vspk_filter=None,
                             by_router_id=None):
@@ -728,7 +707,11 @@ class VsdHelper(object):
         self.vsd.get_domain_template(
             filter='externalID == "{}"'.format(ext_id))
         """
-        if vspk_filter:
+        if by_router_id:
+            domain_template = self.get_domain_template(
+                enterprise, self.get_external_id_filter(by_router_id))
+
+        else:
             if enterprise and not isinstance(enterprise,
                                              self.vspk.NUEnterprise):
                 # get enterprise by _name_
@@ -740,16 +723,6 @@ class VsdHelper(object):
             domain_template = enterprise.domain_templates.get_first(
                 filter=vspk_filter)
 
-        elif by_router_id:
-            domain_template = self.get_domain_template(
-                enterprise, self.get_external_id_filter(by_router_id))
-        else:
-            LOG.error('a qualifier is required')
-            return None
-        if not domain_template:
-            LOG.warning('could not fetch the domain template '
-                        'matching the filter "{}"'
-                        .format(vspk_filter))
         return domain_template
 
     def get_zone(self, domain=None, vspk_filter=None, by_router_id=None):
@@ -765,7 +738,11 @@ class VsdHelper(object):
                          filter='name == "{}"'.format(name))
         self.vsd.get_zone(filter='externalID == "{}"'.format(ext_id))
         """
-        if vspk_filter:
+        if by_router_id:  # this is actually not advised as there will be 2
+            zone = self.get_zone(
+                domain, self.get_external_id_filter(by_router_id))
+
+        else:
             if domain:
                 if not isinstance(domain, self.vspk.NUDomain):
                     domain = self.vspk.NUDomain(id=domain)
@@ -773,15 +750,6 @@ class VsdHelper(object):
             else:
                 zone = self.session().user.zones.get_first(filter=vspk_filter)
 
-        elif by_router_id:  # this is actually not advised as there will be 2
-            zone = self.get_zone(
-                domain, self.get_external_id_filter(by_router_id))
-        else:
-            LOG.error('a qualifier is required')
-            return None
-        if not zone:
-            LOG.warning('could not fetch the zone matching the filter "{}"'
-                        .format(vspk_filter))
         return zone
 
     def get_subnet(self, zone=None, vspk_filter=None, by_id=None,
@@ -798,7 +766,14 @@ class VsdHelper(object):
                             filter='name == "{}"'.format(name))
         self.vsd.get_subnet(filter='externalID == "{}"'.format(ext_id))
         """
-        if vspk_filter:
+        if by_id:
+            subnet = self.get_subnet(vspk_filter='ID is "{}"'.format(by_id))
+
+        elif by_subnet:
+            vspk_filter = self._get_vspk_filter_for_subnet(by_subnet=by_subnet)
+            subnet = self.get_subnet(zone, vspk_filter)
+
+        else:
             if zone:
                 if not isinstance(zone, self.vspk.NUZone):
                     zone = self.vspk.NUZone(id=zone)
@@ -807,19 +782,6 @@ class VsdHelper(object):
                 subnet = self.session().user.subnets.get_first(
                     filter=vspk_filter)
 
-        elif by_id:
-            subnet = self.get_subnet(vspk_filter='ID is "{}"'.format(by_id))
-
-        elif by_subnet:
-            vspk_filter = self._get_vspk_filter_for_subnet(by_subnet=by_subnet)
-            subnet = self.get_subnet(zone, vspk_filter)
-
-        else:
-            LOG.error('a qualifier is required')
-            return None
-        if not subnet:
-            LOG.warning('could not fetch the subnet matching the filter "{}"'
-                        .format(vspk_filter))
         return subnet
 
     def get_zone_and_domain_parent_of_subnet(self, subnet):
@@ -841,7 +803,11 @@ class VsdHelper(object):
                             filter='name == "{}"'.format(name))
         self.vsd.get_subnet(filter='externalID == "{}"'.format(ext_id))
         """
-        if vspk_filter:
+        if by_subnet:
+            vspk_filter = self._get_vspk_filter_for_subnet(by_subnet=by_subnet)
+            subnet = self.get_subnet_from_domain(domain, vspk_filter)
+
+        else:
             if domain:
                 if not isinstance(domain, self.vspk.NUDomain):
                     domain = self.vspk.NUDomain(id=domain)
@@ -850,15 +816,6 @@ class VsdHelper(object):
                 subnet = self.session().user.subnets.get_first(
                     filter=vspk_filter)
 
-        elif by_subnet:
-            vspk_filter = self._get_vspk_filter_for_subnet(by_subnet=by_subnet)
-            subnet = self.get_subnet_from_domain(domain, vspk_filter)
-        else:
-            LOG.error('a qualifier is required')
-            return None
-        if not subnet:
-            LOG.warning('could not fetch the subnet matching the filter "{}"'
-                        .format(vspk_filter))
         return subnet
 
     def get_vm(self, subnet=None, vspk_filter=None, by_device_id=None):
@@ -874,7 +831,11 @@ class VsdHelper(object):
                         filter='name == "{}"'.format(name))
         self.vsd.get_vm(filter='externalID == "{}"'.format(ext_id))
         """
-        if vspk_filter:
+        if by_device_id:
+            vm = self.get_vm(
+                subnet, self.get_external_id_filter(by_device_id))
+
+        else:
             if subnet:
                 if not isinstance(subnet, self.vspk.NUSubnet):
                     subnet = self.vspk.NUSubnet(id=subnet)
@@ -882,15 +843,6 @@ class VsdHelper(object):
             else:
                 vm = self.session().user.vms.get_first(filter=vspk_filter)
 
-        elif by_device_id:
-            vm = self.get_vm(
-                subnet, self.get_external_id_filter(by_device_id))
-        else:
-            LOG.error('a qualifier is required')
-            return None
-        if not vm:
-            LOG.warning('could not fetch the vm matching the filter "{}"'
-                        .format(vspk_filter))
         return vm
 
     def get_subnet_dhcp_options(self, subnet=None, vspk_filter=None):
@@ -904,22 +856,10 @@ class VsdHelper(object):
         self.vsd.get_subnet_dhcp_options(
             filter='externalID == "{}"'.format(subnet_externalID))
         """
-        if not isinstance(subnet, self.vspk.NUSubnet):
-            if not vspk_filter:
-                LOG.error('a filter is required')
-                return None
-            subnet = self.session().user.subnets.get_first(filter=vspk_filter)
+        subnet = subnet or self.session().user.subnets.get_first(
+            filter=vspk_filter)
 
-        dhcp_options = subnet.dhcp_options.get()
-        if not dhcp_options:
-            if vspk_filter:
-                LOG.warning('could not fetch the dhcp options '
-                            'on the subnet matching the filter "{}"'
-                            .format(vspk_filter))
-            else:
-                LOG.error('could not fetch the dhcp options on the subnet')
-
-        return dhcp_options
+        return subnet.dhcp_options.get()
 
     def get_l2domain_dhcp_options(self, l2domain=None, vspk_filter=None):
         """get_subnet_dhcp_options
@@ -932,23 +872,10 @@ class VsdHelper(object):
         self.vsd.get_subnet_dhcp_options(
             filter='externalID == "{}"'.format(subnet_externalID))
         """
-        if not isinstance(l2domain, self.vspk.NUL2Domain):
-            if not vspk_filter:
-                LOG.error('a filter is required')
-                return None
-            l2domain = self.session().user.l2domain.get_first(
-                filter=vspk_filter)
+        l2domain = l2domain or self.session().user.l2domain.get_first(
+            filter=vspk_filter)
 
-        dhcp_options = l2domain.dhcp_options.get()
-        if not dhcp_options:
-            if vspk_filter:
-                LOG.warning('could not fetch the dhcp options '
-                            'on the subnet matching the filter "{}"'
-                            .format(vspk_filter))
-            else:
-                LOG.error('could not fetch the dhcp options on the subnet')
-
-        return dhcp_options
+        return l2domain.dhcp_options.get()
 
     def get_vport(self, l2domain=None, subnet=None, vspk_filter=None,
                   by_port_id=None):
@@ -962,30 +889,16 @@ class VsdHelper(object):
         self.vsd.get_vport(subnet=subnet,
             vspk_filter='externalID == "{}"'.format(ext_id))
         """
-        if l2domain and not isinstance(l2domain, self.vspk.NUL2Domain):
-            LOG.error('a l2domain is required')
-            return None
-        if subnet and not isinstance(subnet, self.vspk.NUSubnet):
-            LOG.error('a subnet is required')
-            return None
-        parent = l2domain if l2domain else subnet if subnet else None
+        assert l2domain or subnet  # one of both is required
+        parent = l2domain if l2domain else subnet
 
-        if not parent:
-            LOG.error('a parent is required')
-            return None
-
-        if vspk_filter:
-            vport = parent.vports.get_first(filter=vspk_filter)
-
-        elif by_port_id:
+        if by_port_id:
             vport = self.get_vport(
                 l2domain, subnet, self.get_external_id_filter(by_port_id))
+
         else:
-            LOG.error('a qualifier is required')
-            return None
-        if not vport:
-            LOG.warning('could not fetch the vport from the l2domain/subnet '
-                        'matching the filter "{}"'.format(filter))
+            vport = parent.vports.get_first(filter=vspk_filter)
+
         return vport
 
     def get_vm_interface(self, vspk_filter):
@@ -997,12 +910,8 @@ class VsdHelper(object):
         self.vsd.get_vm_interface(
             filter='externalID == "{}"'.format(ext_id))
         """
-        vm_interface = self.session().user.vm_interfaces.get_first(
+        return self.session().user.vm_interfaces.get_first(
             filter=vspk_filter)
-        if not vm_interface:
-            LOG.warning('could not fetch the vm interface '
-                        'matching the filter "{}"'.format(vspk_filter))
-        return vm_interface
 
     def get_vm_interface_policy_decisions(self, vm_interface=None,
                                           vspk_filter=None):
@@ -1016,23 +925,12 @@ class VsdHelper(object):
         self.vsd.get_vm_interface_policy_decisions(
             filter='externalID == "{}"'.format(vm_interface_externalID))
         """
-        if not isinstance(vm_interface, self.vspk.NUVMInterface):
-            if not vspk_filter:
-                LOG.error('a filter is required')
-                return None
-            vm_interface = self.session().user.vm_interfaces.get_first(
-                filter=vspk_filter)
-        policy_decisions = self.vspk.NUPolicyDecision(
+        vm_interface = (vm_interface or
+                        self.session().user.vm_interfaces.get_first(
+                            filter=vspk_filter))
+
+        return self.vspk.NUPolicyDecision(
             id=vm_interface.policy_decision_id).fetch()
-        if not policy_decisions:
-            if vspk_filter:
-                LOG.warning('could not fetch the policy decisions '
-                            'on the vm interface matching the filter "{}"'
-                            .format(vspk_filter))
-            else:
-                LOG.warning('could not fetch the policy decisions '
-                            'on the vm interface')
-        return policy_decisions
 
     def get_vm_interface_dhcp_options(self, vm_interface=None,
                                       vspk_filter=None):
@@ -1049,23 +947,12 @@ class VsdHelper(object):
         if vm_interface:
             if not isinstance(vm_interface, self.vspk.NUVMInterface):
                 vm_interface = self.vspk.NUVMInterfacein(id=vm_interface)
-        elif vspk_filter:
+
+        else:
             vm_interface = self.session().user.vm_interfaces.get_first(
                 filter=vspk_filter)
-        else:
-            LOG.error('a filter is required')
-            return None
 
-        dhcp_options = vm_interface.dhcp_options.get()
-        if not dhcp_options:
-            if vspk_filter:
-                LOG.error('could not fetch the dhcp options on the '
-                          'vm interface matching the filter "{}"'
-                          .format(vspk_filter))
-            else:
-                LOG.error('could not fetch the dhcp options '
-                          'on the vm interface')
-        return dhcp_options
+        return vm_interface.dhcp_options.get() if vm_interface else []
 
     def get_ingress_acl_entry(self, vspk_filter):
         """get_ingress_acl_entry
@@ -1076,12 +963,8 @@ class VsdHelper(object):
         self.vsd.get_ingress_acl_entry(
             filter='externalID == "{}"'.format(ext_id))
         """
-        acl = self.session().user.ingress_acl_entry_templates.get_first(
+        return self.session().user.ingress_acl_entry_templates.get_first(
             filter=vspk_filter)
-        if not acl:
-            LOG.warning('could not fetch the ingress acl entry matching '
-                        'the filter "{}"'.format(vspk_filter))
-        return acl
 
     def get_egress_acl_entry(self, vspk_filter):
         """get_egress_acl_entry
@@ -1092,12 +975,8 @@ class VsdHelper(object):
         self.vsd.get_egress_acl_entry(
             filter='externalID == "{}"'.format(ext_id))
         """
-        acl = self.session().user.egress_acl_entry_templates.get_first(
+        return self.session().user.egress_acl_entry_templates.get_first(
             filter=vspk_filter)
-        if not acl:
-            LOG.warning('could not fetch the egress acl entry matching '
-                        'the filter "{}"'.format(vspk_filter))
-        return acl
 
     def get_floating_ip(self, vspk_filter):
         """get_floating_ip
@@ -1108,12 +987,8 @@ class VsdHelper(object):
         self.vsd.get_floating_ip(
             filter='externalID == "{}"'.format(ext_id))
         """
-        floating_ip = self.session().user.floating_ips.get_first(
+        return self.session().user.floating_ips.get_first(
             filter=vspk_filter)
-        if not floating_ip:
-            LOG.warning('could not fetch the floating ip matching '
-                        'the filter "{}"'.format(filter))
-        return floating_ip
 
     def create_floating_ip(self, domain,
                            shared_network_resource_id, address=None):
@@ -1133,17 +1008,14 @@ class VsdHelper(object):
         self.vsd.get_ingress_acl_entries(
             filter='externalID == "{}"'.format(ext_id))
         """
-        templates = self.session().user.ingress_acl_templates.get(
-            filter=vspk_filter)
-        if not templates:
-            LOG.warning('could not fetch the ingress acl entries (templates) '
-                        'matching the filter "{}"'.format(vspk_filter))
-            return None
         acls = []
+        templates = self.session().user.ingress_acl_templates.get(
+            filter=vspk_filter) or []
         for template in templates:
             tmp = self.vspk.NUIngressACLTemplate(id=template.id)
             acl = tmp.ingress_acl_entry_templates.get()
             acls.append(acl)
+
         return acls
 
     def get_egress_acl_entries(self, vspk_filter):
@@ -1156,17 +1028,14 @@ class VsdHelper(object):
         self.vsd.get_egress_acl_entries(
             filter='externalID == "{}"'.format(ext_id))
         """
-        templates = self.session().user.egress_acl_templates.get(
-            filter=vspk_filter)
-        if not templates:
-            LOG.warning('could not fetch the egress acl entries (templates) '
-                        'matching the filter "{}"'.format(vspk_filter))
-            return None
         acls = []
+        templates = self.session().user.egress_acl_templates.get(
+            filter=vspk_filter) or []
         for template in templates:
             tmp = self.vspk.NUEgressACLTemplate(id=template.id)
             acl = tmp.egress_acl_entry_templates.get()
             acls.append(acl)
+
         return acls
 
     def get_shared_network_resource(self,
@@ -1180,22 +1049,19 @@ class VsdHelper(object):
         self.vsd.get_shared_network_resource(
             filter='externalID == "{}"'.format(ext_id))
         """
-        if vspk_filter:
+        if by_fip_subnet_id:
+            shared_network_resource = self.get_shared_network_resource(
+                self.get_external_id_filter(by_fip_subnet_id))
+
+        else:
             shared_network_resource = \
                 self.session().user.shared_network_resources.get_first(
                     filter=vspk_filter)
-        elif by_fip_subnet_id:
-            shared_network_resource = self.get_shared_network_resource(
-                self.get_external_id_filter(by_fip_subnet_id))
-        else:
-            LOG.error('a qualifier is required')
-            return None
-        if not shared_network_resource:
-            LOG.warning('could not fetch the shared network resource '
-                        'matching the filter "{}"'.format(vspk_filter))
+
         return shared_network_resource
 
-    def get_virtual_ip(self, vport, vspk_filter):
+    @staticmethod
+    def get_virtual_ip(vport, vspk_filter):
         """get_virtual_ip
 
         @params: vport object
@@ -1205,15 +1071,7 @@ class VsdHelper(object):
         self.vsd.get_virtual_ip(vport=vport,
             filter='externalID == "{}"'.format(ext_id))
         """
-        if not isinstance(vport, self.vspk.NUVPort):
-            LOG.error('a vport is required')
-            return None
-        virtual_ip = vport.virtual_ips.get_first(filter=vspk_filter)
-
-        if not virtual_ip:
-            LOG.warning('could not fetch the virtualip matching the '
-                        'filter "{}"'.format(vspk_filter))
-        return virtual_ip
+        return vport.virtual_ips.get_first(filter=vspk_filter)
 
     def get_firewall_acl(self, ent=None, vspk_filter=None,
                          by_fw_policy_id=None):
@@ -1226,23 +1084,14 @@ class VsdHelper(object):
         self.vsd.get_firewall_acl(ent=ent1,
             filter='externalID == "{}"'.format(ext_id))
         """
-        if vspk_filter:
-            if ent and not isinstance(ent, self.vspk.NUEnterprise):
-                LOG.error('a enterprise is required')
-                return None
-            else:
-                ent = self.get_default_enterprise()
-            firewall_acl = ent.firewall_acls.get_first(filter=vspk_filter)
-        elif by_fw_policy_id:
+        ent = ent or self.get_default_enterprise()
+        if by_fw_policy_id:
             firewall_acl = self.get_firewall_acl(
                 ent, self.get_external_id_filter(by_fw_policy_id))
-        else:
-            LOG.error('a qualifier is required')
-            return None
 
-        if not firewall_acl:
-            LOG.warning('could not fetch the firewall_acl matching '
-                        'the filter "{}"'.format(vspk_filter))
+        else:
+            firewall_acl = ent.firewall_acls.get_first(filter=vspk_filter)
+
         return firewall_acl
 
     def get_firewall_acls(self, ent=None, vspk_filter=None,
@@ -1256,23 +1105,14 @@ class VsdHelper(object):
         self.vsd.get_firewall_acl(ent=ent1,
             filter='externalID == "{}"'.format(ext_id))
         """
-        if not by_fw_policy_id:
-            if ent and not isinstance(ent, self.vspk.NUEnterprise):
-                LOG.error('a enterprise is required')
-                return None
-            else:
-                ent = self.get_default_enterprise()
-            if vspk_filter:
-                firewall_acls = ent.firewall_acls.get(filter=vspk_filter)
-            else:
-                firewall_acls = ent.firewall_acls.get()
-        elif by_fw_policy_id:
+        ent = ent or self.get_default_enterprise()
+        if by_fw_policy_id:
             firewall_acls = self.get_firewall_acls(
                 ent, self.get_external_id_filter(by_fw_policy_id))
 
-        if not firewall_acls:
-            LOG.warning('could not fetch the firewall_acls matching '
-                        'the filter "{}"'.format(vspk_filter))
+        else:
+            firewall_acls = ent.firewall_acls.get(filter=vspk_filter)
+
         return firewall_acls
 
     def get_firewall_rule(self, ent=None, vspk_filter=None,
@@ -1286,27 +1126,18 @@ class VsdHelper(object):
         self.vsd.get_firewall_rule(ent=ent1,
             filter='externalID == "{}"'.format(ext_id))
         """
-        if vspk_filter:
-            if ent:
-                if not isinstance(ent, self.vspk.NUEnterprise):
-                    LOG.error('a enterprise is required')
-                    return None
-            else:
-                ent = self.get_default_enterprise()
-            firewall_rule = ent.firewall_rules.get_first(filter=vspk_filter)
-        elif by_fw_rule_id:
+        ent = ent or self.get_default_enterprise()
+        if by_fw_rule_id:
             firewall_rule = self.get_firewall_rule(
                 ent, self.get_external_id_filter(by_fw_rule_id))
-        else:
-            LOG.error('a qualifier is required')
-            return None
 
-        if not firewall_rule:
-            LOG.warning('could not fetch the firewall_rule matching '
-                        'the filter "{}"'.format(vspk_filter))
+        else:
+            firewall_rule = ent.firewall_rules.get_first(filter=vspk_filter)
+
         return firewall_rule
 
-    def get_firewall_acl_domains(self, acl):
+    @staticmethod
+    def get_firewall_acl_domains(acl):
         """get_firewall_acl_domains
 
         @params: acl object
@@ -1315,11 +1146,4 @@ class VsdHelper(object):
         @Example:
         self.vsd.get_firewall_acl_domains(acl=acl1)
         """
-        if not isinstance(acl, self.vspk.NUFirewallAcl):
-            LOG.error('a firewall acl is required')
-            return None
-        domains = acl.domains.get()
-
-        if not domains:
-            LOG.error('could not fetch the domains associated to firewall')
-        return domains
+        return acl.domains.get()
