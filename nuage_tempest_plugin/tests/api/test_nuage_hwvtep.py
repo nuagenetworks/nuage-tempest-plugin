@@ -22,7 +22,6 @@ from tempest.lib import decorators
 from nuage_tempest_plugin.lib.mixins import net_topology as topology_mixin
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import constants
 
 
 CONF = Topology.get_conf()
@@ -48,11 +47,9 @@ class TestNuageHWVTEP(NuageBaseTest, topology_mixin.NetTopologyMixin):
             is_ipv4, is_ipv6, is_vsd_managed, is_flat)
         if not is_vsd_managed:
             if is_ipv4:
-                vsd_resource = vsd_domain = self.vsd.get_l2domain(
-                    by_subnet=ipv4_subnet)
+                vsd_resource = self.vsd.get_l2domain(by_subnet=ipv4_subnet)
             else:
-                vsd_resource = vsd_domain = self.vsd.get_l2domain(
-                    by_subnet=ipv6_subnet)
+                vsd_resource = self.vsd.get_l2domain(by_subnet=ipv6_subnet)
 
         # resources under test
         self.create_port(network)
@@ -64,17 +61,8 @@ class TestNuageHWVTEP(NuageBaseTest, topology_mixin.NetTopologyMixin):
         # Create VM
         vm = self.create_tenant_server(networks=[network],
                                        prepare_for_connectivity=False)
-        if is_vsd_managed:
-            pg = self._get_pg_allow_all(vsd_domain,
-                                        should_have_pg=False)
-            pg_id = None
-        else:
-            pg = self._get_pg_allow_all(vsd_domain)
-            pg_id = pg.id
-            self._verify_pg_allow_all(pg)
 
         self._verify_bridge_port(network, vsd_resource, is_flat,
-                                 expected_pg_id=pg_id,
                                  expected_number_bindings=1)
 
         # Create second VM, no change expected
@@ -82,7 +70,6 @@ class TestNuageHWVTEP(NuageBaseTest, topology_mixin.NetTopologyMixin):
                                         prepare_for_connectivity=False)
 
         self._verify_bridge_port(network, vsd_resource, is_flat,
-                                 expected_pg_id=pg_id,
                                  expected_number_bindings=2)
 
         self.manager.servers_client.delete_server(vm.id)
@@ -90,7 +77,6 @@ class TestNuageHWVTEP(NuageBaseTest, topology_mixin.NetTopologyMixin):
             self.manager.servers_client, vm.id)
 
         self._verify_bridge_port(network, vsd_resource, is_flat,
-                                 expected_pg_id=pg_id,
                                  expected_number_bindings=1)
 
         self.manager.servers_client.delete_server(vm2.id)
@@ -166,40 +152,8 @@ class TestNuageHWVTEP(NuageBaseTest, topology_mixin.NetTopologyMixin):
                                                  enable_dhcp=False)
         return ipv4_subnet, ipv6_subnet, network, vsd_resource, vsd_domain
 
-    def _get_pg_allow_all(self, parent_resource, should_have_pg=True):
-        pgs = parent_resource.policy_groups.get(
-            filter=self.vsd.get_external_id_filter('hw:PG_ALLOW_ALL'))
-        if should_have_pg:
-            self.assertEqual(1, len(pgs), 'Exactly 1 PG_ALLOW_ALL_HW expected')
-            return pgs[0]
-        else:
-            self.assertEmpty(pgs)
-            return None
-
-    def _verify_pg_allow_all(self, policy_group):
-        # Verify PG
-        self.assertEqual(policy_group.type, 'HARDWARE')
-        self.assertEqual(policy_group.name,
-                         constants.NUAGE_PLCY_GRP_ALLOW_ALL_HW)
-        self.assertEqual(policy_group.description,
-                         constants.NUAGE_PLCY_GRP_ALLOW_ALL_HW)
-
-        # Verify associated ACL
-        in_rule = self.vsd.get_ingress_acl_entry(
-            vspk_filter='locationID == "{}"'.format(policy_group.id))
-        eg_rule = self.vsd.get_egress_acl_entry(
-            vspk_filter='locationID == "{}"'.format(policy_group.id))
-
-        self.assertIsNotNone(in_rule, "in_rule must not be None")
-        self.assertEqual(in_rule.network_type, 'ANY')
-        self.assertEqual(in_rule.location_type, 'POLICYGROUP')
-
-        self.assertIsNotNone(eg_rule, "eg_rule must not be None")
-        self.assertEqual(eg_rule.network_type, 'ANY')
-        self.assertEqual(eg_rule.location_type, 'POLICYGROUP')
-
     def _verify_bridge_port(self, network, vsd_resource, is_flat,
-                            expected_pg_id, expected_number_bindings):
+                            expected_number_bindings):
         vports = vsd_resource.vports.get()
         self.assertEqual(1, len(vports), 'Exactly one vport expected')
         # TODO(Marcelo): Get bindings which corresponds only to this test
@@ -218,11 +172,7 @@ class TestNuageHWVTEP(NuageBaseTest, topology_mixin.NetTopologyMixin):
         interfaces = vport.bridge_interfaces.get()
         self.assertEqual(1, len(interfaces))
         policy_groups = vport.policy_groups.get()
-        if expected_pg_id:
-            self.assertEqual(1, len(policy_groups))
-            self.assertEqual(expected_pg_id, policy_groups[0].id)
-        else:
-            self.assertEmpty(policy_groups)
+        self.assertEmpty(policy_groups)
 
     @decorators.attr(type='smoke')
     def test_nuage_hwvtep_os_managed_ipv4_with_vm(self):
@@ -284,7 +234,7 @@ class TestNuageHWVTEPActiveActive(TestNuageHWVTEP):
     physnet = 'physnet2'
 
     def _verify_bridge_port(self, network, vsd_resource, is_flat,
-                            expected_pg_id, expected_number_bindings):
+                            expected_number_bindings):
         """_verify_bridge_port
 
         Physnet2 is attached to br-active
@@ -306,11 +256,7 @@ class TestNuageHWVTEPActiveActive(TestNuageHWVTEP):
         interfaces = vport.bridge_interfaces.get()
         self.assertEqual(1, len(interfaces))
         policy_groups = vport.policy_groups.get()
-        if expected_pg_id:
-            self.assertEqual(1, len(policy_groups))
-            self.assertEqual(expected_pg_id, policy_groups[0].id)
-        else:
-            self.assertEmpty(policy_groups)
+        self.assertEmpty(policy_groups)
 
 
 class TestNuageHWVTEPActiveStandby(TestNuageHWVTEP):
@@ -318,7 +264,7 @@ class TestNuageHWVTEPActiveStandby(TestNuageHWVTEP):
     physnet = 'physnet3'
 
     def _verify_bridge_port(self, network, vsd_resource, is_flat,
-                            expected_pg_id, expected_number_bindings):
+                            expected_number_bindings):
         """_verify_bridge_port
 
         Physnet3 is attached to br-standby
@@ -339,8 +285,4 @@ class TestNuageHWVTEPActiveStandby(TestNuageHWVTEP):
             interfaces = vport.bridge_interfaces.get()
             self.assertEqual(1, len(interfaces))
             policy_groups = vport.policy_groups.get()
-            if expected_pg_id:
-                self.assertEqual(1, len(policy_groups))
-                self.assertEqual(expected_pg_id, policy_groups[0].id)
-            else:
-                self.assertEmpty(policy_groups)
+            self.assertEmpty(policy_groups)
