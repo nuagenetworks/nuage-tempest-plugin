@@ -625,24 +625,6 @@ class NuageNetworkClientJSON(service_client.RestClient):
         resp, body = self.delete(uri)
         self.expected_success(204, resp.status)
 
-    def list_switchport_mappings(self, **kwargs):
-        uri = '%s/net-topology/switchport_mappings' % self.uri_prefix
-        if kwargs:
-            uri += '?' + urlparse.urlencode(kwargs, doseq=1)
-        resp, body = self.get(uri)
-        self.expected_success(200, resp.status)
-        body = json.loads(body)
-        return service_client.ResponseBody(resp, body)
-
-    def list_switchport_binding(self, **kwargs):
-        uri = '%s/net-topology/switchport_bindings' % self.uri_prefix
-        if kwargs:
-            uri += '?' + urlparse.urlencode(kwargs, doseq=1)
-        resp, body = self.get(uri)
-        self.expected_success(200, resp.status)
-        body = json.loads(body)
-        return service_client.ResponseBody(resp, body)
-
     def create_nuage_l2bridge(self, name, **kwargs):
         name = name or data_utils.rand_name('test-l2bridge-')
         post_body = {'nuage_l2bridge': kwargs}
@@ -696,3 +678,56 @@ class NuageNetworkClientJSON(service_client.RestClient):
         self.expected_success(200, resp.status)
         body = json.loads(body)
         return service_client.ResponseBody(resp, body)
+
+    def create_switchport_mapping(self, **kwargs):
+        post_body = {'switchport_mapping': kwargs}
+        body = json.dumps(post_body)
+        uri = '%s/net-topology/switchport_mappings' % self.uri_prefix
+        resp, body = self.post(uri, body)
+        self.expected_success(201, resp.status)
+        body = json.loads(body)
+        return service_client.ResponseBody(resp, body)
+
+    def show_switchport_mapping(self, mapping_id):
+        uri = '%s/net-topology/switchport_mappings/%s' % (
+            self.uri_prefix, mapping_id)
+        return self._get_request(uri)
+
+    def list_switchport_mappings(self, **kwargs):
+        uri = '%s/net-topology/switchport_mappings' % self.uri_prefix
+        if kwargs:
+            uri += '?' + urlparse.urlencode(kwargs, doseq=1)
+        resp, body = self.get(uri)
+        self.expected_success(200, resp.status)
+        body = json.loads(body)
+        return service_client.ResponseBody(resp, body)
+
+    def update_switchport_mapping(self, mapping_id, **kwargs):
+        put_body = {'switchport_mapping': kwargs}
+        body = json.dumps(put_body)
+        uri = '%s/net-topology/switchport_mappings/%s' % (
+            self.uri_prefix, mapping_id)
+        resp, body = self.put(uri, body)
+        self.expected_success(200, resp.status)
+        body = json.loads(body)
+        return service_client.ResponseBody(resp, body)
+
+    def delete_switchport_mapping(self, mapping_id):
+        uri = '%s/net-topology/switchport_mappings/%s' % (
+            self.uri_prefix, mapping_id)
+        resp, body = self.delete(uri)
+        self.expected_success(204, resp.status)
+
+    def list_switchport_bindings(self, **kwargs):
+        uri = '%s/net-topology/switchport_bindings' % self.uri_prefix
+        if kwargs:
+            uri += '?' + urlparse.urlencode(kwargs, doseq=1)
+        resp, body = self.get(uri)
+        self.expected_success(200, resp.status)
+        body = json.loads(body)
+        return service_client.ResponseBody(resp, body)
+
+    def show_switchport_binding(self, binding_id):
+        uri = '%s/net-topology/switchport_bindings/%s' % (
+            self.uri_prefix, binding_id)
+        return self._get_request(uri)

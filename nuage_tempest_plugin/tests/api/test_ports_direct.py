@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import contextlib
+
 from netaddr import IPNetwork
 
 import testtools
@@ -21,7 +23,6 @@ from tempest.common import utils
 from tempest.lib.common.utils import data_utils
 
 from nuage_tempest_plugin.lib.mixins import l3
-from nuage_tempest_plugin.lib.mixins import net_topology as topology_mixin
 from nuage_tempest_plugin.lib.mixins import network as network_mixin
 from nuage_tempest_plugin.lib.test.nuage_test import skip_because
 from nuage_tempest_plugin.lib.topology import Topology
@@ -195,9 +196,7 @@ class SubPortTopology(object):
             self.direct_subport = sub_port
 
 
-class PortsDirectTest(network_mixin.NetworkMixin,
-                      l3.L3Mixin,
-                      topology_mixin.NetTopologyMixin):
+class PortsDirectTest(network_mixin.NetworkMixin, l3.L3Mixin):
 
     credentials = ['admin']
     personality = 'NUAGE_210_WBX_48_S'
@@ -246,6 +245,19 @@ class PortsDirectTest(network_mixin.NetworkMixin,
         for vsd_l2dom_template in cls.vsd_l2dom_template:
             cls.vsd_client.delete_l2domaintemplate(
                 vsd_l2dom_template['ID'])
+
+    @contextlib.contextmanager
+    def switchport_mapping(self, do_delete=True, **kwargs):
+        client = self.plugin_network_client_admin
+        mapping = {}
+        mapping.update(kwargs)
+        mapping = client.create_switchport_mapping(
+            **mapping)['switchport_mapping']
+        try:
+            yield mapping
+        finally:
+            if do_delete:
+                client.delete_switchport_mapping(mapping['id'])
 
     def _is_port_down(self, port_id):
         p = self.show_port(port_id)
@@ -571,7 +583,7 @@ class PortsDirectTest(network_mixin.NetworkMixin,
         create_data.update(self.binding_data1)
         with self.switchport_mapping(do_delete=False, **mapping) as swtch_map:
             self.addCleanup(
-                self.switchport_mapping_client_admin.delete_switchport_mapping,
+                self.plugin_network_client_admin.delete_switchport_mapping,
                 swtch_map['id'])
             self.create_port(topology.network['id'],
                              cleanup=True, **create_data)
@@ -713,13 +725,13 @@ class PortsDirectTest(network_mixin.NetworkMixin,
                 as map1_2, \
                 self.switchport_mapping(do_delete=False, **mapping2) as map2:
             self.addCleanup(
-                self.switchport_mapping_client_admin.delete_switchport_mapping,
+                self.plugin_network_client_admin.delete_switchport_mapping,
                 map1_1['id'])
             self.addCleanup(
-                self.switchport_mapping_client_admin.delete_switchport_mapping,
+                self.plugin_network_client_admin.delete_switchport_mapping,
                 map1_2['id'])
             self.addCleanup(
-                self.switchport_mapping_client_admin.delete_switchport_mapping,
+                self.plugin_network_client_admin.delete_switchport_mapping,
                 map2['id'])
 
             create_data1_1 = {'binding:vnic_type': 'direct',
@@ -914,7 +926,7 @@ class PortsDirectTest(network_mixin.NetworkMixin,
             create_data.update(self.binding_data)
         with self.switchport_mapping(do_delete=False, **mapping) as switch_map:
             self.addCleanup(
-                self.switchport_mapping_client_admin.delete_switchport_mapping,
+                self.plugin_network_client_admin.delete_switchport_mapping,
                 switch_map['id'])
             direct_port = self.create_port(topology.network['id'],
                                            cleanup=True,
@@ -968,7 +980,7 @@ class PortsDirectTest(network_mixin.NetworkMixin,
                              use_subport_check=False, nr_vports=1):
         with self.switchport_mapping(do_delete=False, **subport_mapping) as sm:
             self.addCleanup(
-                self.switchport_mapping_client_admin.delete_switchport_mapping,
+                self.plugin_network_client_admin.delete_switchport_mapping,
                 sm['id'])
             subport_topology.direct_port = self.update_port(
                 subport_topology.direct_port['id'], as_admin=True,

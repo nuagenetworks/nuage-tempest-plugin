@@ -13,7 +13,6 @@ from oslo_utils import uuidutils
 from tempest.lib.common.utils import data_utils
 
 from nuage_tempest_plugin.lib.mixins.l3 import L3Mixin
-from nuage_tempest_plugin.lib.mixins import net_topology as topology_mixin
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
@@ -47,8 +46,8 @@ LOG = Topology.get_logger(__name__)
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-class UpgradeTo60Test(NuageBaseTest, L3Mixin,
-                      topology_mixin.NetTopologyMixin):
+class UpgradeTo60Test(NuageBaseTest, L3Mixin):
+
     _ip_version = 4
     _cms_id = Topology.cms_id
     _openstack_version = str(Topology.openstack_version_qualifier)
@@ -643,7 +642,7 @@ class UpgradeTo60Test(NuageBaseTest, L3Mixin,
         with self.switchport_mapping(do_delete=False,
                                      **mapping) as switch_map:
             self.addCleanup(
-                self.switchport_mapping_client_admin.delete_switchport_mapping,
+                self.plugin_network_client_admin.delete_switchport_mapping,
                 switch_map['id'])
             self.create_port(manager=self.admin_manager, **create_data)
 

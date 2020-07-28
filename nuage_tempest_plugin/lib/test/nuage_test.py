@@ -1,6 +1,7 @@
 # Copyright 2017 Alcatel-Lucent
 # All Rights Reserved.
 
+import contextlib
 import functools
 import os.path
 from six import iteritems
@@ -146,6 +147,9 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         cls.plugin_network_client = NuageNetworkClientJSON(
             cls.os_primary.auth_provider,
             **cls.os_primary.default_params)
+        cls.plugin_network_client_admin = NuageNetworkClientJSON(
+            cls.os_admin.auth_provider,
+            **cls.os_admin.default_params)
 
     @classmethod
     def resource_setup(cls):
@@ -2048,6 +2052,19 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                     self.assertIsNone(vm_interface['IPv6Address'])
                 else:
                     self.assertIsNone(vm_interface['IPAddress'])
+
+    @contextlib.contextmanager
+    def switchport_mapping(self, do_delete=True, **kwargs):
+        client = self.plugin_network_client_admin
+        mapping = {}
+        mapping.update(kwargs)
+        mapping = client.create_switchport_mapping(
+            **mapping)['switchport_mapping']
+        try:
+            yield mapping
+        finally:
+            if do_delete:
+                client.delete_switchport_mapping(mapping['id'])
 
     @staticmethod
     def execute_from_shell(command, success_expected=True, pause=None):

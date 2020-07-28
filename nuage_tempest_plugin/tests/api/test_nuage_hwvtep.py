@@ -19,7 +19,6 @@ from tempest.common import utils
 from tempest.common import waiters
 from tempest.lib import decorators
 
-from nuage_tempest_plugin.lib.mixins import net_topology as topology_mixin
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
@@ -29,7 +28,7 @@ CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
 
 
-class TestNuageHWVTEP(NuageBaseTest, topology_mixin.NetTopologyMixin):
+class TestNuageHWVTEP(NuageBaseTest):
 
     physnet = 'physnet1'
 
@@ -206,8 +205,9 @@ class TestNuageHWVTEP(NuageBaseTest, topology_mixin.NetTopologyMixin):
         # Skipping because other simultaneous tests might create
         # bindings which could make below check fail
         # self.assertEqual(expected_number_bindings,
-        #                  len(self.switchport_binding_client_admin.
-        #                      list_switchport_bindings(bridge='br-ex')))
+        #                  len(self.plugin_network_client_admin.
+        #                      list_switchport_bindings(
+        #                          bridge='br-ex')['switchport_bindings']))
         vport = vports[0]
         self.assertEqual('BRIDGE', vport.type)
         if is_flat:
@@ -293,8 +293,9 @@ class TestNuageHWVTEPActiveActive(TestNuageHWVTEP):
         vports = vsd_resource.vports.get()
         self.assertEqual(1, len(vports), 'Exactly one vport expected')
         self.assertEqual(expected_number_bindings,
-                         len(self.switchport_binding_client_admin.
-                             list_switchport_bindings(bridge='br-active')))
+                         len(self.plugin_network_client_admin.
+                             list_switchport_bindings(
+                                 bridge='br-active')['switchport_bindings']))
         vport = vports[0]
         self.assertEqual('BRIDGE', vport.type)
         if is_flat:
@@ -327,8 +328,9 @@ class TestNuageHWVTEPActiveStandby(TestNuageHWVTEP):
         vports = vsd_resource.vports.get()
         self.assertEqual(2, len(vports), 'Exactly two vports expected')
         self.assertEqual(expected_number_bindings * 2,
-                         len(self.switchport_binding_client_admin.
-                             list_switchport_bindings(bridge='br-standby')))
+                         len(self.plugin_network_client_admin.
+                             list_switchport_bindings(
+                                 bridge='br-standby')['switchport_bindings']))
         for vport in vports:
             self.assertEqual('BRIDGE', vport.type)
             if is_flat:

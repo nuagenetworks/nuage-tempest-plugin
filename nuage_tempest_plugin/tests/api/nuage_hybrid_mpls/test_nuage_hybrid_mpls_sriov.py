@@ -17,7 +17,6 @@ from netaddr import IPNetwork
 
 from tempest.lib.common.utils import data_utils
 
-from nuage_tempest_plugin.lib.mixins import net_topology as topology_mixin
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
@@ -25,8 +24,7 @@ from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 CONF = Topology.get_conf()
 
 
-class NuageHybridMplsSriovTest(NuageBaseTest,
-                               topology_mixin.NetTopologyMixin):
+class NuageHybridMplsSriovTest(NuageBaseTest):
 
     @classmethod
     def skip_checks(cls):
@@ -187,7 +185,7 @@ class NuageHybridMplsSriovTest(NuageBaseTest,
 
         with self.switchport_mapping(do_delete=False, **mapping) \
                 as switch_map:
-            self.addCleanup(self.switchport_mapping_client_admin.
+            self.addCleanup(self.plugin_network_client_admin.
                             delete_switchport_mapping, switch_map['id'])
 
             kwargs = {
@@ -215,7 +213,7 @@ class NuageHybridMplsSriovTest(NuageBaseTest,
 
         with self.switchport_mapping(do_delete=False, **mapping) as \
                 switch_map:
-            self.addCleanup(self.switchport_mapping_client_admin.
+            self.addCleanup(self.plugin_network_client_admin.
                             delete_switchport_mapping, switch_map['id'])
 
             kwargs = {
@@ -242,7 +240,7 @@ class NuageHybridMplsSriovTest(NuageBaseTest,
 
         with self.switchport_mapping(do_delete=False, **mapping) \
                 as switch_map:
-            self.addCleanup(self.switchport_mapping_client_admin.
+            self.addCleanup(self.plugin_network_client_admin.
                             delete_switchport_mapping, switch_map['id'])
 
             kwargs = {
@@ -273,7 +271,7 @@ class NuageHybridMplsSriovTest(NuageBaseTest,
 
         with self.switchport_mapping(do_delete=False, **mapping) \
                 as switch_map:
-            self.addCleanup(self.switchport_mapping_client_admin.
+            self.addCleanup(self.plugin_network_client_admin.
                             delete_switchport_mapping, switch_map['id'])
 
             kwargs = {
@@ -305,7 +303,7 @@ class NuageHybridMplsSriovTest(NuageBaseTest,
 
         with self.switchport_mapping(do_delete=False, **mapping) \
                 as switch_map:
-            self.addCleanup(self.switchport_mapping_client_admin.
+            self.addCleanup(self.plugin_network_client_admin.
                             delete_switchport_mapping, switch_map['id'])
 
             kwargs = {

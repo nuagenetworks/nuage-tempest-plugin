@@ -19,7 +19,6 @@ from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
-from nuage_tempest_plugin.lib.mixins import net_topology as topology_mixin
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.tests.api.l2bridge.base_nuage_l2bridge \
@@ -31,9 +30,7 @@ CONF = Topology.get_conf()
 
 
 class TestNuageL2BridgeSRIOV(BaseNuageL2Bridge,
-                             base_vsd_managed.BaseVSDManagedNetwork,
-                             topology_mixin.NetTopologyMixin
-                             ):
+                             base_vsd_managed.BaseVSDManagedNetwork):
     personality = 'VSG'
 
     # This class assumes that the following resources are available:
@@ -173,11 +170,11 @@ class TestNuageL2BridgeSRIOV(BaseNuageL2Bridge,
                     as map2:
 
                 self.addCleanup(
-                    self.switchport_mapping_client_admin.
+                    self.plugin_network_client_admin.
                     delete_switchport_mapping,
                     map1['id'])
                 self.addCleanup(
-                    self.switchport_mapping_client_admin.
+                    self.plugin_network_client_admin.
                     delete_switchport_mapping,
                     map2['id'])
 
