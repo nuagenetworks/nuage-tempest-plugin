@@ -1952,3 +1952,87 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         self.assertEqual('10.0.0.10', vm_interface.ip_address,
                          "Port highest ip address should be equal to "
                          "vm_interface ip address")
+
+    @testtools.skipIf(Topology.is_v5, 'Unsupported pre-6.0')
+    def test_remove_device_id_before_vm_delete_with_vm(self):
+        """test_remove_device_id_before_vm_delete_with_vm
+
+        This test deletes the port before deleting the VM in Nova. This
+        simulates the scenario where there is a delay between resetting the
+        device_id and deleting the VM. In this case Nova will not call Neutron
+        to clear the binding.
+
+        Create Port
+        Create server using Port
+        reset device_id to "" for Port
+        Assert VMInterface deleted from VSD
+        Delete Port
+        Delete VM
+        """
+        # Create Port
+        network = self.create_network()
+        subnet = self.create_subnet(network, cidr=IPNetwork("10.0.0.0/24"),
+                                    mask_bits=28)
+        port = self.create_port(network=network)
+
+        # Create Server using Port
+        server = self._create_a_server(name='vm-' + network['name'],
+                                       network=network, port_id=port['id'])
+        # Reset device_id to "" for Port
+        self.update_port(port=port, device_id='', device_owner='')
+
+        # Assert VMInterface deleted on VSD
+        l2domain = self.vsd.get_l2domain(by_subnet=subnet)
+        vport = self.vsd.get_vport(l2domain=l2domain, by_port_id=port['id'])
+        vm_interfaces = vport.vm_interfaces.get()
+        self.assertEmpty(vm_interfaces)
+
+        # Delete Port
+        self.delete_port(port)
+        vport = self.vsd.get_vport(l2domain=l2domain, by_port_id=port['id'])
+        self.assertIsNone(vport)
+
+        # Delete VM
+        self.delete_server(server['id'])
+
+    @testtools.skipIf(Topology.is_v5, 'Unsupported pre-6.0')
+    def test_remove_device_id_before_vm_delete_no_waiting_with_vm(self):
+        """test_remove_device_id_before_vm_delete_no_waiting_with_vm
+
+        This test does not wait between deleting the device_id and deleting
+        the Server. This triggers different behavior in Nova.
+        In this scenario it will still clear the neutron Port as normal, while
+        in the case where a wait is introduced, nova will not call neutron.
+
+        Create Port
+        Create server using Port
+        reset device_id to "" for Port
+        Delete VM
+        Assert VMInterface deleted on VSD
+        Delete Port
+        """
+        # Create Port
+        network = self.create_network()
+        subnet = self.create_subnet(network, cidr=IPNetwork("10.0.0.0/24"),
+                                    mask_bits=28)
+        port = self.create_port(network=network)
+
+        # Create Server using Port
+        server = self._create_a_server(name='vm-' + network['name'],
+                                       network=network, port_id=port['id'])
+        # Reset device_id to "" for Port
+        self.update_port(port=port, device_id='', device_owner='')
+
+        # Delete VM & wait for server deletion
+        self.delete_server(server['id'])
+
+        # Assert VMInterface deleted on VSD
+        l2domain = self.vsd.get_l2domain(by_subnet=subnet)
+        vport = self.vsd.get_vport(l2domain=l2domain, by_port_id=port['id'])
+        vm_interfaces = vport.vm_interfaces.get()
+        self.assertEmpty(vm_interfaces)
+
+        # Delete port
+        self.delete_port(port)
+        vport = self.vsd.get_vport(l2domain=l2domain, by_port_id=port['id'])
+        self.assertIsNone(vport)
