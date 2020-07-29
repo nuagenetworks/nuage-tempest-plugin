@@ -78,7 +78,7 @@ class AvrsOsManagedConnectivityTest(E2eTestBase):
         self.assert_ping(server1, server2, network)
 
         for hypervisor in self.selected_hypervisors:
-            self.restart_avrs(hypervisor['host_ip'])
+            self.restart_avrs(hypervisor)
 
         # Test connectivity between peer servers again.
         self.assert_ping(server1, server2, network)

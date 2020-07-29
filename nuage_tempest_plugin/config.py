@@ -98,10 +98,10 @@ NuageSutGroup = [
                 help="Indicating whether nuage_hybrid_mpls is enabled."),
     cfg.BoolOpt('use_network_scripts',
                 default=False,
-                help='Whether to use /etc/sysconfig/network-scripts '
-                     'for network interface configuration in VM\'s. '
-                     'This is needed e.g. when using DHCPv6 with RHEL VM\'s'
-                     'Not supported for cirros.'),
+                help="Whether to use /etc/sysconfig/network-scripts "
+                     "for network interface configuration in VM's. "
+                     "This is needed e.g. when using DHCPv6 with RHEL VM's"
+                     "Not supported for cirros."),
     cfg.StrOpt('compute_login_username',
                default='heat-admin',
                help='Compute login username'),
@@ -109,6 +109,16 @@ NuageSutGroup = [
                 default=True,
                 help='Whether E2E tests should pick compute by aggregate '
                      'flavor'),
+    cfg.DictOpt('hypervisors_connectivity_override',
+                default={},
+                help="A dict of hypervisor names to their ip's via which they "
+                     "can be accessed from where tempest tests are run, "
+                     "as override to the OS hypervisor-list command. "
+                     "(Context: the fastpath verification E2E tests need "
+                     "hypervisor access.) "
+                     "E.g.: hypervisors_connectivity_overwrite = "
+                     "overcloud-avrscompute-0.localdomain:172.31.0.16, "
+                     "overcloud-avrscompute-1.localdomain:172.31.0.28"),
     cfg.IntOpt('time_to_debug_on_failure',
                default=0,
                help='Time to debug (in secs) on failure, before running the '
