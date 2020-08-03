@@ -112,5 +112,9 @@ NuageSutGroup = [
     cfg.IntOpt('time_to_debug_on_failure',
                default=0,
                help='Time to debug (in secs) on failure, before running the '
-                    'test cleanup.')
+                    'test cleanup.'),
+    cfg.StrOpt('gateway_type',
+               default='wbx',
+               choices=['wbx', 'cisco'],
+               help="The type of VTEP gateway")
 ]
