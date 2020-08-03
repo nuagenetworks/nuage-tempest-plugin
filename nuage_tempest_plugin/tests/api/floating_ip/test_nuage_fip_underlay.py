@@ -19,19 +19,12 @@ from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
+from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.utils import data_utils as nuage_data_utils
-
-from . import base_nuage_fip_underlay
+from nuage_tempest_plugin.tests.api.floating_ip import base_nuage_fip_underlay
 
 
 class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
-
-    # user order of tests as in this file to avoid unnecessary neutron restart
-    #   unittest.TestLoader.sortTestMethodsUsing(None)
-
-    @classmethod
-    def resource_setup(cls):
-        super(FIPtoUnderlayTestNuage, cls).resource_setup()
 
     def test_create_external_subnet_without_underlay(self):
         """test_create_external_subnet_without_underlay
@@ -207,7 +200,6 @@ class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
             self.assertRaises(exceptions.BadRequest,
                               self.admin_subnets_client.create_subnet,
                               **kwargs)
-        pass
 
     @decorators.attr(type=['negative'])
     def test_create_internal_subnet_with_underlay_neg(self):
@@ -232,7 +224,6 @@ class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
             self.assertRaises(exceptions.BadRequest,
                               self.admin_subnets_client.create_subnet,
                               **kwargs)
-        pass
 
     @decorators.attr(type=['negative'])
     def test_update_internal_subnet_with_underlay_neg(self):
@@ -261,7 +252,6 @@ class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
                           subnet['id'],
                           **kwargs)
         self.admin_subnets_client.delete_subnet(subnet['id'])
-        pass
 
     @decorators.attr(type=['negative'])
     def test_create_external_subnet_with_underlay_invalid_syntax_neg(self):
@@ -293,13 +283,33 @@ class FIPtoUnderlayTestNuage(base_nuage_fip_underlay.NuageFipUnderlayBase):
     def test_update_external_subnet_with_snat_neg(self):
         self._verify_update_external_subnet_with_underlay_neg()
 
-    # # TODO(Hendrik) test needs to run exclusively
-    # #
-    # #  Scaling tests
-    # #
-    # #
-    # def test_scale_create_external_subnet_with_underlay_gre(self):
-    #     self._verify_create_external_subnet_with_underlay_scale('GRE', 32)
-    #     # def test_scale_create_external_subnet_with_underlay_VXLAN(self):
-    #     #     self._verify_create_external_subnet_with_underlay_scale(
-    #     #         'VXLAN',400)
+
+class NuageFipTest(NuageBaseTest):
+
+    def _create_associate_fip(self, fip_to_underlay):
+        ext_network = self.create_public_subnet(fip_to_underlay)
+
+        network = self.create_network()
+        subnet = self.create_subnet(network)
+        router = self.create_router(external_network_id=ext_network['id'])
+        self.router_attach(router, subnet)
+
+        port = self.create_port(network)
+
+        floating_ip = self.create_floatingip(
+            external_network_id=ext_network['id'])
+        self.update_floatingip(floating_ip, port_id=port['id'])
+
+        nuage_subnet = self.vsd.get_subnet(by_subnet=subnet)
+        nuage_vport = self.vsd.get_vport(subnet=nuage_subnet,
+                                         by_port_id=port['id'])
+        self.assertIsNotNone(nuage_vport.associated_floating_ip_id,
+                             'No floating ip associated to the vport on VSD')
+
+    @decorators.attr(type='smoke')
+    def test_fip_no_underlay(self):
+        self._create_associate_fip(fip_to_underlay=False)
+
+    @decorators.attr(type='smoke')
+    def test_fip_with_underlay(self):
+        self._create_associate_fip(fip_to_underlay=True)
