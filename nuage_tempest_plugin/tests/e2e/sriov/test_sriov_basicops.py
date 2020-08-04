@@ -130,20 +130,14 @@ class SriovBasicOpsTest(NuageBaseTest):
     def _create_vsd_domain(self, is_l3=True, ip_version=(4,)):
         cidr4 = None
         cidr6 = None
-        gateway4 = None
-        gateway6 = None
         enable_dhcpv4 = False
         enable_dhcpv6 = False
 
         for ip_type in ip_version:
             if ip_type == 4:
                 cidr4 = data_utils.gimme_a_cidr(ip_type)
-                gateway4 = str(cidr4[1])
-                enable_dhcpv4 = True
             elif ip_type == 6:
                 cidr6 = data_utils.gimme_a_cidr(ip_type)
-                gateway6 = str(cidr6[1])
-                enable_dhcpv6 = True
 
         kwargs = {}
         if CONF.nuage_sut.gateway_type == 'cisco':
@@ -158,8 +152,6 @@ class SriovBasicOpsTest(NuageBaseTest):
                 zone=zone,
                 cidr4=cidr4,
                 cidr6=cidr6,
-                gateway4=gateway4,
-                gateway6=gateway6,
                 enable_dhcpv4=enable_dhcpv4,
                 enable_dhcpv6=enable_dhcpv6,
                 ip_type=self.ip_types[ip_version],
@@ -169,8 +161,6 @@ class SriovBasicOpsTest(NuageBaseTest):
             l2template = self.vsd_create_l2domain_template(
                 cidr4=cidr4,
                 cidr6=cidr6,
-                gateway4=gateway4,
-                gateway6=gateway6,
                 enable_dhcpv4=enable_dhcpv4,
                 enable_dhcpv6=enable_dhcpv6,
                 ip_type=self.ip_types[ip_version],
@@ -205,7 +195,7 @@ class SriovBasicOpsTest(NuageBaseTest):
         for ip_type in ip_version:
             self.subnet.append(create_vsd_managed_subnet(
                 self.network, vsd_subnet, ip_version=ip_type,
-                manager=self.admin_manager))
+                manager=self.admin_manager, dhcp_managed=False))
 
         self.secgroup = self.create_open_ssh_security_group(
             manager=self.admin_manager)
@@ -221,7 +211,8 @@ class SriovBasicOpsTest(NuageBaseTest):
         for ip_type in ip_version:
             self.subnet.append(self.create_subnet(self.network,
                                                   ip_version=ip_type,
-                                                  manager=self.admin_manager))
+                                                  manager=self.admin_manager,
+                                                  enable_dhcp=False))
 
         if is_l3:
             router = self.create_public_router(manager=self.admin_manager)
