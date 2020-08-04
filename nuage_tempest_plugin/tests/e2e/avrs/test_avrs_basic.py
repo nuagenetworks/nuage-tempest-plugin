@@ -19,14 +19,23 @@ load_tests = testscenarios.load_tests_apply_scenarios
 class AvrsOsManagedConnectivityTest(E2eTestBase):
     # Test scenarios, generate tests for product of these lists
     is_icmpv6_offload_supported = True
-    scenarios = testscenarios.scenarios.multiply_scenarios([
-        ('L3', {'is_l3': True}),
-        ('L2', {'is_l3': False})
-    ], [
-        ('IPv4', {'ip_versions': E2eTestBase.IP_VERSIONS_V4}),
-        ('IPv6', {'ip_versions': E2eTestBase.IP_VERSIONS_V6}),
-        ('Dualstack', {'ip_versions': E2eTestBase.IP_VERSIONS_DUALSTACK})
-    ])
+    if Topology.has_single_stack_v6_support():
+        scenarios = testscenarios.scenarios.multiply_scenarios([
+            ('L3', {'is_l3': True}),
+            ('L2', {'is_l3': False})
+        ], [
+            ('IPv4', {'ip_versions': E2eTestBase.IP_VERSIONS_V4}),
+            ('IPv6', {'ip_versions': E2eTestBase.IP_VERSIONS_V6}),
+            ('Dualstack', {'ip_versions': E2eTestBase.IP_VERSIONS_DUALSTACK})
+        ])
+    else:
+        scenarios = testscenarios.scenarios.multiply_scenarios([
+            ('L3', {'is_l3': True}),
+            ('L2', {'is_l3': False})
+        ], [
+            ('IPv4', {'ip_versions': E2eTestBase.IP_VERSIONS_V4}),
+            ('Dualstack', {'ip_versions': E2eTestBase.IP_VERSIONS_DUALSTACK})
+        ])
 
     @classmethod
     def setUpClass(cls):
