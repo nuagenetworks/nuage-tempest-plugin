@@ -29,10 +29,12 @@ CONF = Topology.get_conf()
 NETWORK_ARGS = {
     'segments': [
         {
-            "provider:network_type": "vxlan"
+            'provider:network_type': 'vxlan'
         },
         {
-            "provider:network_type": "vlan"
+            'provider:network_type': 'vlan',
+            'provider:segmentation_id': 123,
+            'provider:physical_network': 'physnet1'
         }
     ]
 }
