@@ -605,7 +605,6 @@ class VSDManagedDualStackL2DHCPManagedTest(VSDManagedDualStackCommonBase):
             net_partition=self.net_partition)
 
     @decorators.attr(type='smoke')
-    @nuage_test.skip_because(bug='OPENSTACK-2919')
     def test_create_port_in_vsd_managed_l2domain_dhcp_managed_neg(self):
         """test_create_port_in_vsd_managed_l2domain_dhcp_managed_neg
 
