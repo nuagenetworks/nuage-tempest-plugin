@@ -187,10 +187,10 @@
     name: networking-nuage-base
     parent: nuage-base
     description: Base job for nuage based job on 6.0|stable/queens|rocky branch
-    branches: ^(6.0|stable)/(queens|rocky)
+    branches: ^(20.5|6.0|stable)/(queens|rocky)
     nodeset: openstack-single-node-centos7
     vars:
-      vsp_release: "{{ zuul.branch.split('/')[0] if 'stable' not in zuul.branch else '20.5' }}"
+      vsp_release: "{{ zuul.branch.split('/')[0] if 'stable' not in zuul.branch else '0.0' }}"
       devstack_localrc:
         USE_PYTHON3: false
       tempest_test_blacklist: "{{devstack_base_dir}}/nuage-tempest-plugin/tempest-blacklist.txt"
@@ -199,10 +199,10 @@
     name: networking-nuage-base
     parent: nuage-base
     description: Base job for nuage based job on 6.0|stable/stein|train branch
-    branches: ^(6.0|stable)/(stein|train)
+    branches: ^(20.5|6.0|stable)/(stein|train)
     nodeset: openstack-single-node-centos7
     vars:
-      vsp_release: "{{ zuul.branch.split('/')[0] if 'stable' not in zuul.branch else '20.5' }}"
+      vsp_release: "{{ zuul.branch.split('/')[0] if 'stable' not in zuul.branch else '0.0' }}"
       devstack_localrc:
         # INF-7814 nuage-metadata-agent runs under py2 and
         # misses dependencies to python-keystoneclient
@@ -218,7 +218,7 @@
     name: networking-nuage-base
     parent: nuage-base
     description: Base job for nuage based job
-    branches: ^(?!(stable|5.4|6.0)/(pike|queens|rocky|stein|train)).*$
+    branches: ^(?!(stable|20.5|5.4|6.0)/(pike|queens|rocky|stein|train)).*$
     nodeset: openstack-single-node-centos
     vars:
       vsp_release: '0.0'
