@@ -641,6 +641,16 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                 manager.subnets_client.delete_subnet, subnet['id'])
         return subnet
 
+    def create_public_subnet(self, fip_to_underlay=True):
+        ext_network_req = {'router:external': True}
+        ext_network = self.create_network(manager=self.admin_manager,
+                                          **ext_network_req)
+        self.create_subnet(ext_network,
+                           cidr=utils.gimme_a_cidr(),
+                           manager=self.admin_manager,
+                           underlay=fip_to_underlay)
+        return ext_network
+
     def update_subnet(self, subnet, manager=None, **kwargs):
         manager = manager or self.manager
         body = manager.subnets_client.update_subnet(subnet['id'],
