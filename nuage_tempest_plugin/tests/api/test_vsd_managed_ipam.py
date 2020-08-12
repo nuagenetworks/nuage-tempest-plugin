@@ -11,6 +11,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+from netaddr import IPAddress
 from netaddr import IPNetwork
 from netaddr import IPRange
 
@@ -377,6 +378,46 @@ class VSDManagedIPAMTest(nuage_test.NuageBaseTest):
         ipreservations = vsd_subnet.vmip_reservations.get()
         self._verify_vmipreservations(ipreservations, ipv4_subnet, ipv6_subnet,
                                       network, port2, vm)
+
+    @decorators.attr(type='smoke')
+    def test_rollback_create_port(self):
+        network = self.create_network()
+        cidr4 = IPNetwork('10.0.0.0/24')
+        cidr6 = IPNetwork('cafe:babe::/64')
+        ipv4_subnet = self.create_subnet(network,
+                                         cidr=cidr4,
+                                         mask_bits=24)
+        ipv6_subnet = self.create_subnet(network, ip_version=6,
+                                         cidr=cidr6,
+                                         mask_bits=64)
+        port_args = {'fixed_ips': [{'subnet_id': ipv4_subnet['id'],
+                                    'ip_address': IPAddress(
+                                        cidr4.first + 11)},
+                                   {'subnet_id': ipv6_subnet['id'],
+                                    'ip_address': IPAddress(
+                                        cidr6.first + 10)}]}
+        self.create_port(network, **port_args)
+
+        # Try to create a port with only one of the fixed ips of port1
+        port_args = {'fixed_ips': [{'subnet_id': ipv4_subnet['id'],
+                                    'ip_address': IPAddress(
+                                        cidr4.first + 12)},
+                                   {'subnet_id': ipv6_subnet['id'],
+                                    'ip_address': IPAddress(
+                                        cidr6.first + 10)}]}
+        expected_errormsg = 'IP address .* already allocated in subnet'
+        self.assertRaisesRegex(exceptions.Conflict,
+                               expected_errormsg,
+                               self.create_port, network, **port_args)
+
+        # verify
+        l2domain = self.vsd.get_l2domain(by_subnet=ipv4_subnet)
+        ipreservations = l2domain.vmip_reservations.get()
+        reserved_ips = [ipreservation.ipv4_address for ipreservation in
+                        ipreservations if ipreservation.ip_type == 'IPV4']
+        self.assertEqual(1, len(reserved_ips),
+                         "Found more reserved IPV4 IPS than "
+                         "expected: {}.".format(reserved_ips))
 
     @decorators.attr(type='smoke')
     def test_public_subnet(self):
