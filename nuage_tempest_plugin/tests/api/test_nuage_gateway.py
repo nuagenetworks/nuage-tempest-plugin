@@ -13,8 +13,6 @@
 #    under the License.
 #
 
-import uuid
-
 from testtools.matchers import ContainsDict
 from testtools.matchers import Equals
 
@@ -355,62 +353,6 @@ class NuageGatewayTestJSON(base.BaseNuageGatewayTest):
         self.assertIsNotNone(created_floating_ip['id'])
         self.assertEqual(created_floating_ip['fixed_ip_address'],
                          port['fixed_ips'][0]['ip_address'])
-
-    @decorators.attr(type='smoke')
-    def test_host_port_fip_assoc(self):
-        # Verify port creation
-        post_body = {"network_id": self.network['id'],
-                     "device_owner": 'compute:ironic'}
-        body = self.ports_client.create_port(**post_body)
-        port = body['port']
-
-        self.addCleanup(self.ports_client.delete_port, port['id'])
-
-        # Associate a fip to the vport
-        body = self.floating_ips_client.create_floatingip(
-            floating_network_id=self.ext_net_id,
-            port_id=port['id'],
-            fixed_ip_address=port['fixed_ips'][0]['ip_address'])
-        created_floating_ip = body['floatingip']
-        self.addCleanup(self.floating_ips_client.delete_floatingip,
-                        created_floating_ip['id'])
-        self.assertIsNotNone(created_floating_ip['id'])
-        self.assertEqual(created_floating_ip['fixed_ip_address'],
-                         port['fixed_ips'][0]['ip_address'])
-
-        # Create a vlan
-        gw_port = self.gatewayports[0]
-        kwargs = {
-            'gatewayport': gw_port[0]['ID'],
-            'value': '3000'
-        }
-        body = self.admin_client.create_gateway_vlan(**kwargs)
-        vlan = body['nuage_gateway_vlan']
-
-        # Get the vlan
-        gw_vlan = self.nuage_client.get_gateway_vlan(
-            n_constants.GATEWAY_PORT, gw_port[0]['ID'], filters='value',
-            filter_values=3000)
-
-        self.gatewayvlans.append(gw_vlan)
-        self.verify_vlan_properties(gw_vlan[0], vlan)
-
-        # Create a vport
-        kwargs = {
-            'gatewayvlan': vlan['id'],
-            'port': port['id'],
-            'subnet': None,
-            'tenant': str(uuid.uuid4()).replace('-', '')
-        }
-
-        body = self.client.create_gateway_vport(**kwargs)
-        vport = body['nuage_gateway_vport']
-
-        # Verify fip is associated in VSD
-        gw_vport = self.nuage_client.get_host_vport(vport['id'])
-        network_id = self.network['id']
-        self.verify_vport_properties(gw_vport[0], vport, network_id)
-        self.assertIsNotNone(gw_vport[0]['associatedFloatingIPID'])
 
     @decorators.attr(type='smoke')
     def test_list_nuage_vport(self):

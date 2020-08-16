@@ -4,17 +4,26 @@
 from tempest.lib import exceptions as lib_exc
 from tempest.test import decorators
 
-from . import base_nuage_bidirectional_fip_rate_limit
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.tests.api.floating_ip import \
+    base_nuage_bidirectional_fip_rate_limit
 
-MSG_INVALID_INPUT_IN = "'nuage_ingress_fip_rate_kbps' should be a " \
-                       "number higher than 0, -1 for unlimited or " \
-                       "'default' for the configured default value."
-MSG_INVALID_INPUT_EG = "'nuage_egress_fip_rate_kbps' should be a number " \
-                       "higher than 0, -1 for unlimited or 'default' " \
-                       "for the configured default value."
-MSG_INVALID_INPUT2 = "Nuage API: Error in REST call to VSD: fipPir\(NaN\) " \
-                     "must be a valid Integer greater than zero or set to " \
-                     "INFINITY"
+if Topology.from_nuage('20.10'):
+    MSG_INVALID_INPUT_IN = ("Bad request: 'nuage_ingress_fip_rate_kbps' "
+                            "should be an integer number between 0 and "
+                            "2147483647, -1 for unlimited or 'default' "
+                            "for the configured default value.")
+    MSG_INVALID_INPUT_EG = ("Bad request: 'nuage_egress_fip_rate_kbps' "
+                            "should be an integer number between 0 and "
+                            "2147483647, -1 for unlimited or 'default' for "
+                            "the configured default value.")
+else:
+    MSG_INVALID_INPUT_IN = ("'nuage_ingress_fip_rate_kbps' should be a "
+                            "number higher than 0, -1 for unlimited or "
+                            "'default' for the configured default value.")
+    MSG_INVALID_INPUT_EG = ("'nuage_egress_fip_rate_kbps' should be a number "
+                            "higher than 0, -1 for unlimited or 'default' "
+                            "for the configured default value.")
 
 
 MSG_INVALID_INPUT_FOR_OPERATION = "Invalid input for operation: " + \

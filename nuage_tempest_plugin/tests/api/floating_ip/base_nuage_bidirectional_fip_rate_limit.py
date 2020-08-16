@@ -160,7 +160,7 @@ class NuageBidirectionalFipRateLimitBase(base.BaseNetworkTest):
 
     def _verify_fip_openstack(self, port, created_floating_ip,
                               ingress_rate_limit=None,
-                              egress_rate_limit=None, backward=False):
+                              egress_rate_limit=None):
         # Then it should be created
         # for the admin tenant id
         self.assertIsNotNone(created_floating_ip['id'])
@@ -175,7 +175,7 @@ class NuageBidirectionalFipRateLimitBase(base.BaseNetworkTest):
             self.assertEqualFiprate(
                 created_floating_ip['nuage_ingress_fip_rate_kbps'],
                 ingress_rate_limit)
-        if egress_rate_limit is not None and backward is False:
+        if egress_rate_limit is not None:
             self.assertEqualFiprate(
                 created_floating_ip['nuage_egress_fip_rate_kbps'],
                 egress_rate_limit)
@@ -185,8 +185,7 @@ class NuageBidirectionalFipRateLimitBase(base.BaseNetworkTest):
                 egress_rate_limit * 1000)
 
     def _verify_fip_vsd(self, port, created_floating_ip,
-                        ingress_rate_limit=None, egress_rate_limit=None,
-                        backward=False):
+                        ingress_rate_limit=None, egress_rate_limit=None):
         # verifying on Domain level that the floating ip is added
         external_id = self.nuage_client.get_vsd_external_id(
             created_floating_ip['router_id'])
@@ -226,7 +225,7 @@ class NuageBidirectionalFipRateLimitBase(base.BaseNetworkTest):
                 ingress_rate_limit,
                 self.convert_mbps_to_kbps(
                     qos[0]['EgressFIPPeakInformationRate']))
-        if egress_rate_limit is not None and backward is False:
+        if egress_rate_limit is not None:
             self.assertEqualFiprate(
                 egress_rate_limit,
                 self.convert_mbps_to_kbps(qos[0]['FIPPeakInformationRate']))
