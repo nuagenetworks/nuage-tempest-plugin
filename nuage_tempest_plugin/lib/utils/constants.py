@@ -71,6 +71,7 @@ REDIRECTIONTARGETS = 'redirectiontargets'
 
 # Quality of Service
 QOS = 'qos'
+RATELIMITER = 'ratelimiters'
 
 ENABLED = 'ENABLED'
 DISABLED = 'DISABLED'

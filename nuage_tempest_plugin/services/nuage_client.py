@@ -1510,3 +1510,9 @@ class NuageRestClient(object):
 
     def delete_uplink_subnet(self, subnet_id):
         return self.delete_resource(constants.SHARED_NET_RES, subnet_id)
+
+    def get_ratelimiter(self, external_id):
+        rl = self.get_global_resource(constants.RATELIMITER,
+                                      filters='externalID',
+                                      filter_values=external_id)
+        return rl[0] if rl else None

@@ -443,22 +443,46 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
                                              port['id'])
         self.assertEqual(1, len(vports))
         qos = self.nuage_client.get_qos(constants.VPORT, vports[0]['ID'])
-        self.assertEqual(1, len(qos))
+        if Topology.from_nuage('20.10'):
+            self.assertEqual(0, len(qos))
+            external_id_domain = self.nuage_client.get_vsd_external_id(
+                created_floating_ip['router_id'])
+            nuage_domain = self.nuage_client.get_l3domain(
+                filters='externalID',
+                filter_values=external_id_domain)
+            nuage_domain_fips = self.nuage_client.get_floatingip(
+                constants.DOMAIN, nuage_domain[0]['ID'])
+            nuage_fip = [nuage_fip for nuage_fip in nuage_domain_fips
+                         if nuage_fip['externalID'].startswith(fip_id)][0]
 
-        self.assertThat(qos[0], ContainsDict(
-            {'externalID':
-             Equals(self.nuage_client.get_vsd_external_id(fip_id))}))
-        self.assertThat(qos[0], ContainsDict(
-            {'FIPRateLimitingActive': Equals(True)}))
-        self.assertThat(qos[0], ContainsDict(
-            {'FIPPeakInformationRate': Equals(str(float(rate_limit / 1000)))}))
-        self.assertThat(qos[0], ContainsDict(
-            {'FIPPeakBurstSize': Equals(str(100))}))
-
-        self.assertThat(qos[0], ContainsDict(
-            {'EgressFIPPeakInformationRate': Equals('INFINITY')}))
-        self.assertThat(qos[0], ContainsDict(
-            {'EgressFIPPeakBurstSize': Equals(str(100))}))
+            associated_ingress_rate_limit = nuage_fip['ingressRateLimiterID']
+            associated_egress_rate_limit = nuage_fip['egressRateLimiterID']
+            # Infinity for egress expected
+            self.assertIsNone(associated_egress_rate_limit)
+            # Ingress:
+            external_id = 'ingress_{}'.format(created_floating_ip['id'])
+            ratelimiter = self.nuage_client.get_ratelimiter(external_id)
+            self.assertEqual(
+                str(float(rate_limit / 1000)),
+                ratelimiter['peakInformationRate'])
+            self.assertEqual(associated_ingress_rate_limit,
+                             ratelimiter['ID'])
+        else:
+            self.assertEqual(1, len(qos))
+            self.assertThat(qos[0], ContainsDict(
+                {'externalID':
+                 Equals(self.nuage_client.get_vsd_external_id(fip_id))}))
+            self.assertThat(qos[0], ContainsDict(
+                {'FIPRateLimitingActive': Equals(True)}))
+            self.assertThat(qos[0], ContainsDict(
+                {'FIPPeakInformationRate': Equals(
+                    str(float(rate_limit / 1000)))}))
+            self.assertThat(qos[0], ContainsDict(
+                {'FIPPeakBurstSize': Equals(str(100))}))
+            self.assertThat(qos[0], ContainsDict(
+                {'EgressFIPPeakInformationRate': Equals('INFINITY')}))
+            self.assertThat(qos[0], ContainsDict(
+                {'EgressFIPPeakBurstSize': Equals(str(100))}))
 
     @decorators.attr(type='smoke')
     def test_create_floatingip_without_rate_limiting(self):
@@ -492,14 +516,36 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
                                              port['id'])
         self.assertEqual(1, len(vports))
         qos = self.nuage_client.get_qos(constants.VPORT, vports[0]['ID'])
-        self.assertEqual(1, len(qos))
-        self.assertEqual(self.nuage_client.get_vsd_external_id(fip_id),
-                         qos[0]['externalID'])
-        self.assertEqual(True, qos[0]['FIPRateLimitingActive'])
+        if Topology.from_nuage('20.10'):
+            self.assertEqual(0, len(qos))
 
-        self.assertEqual('INFINITY', qos[0]['FIPPeakInformationRate'])
-        self.assertEqual('INFINITY',
-                         qos[0]['EgressFIPPeakInformationRate'])
+            external_id_domain = self.nuage_client.get_vsd_external_id(
+                created_floating_ip['router_id'])
+            nuage_domain = self.nuage_client.get_l3domain(
+                filters='externalID',
+                filter_values=external_id_domain)
+            nuage_domain_fips = self.nuage_client.get_floatingip(
+                constants.DOMAIN, nuage_domain[0]['ID'])
+            nuage_fip = [nuage_fip for nuage_fip in nuage_domain_fips
+                         if nuage_fip['externalID'].startswith(fip_id)][0]
+
+            associated_ingress_rate_limit = nuage_fip['ingressRateLimiterID']
+            associated_egress_rate_limit = nuage_fip['egressRateLimiterID']
+            # Infinity for egress expected
+            self.assertIsNone(associated_egress_rate_limit)
+            # Infinity for ingress expected
+            self.assertIsNone(associated_ingress_rate_limit)
+        else:
+            self.assertEqual(1, len(vports))
+            qos = self.nuage_client.get_qos(constants.VPORT, vports[0]['ID'])
+            self.assertEqual(1, len(qos))
+            self.assertEqual(self.nuage_client.get_vsd_external_id(fip_id),
+                             qos[0]['externalID'])
+            self.assertEqual(True, qos[0]['FIPRateLimitingActive'])
+
+            self.assertEqual('INFINITY', qos[0]['FIPPeakInformationRate'])
+            self.assertEqual('INFINITY',
+                             qos[0]['EgressFIPPeakInformationRate'])
 
     @decorators.attr(type='smoke')
     def test_delete_associated_port_fip_cleanup(self):

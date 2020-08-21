@@ -192,19 +192,18 @@ class NuageBidirectionalFipRateLimitBase(base.BaseNetworkTest):
         nuage_domain = self.nuage_client.get_l3domain(
             filters='externalID',
             filter_values=external_id)
-        nuage_domain_fip = self.nuage_client.get_floatingip(
+        nuage_domain_fips = self.nuage_client.get_floatingip(
             constants.DOMAIN, nuage_domain[0]['ID'])
-
         # The VSD FIP has same IP address than OpenStack FIP
         self.assertIn(created_floating_ip['floating_ip_address'],
-                      [nuage_fip['address'] for nuage_fip in nuage_domain_fip])
+                      [fip['address'] for fip in nuage_domain_fips])
 
         # The VSD externalID for FIP matches the OpenStack ID
         external_id = self.nuage_client.get_vsd_external_id(
             created_floating_ip['id'])
         self.assertIn(external_id,
                       [nuage_fip['externalID'] for nuage_fip
-                       in nuage_domain_fip])
+                       in nuage_domain_fips])
 
         # Check vsd
         vsd_subnets = self.nuage_client.get_domain_subnet(
@@ -217,24 +216,57 @@ class NuageBidirectionalFipRateLimitBase(base.BaseNetworkTest):
             self.nuage_client.get_vsd_external_id(port['id']))
         self.assertEqual(1, len(vports))
         qos = self.nuage_client.get_qos(constants.VPORT, vports[0]['ID'])
-        self.assertEqual(1, len(qos))
-        self.assertEqual(True, qos[0]['FIPRateLimitingActive'])
 
-        if ingress_rate_limit is not None:
-            self.assertEqualFiprate(
-                ingress_rate_limit,
-                self.convert_mbps_to_kbps(
-                    qos[0]['EgressFIPPeakInformationRate']))
-        if egress_rate_limit is not None:
-            self.assertEqualFiprate(
-                egress_rate_limit,
-                self.convert_mbps_to_kbps(qos[0]['FIPPeakInformationRate']))
-        elif egress_rate_limit is not None:
-            self.assertEqualFiprate(
-                egress_rate_limit, qos[0]['FIPPeakInformationRate'])
+        if Topology.from_nuage('20.10'):
+            self.assertEqual(0, len(qos))
+            nuage_fip = [fip for fip in nuage_domain_fips
+                         if fip['externalID'] == external_id][0]
+            associated_ingress_rate_limit = nuage_fip.get(
+                'ingressRateLimiterID')
+            associated_egress_rate_limit = nuage_fip.get('egressRateLimiterID')
+            if ingress_rate_limit is not None:
+                # Get Ratelimiter
+                external_id = 'egress_{}'.format(created_floating_ip['id'])
+                ratelimiter = self.nuage_client.get_ratelimiter(external_id)
+                if ingress_rate_limit == constants.UNLIMITED:
+                    self.assertIsNone(ratelimiter)
+                    self.assertIsNone(associated_egress_rate_limit)
+                else:
+                    self.assertEqualFiprate(
+                        ingress_rate_limit,
+                        self.convert_mbps_to_kbps(
+                            ratelimiter['peakInformationRate']))
+                    self.assertEqual(associated_egress_rate_limit,
+                                     ratelimiter['ID'])
+            if egress_rate_limit is not None:
+                external_id = 'ingress_{}'.format(created_floating_ip['id'])
+                ratelimiter = self.nuage_client.get_ratelimiter(external_id)
+                if egress_rate_limit == constants.UNLIMITED:
+                    self.assertIsNone(ratelimiter)
+                    self.assertIsNone(associated_ingress_rate_limit)
+                else:
+                    self.assertEqualFiprate(
+                        egress_rate_limit,
+                        self.convert_mbps_to_kbps(
+                            ratelimiter['peakInformationRate']))
+                    self.assertEqual(associated_ingress_rate_limit,
+                                     ratelimiter['ID'])
 
-        self.assertEqual(self.nuage_client.get_vsd_external_id(
-            created_floating_ip['id']), qos[0]['externalID'])
+        else:
+            self.assertEqual(1, len(qos))
+            self.assertEqual(True, qos[0]['FIPRateLimitingActive'])
+            if ingress_rate_limit is not None:
+                self.assertEqualFiprate(
+                    ingress_rate_limit,
+                    self.convert_mbps_to_kbps(
+                        qos[0]['EgressFIPPeakInformationRate']))
+            if egress_rate_limit is not None:
+                self.assertEqualFiprate(
+                    egress_rate_limit,
+                    self.convert_mbps_to_kbps(
+                        qos[0]['FIPPeakInformationRate']))
+            self.assertEqual(self.nuage_client.get_vsd_external_id(
+                created_floating_ip['id']), qos[0]['externalID'])
 
     def _create_fip_with_fip_rate_limit(self, port, ingress_rate_limit=None,
                                         egress_rate_limit=None):
