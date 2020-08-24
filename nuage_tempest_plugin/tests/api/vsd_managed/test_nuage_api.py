@@ -96,7 +96,7 @@ class NuageApiTest(NuageBaseTest):
         self.addCleanup(self.NuageNetworksClient.delete_netpartition,
                         enterprise['id'])
         domains = self.NuageNetworksClient.get_domains(
-            enterprise['id'])['vsd_domains']
+            vsd_organisation_id=enterprise['id'])['vsd_domains']
         self.assertEmpty(domains, 'Empty enterprise should not contain any '
                                   'domains but contained {}'.format(domains))
         # Create l2domain
@@ -111,7 +111,7 @@ class NuageApiTest(NuageBaseTest):
         self.addCleanup(l3dom.delete)
 
         domains = self.NuageNetworksClient.get_domains(
-            enterprise.id)['vsd_domains']
+            vsd_organisation_id=enterprise.id)['vsd_domains']
         for domain in domains:
             if domain.get('type') == 'L2':
                 self._verify_l2domain(domain, l2dom)
@@ -125,7 +125,7 @@ class NuageApiTest(NuageBaseTest):
         self.addCleanup(self.NuageNetworksClient.delete_netpartition,
                         enterprise['id'])
         domains = self.NuageNetworksClient.get_domains(
-            enterprise['id'])['vsd_domains']
+            vsd_organisation_id=enterprise['id'])['vsd_domains']
         self.assertEmpty(domains, 'Empty enterprise should not contain any '
                                   'domains but contained {}'.format(domains))
         # Create l2domain
@@ -140,7 +140,7 @@ class NuageApiTest(NuageBaseTest):
         l2dom.create_child(dhcp_option)
 
         domains = self.NuageNetworksClient.get_domains(
-            enterprise.id)['vsd_domains']
+            vsd_organisation_id=enterprise.id)['vsd_domains']
         # Check that l2domain is found
         self.assertNotEmpty(domains, 'Enterprise should contain domains')
         self.assertEqual(1, len(domains),
@@ -155,7 +155,7 @@ class NuageApiTest(NuageBaseTest):
         self.addCleanup(self.NuageNetworksClient.delete_netpartition,
                         enterprise['id'])
         domains = self.NuageNetworksClient.get_domains(
-            enterprise['id'])['vsd_domains']
+            vsd_organisation_id=enterprise['id'])['vsd_domains']
         self.assertEmpty(domains, 'Empty enterprise should not contain any '
                                   'domains but contained {}'.format(domains))
         # Create l2domain
@@ -164,7 +164,7 @@ class NuageApiTest(NuageBaseTest):
                                                        cidr4=self.cidr4)
         l2dom = self.vsd.create_l2domain(name, enterprise, l2dom_temp)
         domains = self.NuageNetworksClient.get_domains(
-            enterprise.id)['vsd_domains']
+            vsd_organisation_id=enterprise.id)['vsd_domains']
         # Check that l2domain is found
         self.assertNotEmpty(domains, 'Enterprise should contain domains')
         self.assertEqual(1, len(domains),
@@ -178,7 +178,7 @@ class NuageApiTest(NuageBaseTest):
             actual_type=3, actual_values=[str(self.cidr4[1])])
         l2dom.create_child(dhcp_option)
         domain = self.NuageNetworksClient.get_domains(
-            enterprise.id)['vsd_domains'][0]
+            vsd_organisation_id=enterprise.id)['vsd_domains'][0]
         self._verify_l2domain(domain, l2dom)
 
     def test_get_vsd_subnet(self):
@@ -204,3 +204,13 @@ class NuageApiTest(NuageBaseTest):
                          'Exactly one subnet should be found, but '
                          'found: {}'.format(len(subnets)))
         self._verify_l3_subnet(subnets[0], vspk_subnet, with_enterprise=False)
+
+    def test_get_vsd_domains_neg(self):
+        router = self.create_router()
+
+        l3dom = self.vsd.get_l3domain(by_router_id=router['id'])
+        l3dom.delete()
+
+        vsd_api_domains = self.NuageNetworksClient.get_domains(
+            os_router_ids=router['id'])['vsd_domains']
+        self.assertEmpty(vsd_api_domains)
