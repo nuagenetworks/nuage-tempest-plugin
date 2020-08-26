@@ -654,10 +654,9 @@ class NuageNetworkClientJSON(service_client.RestClient):
         resp, body = self.delete(uri)
         self.expected_success(204, resp.status)
 
-    def get_domains(self, netpartition_id, **kwargs):
+    def get_domains(self, **kwargs):
         uri = '{}/vsd-domains'.format(self.uri_prefix)
         kwargs = {} or kwargs
-        kwargs['vsd_organisation_id'] = netpartition_id
         uri += '?' + urlparse.urlencode(kwargs, doseq=1)
         resp, body = self.get(uri)
         self.expected_success(200, resp.status)
