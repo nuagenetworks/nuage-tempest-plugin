@@ -13,12 +13,14 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import netaddr
+from netaddr import IPAddress
+from netaddr import IPNetwork
 
 from tempest.lib.common.utils import data_utils
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import data_utils as nuage_utils
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
@@ -35,26 +37,31 @@ class NuageApiTest(NuageBaseTest):
             cls.os_primary.auth_provider,
             **cls.os_primary.default_params)
 
-    def _verify_l2domain(self, domain_json, vspk_domain):
+    def _verify_l2domain(self, domain_json, vspk_domain,
+                         vspk_backend_domain=None):
+        # The backend l2domain is only relevant when the l2 domain is linked
+        # to a backend domain in Shared Infrastructure.
+        vspk_backend_domain = vspk_backend_domain or vspk_domain
         self.assertEqual(vspk_domain.id, domain_json.get('id'))
         self.assertEqual(vspk_domain.name, domain_json.get('name'))
         self.assertEqual('L2', domain_json.get('type'))
         self.assertEqual(vspk_domain.parent_id,
                          domain_json.get('net_partition_id'))
         if Topology.has_full_dhcp_control_in_vsd():
-            self.assertEqual(vspk_domain.dhcp_managed,
+            self.assertEqual(vspk_backend_domain.dhcp_managed,
                              domain_json.get('dhcp_managed'))
-            self.assertEqual(vspk_domain.ip_type,
+            self.assertEqual(vspk_backend_domain.ip_type,
                              domain_json.get('ip_version'))
-            l2dom_address = netaddr.IPNetwork(
-                vspk_domain.address + '/' + vspk_domain.netmask)
+            l2dom_address = IPNetwork(
+                vspk_backend_domain.address + '/' +
+                vspk_backend_domain.netmask)
             self.assertEqual(str(l2dom_address), domain_json.get('cidr'))
-            self.assertEqual(vspk_domain.ipv6_address,
+            self.assertEqual(vspk_backend_domain.ipv6_address,
                              domain_json.get('ipv6_cidr'))
-            self.assertEqual(vspk_domain.ipv6_gateway,
+            self.assertEqual(vspk_backend_domain.ipv6_gateway,
                              domain_json.get('ipv6_gateway'))
 
-            dhcp_option = vspk_domain.dhcp_options.get_first()
+            dhcp_option = vspk_backend_domain.dhcp_options.get_first()
             if dhcp_option:
                 self.assertEqual(dhcp_option.actual_values[0],
                                  domain_json['gateway'])
@@ -69,21 +76,25 @@ class NuageApiTest(NuageBaseTest):
                          domain_json.get('net_partition_id'))
 
     def _verify_l3_subnet(self, vsd_api_subnet, vspk_subnet,
-                          with_enterprise=True):
+                          vspk_backend_subnet=None, with_enterprise=True):
+        # The backend subnet is only relevant when the l3 subnet is linked
+        # to a backend subnet in Shared Infrastructure.
+        vspk_backend_subnet = vspk_backend_subnet or vspk_subnet
         self.assertEqual(vspk_subnet.id, vsd_api_subnet.get('id'))
         self.assertEqual(vspk_subnet.name, vsd_api_subnet.get('name'))
-        if vspk_subnet.address:
-            cidr = netaddr.IPNetwork(vspk_subnet.address + '/' +
-                                     vspk_subnet.netmask)
+        if vspk_backend_subnet.address:
+            cidr = IPNetwork(vspk_backend_subnet.address + '/' +
+                             vspk_backend_subnet.netmask)
             self.assertEqual(str(cidr), vsd_api_subnet.get('cidr'))
         else:
             self.assertIsNone(vsd_api_subnet.get('cidr'))
-        self.assertEqual(vspk_subnet.ipv6_address,
+        self.assertEqual(vspk_backend_subnet.ipv6_address,
                          vsd_api_subnet.get('ipv6_cidr'))
-        self.assertEqual(vspk_subnet.gateway, vsd_api_subnet.get('gateway'))
-        self.assertEqual(vspk_subnet.ipv6_gateway,
+        self.assertEqual(vspk_backend_subnet.gateway,
+                         vsd_api_subnet.get('gateway'))
+        self.assertEqual(vspk_backend_subnet.ipv6_gateway,
                          vsd_api_subnet.get('ipv6_gateway'))
-        self.assertEqual(vspk_subnet.ip_type,
+        self.assertEqual(vspk_backend_subnet.ip_type,
                          vsd_api_subnet.get('ip_version'))
         if with_enterprise:
             self.assertEqual(self.vsd.get_default_enterprise().name,
@@ -195,7 +206,7 @@ class NuageApiTest(NuageBaseTest):
             domain=domain,
             vspk_filter="not(name BEGINSWITH 'def_zone-pub') and "
                         "(name BEGINSWITH 'def_zone')")
-        self._verify_l3_subnet(vsd_api_subnet, vspk_subnet, zone)
+        self._verify_l3_subnet(vsd_api_subnet, vspk_subnet)
 
         subnets = self.NuageNetworksClient.get_vsd_subnets(
             vsd_zone_id=zone.id)['vsd_subnets']
@@ -214,3 +225,131 @@ class NuageApiTest(NuageBaseTest):
         vsd_api_domains = self.NuageNetworksClient.get_domains(
             os_router_ids=router['id'])['vsd_domains']
         self.assertEmpty(vsd_api_domains)
+
+    def test_get_linked_shared_resource_l2_domains(self):
+        """test_get_linked_shared_resource_l2_domains
+
+        Test that when linked a shared subnet to a private l2domain
+        the attributes returned are those of the shared subnet.
+
+        """
+        # Create private enterprise
+        enterprise_name = data_utils.rand_name('test-verify-linked-domains')
+        enterprise = self.NuageNetworksClient.create_netpartition(
+            enterprise_name)['net_partition']
+        self.addCleanup(self.NuageNetworksClient.delete_netpartition,
+                        enterprise['id'])
+
+        # Create shared resources
+        cidr4 = nuage_utils.gimme_a_cidr()
+        cidr6 = nuage_utils.gimme_a_cidr(ip_version=6)
+        shared_l2dom_template = self.vsd.create_l2domain_template(
+            enterprise='Shared Infrastructure',
+            ip_type='DUALSTACK',
+            cidr4=cidr4, cidr6=cidr6,
+            enable_dhcpv4=True, enable_dhcpv6=True
+        )
+        self.addCleanup(shared_l2dom_template.delete)
+        shared_l2dom = self.vsd.create_l2domain(
+            enterprise='Shared Infrastructure', template=shared_l2dom_template)
+        self.addCleanup(shared_l2dom.delete)
+
+        # Link in created enterprise
+        l2dom_template = self.vsd.create_l2domain_template(
+            enterprise=enterprise_name, dhcp_managed=False)
+        self.addCleanup(l2dom_template.delete)
+        l2dom = self.vsd.create_l2domain(
+            enterprise=enterprise_name,
+            template=l2dom_template,
+            associated_shared_network_resource_id=shared_l2dom.id)
+        self.addCleanup(l2dom.delete)
+
+        # Get l2domain
+        domains = self.NuageNetworksClient.get_domains(
+            vsd_organisation_id=enterprise['id'])['vsd_domains']
+        # Check that l2domain is found
+        self.assertNotEmpty(domains, 'Enterprise should contain domains')
+        self.assertEqual(1, len(domains),
+                         'Exactly one l2domain should be found, but '
+                         'found: {}'.format(len(domains)))
+        domain_json = domains[0]
+
+        # Verify
+        self._verify_l2domain(domain_json, l2dom, shared_l2dom)
+
+        # SET DHCP option 3: gateway
+        dhcp_option = self.vsd.vspk.NUDHCPOption(
+            actual_type=3, actual_values=[str(IPAddress(cidr4.first) + 1)])
+        shared_l2dom.create_child(dhcp_option)
+        domains = self.NuageNetworksClient.get_domains(
+            vsd_organisation_id=enterprise['id'])['vsd_domains']
+        domain_json = domains[0]
+        self._verify_l2domain(domain_json, l2dom, shared_l2dom)
+
+    def test_get_linked_shared_resource_l3_domains(self):
+        """test_get_linked_shared_resource_l3_domains
+
+        Test that when linked a shared subnet to a private l3subnet
+        the attributes returned are those of the shared subnet.
+
+        :return:
+        """
+        # Create private enterprise
+        enterprise_name = data_utils.rand_name('test-verify-linked-domains')
+        enterprise = self.NuageNetworksClient.create_netpartition(
+            enterprise_name)['net_partition']
+        self.addCleanup(self.NuageNetworksClient.delete_netpartition,
+                        enterprise['id'])
+
+        # Create shared resources
+        cidr4 = nuage_utils.gimme_a_cidr()
+        cidr6 = nuage_utils.gimme_a_cidr(ip_version=6)
+        shared_l3dom_template = self.vsd.create_l3domain_template(
+            enterprise='Shared Infrastructure')
+        self.addCleanup(shared_l3dom_template.delete)
+        shared_l3dom = self.vsd.create_l3domain(
+            enterprise='Shared Infrastructure',
+            template_id=shared_l3dom_template.id)
+        self.addCleanup(shared_l3dom.delete)
+        shared_zone = self.vsd.create_zone(domain=shared_l3dom)
+        self.addCleanup(shared_zone.delete)
+        shared_l3subnet = self.vsd.create_subnet(
+            zone=shared_zone,
+            ip_type='DUALSTACK',
+            cidr4=cidr4, cidr6=cidr6,
+            enable_dhcpv4=True, enable_dhcpv6=True,
+            resource_type='PUBLIC'
+        )
+        self.addCleanup(shared_l3subnet.delete)
+
+        # Link in created enterprise
+        l3dom_template = self.vsd.create_l3domain_template(
+            enterprise=enterprise_name)
+        self.addCleanup(l3dom_template.delete)
+        l3dom = self.vsd.create_l3domain(
+            enterprise=enterprise_name,
+            template_id=l3dom_template.id)
+        self.addCleanup(l3dom.delete)
+        public_zone = self.vsd.create_zone(domain=l3dom,
+                                           public_zone=True)
+        self.addCleanup(public_zone.delete)
+        l3subnet = self.vsd.create_subnet(
+            zone=public_zone,
+            associated_shared_network_resource_id=shared_l3subnet.id
+        )
+        self.addCleanup(l3subnet.delete)
+
+        # Get l3 subnet
+        subnets = self.NuageNetworksClient.get_vsd_subnets(
+            public_zone.id)['vsd_subnets']
+        # Check that l3subnet is found
+        self.assertNotEmpty(subnets, 'Enterprise should contain l3 subnets')
+        self.assertEqual(1, len(subnets),
+                         'Exactly one l3 subnet should be found, but '
+                         'found: {}'.format(len(subnets)))
+        subnet_json = subnets[0]
+
+        # Verify
+        self._verify_l3_subnet(subnet_json, vspk_subnet=l3subnet,
+                               vspk_backend_subnet=shared_l3subnet,
+                               with_enterprise=False)
