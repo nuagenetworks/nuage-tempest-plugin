@@ -125,6 +125,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
     """
     _ip_version = 4
 
+    cls_name = None
     credentials = ['primary', 'admin']
     default_netpartition_name = Topology.def_netpartition
     shared_infrastructure = 'Shared Infrastructure'
@@ -136,7 +137,6 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
     default_prepare_for_connectivity = False
     enable_aggregate_flows_on_vsd_managed = False
     ssh_security_group = None
-    cls_name = None
 
     @classmethod
     def setup_clients(cls):
@@ -1590,11 +1590,17 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                              start_web_server=False,
                              web_server_port=80,
                              force_dhcp_config=False,
-                             manager=None, cleanup=True, **kwargs):
+                             manager=None,
+                             cleanup=True,
+                             cleanup_fip_infra=None,
+                             **kwargs):
 
         assert not (networks and ports)  # one of both, not both
         assert networks or ports  # but one at least
         assert not (ports and security_groups)  # one of both, not both
+
+        if cleanup_fip_infra is None:
+            cleanup_fip_infra = cleanup
 
         name = name or data_utils.rand_name('test-server')
         manager = manager or self.manager
@@ -1666,7 +1672,8 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
 
             if prepare:
                 ports = self.prepare_fip_topology(
-                    name, networks, ports, security_groups, manager, cleanup)
+                    name, networks, ports, security_groups, manager,
+                    cleanup_fip_infra)
                 networks = []
                 security_groups = []
                 provisioning_needed |= needs_provisioning(server_ports=ports)
@@ -1710,7 +1717,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             if pre_prepared_fip:
                 server.associate_fip(pre_prepared_fip)
             else:
-                self.make_fip_reachable(server, manager, cleanup)
+                self.make_fip_reachable(server, manager, cleanup_fip_infra)
 
         LOG.info('[{}] --- COMPLETE:{} ---'.format(
             self.test_name, server.name))
@@ -2080,19 +2087,44 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                 client.delete_switchport_mapping(mapping['id'])
 
     @staticmethod
-    def execute_from_shell(command, success_expected=True, pause=None):
+    def assert_path_exists(path, create_if_not=False):
+        if not os.path.exists(path):
+            if create_if_not:
+                os.mkdir(path)
+                LOG.info('{} created!'.format(path))
+            else:
+                LOG.error('{} path does not exist!'.format(path))
+        assert os.path.exists(path)
+
+    @staticmethod
+    def get_local_path(at_file):
+        # call as : get_local_path(__file__)
+        return os.path.dirname(os.path.abspath(at_file))
+
+    @staticmethod
+    def execute_from_shell(command, success_expected=True, pause=None,
+                           return_output=True):
         output = None
+        errcode = None
         try:
             LOG.debug('Executing: {}'.format(command))
-            output = (subprocess.check_output(
-                command, shell=True)).decode('utf-8')
-            LOG.debug('Output: {}'.format(output))
+            if return_output:
+                output = (subprocess.check_output(
+                    command, shell=True)).decode('utf-8')
+                LOG.debug('Output: {}'.format(output))
+            else:
+                errcode = subprocess.call(command, shell=True)
+                if success_expected:
+                    assert 0 == errcode
         except subprocess.CalledProcessError:
             if success_expected:
                 raise
         if pause:
             time.sleep(pause)
-        return output
+        if return_output:
+            return output
+        else:
+            return errcode
 
     def create_segment(self, segment_name=None, cleanup=True,
                        manager=None, **kwargs):

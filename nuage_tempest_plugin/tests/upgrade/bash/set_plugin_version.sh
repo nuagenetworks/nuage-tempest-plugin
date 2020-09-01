@@ -10,13 +10,13 @@ NC='\033[0m' # No Color
 
 function debug {
     if [[ $DEBUG ]];then
-        echo -e "${BLUE}DEBUG: [            ./set_plugin_version] ${@}${NC}"
+        echo -e "${BLUE}DEBUG: [            ./set_plugin_version] ${*}${NC}"
     fi
 }
 
 function trace {
     if [[ $TRACE ]];then
-        echo -e "${BLUE}DEBUG: [            ./set_plugin_version] ${@}${NC}"
+        echo -e "${BLUE}DEBUG: [            ./set_plugin_version] ${*}${NC}"
     fi
 }
 
@@ -25,132 +25,106 @@ function magenta {
 }
 
 function set_plugin_version {
-
     version=$1
+    from_api_version=$2
+    to_api_version=$3
     curdir=$PWD
 
-    debug "Setting plugin branch to $version..."
+    debug "Setting plugin branch to $version (from $from_api_version to $to_api_version)"
 
-    if [[ -d $PLUGIN_PATH ]];then
-        cd $PLUGIN_PATH
+    if [[ -d $PLUGIN_PATH ]]; then
+        cd $PLUGIN_PATH || exit 1
     else
         debug "Error: $PLUGIN_PATH not found!"
         exit 1
     fi
-    if [[ ! `git remote` ]];then
+    if [[ ! $(git remote) ]];then
         trace "No git remote found!"
-        git remote add origin git@github.mv.usa.alcatel.com:OpenStack/nuage-openstack-neutron.git
-        if [[ $? == 0 ]];then
+        if git remote add origin git@github.mv.usa.alcatel.com:OpenStack/nuage-openstack-neutron.git; then
             trace "Remote added"
-            git_origin=`git remote`
+            git_origin=$(git remote)
             debug "git remote is $git_origin"
             new_origin=1
         else
             debug "Adding remote failed. exiting"
             exit 1
         fi
-    elif [[ `git remote|wc -l` == 1 ]];then
-        git_origin=`git remote`
+    elif [[ $(git remote| wc -l) == 1 ]]; then
+        git_origin=$(git remote)
         debug "git remote is $git_origin"
     else
         trace "Multiple git remotes found:"
-        trace `git remote`
+        trace "$(git remote)"
         trace "Taking origin"
         git_origin='origin'
     fi
-    if [[ $new_origin ]];then
+    if [[ $new_origin ]]; then
         git_br=
     else
-        git_br=`git rev-parse --abbrev-ref HEAD`
+        git_br=$(git rev-parse --abbrev-ref HEAD)
     fi
-    if [[ $git_br != $version ]];then
+    if [[ $git_br != "$version" ]]; then
         magenta
-        git checkout $version
-        if [[ $? == 0 ]];then
+        if git checkout "$version"; then
             trace "git branch is $version"
-            trace "`git log -n 1`"
+            trace "$(git log -n 1)"
         else
             trace "git checkout $version failed"
             magenta
             git fetch $git_origin
-            git branch --track $version $git_origin/$version
+            git branch --track "$version" $git_origin/"$version"
             trace "Retrying..."
             magenta
-            git checkout $version
-            if [[ $? == 0 ]];then
+            if git checkout "$version"; then
                 trace "git branch is $version"
-                trace "`git log -n 1`"
+                trace "$(git log -n 1)"
             else
                 debug "git checkout $version failed"
                 exit 1
             fi
         fi
-        if [[ $version == *"5"* ]];then
-            debug "6.x -> 5.x ($version)"
-            if [[ `cat /etc/neutron/plugins/nuage/plugin.ini | grep base_uri | grep -v '^#' | grep v6` ]]; then
-                sudo -S sed -i 's/\/nuage\/api\/v6/\/nuage\/api\/v5_0/g' /etc/neutron/plugins/nuage/plugin.ini
-                if [[ $? == 0 ]];then
-                    debug "plugin config updated"
+        if [[ "$from_api_version" != "$to_api_version" ]];then
+            debug "Switching api version to $to_api_version"
+            if grep base_uri /etc/neutron/plugins/nuage/plugin.ini| grep -v '^#'| grep -q "$to_api_version"; then
+                debug "Plugin.ini is already good"
+            elif grep base_uri /etc/neutron/plugins/nuage/plugin.ini| grep -v '^#'| grep -q "$from_api_version"; then
+                if sudo -S sed -i "s/\/nuage\/api\/$from_api_version/\/nuage\/api\/$to_api_version/g" /etc/neutron/plugins/nuage/plugin.ini; then
+                    debug "Plugin config updated"
                 else
-                    debug "plugin config update FAILED!"
+                    debug "Plugin config update FAILED!"
                     exit 1
                 fi
-            elif [[ `cat /etc/neutron/plugins/nuage/plugin.ini | grep base_uri | grep -v '^#' | grep v5_0` ]]; then
-                debug "awkward but plugin.ini is already good"
+            elif grep base_uri /etc/neutron/plugins/nuage/plugin.ini| grep -q -v '^#'; then
+                debug "FAIL: Nor 'to' nor 'from' base_uri version found."
+                exit 1
             else
-                sudo -S echo -e "\n# --- added content by set_plugin_version.sh ---" >> /etc/neutron/plugins/nuage/plugin.ini
-                sudo -S echo "[restproxy]" >> /etc/neutron/plugins/nuage/plugin.ini
-                sudo -S echo "base_uri = /nuage/api/v5_0" >> /etc/neutron/plugins/nuage/plugin.ini
-            fi
-        else
-            debug "5.x -> 6.x ($version)"
-            if [[ `cat /etc/neutron/plugins/nuage/plugin.ini | grep base_uri | grep -v '^#' | grep v5_0` ]]; then
-                sudo -S sed -i 's/\/nuage\/api\/v5_0/\/nuage\/api\/v6/g' /etc/neutron/plugins/nuage/plugin.ini
-                if [[ $? == 0 ]];then
-                    debug "plugin config updated"
-                else
-                    debug "plugin config update FAILED!"
-                    exit 1
-                fi
-            elif [[ `cat /etc/neutron/plugins/nuage/plugin.ini | grep base_uri | grep -v '^#' | grep v6` ]];  then
-                debug "awkward but plugin.ini is already good"
-            else
-                sudo -S echo -e "\n# --- added content by set_plugin_version.sh ---" >> /etc/neutron/plugins/nuage/plugin.ini
-                sudo -S echo "[restproxy]" >> /etc/neutron/plugins/nuage/plugin.ini
-                sudo -S echo "base_uri = /nuage/api/v6" >> /etc/neutron/plugins/nuage/plugin.ini
+                echo -e "\n# --- added content by set_plugin_version.sh ---"| sudo -S tee -a /etc/neutron/plugins/nuage/plugin.ini
+                echo "[restproxy]"| sudo -S tee -a /etc/neutron/plugins/nuage/plugin.ini
+                echo "base_uri = /nuage/api/$to_api_version"| sudo -S tee -a  /etc/neutron/plugins/nuage/plugin.ini
             fi
         fi
-        debug "`cat /etc/neutron/plugins/nuage/plugin.ini | grep base_uri | grep -v '^#'`"
+        debug "$(grep base_uri /etc/neutron/plugins/nuage/plugin.ini| grep -v '^#')"
         debug "Restarting neutron"
         sudo -S systemctl restart devstack@q-svc.service
-        trace "Taking a short nap"
-        sleep 10
+        sleep 5
         debug "Plugin branched to $version"
     else
         debug "Plugin is already branched to $version, nothing to be done"
-        debug "`cat /etc/neutron/plugins/nuage/plugin.ini | grep base_uri | grep -v '^#'`"
+        debug "$(grep base_uri /etc/neutron/plugins/nuage/plugin.ini| grep -v '^#')"
     fi
-    if [[ $version == *"5"* ]];then
-        if [[ ! `cat /etc/neutron/plugins/nuage/plugin.ini | grep base_uri | grep -v '^#' | grep v5_0` ]]; then
-            debug "ERROR: plugin version NOT set correctly for v5_0"
-            cat /etc/neutron/plugins/nuage/plugin.ini
-            exit 1
-        fi
-    else
-        if [[ ! `cat /etc/neutron/plugins/nuage/plugin.ini | grep base_uri | grep -v '^#' | grep v6` ]]; then
-            debug "ERROR: plugin version NOT set correctly for v6"
-            cat /etc/neutron/plugins/nuage/plugin.ini
-            exit 1
-        fi
+    if ! grep base_uri /etc/neutron/plugins/nuage/plugin.ini| grep -v '^#'| grep -q "$to_api_version"; then
+        debug "ERROR: plugin version NOT set correctly for $to_api_version"
+        cat /etc/neutron/plugins/nuage/plugin.ini
+        exit 1
     fi
-    cd $curdir
+    cd "$curdir" || exit 1
 }
 
 # main
 
 if [[ ! $1 ]]; then
-    echo "Use as: ./set_plugin_version.sh <branch-name>"
+    echo "Use as: ./set_plugin_version.sh <branch-name> <from-api-version> <to-api-version>"
     exit 1
 fi
 
-set_plugin_version $1
+set_plugin_version "$1" "$2" "$3"

@@ -569,11 +569,21 @@
 - job:
     name: networking-nuage-tempest-scale
     parent: networking-nuage-base
-    description: job running all scale tests on 5.4 branches
-    # This currently works from pike on
+    description: job running all scale tests
     branches: .*
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.scale\..*'
+
+- job:
+    name: networking-nuage-tempest-upgrade
+    parent: networking-nuage-base
+    description: job running all upgrade tests
+    branches: .*
+    required-projects:
+      - OpenStack/nuage-openstack-upgrade-scripts
+    vars:
+      tempest_test_regex: '^nuage_tempest_plugin\.tests\.upgrade\..*'
+      tempest_concurrency: 1
 
 - job:
     name: networking-nuage-tempest-lbaas

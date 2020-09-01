@@ -43,8 +43,7 @@ class Console(object):
 
     @classmethod
     def coloured(cls, color, msg, *args, **kwargs):
-        cls.stdout('{}{}{}'.format(
-            color, msg, cls.ENDC), *args, **kwargs)
+        cls.stdout('{}{}{}'.format(color, msg, cls.ENDC), *args, **kwargs)
 
     @classmethod
     def fail(cls, msg, *args, **kwargs):
@@ -52,23 +51,19 @@ class Console(object):
 
     @classmethod
     def error(cls, msg, *args, **kwargs):
-        cls.coloured(cls.FAIL, 'ERROR: {}'.format(
-            msg), *args, **kwargs)
+        cls.coloured(cls.FAIL, 'ERROR: {}'.format(msg), *args, **kwargs)
 
     @classmethod
     def warn(cls, msg, *args, **kwargs):
-        cls.coloured(cls.WARNING, ' WARN: {}'.format(
-            msg), *args, **kwargs)
+        cls.coloured(cls.WARNING, ' WARN: {}'.format(msg), *args, **kwargs)
 
     @classmethod
     def info(cls, msg, *args, **kwargs):
-        cls.coloured(cls.EMPHASIS, ' INFO: {}'.format(
-            msg), *args, **kwargs)
+        cls.coloured(cls.EMPHASIS, ' INFO: {}'.format(msg), *args, **kwargs)
 
     @classmethod
     def debug(cls, msg, *args, **kwargs):
-        cls.coloured(cls.DEBUG, 'DEBUG: {}'.format(
-            msg), *args, **kwargs)
+        cls.coloured(cls.DEBUG, 'DEBUG: {}'.format(msg), *args, **kwargs)
 
 
 class ConsoleLogging(object):
