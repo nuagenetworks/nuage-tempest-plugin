@@ -142,14 +142,16 @@
               vlan_transparent: true
               enable_snat_by_default: false
             quotas:
-              # A negative value means unlimited. (integer value)
+              # Some upstream tests rely on quota_security_group_rule
+              # being at least twice the security group quota in order to
+              # be able to max out the number of security groups
+              quota_router: 100
+              quota_floatingip: 500
+              quota_security_group: 150
+              quota_security_group_rule: 1000
               quota_network: 1000
               quota_subnet: 1000
               quota_port: 1000
-              quota_router: 1000
-              quota_floatingip: 1000
-              quota_security_group: 1000
-              quota_security_group_rule: 1000
         test-config:
           $TEMPEST_CONFIG:
             scenario:
