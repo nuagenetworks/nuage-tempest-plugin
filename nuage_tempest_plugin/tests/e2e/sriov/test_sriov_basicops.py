@@ -134,12 +134,16 @@ class SriovBasicOpsTest(NuageBaseTest):
         cidr6 = None
         enable_dhcpv4 = False
         enable_dhcpv6 = False
+        gateway4 = None
+        gateway6 = None
 
         for ip_type in ip_version:
             if ip_type == 4:
                 cidr4 = data_utils.gimme_a_cidr(ip_type)
+                gateway4 = str(cidr4[1]) if is_l3 else None
             elif ip_type == 6:
                 cidr6 = data_utils.gimme_a_cidr(ip_type)
+                gateway6 = str(cidr6[1]) if is_l3 else None
 
         kwargs = {}
         if CONF.nuage_sut.gateway_type == 'cisco':
@@ -156,6 +160,8 @@ class SriovBasicOpsTest(NuageBaseTest):
                 cidr6=cidr6,
                 enable_dhcpv4=enable_dhcpv4,
                 enable_dhcpv6=enable_dhcpv6,
+                gateway4=gateway4,
+                gateway6=gateway6,
                 ip_type=self.ip_types[ip_version],
                 **kwargs
             )
