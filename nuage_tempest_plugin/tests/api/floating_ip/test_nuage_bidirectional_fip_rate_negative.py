@@ -8,7 +8,7 @@ from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.tests.api.floating_ip import \
     base_nuage_bidirectional_fip_rate_limit
 
-if Topology.from_nuage('20.10'):
+if Topology.from_nuage('20.5'):
     MSG_INVALID_INPUT_IN = ("Bad request: 'nuage_ingress_fip_rate_kbps' "
                             "should be an integer number between 0 and "
                             "2147483647, -1 for unlimited or 'default' "

@@ -384,8 +384,8 @@ class NuageFipToVip(NuageBaseTest):
                              "Floating ip not associated with vip.")
 
     @decorators.attr(type='smoke')
-    @testtools.skipIf(Topology.before_nuage('20.10'),
-                      'OPENSTACK-2912 fixed as of 20.10 only.')
+    @testtools.skipIf(Topology.before_nuage('20.5'),
+                      'OPENSTACK-2912 fixed as of 20.5 only.')
     def test_fip_to_vip_when_previously_assigned(self):
         network = self.create_network()
         self.assertIsNotNone(network, "Unable to create network")

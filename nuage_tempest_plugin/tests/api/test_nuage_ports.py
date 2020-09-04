@@ -1953,7 +1953,8 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                          "Port highest ip address should be equal to "
                          "vm_interface ip address")
 
-    @testtools.skipIf(Topology.is_v5, 'Unsupported pre-6.0')
+    @testtools.skipIf(Topology.is_v5 or Topology.at_nuage('20.5'),
+                      'Unsupported pre-6.0 and in 20.5')
     def test_remove_device_id_before_vm_delete_with_vm(self):
         """test_remove_device_id_before_vm_delete_with_vm
 
@@ -1995,7 +1996,8 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         # Delete VM
         self.delete_server(server['id'])
 
-    @testtools.skipIf(Topology.is_v5, 'Unsupported pre-6.0')
+    @testtools.skipIf(Topology.is_v5 or Topology.at_nuage('20.5'),
+                      'Unsupported pre-6.0 and in 20.5')
     def test_remove_device_id_before_vm_delete_no_waiting_with_vm(self):
         """test_remove_device_id_before_vm_delete_no_waiting_with_vm
 
