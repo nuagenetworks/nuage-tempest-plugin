@@ -17,11 +17,8 @@ from tempest.api.network import base as base
 from tempest.lib.common.utils import data_utils
 from tempest.lib.common.utils import test_utils
 
-import testtools
-
 from nuage_tempest_plugin.tests.api.external_id.external_id import ExternalId
 
-from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.lib.utils import exceptions as n_exceptions
@@ -45,12 +42,8 @@ class ExternalIdForNetworkMacroTest(base.BaseAdminNetworkTest):
             vsd_network_macro = \
                 self.test.nuage_client.get_enterprise_net_macro(
                     netpart_name=self.net_partition['name'])
-            if NUAGE_FEATURES.os_managed_dualstack_subnets:
-                self.test.assertEqual(
-                    2, len(vsd_network_macro), "should have network macros")
-            else:
-                self.test.assertEqual(
-                    1, len(vsd_network_macro), "should have network macros")
+            self.test.assertEqual(
+                1, len(vsd_network_macro), "should have network macros")
             vsd_network_macros = \
                 self.test.nuage_client.get_enterprise_net_macro(
                     netpart_name=self.net_partition['name'],
@@ -58,17 +51,8 @@ class ExternalIdForNetworkMacroTest(base.BaseAdminNetworkTest):
                     filter_values=ExternalId(
                         self.net_partition['id']).at_openstack())
 
-            if NUAGE_FEATURES.os_managed_dualstack_subnets:
-                self.test.assertEqual(2, len(vsd_network_macros))
-            else:
-                self.test.assertEqual(1, len(vsd_network_macros))
+            self.test.assertEqual(1, len(vsd_network_macros))
             self.vsd_network_macro = vsd_network_macros[0]
-
-            # TODO(team) what should be the name
-            # reference = u'5ffc260c-f10d-4cd1-85a3-26e35618e695_0_0'
-            # actual    = u'5ffc260c-f10d-4cd1-85a3-26e35618e695'
-            # self.test.assertEqual(self.vsd_network_macro['name'],
-            #     self.net_partition['id'])
 
             self.test.assertEqual(
                 ExternalId(self.net_partition['id']).at_openstack(),
@@ -111,8 +95,6 @@ class ExternalIdForNetworkMacroTest(base.BaseAdminNetworkTest):
             netpartition['id'])
         return netpartition
 
-    @testtools.skipUnless(Topology.from_nuage('4.0R5'),
-                          'No upgrade testing on network macro')
     def test_network_macro_matches_to_enterprise(self):
         # Create a dedicated netpartition
         netpartition_b = self._create_netpartition()
@@ -129,9 +111,21 @@ class ExternalIdForNetworkMacroTest(base.BaseAdminNetworkTest):
         self.assertEqual(
             0, len(network_macros), "should not have network macros")
 
+        # Create security group
+        sg = self.security_groups_client.create_security_group(
+            name='test-network-macro')['security_group']
+        # Delete all default rules
+        for sg_rule in sg['security_group_rules']:
+            self.security_group_rules_client.delete_security_group_rule(
+                sg_rule['id'])
+        self.security_group_rules_client.create_security_group_rule(
+            security_group_id=sg['id'], direction='egress',
+            remote_ip_prefix='10.0.0.0/24')
+
         self.create_port(
             name=name,
-            network=network_a1)
+            network=network_a1,
+            security_groups=[sg['id']])
 
         vsd_network_macro = self.MatchingVsdNetworkMacro(
             self, netpartition_b).get_by_external_id()
