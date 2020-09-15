@@ -14,13 +14,20 @@
 #    under the License.
 import sys
 
+from oslo_log import log
+
+from neutron_lib import constants as neutron_lib_constants
+from tempest.common import utils
+from tempest.lib import exceptions as tempest_exc
+
 from neutron_tempest_plugin.common import utils as common_utils
 from neutron_tempest_plugin.scenario import base as neutron_base
 from neutron_tempest_plugin.scenario import constants
 from neutron_tempest_plugin.scenario import test_floatingip
 from neutron_tempest_plugin.scenario import test_qos
 
-from tempest.common import utils
+
+LOG = log.getLogger(__name__)
 
 
 class NuageFloatingIPProprietaryQosTest(
@@ -33,6 +40,31 @@ class NuageFloatingIPProprietaryQosTest(
     @utils.requires_ext(extension="router", service="network")
     def resource_setup(cls):
         super(NuageFloatingIPProprietaryQosTest, cls).resource_setup()
+
+    @staticmethod
+    def get_ncat_server_cmd(port, protocol):
+        udp = ''
+        if protocol.lower() == neutron_lib_constants.PROTO_NAME_UDP:
+            udp = '-u'
+        return ("screen -d -m sh -c '"
+                "while true; do nc {udp} -p {port} -lk < /dev/zero; "
+                "done;'".format(port=port, udp=udp))
+
+    def ensure_nc_listen(self, ssh_client, port, protocol, echo_msg=None,
+                         servers=None):
+        """Ensure that nc server listening on the given TCP/UDP port is up.
+
+        Listener is created always on remote host.
+        """
+        try:
+            value = ssh_client.exec_command(
+                self.get_ncat_server_cmd(port, protocol))
+            LOG.debug(str(ssh_client.exec_command("sudo netstat -tln")))
+            return value
+        except tempest_exc.SSHTimeout as ssh_e:
+            LOG.debug(ssh_e)
+            self._log_console_output(servers)
+            raise
 
     def test_qos(self):
         """Test floating IP is binding to a QoS policy with
@@ -56,7 +88,7 @@ class NuageFloatingIPProprietaryQosTest(
                                    self.fip['floating_ip_address'],
                                    port=self.NC_PORT,
                                    expected_bw=unlimited_bw),
-            timeout=120)
+            timeout=240)
 
         self.os_admin.network_client.update_floatingip(
             self.fip['id'],
