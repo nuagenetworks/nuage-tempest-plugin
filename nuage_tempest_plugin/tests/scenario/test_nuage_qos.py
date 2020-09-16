@@ -81,6 +81,10 @@ class NuageFloatingIPProprietaryQosTest(
         fip = self.os_admin.network_client.get_floatingip(
             self.fip['id'])['floatingip']
         self.assertEqual(self.port['id'], fip['port_id'])
+
+        if hasattr(self, 'FILE_SIZE'):
+            # Queens & Rocky: create file
+            self._create_file_for_bw_tests(ssh_client)
         # Check bw not limited
         unlimited_bw = sys.maxsize
         common_utils.wait_until_true(
