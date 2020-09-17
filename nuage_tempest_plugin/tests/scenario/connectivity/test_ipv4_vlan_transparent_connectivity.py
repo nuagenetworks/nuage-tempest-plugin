@@ -30,6 +30,8 @@ class VlanTransparentConnectivityTest(NuageBaseTest):
     @testtools.skipUnless(
         CONF.nuage_sut.image_is_advanced,
         "Advanced image is required to run this test.")
+    @testtools.skipIf(Topology.has_default_switchdev_port_profile(),
+                      reason='VRS-46530')
     def test_l2_transparent_network(self):
         kwargs = {
             'vlan_transparent': 'true'
