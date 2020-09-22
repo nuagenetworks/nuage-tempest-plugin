@@ -16,7 +16,6 @@ import testscenarios
 
 from tempest.lib.common.utils import data_utils
 
-from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils.ovs import OvrsFlowQuery
 from nuage_tempest_plugin.tests.e2e.e2e_base_test import E2eTestBase
@@ -152,7 +151,6 @@ class BasicOffloadingTest(E2eTestBase):
             to_server=to_server, to_port=to_port,
             destination_network=self.default_port_args[1]['network'])
 
-    @nuage_test.skip_because(bug='VRS-31204')
     def test_same_hv_virtio_switchdev(self):
         hv = self.selected_hypervisors[0]['hypervisor_hostname']
 
@@ -184,7 +182,6 @@ class BasicOffloadingTest(E2eTestBase):
             to_server=to_server, to_port=to_port,
             destination_network=self.default_port_args[1]['network'])
 
-    @nuage_test.skip_because(bug='VRS-31204')
     def test_diff_hv_virtio_switchdev(self):
 
         if len(self.selected_hypervisors) < 2:
@@ -260,10 +257,5 @@ class BasicOffloadingTest(E2eTestBase):
             to_server=to_server, to_port=to_port,
             destination_network=self.default_port_args[1]['network'])
 
-    @nuage_test.skip_because(bug='VRS-31204')
     def test_same_hv_virtio_virtio(self):
         super(BasicOffloadingTest, self)._test_same_hv_virtio_virtio()
-
-    @nuage_test.skip_because(bug='VRS-31204')
-    def test_diff_hv_virtio_virtio(self):
-        super(BasicOffloadingTest, self)._test_diff_hv_virtio_virtio()
