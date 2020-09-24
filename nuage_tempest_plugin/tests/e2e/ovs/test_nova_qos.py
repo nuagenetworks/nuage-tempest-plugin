@@ -37,7 +37,7 @@ class NuageNovaQosTest(test_qos.QoSTestMixin,
     credentials = ['primary', 'admin']
 
     WRITE_SIZE = 1024 * 1024
-    LIMIT_KBYTES_SEC = 12
+    LIMIT_KBPS = 12
 
     def _test_basic_resources(self):
         self.setup_network_and_server()
@@ -91,10 +91,10 @@ class NuageNovaQosTest(test_qos.QoSTestMixin,
         self.addCleanup(flavors_client.delete_flavor, flavor['id'])
         default_extra_specs = flavors_client.list_flavor_extra_specs(
             default_flavor['id'])['extra_specs']
-        extra_specs = {'quota:vif_outbound_average': self.LIMIT_KBYTES_SEC,
-                       'quota:vif_inbound_peak': self.LIMIT_KBYTES_SEC,
-                       'quota:vif_outbound_peak': self.LIMIT_KBYTES_SEC,
-                       'quota:vif_inbound_average': self.LIMIT_KBYTES_SEC}
+        extra_specs = {'quota:vif_outbound_average': str(self.LIMIT_KBPS),
+                       'quota:vif_inbound_peak': str(self.LIMIT_KBPS),
+                       'quota:vif_outbound_peak': str(self.LIMIT_KBPS),
+                       'quota:vif_inbound_average': str(self.LIMIT_KBPS)}
         extra_specs.update(default_extra_specs)
         flavors_client.set_flavor_extra_spec(
             flavor['id'], **extra_specs)
@@ -210,7 +210,7 @@ class NuageNovaQosTest(test_qos.QoSTestMixin,
 
         self._test_basic_resources()
         ssh_client = self._create_ssh_client()
-        limit_bytes_sec = self.LIMIT_KBYTES_SEC * 1024 * 1.5
+        limit_bytes_sec = self.LIMIT_KBPS * 1024 * 1.5
         # Check bw limited
         common_utils.wait_until_true(
             lambda: self._check_bw(
