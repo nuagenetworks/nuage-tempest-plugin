@@ -189,7 +189,7 @@
     name: networking-nuage-base
     parent: nuage-base
     description: Base job for nuage based job on 6.0|stable/queens|rocky branch
-    branches: ^(20.5|6.0|stable)/(queens|rocky)
+    branches: ^((20.5|6.0)/(queens|rocky)|stable/queens)
     nodeset: openstack-single-node-centos7
     vars:
       vsp_release: "{{ zuul.branch.split('/')[0] if 'stable' not in zuul.branch else '0.0' }}"
@@ -200,8 +200,22 @@
 - job:
     name: networking-nuage-base
     parent: nuage-base
+    description: Base job for nuage based job on stable/rocky branch
+    branches: ^(stable/rocky)
+    nodeset: openstack-single-node-centos7
+    vars:
+      vsp_release: "{{ zuul.branch.split('/')[0] if 'stable' not in zuul.branch else '0.0' }}"
+      devstack_localrc:
+        USE_PYTHON3: false
+        Q_ML2_PLUGIN_EXT_DRIVERS: nuage_subnet,nuage_port,port_security,nuage_network,qos
+        EXTRA_SERVICE_PLUGIN_CLASSES: qos
+      tempest_test_blacklist: "{{devstack_base_dir}}/nuage-tempest-plugin/tempest-blacklist.txt"
+
+- job:
+    name: networking-nuage-base
+    parent: nuage-base
     description: Base job for nuage based job on 6.0|stable/stein|train branch
-    branches: ^(20.5|6.0|stable)/(stein|train)
+    branches: ^(20.5|6.0)/(stein|train)
     nodeset: openstack-single-node-centos7
     vars:
       vsp_release: "{{ zuul.branch.split('/')[0] if 'stable' not in zuul.branch else '0.0' }}"
@@ -219,12 +233,36 @@
 - job:
     name: networking-nuage-base
     parent: nuage-base
+    description: Base job for nuage based job on 6.0|stable/stein|train branch
+    branches: ^(stable)/(stein|train)
+    nodeset: openstack-single-node-centos7
+    vars:
+      vsp_release: "{{ zuul.branch.split('/')[0] if 'stable' not in zuul.branch else '0.0' }}"
+      devstack_localrc:
+        # INF-7814 nuage-metadata-agent runs under py2 and
+        # misses dependencies to python-keystoneclient
+        FORCE_CONFIG_DRIVE: True
+        Q_ML2_PLUGIN_EXT_DRIVERS: nuage_subnet,nuage_port,port_security,nuage_network,qos
+        EXTRA_SERVICE_PLUGIN_CLASSES: qos
+      devstack_local_conf:
+        test-config:
+          $TEMPEST_CONFIG:
+            compute-feature-enabled:
+              metadata_service: False
+      tempest_test_blacklist: "{{devstack_base_dir}}/nuage-tempest-plugin/tempest-blacklist.txt"
+
+- job:
+    name: networking-nuage-base
+    parent: nuage-base
     description: Base job for nuage based job
     branches: ^(?!(stable|20.5|5.4|6.0)/(pike|queens|rocky|stein|train)).*$
     nodeset: openstack-single-node-centos
     vars:
       vsp_release: '0.0'
       tempest_test_blacklist: "{{devstack_base_dir}}/nuage-tempest-plugin/tempest-blacklist.txt"
+      devstack_localrc:
+        Q_ML2_PLUGIN_EXT_DRIVERS: nuage_subnet,nuage_port,port_security,nuage_network,qos
+        EXTRA_SERVICE_PLUGIN_CLASSES: qos
 
 - job:
     name: tempest-full
