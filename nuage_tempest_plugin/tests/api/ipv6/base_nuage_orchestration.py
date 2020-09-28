@@ -30,7 +30,7 @@ LOG = Topology.get_logger(__name__)
 
 class NuageBaseOrchestrationTest(tempest.test.BaseTestCase):
     """Base test case class for all Nuage Orchestration API tests."""
-    credentials = ['primary']
+    credentials = ['primary', 'admin']
 
     @classmethod
     def skip_checks(cls):
@@ -43,7 +43,6 @@ class NuageBaseOrchestrationTest(tempest.test.BaseTestCase):
     def setup_clients(cls):
         super(NuageBaseOrchestrationTest, cls).setup_clients()
         cls.vsd_client = nuage_client.NuageRestClient()
-        cls.os_admin = cls.get_client_manager(roles=['admin'])
 
         # add ourselves for now as was removed upstream
         cls.orchestration_client = orchestration.OrchestrationClient(
