@@ -17,6 +17,7 @@ import netaddr
 
 from neutron_tempest_plugin.services.network.json import network_client
 from tempest.common import utils
+from tempest.lib import decorators
 from tempest.lib import exceptions
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
@@ -208,6 +209,7 @@ class RateLimitingNuageQosTest(BaseNuageQOSTest):
         self.assertIsNone(self.get_qos_for_port(subnet, port, router,
                                                 required=False))
 
+    @decorators.attr(type='smoke')
     def test_create_update_delete_qos_l2(self):
         self._crud_verify_qos_bw_limiter()
 
