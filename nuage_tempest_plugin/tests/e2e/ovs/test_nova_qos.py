@@ -16,6 +16,7 @@ import socket
 import time
 
 from neutron_lib import constants as neutron_lib_constants
+from neutron_tempest_plugin.common import ssh
 from neutron_tempest_plugin.common import utils as common_utils
 from neutron_tempest_plugin import config
 from neutron_tempest_plugin.scenario import base as neutron_base
@@ -51,6 +52,21 @@ class NuageNovaQosTest(test_qos.QoSTestMixin,
                      'remote_ip_prefix': '0.0.0.0/0'}]
         self.create_secgroup_rules(rulesets,
                                    self.security_groups[-1]['id'])
+
+    def check_connectivity(self, host, ssh_user, ssh_key,
+                           servers=None, ssh_timeout=None):
+        # Set MTU on cirros VM for QOS
+        ssh_client = ssh.Client(host, ssh_user,
+                                pkey=ssh_key, timeout=ssh_timeout)
+        try:
+            ssh_client.test_connection_auth()
+            ssh_client.exec_command("set -eu -o pipefail; PATH=$PATH:/sbin; "
+                                    "sudo ip link set dev eth0 mtu 1400")
+        except tempest_exc.SSHTimeout as ssh_e:
+            LOG.debug(ssh_e)
+            self._log_console_output(servers)
+            self._log_local_network_status()
+            raise
 
     def setup_network_and_server(self, router=None, server_name=None,
                                  network=None, **kwargs):
@@ -178,6 +194,11 @@ class NuageNovaQosTest(test_qos.QoSTestMixin,
         Listener is created always on remote host.
         """
         try:
+            # kill existing screen operation
+            ssh_client.exec_command("killall -q screen")
+        except tempest_exc.SSHExecCommandFailed:
+            pass
+        try:
             value = ssh_client.exec_command(
                 self.get_ncat_server_cmd(port, protocol))
             LOG.debug(str(ssh_client.exec_command("sudo netstat -tln")))
@@ -194,6 +215,11 @@ class NuageNovaQosTest(test_qos.QoSTestMixin,
         Listener is created always on remote host.
         """
         try:
+            # kill existing screen operation
+            ssh_client.exec_command("killall -q screen")
+        except tempest_exc.SSHExecCommandFailed:
+            pass
+        try:
             value = ssh_client.exec_command(
                 self.get_ncat_server_cmd_ingress(port, protocol))
             LOG.debug(str(ssh_client.exec_command("sudo netstat -tln")))
@@ -207,9 +233,12 @@ class NuageNovaQosTest(test_qos.QoSTestMixin,
         """Test QOS when using NOVA flavor
 
         """
-
         self._test_basic_resources()
         ssh_client = self._create_ssh_client()
+        if hasattr(self, 'FILE_SIZE'):
+            # Queens & Rocky: create file
+            self._create_file_for_bw_tests(ssh_client)
+
         limit_bytes_sec = self.LIMIT_KBPS * 1024 * 1.5
         # Check bw limited
         common_utils.wait_until_true(
