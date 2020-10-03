@@ -374,8 +374,14 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
         vsd_l3dom_pgs = vsd_domain.policy_groups.get()
         pg_cnt = len(vsd_l3dom_pgs)
         if Topology.has_unified_pg_for_all_support():
-            self.assertEqual(1, pg_cnt)
-            vsd_l3dom_pg = vsd_l3dom_pgs[0]
+            # Find PG_ALLOW_ALL
+            vsd_l3dom_pg = None
+            for pg in vsd_l3dom_pgs:
+                if pg.name == n_constants.NUAGE_PLCY_GRP_ALLOW_ALL:
+                    vsd_l3dom_pg = pg
+                    break
+            self.assertIsNotNone(vsd_l3dom_pg, "PG_ALLOW_ALL not found in "
+                                               "domain")
             self.assertEqual(vsd_port_pg.id, vsd_l3dom_pg.id)
             self.assertEqual(vsd_l3dom_pg.name,
                              n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
@@ -1515,7 +1521,7 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
                                     mask_bits=cidr.prefixlen, name=sub_name,
                                     net_partition=self.def_net_partition)
         if mac:
-            raise NotImplemented
+            raise NotImplementedError
         port_ip = str(IPNetwork(cidr).network + 10)
         kwargs = {'name': port_name,
                   'fixed_ips': [{'ip_address': port_ip}]}
@@ -1532,7 +1538,7 @@ class IpAntiSpoofingCliTests(IpAntiSpoofingTestBase, test.BaseTestCase):
         network = self.create_network(ntw_name)
         cidr = IPNetwork(cidr)
         if mac:
-            raise NotImplemented
+            raise NotImplementedError
 
         kwargs = {'name': sub_name, 'net_partition': self.def_net_partition}
         subnet = self.create_subnet(network, cidr=cidr, mask_bits=24, **kwargs)
