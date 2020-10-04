@@ -140,7 +140,7 @@ class NuageNovaQosTest(test_qos.QoSTestMixin,
         try:
             client_socket = test_qos._connect_socket(
                 host, port, constants.SOCKET_CONNECT_TIMEOUT)
-        except AttributeError:
+        except (AttributeError, TypeError):
             client_socket = test_qos._connect_socket(
                 host, port)
 
