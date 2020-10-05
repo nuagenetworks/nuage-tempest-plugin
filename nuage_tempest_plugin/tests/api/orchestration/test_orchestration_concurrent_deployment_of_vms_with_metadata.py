@@ -15,6 +15,7 @@ from nuage_tempest_plugin.tests.api.orchestration import nuage_base
 
 from tempest.common.utils.linux.remote_client import RemoteClient
 from tempest.lib.common.utils import data_utils
+from tempest.lib.common.utils import test_utils
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.topology import Topology
@@ -96,6 +97,7 @@ class OrchestrationVMwithMetadata(
             ('vm7', neutron_basic_template['resources'][
                 'vm7']['type'])
         ]
+
         for resource_name, resource_type in resources:
             resource = test_resources.get(resource_name, None)
             server = NuageBaseTest.get_server(
@@ -105,10 +107,13 @@ class OrchestrationVMwithMetadata(
             for net in server['addresses'][network_name]:
                 if net['OS-EXT-IPS:type'] == 'floating':
                     fip = net['addr']
-            fip_acs = RemoteClient(
+            self.fip_acs = RemoteClient(
                 ip_address=fip,
                 username=CONF.validation.image_ssh_user,
                 pkey=keypair['private_key'])
-            result = fip_acs.exec_command('cat /tmp/userdata.out')
-            self.assertIn('pass', result)
+            self.assertTrue(test_utils.call_until_true(
+                self.is_userdata_ready, 300, 30))
         self._clear_stacks()
+
+    def is_userdata_ready(self):
+        return 'pass' in self.fip_acs.exec_command('cat /tmp/userdata.out')
