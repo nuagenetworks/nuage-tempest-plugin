@@ -5,7 +5,6 @@ import json
 import random
 import testscenarios
 
-from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils.ovs import AvrsFlowQuery
 from nuage_tempest_plugin.tests.e2e.e2e_base_test import E2eTestBase
@@ -50,8 +49,11 @@ class AvrsOsManagedConnectivityTest(E2eTestBase):
             hypervisor, 'sudo fpcmd fp-vswitch-flows-json'))
         return AvrsFlowQuery(flows)
 
-    @nuage_test.skip_because(bug='OPENSTACK-2766')
     def test_restart_avrs(self):
+        if Topology.api_workers > 1:
+            raise self.skipException('Skip OVS restart tests when multiple '
+                                     'workers are present')
+
         # Provision OpenStack network resources.
         network = self.create_network()
         subnet = self.create_subnet(network)
