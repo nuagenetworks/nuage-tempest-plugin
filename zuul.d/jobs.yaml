@@ -777,11 +777,13 @@
 - job:
     name: ovs-restart
     parent: networking-nuage-base
-    # This currently works from stable/pike on
     branches: ^(?!stable/(newton|ocata)).*$
+    description: |
+      OpenvSwitch restart tests.
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.e2e\.ovs\.test_restart_openvswitch\..*'
       tempest_concurrency: 1
+      api_workers: 1
 
 - job:
     name: networking-nuage-tempest-multinode-base
