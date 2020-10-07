@@ -194,8 +194,8 @@ class NuageNovaQosTest(base_nuage_qos.NuageQoSTestMixin,
         # Set ingress & egress fip rate limiting
         self.client.update_floatingip(
             self.fip['id'],
-            nuage_egress_fip_rate_kbps=400,
-            nuage_ingress_fip_rate_kbps=200)
+            nuage_egress_fip_rate_kbps=200,
+            nuage_ingress_fip_rate_kbps=400)
         # Check bw limited
         expected_egress_bw = 200 * 1024 * self.TOLERANCE_FACTOR / 8.0
         expected_ingress_bw = 400 * 1024 * self.TOLERANCE_FACTOR / 8.0
