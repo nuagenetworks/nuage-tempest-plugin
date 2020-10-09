@@ -89,7 +89,7 @@ class NuageFloatingIPProprietaryQosTest(
             lambda: self._check_bw_ingress(
                 ssh_client,
                 self.fip['floating_ip_address'],
-                port=self.NC_PORT,
+                port=self.NC_PORT + 1,
                 expected_bw=expected_ingress_bw),
             timeout=120,
             sleep=1)
@@ -114,7 +114,7 @@ class NuageFloatingIPProprietaryQosTest(
             lambda: self._check_bw_ingress(
                 ssh_client,
                 self.fip['floating_ip_address'],
-                port=self.NC_PORT,
+                port=self.NC_PORT + 1,
                 expected_bw=expected_ingress_bw),
             timeout=120,
             sleep=1)
@@ -126,6 +126,7 @@ class RateLimitingNuageQosScenarioTest(test_qos.QoSTest,
     DOWNLOAD_DURATION = 10
     CHECK_TIMEOUT = DOWNLOAD_DURATION * 10
 
+    @testtools.skip("Ingress QOS currently not supported")
     def test_qos_basic_and_update_ingress(self):
 
         # Setup resources

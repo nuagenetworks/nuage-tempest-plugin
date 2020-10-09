@@ -30,7 +30,7 @@ CONF = config.CONF
 
 class NuageQoSTestMixin(test_qos.QoSTestMixin):
 
-    WRITE_SIZE = 1024 * 1024
+    WRITE_SIZE = 1024 * 1024 * 2
 
     def _test_basic_resources(self):
         self.setup_network_and_server()
