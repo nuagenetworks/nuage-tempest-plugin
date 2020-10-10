@@ -626,7 +626,7 @@
         ML2_L3_PLUGIN: router
         Q_AGENT: openvswitch
         Q_SERVICE_PLUGIN_CLASSES: NuageAPI,NuageNetTopology,NuageL2Bridge,segments,router
-        Q_ML2_PLUGIN_MECHANISM_DRIVERS: nuage_hwvtep,openvswitch,nuage_sriov,testsriov
+        Q_ML2_PLUGIN_MECHANISM_DRIVERS: openvswitch,nuage_hwvtep,nuage_sriov,testsriov
         Q_ML2_PLUGIN_EXT_DRIVERS: nuage_subnet,port_security,nuage_network
         Q_USE_PROVIDERNET_FOR_PUBLIC: True
         PUBLIC_BRIDGE: br-ex
