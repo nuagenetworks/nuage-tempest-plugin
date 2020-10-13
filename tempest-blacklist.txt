@@ -125,7 +125,7 @@ neutron_tempest_plugin\.scenario\.test_ipv6\.IPv6Test.test_ipv6_hotplug_slaac
 # Nuage does not support stateful ICMP rules. And will always make ICMP
 # rules for both direction
 # OPENSTACK-2918
-neutron_tempest_plugin\.scenario\.test_scenario_security_groups\.NetworkSecGroupTest\.test_intra_sg_isolation
+neutron_tempest_plugin\.scenario\.test_security_groups\.NetworkSecGroupTest\.test_intra_sg_isolation
 
 # QOS needs some modifications to run in scenario
 neutron_tempest_plugin.scenario.test_qos.QoSTest
