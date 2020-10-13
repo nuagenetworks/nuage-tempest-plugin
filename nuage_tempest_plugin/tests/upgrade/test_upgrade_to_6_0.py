@@ -384,12 +384,12 @@ class UpgradeOsMgdResourcesMixin(UpgradeResourcesMixin):
         self.parent.assertIsNotNone(ingress_adv_fwd_temp)
 
     def _verify_acl_template_entries(self, network_id):
-        ingress_acl_entries = self._vsd.get_ingress_acl_entries(
+        ingress_acl_entries = self._vsd.get_ingress_template_acl_entries(
             vspk_filter='externalID == "{}"'.format(
                 self._get_external_id(network_id)))[0]
         self.parent.assertNotEmpty(ingress_acl_entries)
 
-        egress_acl_entries = self._vsd.get_egress_acl_entries(
+        egress_acl_entries = self._vsd.get_egress_template_acl_entries(
             vspk_filter='externalID == "{}"'.format(
                 self._get_external_id(network_id)))[0]
         self.parent.assertNotEmpty(egress_acl_entries)

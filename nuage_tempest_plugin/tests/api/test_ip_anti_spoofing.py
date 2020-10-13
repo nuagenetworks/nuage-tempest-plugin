@@ -406,28 +406,34 @@ class IpAntiSpoofingTestBase(nuage_test.NuageAdminNetworksTest):
         # Check the two ingress and egress rules
         self._verify_ingress_egress_rules(vsd_port_pg)
 
-    def _verify_ingress_egress_rules(self, vsd_pg, in_rule=None, eg_rule=None):
+    def _verify_ingress_egress_rules(self, vsd_pg):
         # Method to verify the ingress and egress rules created for ports with
         # port-security-enabled set to False
 
-        if in_rule is None:
-            in_rule = self.vsd.get_ingress_acl_entry(
-                vspk_filter='locationID == "{}"'.format(vsd_pg.id))
-        if eg_rule is None:
-            eg_rule = self.vsd.get_egress_acl_entry(
-                vspk_filter='locationID == "{}"'.format(vsd_pg.id))
+        in_rules = self.vsd.get_ingress_acl_entries(
+            vspk_filter='locationID == "{}"'.format(vsd_pg.id))
+        eg_rules = self.vsd.get_egress_acl_entries(
+            vspk_filter='locationID == "{}"'.format(vsd_pg.id))
 
-        self.assertIsNotNone(in_rule, "in_rule must not be None")
+        self.assertEqual(2, len(in_rules),
+                         "Nr of ingress rules unexpected: {},"
+                         " expected: 2".format(len(in_rules)))
+        self.assertEqual(2, len(eg_rules),
+                         "Nr of egress rules unexpected: {},"
+                         " expected: 2".format(len(eg_rules)))
 
-        self.assertEqual(in_rule.network_type, 'ANY')
-        self.assertEqual(in_rule.location_type, 'POLICYGROUP')
-        self.assertEqual(in_rule.location_id, vsd_pg.id)
+        in_ether_types = {rule.ether_type for rule in in_rules}
+        self.assertIn(n_constants.PROTO_NAME_TO_NUM['IPv4'], in_ether_types)
+        self.assertIn(n_constants.PROTO_NAME_TO_NUM['IPv6'], in_ether_types)
+        eg_ether_types = {rule.ether_type for rule in eg_rules}
+        self.assertIn(n_constants.PROTO_NAME_TO_NUM['IPv4'], eg_ether_types)
+        self.assertIn(n_constants.PROTO_NAME_TO_NUM['IPv6'], eg_ether_types)
 
-        self.assertIsNotNone(eg_rule, "eg_rule must not be None")
-
-        self.assertEqual(eg_rule.network_type, 'ANY')
-        self.assertEqual(eg_rule.location_type, 'POLICYGROUP')
-        self.assertEqual(eg_rule.location_id, vsd_pg.id)
+        for rule in in_rules + eg_rules:
+            self.assertEqual('ANY', rule.network_type)
+            self.assertEqual('POLICYGROUP', rule.location_type)
+            self.assertEqual(vsd_pg.id, rule.location_id)
+            self.assertEqual('FORWARD', rule.action)
 
 
 class IpAntiSpoofingTest(IpAntiSpoofingTestBase):

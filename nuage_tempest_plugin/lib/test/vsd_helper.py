@@ -954,28 +954,28 @@ class VsdHelper(object):
 
         return vm_interface.dhcp_options.get() if vm_interface else []
 
-    def get_ingress_acl_entry(self, vspk_filter):
-        """get_ingress_acl_entry
+    def get_ingress_acl_entries(self, vspk_filter):
+        """get_ingress_acl_entries
 
         @params: ingress acl entry filter following vspk filter structure
-        @return: ingress acl entry object
+        @return: ingress acl entry object list
         @Example:
         self.vsd.get_ingress_acl_entry(
             filter='externalID == "{}"'.format(ext_id))
         """
-        return self.session().user.ingress_acl_entry_templates.get_first(
+        return self.session().user.ingress_acl_entry_templates.get(
             filter=vspk_filter)
 
-    def get_egress_acl_entry(self, vspk_filter):
+    def get_egress_acl_entries(self, vspk_filter):
         """get_egress_acl_entry
 
         @params: egress acl entry filter following vspk filter structure
-        @return: egress acl entry object
+        @return: egress acl entry object list
         @Example:
         self.vsd.get_egress_acl_entry(
             filter='externalID == "{}"'.format(ext_id))
         """
-        return self.session().user.egress_acl_entry_templates.get_first(
+        return self.session().user.egress_acl_entry_templates.get(
             filter=vspk_filter)
 
     def get_floating_ip(self, vspk_filter):
@@ -998,12 +998,12 @@ class VsdHelper(object):
 
         return domain.create_child(floating_ip_data)[0]
 
-    def get_ingress_acl_entries(self, vspk_filter):
-        """get_ingress_acl_entries
+    def get_ingress_acl_template_entries(self, vspk_filter):
+        """get_ingress_acl_template_entries
 
-        @params: ingress acl entries (templates) filter following
+        @params: ingress template filter following
                  vspk filter structure
-        @return: ingress acl entries (objects) list
+        @return: ingress acl entries (objects) list under found template
         @Example:
         self.vsd.get_ingress_acl_entries(
             filter='externalID == "{}"'.format(ext_id))
@@ -1018,12 +1018,12 @@ class VsdHelper(object):
 
         return acls
 
-    def get_egress_acl_entries(self, vspk_filter):
-        """get_egress_acl_entries
+    def get_egress_acl_template_entries(self, vspk_filter):
+        """get_egress_acl_template_entries
 
-        @params: egress acl entries (templates) filter following
+        @params: egress template filter following
                  vspk filter structure
-        @return: egress acl entries (objects) list
+        @return: egress acl entries (objects) list under found template
         @Example:
         self.vsd.get_egress_acl_entries(
             filter='externalID == "{}"'.format(ext_id))
