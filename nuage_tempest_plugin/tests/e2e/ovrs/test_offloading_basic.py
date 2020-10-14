@@ -26,7 +26,7 @@ LOG = Topology.get_logger(__name__)
 load_tests = testscenarios.load_tests_apply_scenarios
 
 
-class BasicOffloadingTest(E2eTestBase):
+class BasicOffloadingL3Test(E2eTestBase):
     """Basic offloading tests
 
     Check the following behavior:
@@ -42,9 +42,6 @@ class BasicOffloadingTest(E2eTestBase):
     """
     # Test scenarios, generate tests for product of these lists
     scenarios = testscenarios.scenarios.multiply_scenarios([
-        ('L3', {'is_l3': True}),
-        ('L2', {'is_l3': False})
-    ], [
         ('IPv4', {'ip_versions': E2eTestBase.IP_VERSIONS_V4}),
         ('IPv6', {'ip_versions': E2eTestBase.IP_VERSIONS_V6}),
         ('Dualstack', {'ip_versions': E2eTestBase.IP_VERSIONS_DUALSTACK})
@@ -54,6 +51,7 @@ class BasicOffloadingTest(E2eTestBase):
     ])
 
     # Variables for test generation
+    is_l3 = True
 
     # list of tuples [(network, gateway_mac)], the first network will contain
     # the src port for traffic generation, the second one contains the
@@ -66,7 +64,7 @@ class BasicOffloadingTest(E2eTestBase):
 
     @classmethod
     def setUpClass(cls):
-        super(BasicOffloadingTest, cls).setUpClass()
+        super(BasicOffloadingL3Test, cls).setUpClass()
         hypervisors = cls.get_hypervisors('ovrs')
         cls.selected_hypervisors = random.sample(hypervisors,
                                                  min(2, len(hypervisors)))
@@ -74,7 +72,7 @@ class BasicOffloadingTest(E2eTestBase):
     @classmethod
     def skip_checks(cls):
         """Raise skip exception if needed"""
-        super(BasicOffloadingTest, cls).skip_checks()
+        super(BasicOffloadingL3Test, cls).skip_checks()
         if not Topology.has_default_switchdev_port_profile():
             raise cls.skipException('Test requires the created ports to be '
                                     'offload-capable by default')
@@ -258,4 +256,8 @@ class BasicOffloadingTest(E2eTestBase):
             destination_network=self.default_port_args[1]['network'])
 
     def test_same_hv_virtio_virtio(self):
-        super(BasicOffloadingTest, self)._test_same_hv_virtio_virtio()
+        super(BasicOffloadingL3Test, self)._test_same_hv_virtio_virtio()
+
+
+class BasicOffloadingL2Test(BasicOffloadingL3Test):
+    is_l3 = False
