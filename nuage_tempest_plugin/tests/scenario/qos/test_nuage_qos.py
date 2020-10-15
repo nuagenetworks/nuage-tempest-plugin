@@ -125,6 +125,8 @@ class RateLimitingNuageQosScenarioTest(test_qos.QoSTest,
 
     DOWNLOAD_DURATION = 10
     CHECK_TIMEOUT = DOWNLOAD_DURATION * 10
+    FILE_SIZE = 1024 * 1024 * 2
+    COUNT = 4096
 
     @testtools.skip("Ingress QOS currently not supported")
     def test_qos_basic_and_update_ingress(self):
