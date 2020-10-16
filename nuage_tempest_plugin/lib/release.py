@@ -8,6 +8,10 @@ class Release(object):
                                r'((\d+(\.(?=\d))?){2,})?[\D]*'
                                r'((\d+(\.(?=\d))?)*)$')
 
+    # TODO(DEV TEAM) -- ADAPT FOR EACH NEW 0.0 RELEASE!
+    # we want to make sure that Release('20.10') == Release('0.0') yields true
+    current_0_0_release = '20.10'
+
     def __init__(self, release_string):
         self._parse_release(release_string)
 
@@ -20,8 +24,9 @@ class Release(object):
             self._openstack_release = '{'  # first character after 'z' in ascii
         else:
             self._openstack_release = self.openstack_release
-        self.major_release = parsed.group(2) or '0.0'
-        self.labelled = "R" in release.upper()
+        self.major_release = self.normalize_major_release(
+            parsed.group(2) or '0.0')
+        self.labelled = 'R' in release.upper()
         self.sub_release = parsed.group(5) or ''
         self.major_list = [int(rel) for rel in self.major_release.split('.')]
         self.sub_list = [int(rel) for rel in self.sub_release.split('.')
@@ -70,11 +75,6 @@ class Release(object):
                 return True
             return False
 
-        if self.major_release == '0.0' and other.major_release != '0.0':
-            return False
-        if other.major_release == '0.0':
-            return True
-
         if other.major_list and self.major_list:
             comparison = cmp(other.major_list, self.major_list)
             if comparison == 0:
@@ -93,17 +93,21 @@ class Release(object):
         else:
             sub = '-'
 
-        return ("%s %s%s" % (self.openstack_release or "",
-                             self.major_release or "",
+        return ('%s %s%s' % (self.openstack_release or '',
+                             self.major_release or '',
                              (sub + str(self.sub_release))
-                             if self.sub_release != '' else "")
+                             if self.sub_release != '' else '')
                 ).strip()
 
     def __repr__(self):
         return self.__str__()
 
     def nuage_part(self):
-        return ("%s%s" % (self.major_release or "",
+        return ('%s%s' % (self.major_release or '',
                           (str(self.sub_release))
-                          if self.sub_release != '' else "")
+                          if self.sub_release != '' else '')
                 ).strip()
+
+    @classmethod
+    def normalize_major_release(cls, rel):
+        return cls.current_0_0_release if rel == '0.0' else rel
