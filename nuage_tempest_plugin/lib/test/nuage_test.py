@@ -136,7 +136,6 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
     nuage_aggregate_flows = 'off'
     default_prepare_for_connectivity = False
     enable_aggregate_flows_on_vsd_managed = False
-    ssh_security_group = None
 
     @classmethod
     def setup_clients(cls):
@@ -960,22 +959,15 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             pass
 
     def create_open_ssh_security_group(self, sg_name=None, manager=None,
-                                       stateful=True, no_cache=False,
-                                       cleanup=True):
+                                       stateful=True, cleanup=True):
         manager = manager or self.manager
-        if not self.ssh_security_group or no_cache:
-            sg = self._create_security_group(
-                namestart=sg_name or 'tempest-open-ssh',
-                security_group_rules_client=(
-                    manager.security_group_rules_client),
-                security_groups_client=manager.security_groups_client,
-                stateful=stateful,
-                cleanup=cleanup)
-            if no_cache:
-                return sg
-            else:
-                self.ssh_security_group = sg
-        return self.ssh_security_group
+        return self._create_security_group(
+            namestart=sg_name or 'tempest-open-ssh',
+            security_group_rules_client=(
+                manager.security_group_rules_client),
+            security_groups_client=manager.security_groups_client,
+            stateful=stateful,
+            cleanup=cleanup)
 
     def create_security_group_rule(self, security_group=None, manager=None,
                                    **kwargs):

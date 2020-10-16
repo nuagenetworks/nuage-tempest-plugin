@@ -86,7 +86,7 @@ class DualstackOsMgdConnectivityTest(DualstackOsMgdConnectivityTestBase):
             prepare_for_connectivity=True)
 
         # create a new open-ssh security group
-        dedicated_ssh_sg = self.create_open_ssh_security_group(no_cache=True)
+        dedicated_ssh_sg = self.create_open_ssh_security_group()
 
         # delete all v6 rules from the SG prior to creating server 3 with it
         sg = self.get_security_group(dedicated_ssh_sg['id'])
