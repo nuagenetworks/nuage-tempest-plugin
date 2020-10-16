@@ -43,6 +43,9 @@ def retry_flow_capture(func):
 
 
 class E2eTestBase(NuageBaseTest):
+
+    """Base test class for end-to-end tests"""
+
     # defaults
     IP_VERSIONS_V4 = (4,)
     IP_VERSIONS_V6 = (6,)
@@ -55,7 +58,7 @@ class E2eTestBase(NuageBaseTest):
     default_port_args = None  # Arguments for create_port (first VM, second VM)
     virtio_port_args = None  # Arguments for create_port VIRTIO (first, second)
 
-    """Base test class for end-to-end tests"""
+    hypervisors = None
 
     @classmethod
     def setup_clients(cls):
@@ -133,6 +136,9 @@ class E2eTestBase(NuageBaseTest):
 
     @classmethod
     def get_hypervisors(cls, aggregate_instance_extra_specs_flavor=''):
+        if cls.hypervisors is not None:
+            return cls.hypervisors
+
         hvs = cls.hv_client.list_hypervisors(detail=True)['hypervisors']
         if (CONF.nuage_sut.identify_hypervisors_by_flavor and
                 aggregate_instance_extra_specs_flavor):
@@ -140,11 +146,28 @@ class E2eTestBase(NuageBaseTest):
             my_aggregate = next(
                 (a for a in aggregates if a['metadata'].get('flavor') ==
                  aggregate_instance_extra_specs_flavor), None)
-            hvs = [hv for hv in hvs if hv['hypervisor_hostname'] in
-                   my_aggregate['hosts']] if my_aggregate else []
+            hvs = ([hv for hv in hvs if hv['hypervisor_hostname'] in
+                    my_aggregate['hosts']] if my_aggregate else [])
         else:
             hvs = [hv for hv in hvs if hv['status'] == 'enabled']
-        return hvs
+        for hv in hvs:
+            LOG.info('get_hypervisors: {} -> {}'.format(
+                hv['hypervisor_hostname'], hv['host_ip']))
+
+        # hypervisors ip's override
+        override = CONF.nuage_sut.hypervisors_connectivity_override
+        if override:
+            LOG.info('get_hypervisors: override with {}'.format(override))
+            for hv in hvs:
+                hv_name = hv['hypervisor_hostname']
+                override_ip = override.get(hv_name)
+                if override_ip:
+                    hv['host_ip'] = override_ip
+                    LOG.info('get_hypervisors: override {} -> {}'.format(
+                        hv_name, override_ip))
+
+        cls.hypervisors = hvs
+        return cls.hypervisors
 
     @classmethod
     def get_hypervisor(cls, server):
