@@ -66,7 +66,7 @@ class NuageFloatingIPProprietaryQosTest(
             self.fip['id'])['floatingip']
         self.assertEqual(self.port['id'], fip['port_id'])
 
-        if hasattr(self, 'FILE_SIZE'):
+        if hasattr(self, '_create_file_for_bw_tests'):
             # Queens & Rocky: create file
             self._create_file_for_bw_tests(ssh_client)
         # Check bw not limited
@@ -157,7 +157,7 @@ class RateLimitingNuageQosScenarioTest(test_qos.QoSTest,
         self.os_admin.network_client.update_network(
             self.network['id'], qos_policy_id=bw_limit_policy_id)
 
-        if hasattr(self, 'FILE_SIZE'):
+        if hasattr(self, '_create_file_for_bw_tests'):
             # Queens & Rocky: create file
             self._create_file_for_bw_tests(ssh_client)
 
@@ -226,6 +226,89 @@ class RateLimitingNuageQosScenarioTest(test_qos.QoSTest,
             expected_bw=test_qos.QoSTestMixin.LIMIT_BYTES_SEC * 3),
             timeout=self.FILE_DOWNLOAD_TIMEOUT,
             sleep=1)
+
+    def test_nuage_qos_fip_rate_limiting(self):
+        """test_nuage_qos_fip_rate_limiting
+
+        Test bandwidth when attaching both network/vport rate limiting and
+        fip rate limiting to an instance.
+
+        """
+        KbPS_NETWORK = 1000
+        KbPS_FIP = 500
+        KbPS_PORT = 200
+
+        self._test_basic_resources()
+        ssh_client = self._create_ssh_client()
+
+        # Create QoS policy
+        bw_limit_policy_id = self._create_qos_policy()
+
+        # As admin user create QoS rule
+        self.os_admin.network_client.create_bandwidth_limit_rule(
+            policy_id=bw_limit_policy_id,
+            max_kbps=KbPS_NETWORK,
+            max_burst_kbps=KbPS_NETWORK)
+
+        # Associate QoS to the network
+        self.os_admin.network_client.update_network(
+            self.network['id'], qos_policy_id=bw_limit_policy_id)
+
+        fip = self.os_admin.network_client.get_floatingip(
+            self.fip['id'])['floatingip']
+        self.assertEqual(self.port['id'], fip['port_id'])
+
+        if hasattr(self, '_create_file_for_bw_tests'):
+            # Queens & Rocky: create file
+            self._create_file_for_bw_tests(ssh_client)
+        # Check bw limited at network policy level
+        network_bw = KbPS_NETWORK * 1024 * self.TOLERANCE_FACTOR / 8
+        common_utils.wait_until_true(
+            lambda: self._check_bw(ssh_client, self.fip['floating_ip_address'],
+                                   port=self.NC_PORT, expected_bw=network_bw),
+            timeout=240)
+
+        self.os_admin.network_client.update_floatingip(
+            self.fip['id'],
+            nuage_egress_fip_rate_kbps=KbPS_FIP)
+        fip_bw = KbPS_FIP * 1024 * self.TOLERANCE_FACTOR / 8.0
+        common_utils.wait_until_true(
+            lambda: self._check_bw(
+                ssh_client, self.fip['floating_ip_address'],
+                port=self.NC_PORT, expected_bw=fip_bw),
+            timeout=120, sleep=1)
+
+        # Create a new QoS policy
+        bw_limit_policy_id_new = self._create_qos_policy()
+
+        # As admin user create a new QoS rule
+        self.os_admin.network_client.create_bandwidth_limit_rule(
+            policy_id=bw_limit_policy_id_new,
+            max_kbps=KbPS_PORT,
+            max_burst_kbps=KbPS_PORT)
+
+        # Associate a new QoS policy to Neutron port
+        self.os_admin.network_client.update_port(
+            self.port['id'], qos_policy_id=bw_limit_policy_id_new)
+
+        port_bw = KbPS_PORT * 1024 * self.TOLERANCE_FACTOR / 8
+        common_utils.wait_until_true(
+            lambda: self._check_bw(
+                ssh_client, self.fip['floating_ip_address'],
+                port=self.NC_PORT, expected_bw=port_bw),
+            timeout=120, sleep=1)
+
+        # Delete network and port qos, expect fip QOS still active
+        self.os_admin.network_client.update_port(
+            self.port['id'], qos_policy_id=None)
+        self.os_admin.network_client.update_network(
+            self.network['id'], qos_policy_id=None)
+
+        common_utils.wait_until_true(
+            lambda: self._check_bw(
+                ssh_client, self.fip['floating_ip_address'],
+                port=self.NC_PORT, expected_bw=fip_bw),
+            timeout=120, sleep=1)
 
 
 class QoSDscpTest(test_qos.QoSTestMixin, neutron_base.BaseTempestTestCase):
