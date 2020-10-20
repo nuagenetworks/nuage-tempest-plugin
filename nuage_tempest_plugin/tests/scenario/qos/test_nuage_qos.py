@@ -12,7 +12,6 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-import sys
 import testtools
 import time
 
@@ -28,7 +27,6 @@ from tempest.common import utils
 from tempest.lib import decorators
 from tempest.lib import exceptions
 
-from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.tests.scenario.qos import base_nuage_qos
 
 CONF = config.CONF
@@ -48,8 +46,6 @@ class NuageFloatingIPProprietaryQosTest(
     def resource_setup(cls):
         super(NuageFloatingIPProprietaryQosTest, cls).resource_setup()
 
-    @testtools.skipIf(Topology.before_nuage('20.10'),
-                      'VRS-47436')
     def test_qos(self):
         """Test floating IP is binding to a QoS policy with
 
@@ -69,37 +65,30 @@ class NuageFloatingIPProprietaryQosTest(
         if hasattr(self, 'FILE_SIZE'):
             # Queens & Rocky: create file
             self._create_file_for_bw_tests(ssh_client)
-        # Check bw not limited
-        unlimited_bw = sys.maxsize
-        common_utils.wait_until_true(
-            lambda: self._check_bw(ssh_client,
-                                   self.fip['floating_ip_address'],
-                                   port=self.NC_PORT,
-                                   expected_bw=unlimited_bw),
-            timeout=240)
 
         self.os_admin.network_client.update_floatingip(
             self.fip['id'],
             nuage_egress_fip_rate_kbps=500,
             nuage_ingress_fip_rate_kbps=1000)
         expected_egress_bw = 500 * 1024 * self.TOLERANCE_FACTOR / 8.0
-        expected_ingress_bw = 1000 * 1024 * self.TOLERANCE_FACTOR / 8.0
+        # expected_ingress_bw = 1000 * 1024 * self.TOLERANCE_FACTOR / 8.0
         common_utils.wait_until_true(
             lambda: self._check_bw(
-                ssh_client,
-                self.fip['floating_ip_address'],
-                port=self.NC_PORT,
-                expected_bw=expected_egress_bw),
-            timeout=120,
-            sleep=1)
-        common_utils.wait_until_true(
-            lambda: self._check_bw_ingress(
-                ssh_client,
-                self.fip['floating_ip_address'],
-                port=self.NC_PORT + 1,
-                expected_bw=expected_ingress_bw),
-            timeout=120,
-            sleep=1)
+                ssh_client, self.fip['floating_ip_address'],
+                port=self.NC_PORT, expected_bw=expected_egress_bw),
+            timeout=120, sleep=1,
+            exception=common_utils.WaitTimeout("Timed out waiting for traffic "
+                                               "to be limited in egress "
+                                               "direction"))
+        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
+        # common_utils.wait_until_true(
+        #     lambda: self._check_bw_ingress(
+        #         ssh_client, self.fip['floating_ip_address'],
+        #         port=self.NC_PORT + 1, expected_bw=expected_ingress_bw),
+        #     timeout=120, sleep=1,
+        #   exception=common_utils.WaitTimeout("Timed out waiting for traffic"
+        #                                      "to be limited in ingress "
+        #                                      "direction")))
 
         # Update floating ip QOS to new value
         self.os_admin.network_client.update_floatingip(
@@ -108,23 +97,25 @@ class NuageFloatingIPProprietaryQosTest(
             nuage_ingress_fip_rate_kbps=400)
 
         expected_egress_bw = 200 * 1024 * self.TOLERANCE_FACTOR / 8.0
-        expected_ingress_bw = 400 * 1024 * self.TOLERANCE_FACTOR / 8.0
+        # expected_ingress_bw = 400 * 1024 * self.TOLERANCE_FACTOR / 8.0
         common_utils.wait_until_true(
             lambda: self._check_bw(
-                ssh_client,
-                self.fip['floating_ip_address'],
-                port=self.NC_PORT,
-                expected_bw=expected_egress_bw),
-            timeout=120,
-            sleep=1)
-        common_utils.wait_until_true(
-            lambda: self._check_bw_ingress(
-                ssh_client,
-                self.fip['floating_ip_address'],
-                port=self.NC_PORT + 1,
-                expected_bw=expected_ingress_bw),
-            timeout=120,
-            sleep=1)
+                ssh_client, self.fip['floating_ip_address'],
+                port=self.NC_PORT, expected_bw=expected_egress_bw),
+            timeout=120, sleep=1,
+            exception=common_utils.WaitTimeout("Timed out waiting for traffic "
+                                               "to be limited in egress "
+                                               "direction after fip rate limit"
+                                               " update"))
+        # common_utils.wait_until_true(
+        #     lambda: self._check_bw_ingress(
+        #         ssh_client, self.fip['floating_ip_address'],
+        #         port=self.NC_PORT + 1, expected_bw=expected_ingress_bw),
+        #     timeout=120, sleep=1,
+        #  exception=common_utils.WaitTimeout("Timed out waiting for traffic"
+        #                                     "to be limited in ingress "
+        #                                     "direction after fip rate
+        #                                     "limit update"))
 
 
 class RateLimitingNuageQosScenarioTest(test_qos.QoSTest,
@@ -157,7 +148,7 @@ class RateLimitingNuageQosScenarioTest(test_qos.QoSTest,
         self.os_admin.network_client.update_network(
             self.network['id'], qos_policy_id=bw_limit_policy_id)
 
-        if hasattr(self, 'FILE_SIZE'):
+        if hasattr(self, '_create_file_for_bw_tests'):
             # Queens & Rocky: create file
             self._create_file_for_bw_tests(ssh_client)
 
