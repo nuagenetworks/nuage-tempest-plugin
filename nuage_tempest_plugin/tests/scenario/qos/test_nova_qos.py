@@ -108,7 +108,7 @@ class NuageNovaQosTest(base_nuage_qos.NuageQoSTestMixin,
         """
         self._test_basic_resources()
         ssh_client = self._create_ssh_client()
-        if hasattr(self, 'FILE_SIZE'):
+        if hasattr(self, '_create_file_for_bw_tests'):
             # Queens & Rocky: create file
             self._create_file_for_bw_tests(ssh_client)
 
@@ -116,20 +116,21 @@ class NuageNovaQosTest(base_nuage_qos.NuageQoSTestMixin,
         # Check bw limited
         common_utils.wait_until_true(
             lambda: self._check_bw(
-                ssh_client,
-                self.fip['floating_ip_address'],
-                port=self.NC_PORT,
-                expected_bw=limit_bytes_sec),
-            timeout=200,
-            sleep=1)
+                ssh_client, self.fip['floating_ip_address'],
+                port=self.NC_PORT, expected_bw=limit_bytes_sec),
+            timeout=120, sleep=1,
+            exception=common_utils.WaitTimeout("Timed out waiting for traffic "
+                                               "to be limited in egress "
+                                               "direction before migration"))
         common_utils.wait_until_true(
             lambda: self._check_bw_ingress(
-                ssh_client,
-                self.fip['floating_ip_address'],
-                port=self.NC_PORT + 1,
-                expected_bw=limit_bytes_sec),
-            timeout=200,
-            sleep=1)
+                ssh_client, self.fip['floating_ip_address'],
+                port=self.NC_PORT + 1, expected_bw=limit_bytes_sec),
+            timeout=120, sleep=1,
+            exception=common_utils.WaitTimeout("Timed out waiting for traffic "
+                                               "to be limited in ingress "
+                                               "direction before migration"))
+
         # Migrate
         original_host = self.os_primary.servers_client.show_server(
             self.server['server']['id'])['server']['hostId']
@@ -146,20 +147,20 @@ class NuageNovaQosTest(base_nuage_qos.NuageQoSTestMixin,
         # Check bw limited
         common_utils.wait_until_true(
             lambda: self._check_bw(
-                ssh_client,
-                self.fip['floating_ip_address'],
-                port=self.NC_PORT,
-                expected_bw=limit_bytes_sec),
-            timeout=200,
-            sleep=1)
+                ssh_client, self.fip['floating_ip_address'],
+                port=self.NC_PORT, expected_bw=limit_bytes_sec),
+            timeout=120, sleep=1,
+            exception=common_utils.WaitTimeout("Timed out waiting for traffic "
+                                               "to be limited in egress "
+                                               "direction after migration"))
         common_utils.wait_until_true(
             lambda: self._check_bw_ingress(
-                ssh_client,
-                self.fip['floating_ip_address'],
-                port=self.NC_PORT + 1,
-                expected_bw=limit_bytes_sec),
-            timeout=200,
-            sleep=1)
+                ssh_client, self.fip['floating_ip_address'],
+                port=self.NC_PORT + 1, expected_bw=limit_bytes_sec),
+            timeout=120, sleep=1,
+            exception=common_utils.WaitTimeout("Timed out waiting for traffic "
+                                               "to be limited in ingress "
+                                               "direction after migration"))
 
     @testtools.skip('Nova QOS testplan under development')
     def test_nova_qos_fip_rate_limiting(self):
