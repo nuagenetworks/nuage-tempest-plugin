@@ -129,3 +129,6 @@ neutron_tempest_plugin\.scenario\.test_security_groups\.NetworkSecGroupTest\.tes
 
 # QOS needs some modifications to run in scenario
 neutron_tempest_plugin.scenario.test_qos.QoSTest
+
+# Old test which tries to access deprecated os-floating-ips API
+tempest.scenario.test_minimum_basic.TestMinimumBasicScenario.test_minimum_basic_scenario
