@@ -90,12 +90,12 @@ class E2eTestBase(NuageBaseTest):
             manager=self.admin_manager)
 
         for ip_version in self.ip_versions:
-            self.create_tcp_rule(sg, direction='ingress',
-                                 ip_version=ip_version,
-                                 manager=self.admin_manager)
-            self.create_tcp_rule(sg, direction='egress',
-                                 ip_version=ip_version,
-                                 manager=self.admin_manager)
+            self.create_traffic_sg_rule(sg, direction='ingress',
+                                        ip_version=ip_version,
+                                        manager=self.admin_manager)
+            self.create_traffic_sg_rule(sg, direction='egress',
+                                        ip_version=ip_version,
+                                        manager=self.admin_manager)
 
         self.default_port_args = [dict(network=network[0],
                                        manager=self.admin_manager,

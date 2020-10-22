@@ -383,18 +383,18 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                                      destination_port=80,
                                      ip_version=ip_version,
                                      network_name=network['name'])
-        self.create_tcp_rule(client_sg,
-                             direction='egress',
-                             ip_version=ip_version)
+        self.create_traffic_sg_rule(client_sg,
+                                    direction='egress',
+                                    ip_version=ip_version)
         self.assert_tcp_connectivity(client_server, web_server,
                                      is_connectivity_expected=False,
                                      source_port=None,
                                      destination_port=80,
                                      ip_version=ip_version,
                                      network_name=network['name'])
-        self.create_tcp_rule(web_server_sg,
-                             direction='ingress',
-                             ip_version=ip_version)
+        self.create_traffic_sg_rule(web_server_sg,
+                                    direction='ingress',
+                                    ip_version=ip_version)
         self.assert_tcp_connectivity(client_server, web_server,
                                      is_connectivity_expected=True,
                                      source_port=None,
@@ -992,16 +992,17 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         except lib_exc.NotFound:
             pass
 
-    def create_tcp_rule(self, sec_grp, direction, ip_version, manager=None):
+    def create_traffic_sg_rule(self, sec_grp, direction, ip_version,
+                               dest_port=80, protocol='tcp', manager=None):
         if direction == 'egress':
             port_range_min = 1
             port_range_max = 65535
         else:
-            port_range_min = 80
-            port_range_max = 80
+            port_range_min = dest_port
+            port_range_max = dest_port
         ruleset = {
             # for web server
-            'protocol': 'tcp',
+            'protocol': protocol,
             'port_range_min': port_range_min,
             'port_range_max': port_range_max,
             'direction': direction,
