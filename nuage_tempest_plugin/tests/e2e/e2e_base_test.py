@@ -58,7 +58,7 @@ class E2eTestBase(NuageBaseTest):
     default_port_args = None  # Arguments for create_port (first VM, second VM)
     virtio_port_args = None  # Arguments for create_port VIRTIO (first, second)
 
-    hypervisors = None
+    hypervisors = {}
 
     @classmethod
     def setup_clients(cls):
@@ -69,7 +69,6 @@ class E2eTestBase(NuageBaseTest):
     @classmethod
     def setUpClass(cls):
         super(E2eTestBase, cls).setUpClass()
-        cls.hypervisors = cls.get_hypervisors()
 
     def setUp(self):
         """Setup test topology"""
@@ -136,8 +135,9 @@ class E2eTestBase(NuageBaseTest):
 
     @classmethod
     def get_hypervisors(cls, aggregate_instance_extra_specs_flavor=''):
-        if cls.hypervisors is not None:
-            return cls.hypervisors
+        cached = cls.hypervisors.get(aggregate_instance_extra_specs_flavor)
+        if cached is not None:
+            return cached
 
         hvs = cls.hv_client.list_hypervisors(detail=True)['hypervisors']
         if (CONF.nuage_sut.identify_hypervisors_by_flavor and
@@ -166,14 +166,14 @@ class E2eTestBase(NuageBaseTest):
                     LOG.info('get_hypervisors: override {} -> {}'.format(
                         hv_name, override_ip))
 
-        cls.hypervisors = hvs
-        return cls.hypervisors
+        cls.hypervisors[aggregate_instance_extra_specs_flavor] = hvs
+        return hvs
 
     @classmethod
     def get_hypervisor(cls, server):
         server = server.get_server_details()
         return next(
-            hv for hv in cls.hypervisors
+            hv for hv in cls.get_hypervisors()
             if (hv['hypervisor_hostname'] ==
                 server['OS-EXT-SRV-ATTR:hypervisor_hostname']))
 
