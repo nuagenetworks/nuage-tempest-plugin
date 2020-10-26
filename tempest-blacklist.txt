@@ -130,5 +130,11 @@ neutron_tempest_plugin\.scenario\.test_security_groups\.NetworkSecGroupTest\.tes
 # QOS needs some modifications to run in scenario
 neutron_tempest_plugin.scenario.test_qos.QoSTest
 
+# Nuage doesn't support attaching subnet to multiple routers
+neutron_tempest_plugin\.api\.test_routers_negative\.RoutersNegativePolicyTest\.test_add_interface_in_use
+
+# Test is expecting VM to have fe80::a9fe:a9fe IPv6 link-local address
+neutron_tempest_plugin\.scenario\.test_metadata\.MetadataTest\.test_metadata_routed
+
 # Old test which tries to access deprecated os-floating-ips API
 tempest.scenario.test_minimum_basic.TestMinimumBasicScenario.test_minimum_basic_scenario
