@@ -204,7 +204,7 @@
     branches: ^(stable/rocky)
     nodeset: openstack-single-node-centos7
     vars:
-      vsp_release: "{{ zuul.branch.split('/')[0] if 'stable' not in zuul.branch else '0.0' }}"
+      vsp_release: "{{ zuul.branch.split('/')[0] if 'stable' not in zuul.branch else '20.10' }}"
       devstack_localrc:
         USE_PYTHON3: false
         Q_ML2_PLUGIN_EXT_DRIVERS: nuage_subnet,nuage_port,port_security,nuage_network,qos
@@ -237,7 +237,7 @@
     branches: ^(stable)/(stein|train)
     nodeset: openstack-single-node-centos7
     vars:
-      vsp_release: "{{ zuul.branch.split('/')[0] if 'stable' not in zuul.branch else '0.0' }}"
+      vsp_release: "{{ zuul.branch.split('/')[0] if 'stable' not in zuul.branch else '20.10' }}"
       devstack_localrc:
         # INF-7814 nuage-metadata-agent runs under py2 and
         # misses dependencies to python-keystoneclient
