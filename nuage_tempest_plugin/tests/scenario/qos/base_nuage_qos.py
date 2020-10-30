@@ -15,147 +15,147 @@
 import socket
 import time
 
-from neutron_lib import constants as neutron_lib_constants
-from neutron_tempest_plugin.common import ssh
 from neutron_tempest_plugin import config
-from neutron_tempest_plugin.scenario import constants
-from neutron_tempest_plugin.scenario import test_qos
 from oslo_log import log
-from tempest.lib import exceptions as tempest_exc
+from tempest.lib.common.utils import data_utils
 
 LOG = log.getLogger(__name__)
 
 CONF = config.CONF
 
 
-class NuageQoSTestMixin(test_qos.QoSTestMixin):
+class NuageQosTestmixin(object):
+    """NuageQosTestmixin
 
-    WRITE_SIZE = 1024 * 1024 * 2
+    Provides all common methods to develop QOS scenario tests
 
-    def _test_basic_resources(self):
-        self.setup_network_and_server()
-        self.check_connectivity(self.fip['floating_ip_address'],
-                                CONF.validation.image_ssh_user,
-                                self.keypair['private_key'])
-        rulesets = [{'protocol': 'tcp',
-                     'direction': 'ingress',
-                     'port_range_min': self.NC_PORT,
-                     'port_range_max': self.NC_PORT + 1,
-                     'remote_ip_prefix': '0.0.0.0/0'}]
-        self.create_secgroup_rules(rulesets,
-                                   self.security_groups[-1]['id'])
+    """
+    DOWNLOAD_DURATION = 10
+    BUFFER_SIZE = 512  # Bytes
+    TOLERANCE_FACTOR = 0.20  # within 20 % of expected bw
+    DEST_PORT = 1789
 
-    def check_connectivity(self, host, ssh_user, ssh_key,
-                           servers=None, ssh_timeout=None):
-        # Set MTU on cirros VM for QOS
-        ssh_client = ssh.Client(host, ssh_user,
-                                pkey=ssh_key, timeout=ssh_timeout)
-        try:
-            ssh_client.test_connection_auth()
-            ssh_client.exec_command("set -eu -o pipefail; PATH=$PATH:/sbin; "
-                                    "sudo ip link set dev eth0 mtu 1400")
-        except tempest_exc.SSHTimeout as ssh_e:
-            LOG.debug(ssh_e)
-            self._log_console_output(servers)
-            self._log_local_network_status()
-            raise
+    @staticmethod
+    def kill_process(server, process):
+        cmd = "sudo killall -q {process}".format(process=process)
+        server.send(cmd, one_off_attempt=True)
 
-    def _check_bw_ingress(self, ssh_client, host, port,
-                          expected_bw=test_qos.QoSTestMixin.LIMIT_BYTES_SEC):
-        self.ensure_nc_listen_ingress(ssh_client, port, "tcp")
+    @staticmethod
+    def _get_socket_to(server_to, port):
+        destination = server_to.associated_fip['floating_ip_address']
+        client_socket = socket.socket(socket.AF_INET,
+                                      socket.SOCK_STREAM)
+        client_socket.connect((destination, port))
+        client_socket.settimeout(30)
+        return client_socket
+
+    def list_qos_rule_types(self):
+        uri = '/qos/rule-types'
+        body = self.admin_manager.qos_client.list_resources(uri)
+        return [rule_type['type'] for rule_type in body['rule_types']]
+
+    def create_qos_policy(self, name=None,
+                          manager=None, cleanup=True):
+        manager = manager or self.admin_manager
+        name = name or data_utils.rand_name('test-policy')
+        args = {'name': name,
+                'description': 'test policy',
+                'shared': False}
+        qos_policy = manager.qos_client.create_qos_policy(
+            **args)['policy']
+        if cleanup:
+            self.addCleanup(manager.qos_client.delete_qos_policy,
+                            qos_policy['id'])
+        return qos_policy
+
+    def create_qos_bandwidth_limit_rule(self, qos_policy_id,
+                                        manager=None, **kwargs):
+        manager = manager or self.admin_manager
+        uri = '/qos/policies/{}/bandwidth_limit_rules'.format(qos_policy_id)
+        post_data = {'bandwidth_limit_rule': kwargs}
+        rule = manager.qos_client.create_resource(
+            uri, post_data)['bandwidth_limit_rule']
+        return rule
+
+    def update_qos_bandwidth_limit_rule(self, qos_policy_id, bw_limit_rule_id,
+                                        manager=None, **kwargs):
+        manager = manager or self.admin_manager
+        uri = '/qos/policies/{}/bandwidth_limit_rules/{}'.format(
+            qos_policy_id, bw_limit_rule_id)
+        post_data = {'bandwidth_limit_rule': kwargs}
+        rule = manager.qos_client.update_resource(
+            uri, post_data)['bandwidth_limit_rule']
+        return rule
+
+    def create_qos_dscp_marking_rule(self, qos_policy_id,
+                                     manager=None,
+                                     **kwargs):
+        manager = manager or self.admin_manager
+        uri = '/qos/policies/{}/dscp_marking_rules'.format(qos_policy_id)
+        post_data = {'dscp_marking_rule': kwargs}
+        rule = manager.qos_client.create_resource(
+            uri, post_data)['dscp_marking_rule']
+        return rule
+
+    def update_qos_dscp_marking_rule(self, qos_policy_id, dscp_marking_rule_id,
+                                     manager=None, **kwargs):
+        manager = manager or self.admin_manager
+        uri = '/qos/policies/{}/dscp_marking_rules/{}'.format(
+            qos_policy_id, dscp_marking_rule_id)
+        post_data = {'dscp_marking_rule': kwargs}
+        rule = manager.qos_client.update_resource(
+            uri, post_data)['dscp_marking_rule']
+        return rule
+
+    def nc_run(self, server, port, direction, protocol='tcp'):
+        udp = '-u' if protocol.lower() == 'udp' else ''
+        if direction == 'egress':
+            nc_argument = '-lk < /dev/zero;'
+        else:
+            nc_argument = ' -l > /dev/null;'
+        nc_cmd = ("screen -d -m sh -c '"
+                  "while true; do nc {udp} -p {port} {nc_arg} "
+                  "done;'".format(port=port, udp=udp, nc_arg=nc_argument))
+        server.send(nc_cmd, one_off_attempt=True, as_sudo=True)
+        server.send("sudo netstat -tln", one_off_attempt=True)
+
+    def _check_bw(self, host, port, direction, configured_bw_kbps):
+        # configure nc server
+        # Kill previous screen or nc processes
+        self.kill_process(host, 'screen nc')
+        self.nc_run(host, port, direction)
         # Open TCP socket to remote VM and download big file
-        start_time = time.time()
-        try:
-            client_socket = test_qos._connect_socket(
-                host, port, constants.SOCKET_CONNECT_TIMEOUT)
-        except (AttributeError, TypeError):
-            client_socket = test_qos._connect_socket(
-                host, port)
-
-        total_bytes_written = 0
+        client_socket = self._get_socket_to(host, port)
         write_data = ('x' * (self.BUFFER_SIZE - 1) + '\n').encode()
         try:
-            while total_bytes_written < self.WRITE_SIZE:
-                client_socket.send(write_data)
-                total_bytes_written += len(write_data)
+            start_time = time.time()
+            total_bytes = 0
+            while time.time() - start_time < self.DOWNLOAD_DURATION:
+                if direction == 'egress':
+                    # Download file
+                    data = client_socket.recv(self.BUFFER_SIZE)
+                    total_bytes += len(data)
+                else:
+                    client_socket.send(write_data)
+                    total_bytes += len(write_data)
 
-            # Calculate and return actual BW + logging result
             time_elapsed = time.time() - start_time
-            bytes_per_second = total_bytes_written / time_elapsed
-            print(bytes_per_second / 1000)
+            kbps_measured = total_bytes / time_elapsed * 8 / 1024
+            print(kbps_measured)
+            min_bw = (configured_bw_kbps -
+                      configured_bw_kbps * self.TOLERANCE_FACTOR)
+            max_bw = (configured_bw_kbps +
+                      configured_bw_kbps * self.TOLERANCE_FACTOR)
             LOG.debug("time_elapsed = %(time_elapsed).16f, "
-                      "total_bytes_written = %(total_bytes_written)d, "
-                      "bytes_per_second = %(bytes_per_second)d, "
-                      "expected_bw = %(expected_bw)d.",
+                      "kbps_measured = %(kbps_measured)d, "
+                      "expected bw = %(min_bw)d-%(max_bw)d.",
                       {'time_elapsed': time_elapsed,
-                       'total_bytes_written': total_bytes_written,
-                       'bytes_per_second': bytes_per_second,
-                       'expected_bw': expected_bw})
-            return bytes_per_second <= expected_bw
+                       'kbps_measured': kbps_measured,
+                       'min_bw': min_bw,
+                       'max_bw': max_bw})
+            return min_bw <= kbps_measured <= max_bw
         except socket.timeout:
-            LOG.warning(
-                'Socket timeout while reading the remote file, bytes '
-                'read: %s', total_bytes_written)
+            LOG.warning('Socket timeout while reading the remote file')
             return False
         finally:
             client_socket.close()
-
-    @staticmethod
-    def get_ncat_server_cmd(port, protocol):
-        udp = ''
-        if protocol.lower() == neutron_lib_constants.PROTO_NAME_UDP:
-            udp = '-u'
-        return ("screen -d -m sh -c '"
-                "while true; do nc {udp} -p {port} -lk < /dev/zero; "
-                "done;'".format(port=port, udp=udp))
-
-    @staticmethod
-    def get_ncat_server_cmd_ingress(port, protocol, msg=None):
-        udp = ''
-        if protocol.lower() == neutron_lib_constants.PROTO_NAME_UDP:
-            udp = '-u'
-        return ("screen -d -m sh -c '"
-                "while true; do nc {udp} -p {port} -l > /dev/null; "
-                "done;'".format(port=port, udp=udp))
-
-    def ensure_nc_listen(self, ssh_client, port, protocol, echo_msg=None,
-                         servers=None):
-        """Ensure that nc server listening on the given TCP/UDP port is up.
-
-        Listener is created always on remote host.
-        """
-        try:
-            # kill existing screen operation
-            ssh_client.exec_command("killall -q screen")
-        except tempest_exc.SSHExecCommandFailed:
-            pass
-        try:
-            value = ssh_client.exec_command(
-                self.get_ncat_server_cmd(port, protocol))
-            LOG.debug(str(ssh_client.exec_command("sudo netstat -tln")))
-            return value
-        except tempest_exc.SSHTimeout as ssh_e:
-            LOG.debug(ssh_e)
-            self._log_console_output(servers)
-            raise
-
-    def ensure_nc_listen_ingress(self, ssh_client, port, protocol,
-                                 echo_msg=None, servers=None):
-        """Ensure that nc server listening on the given TCP/UDP port is up.
-
-        Listener is created always on remote host.
-        """
-        try:
-            # kill existing screen operation
-            ssh_client.exec_command("killall -q screen")
-        except tempest_exc.SSHExecCommandFailed:
-            pass
-        try:
-            value = ssh_client.exec_command(
-                self.get_ncat_server_cmd_ingress(port, protocol))
-            LOG.debug(str(ssh_client.exec_command("sudo netstat -tln")))
-            return value
-        except tempest_exc.SSHTimeout as ssh_e:
-            LOG.debug(ssh_e)
-            self._log_console_output(servers)
-            raise

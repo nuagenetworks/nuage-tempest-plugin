@@ -12,32 +12,23 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-import testtools
 import time
 
-from neutron_tempest_plugin.common import utils as common_utils
-from neutron_tempest_plugin import config
-from neutron_tempest_plugin.scenario import base as neutron_base
-from neutron_tempest_plugin.scenario import constants
-from neutron_tempest_plugin.scenario import test_floatingip
-from neutron_tempest_plugin.scenario import test_qos
 from oslo_log import log
 from tempest.common import utils
-from tempest.lib.common.utils import data_utils
 
 from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import data_utils
 from nuage_tempest_plugin.tests.scenario.qos import base_nuage_qos
 
-CONF = config.CONF
+CONF = Topology.get_conf()
 
 LOG = log.getLogger(__name__)
 
 
-class NuageFloatingIPProprietaryQosTest(
-        test_floatingip.FloatingIpTestCasesMixin,
-        base_nuage_qos.NuageQoSTestMixin,
-        neutron_base.BaseTempestTestCase):
-
+class NuageFloatingIPProprietaryQosTest(base_nuage_qos.NuageQosTestmixin,
+                                        nuage_test.NuageBaseTest):
     same_network = True
 
     @classmethod
@@ -45,177 +36,231 @@ class NuageFloatingIPProprietaryQosTest(
     def resource_setup(cls):
         super(NuageFloatingIPProprietaryQosTest, cls).resource_setup()
 
-    def test_qos(self):
-        """Test floating IP is binding to a QoS policy with
+    def test_nuage_fip_rate_limit(self):
+        """test_nuage_fip_rate_limit
 
-           ingress and egress bandwidth limit rules. And it applied correctly
+           Test floating IP with ingress and egress bandwidth limiting enabled
            by sending a file from the instance to the test node.
            Then calculating the bandwidth every ~1 sec by the number of bits
            received / elapsed time.
         """
 
-        self._test_basic_resources()
-        ssh_client = self._create_ssh_client()
+        network = self.create_network()
+        subnet4 = self.create_subnet(network=network)
+        router = self.create_router(
+            external_network_id=CONF.network.public_network_id)
+        self.router_attach(router, subnet4)
 
-        fip = self.os_admin.network_client.get_floatingip(
-            self.fip['id'])['floatingip']
-        self.assertEqual(self.port['id'], fip['port_id'])
+        # Ensure TCP traffic is allowed
+        security_group = self.create_open_ssh_security_group()
+        self.create_traffic_sg_rule(security_group,
+                                    direction='ingress',
+                                    ip_version=4,
+                                    dest_port=self.DEST_PORT)
 
-        if hasattr(self, '_create_file_for_bw_tests'):
-            # Queens & Rocky: create file
-            self._create_file_for_bw_tests(ssh_client)
+        server = self.create_tenant_server(
+            networks=[network], security_groups=[security_group],
+            prepare_for_connectivity=True)
 
-        self.os_admin.network_client.update_floatingip(
-            self.fip['id'],
-            nuage_egress_fip_rate_kbps=500,
-            nuage_ingress_fip_rate_kbps=1000)
-        expected_egress_bw = 500 * 1024 * self.TOLERANCE_FACTOR / 8.0
-        # expected_ingress_bw = 1000 * 1024 * self.TOLERANCE_FACTOR / 8.0
-        common_utils.wait_until_true(
+        egress_kbps = 500
+        ingress_kbps = 1000
+        self.update_floatingip(
+            server.associated_fip,
+            nuage_egress_fip_rate_kbps=egress_kbps,
+            nuage_ingress_fip_rate_kbps=ingress_kbps)
+
+        data_utils.wait_until_true(
             lambda: self._check_bw(
-                ssh_client, self.fip['floating_ip_address'],
-                port=self.NC_PORT, expected_bw=expected_egress_bw),
-            timeout=120, sleep=1,
-            exception=common_utils.WaitTimeout("Timed out waiting for traffic "
-                                               "to be limited in egress "
-                                               "direction"))
+                server, port=self.DEST_PORT, configured_bw_kbps=egress_kbps,
+                direction='egress'),
+            timeout=120,
+            exception=data_utils.WaitTimeout("Timed out waiting for traffic "
+                                             "to be limited in egress "
+                                             "direction"))
         # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
-        # common_utils.wait_until_true(
-        #     lambda: self._check_bw_ingress(
-        #         ssh_client, self.fip['floating_ip_address'],
-        #         port=self.NC_PORT + 1, expected_bw=expected_ingress_bw),
-        #     timeout=120, sleep=1,
-        #   exception=common_utils.WaitTimeout("Timed out waiting for traffic"
-        #                                      "to be limited in ingress "
-        #                                      "direction")))
+        # data_utils.wait_until_true(
+        #     lambda: self._check_bw(
+        #         server, port=self.DEST_PORT, configured_bw_kbps=egress_kbps,
+        #         direction='ingress'),
+        #     timeout=120,
+        # exception = data_utils.WaitTimeout("Timed out waiting for "
+        #                                      "traffic "
+        #                                      "to be limited in egress "
+        #                                      "direction"))
 
         # Update floating ip QOS to new value
-        self.os_admin.network_client.update_floatingip(
-            self.fip['id'],
-            nuage_egress_fip_rate_kbps=200,
-            nuage_ingress_fip_rate_kbps=400)
+        egress_kbps = 200
+        ingress_kbps = 400
+        self.update_floatingip(
+            server.associated_fip,
+            nuage_egress_fip_rate_kbps=egress_kbps,
+            nuage_ingress_fip_rate_kbps=ingress_kbps)
 
-        expected_egress_bw = 200 * 1024 * self.TOLERANCE_FACTOR / 8.0
-        # expected_ingress_bw = 400 * 1024 * self.TOLERANCE_FACTOR / 8.0
-        common_utils.wait_until_true(
+        data_utils.wait_until_true(
             lambda: self._check_bw(
-                ssh_client, self.fip['floating_ip_address'],
-                port=self.NC_PORT, expected_bw=expected_egress_bw),
-            timeout=120, sleep=1,
-            exception=common_utils.WaitTimeout("Timed out waiting for traffic "
-                                               "to be limited in egress "
-                                               "direction after fip rate limit"
-                                               " update"))
-        # common_utils.wait_until_true(
-        #     lambda: self._check_bw_ingress(
-        #         ssh_client, self.fip['floating_ip_address'],
-        #         port=self.NC_PORT + 1, expected_bw=expected_ingress_bw),
-        #     timeout=120, sleep=1,
-        #  exception=common_utils.WaitTimeout("Timed out waiting for traffic"
+                server, port=self.DEST_PORT, configured_bw_kbps=egress_kbps,
+                direction='egress'),
+            timeout=120,
+            exception=data_utils.WaitTimeout("Timed out waiting for traffic "
+                                             "to be limited in egress "
+                                             "direction after fip rate limit"
+                                             " update"))
+        # data_utils.wait_until_true(
+        #     lambda: self._check_bw(
+        #         server, port=self.DEST_PORT, configured_bw_kbps=egress_kbps,
+        #         direction='ingress'),
+        #     timeout=120,
+        #  exception=data_utils.WaitTimeout("Timed out waiting for traffic"
         #                                     "to be limited in ingress "
         #                                     "direction after fip rate
         #                                     "limit update"))
 
 
-class RateLimitingNuageQosScenarioTest(test_qos.QoSTest,
-                                       base_nuage_qos.NuageQoSTestMixin):
+class RateLimitingNuageQosScenarioTest(base_nuage_qos.NuageQosTestmixin,
+                                       nuage_test.NuageBaseTest):
 
-    DOWNLOAD_DURATION = 10
-    CHECK_TIMEOUT = DOWNLOAD_DURATION * 10
-    FILE_SIZE = 1024 * 1024 * 2
-    COUNT = 4096
+    @classmethod
+    @utils.requires_ext(extension="qos", service="network")
+    def resource_setup(cls):
+        super(RateLimitingNuageQosScenarioTest, cls).resource_setup()
 
-    @testtools.skip("Ingress QOS currently not supported")
-    def test_qos_basic_and_update_ingress(self):
+    def test_qos_basic_and_update(self):
+        """This test covers both:
 
-        # Setup resources
-        self._test_basic_resources()
-        ssh_client = self._create_ssh_client()
+            1) Basic QoS functionality
+            This is a basic test that check that a QoS policy with
+            a bandwidth limit rule is applied correctly by sending
+            a file from the instance to the test node.
+            Then calculating the bandwidth every ~1 sec by the number of bits
+            received / elapsed time.
 
-        # Create QoS policy
-        bw_limit_policy_id = self._create_qos_policy()
+            2) Update QoS policy
+            Administrator has the ability to update existing QoS policy,
+            this test is planned to verify that:
+            - actual BW is affected as expected after updating QoS policy.
+            Test scenario:
+            1) Associating QoS Policy with "Original_bandwidth"
+               to the test node
+            2) BW validation - by downloading file on test node.
+               ("Original_bandwidth" is expected)
+            3) Updating existing QoS Policy to a new BW value
+               "Updated_bandwidth"
+            4) BW validation - by downloading file on test node.
+               ("Updated_bandwidth" is expected)
+            Note:
+            There are two options to associate QoS policy to VM:
+            "Neutron Port" or "Network", in this test
+            both options are covered.
+        """
+        if 'bandwidth_limit' not in self.list_qos_rule_types():
+            self.skipTest("bandwidth_limit rule type is required.")
+        BW_LIMIT_NETWORK = 1000
+        BW_LIMIT_UPDATE_NETWORK = 2000
+        BW_LIMIT_PORT = 1000
+        BW_LIMIT_UPDATE_PORT = 3000
 
-        # As admin user create QoS rule
-        rule_id = self.os_admin.network_client.create_bandwidth_limit_rule(
-            policy_id=bw_limit_policy_id,
-            max_kbps=constants.LIMIT_KILO_BITS_PER_SECOND,
-            max_burst_kbps=constants.LIMIT_KILO_BITS_PER_SECOND,
-            direction='ingress')[
-                'bandwidth_limit_rule']['id']
+        network = self.create_network()
+        subnet4 = self.create_subnet(network=network)
+        router = self.create_router(
+            external_network_id=CONF.network.public_network_id)
+        self.router_attach(router, subnet4)
 
-        # Associate QoS to the network
-        self.os_admin.network_client.update_network(
-            self.network['id'], qos_policy_id=bw_limit_policy_id)
+        # Ensure TCP traffic is allowed
+        security_group = self.create_open_ssh_security_group()
+        self.create_traffic_sg_rule(security_group,
+                                    direction='ingress',
+                                    ip_version=4,
+                                    dest_port=self.DEST_PORT)
 
-        if hasattr(self, '_create_file_for_bw_tests'):
-            # Queens & Rocky: create file
-            self._create_file_for_bw_tests(ssh_client)
+        server = self.create_tenant_server(
+            networks=[network], security_groups=[security_group],
+            prepare_for_connectivity=True)
+        # Set MTU on server
+        server.send("sudo ip link set dev eth0 mtu 1450")
 
-        # Basic test, Check that actual BW while uploading file
-        # is as expected (Original BW)
-        common_utils.wait_until_true(lambda: self._check_bw_ingress(
-            ssh_client,
-            self.fip['floating_ip_address'],
-            port=self.NC_PORT),
-            timeout=self.CHECK_TIMEOUT,
-            sleep=1)
+        bw_limit_policy_id = self.create_qos_policy()['id']
+        rule_id = self.create_qos_bandwidth_limit_rule(
+            qos_policy_id=bw_limit_policy_id,
+            max_kbps=BW_LIMIT_NETWORK,
+            max_burst_kbps=BW_LIMIT_NETWORK)['id']
 
-        # As admin user update QoS rule
-        self.os_admin.network_client.update_bandwidth_limit_rule(
-            bw_limit_policy_id,
-            rule_id,
-            max_kbps=constants.LIMIT_KILO_BITS_PER_SECOND * 2,
-            max_burst_kbps=constants.LIMIT_KILO_BITS_PER_SECOND * 2)
+        # Assign QOS policy to network
+        self.update_network(network['id'], qos_policy_id=bw_limit_policy_id,
+                            manager=self.admin_manager)
+        self.addCleanup(self.update_network, network['id'],
+                        manager=self.admin_manager, qos_policy_id=None)
 
-        # Check that actual BW while uploading file
-        # is as expected (Update BW)
-        common_utils.wait_until_true(lambda: self._check_bw_ingress(
-            ssh_client,
-            self.fip['floating_ip_address'],
-            port=self.NC_PORT,
-            expected_bw=test_qos.QoSTestMixin.LIMIT_BYTES_SEC * 2),
-            timeout=self.CHECK_TIMEOUT,
-            sleep=1)
+        data_utils.wait_until_true(
+            lambda: self._check_bw(
+                server, port=self.DEST_PORT,
+                configured_bw_kbps=BW_LIMIT_NETWORK, direction='egress'),
+            timeout=120,
+            exception=data_utils.WaitTimeout(
+                "Timed out waiting for traffic to be limited in egress "
+                "direction, QOS policy assigned to network"))
 
-        # Create a new QoS policy
-        bw_limit_policy_id_new = self._create_qos_policy()
+        # update active QOS policy
+        self.update_qos_bandwidth_limit_rule(
+            bw_limit_policy_id, rule_id, max_kbps=BW_LIMIT_UPDATE_NETWORK,
+            max_burst_kbps=BW_LIMIT_UPDATE_NETWORK)
 
-        # As admin user create a new QoS rule
-        rule_id_new = self.os_admin.network_client.create_bandwidth_limit_rule(
-            policy_id=bw_limit_policy_id_new,
-            max_kbps=constants.LIMIT_KILO_BITS_PER_SECOND,
-            max_burst_kbps=constants.LIMIT_KILO_BITS_PER_SECOND)[
-                'bandwidth_limit_rule']['id']
+        data_utils.wait_until_true(
+            lambda: self._check_bw(
+                server, port=self.DEST_PORT,
+                configured_bw_kbps=BW_LIMIT_UPDATE_NETWORK,
+                direction='egress'),
+            timeout=120,
+            exception=data_utils.WaitTimeout(
+                "Timed out waiting for traffic to be limited in egress "
+                "direction, updated QOS policy assigned to network"))
 
-        # Associate a new QoS policy to Neutron port
-        self.os_admin.network_client.update_port(
-            self.port['id'], qos_policy_id=bw_limit_policy_id_new)
+        # Set QOS policy on Port
+        port = server.get_server_port_in_network(network)
+        new_bw_limit_policy_id = self.create_qos_policy()['id']
+        new_rule_id = self.create_qos_bandwidth_limit_rule(
+            qos_policy_id=new_bw_limit_policy_id,
+            max_kbps=BW_LIMIT_PORT,
+            max_burst_kbps=BW_LIMIT_PORT)['id']
+        self.update_port(port, qos_policy_id=new_bw_limit_policy_id,
+                         manager=self.admin_manager)
+        self.addCleanup(self.update_port, port,
+                        manager=self.admin_manager,
+                        qos_policy_id=None)
 
-        # Check that actual BW while uploading file
-        # is as expected (Original BW)
-        common_utils.wait_until_true(lambda: self._check_bw_ingress(
-            ssh_client,
-            self.fip['floating_ip_address'],
-            port=self.NC_PORT),
-            timeout=self.FILE_DOWNLOAD_TIMEOUT,
-            sleep=1)
+        data_utils.wait_until_true(
+            lambda: self._check_bw(
+                server, port=self.DEST_PORT, configured_bw_kbps=BW_LIMIT_PORT,
+                direction='egress'),
+            timeout=120,
+            exception=data_utils.WaitTimeout(
+                "Timed out waiting for traffic to be limited in egress "
+                "direction, QOS policy assigned to port"))
 
-        # As admin user update QoS rule
-        self.os_admin.network_client.update_bandwidth_limit_rule(
-            bw_limit_policy_id_new,
-            rule_id_new,
-            max_kbps=constants.LIMIT_KILO_BITS_PER_SECOND * 3,
-            max_burst_kbps=constants.LIMIT_KILO_BITS_PER_SECOND * 3)
+        # update active QOS policy
+        self.update_qos_bandwidth_limit_rule(
+            new_bw_limit_policy_id, new_rule_id, max_kbps=BW_LIMIT_UPDATE_PORT,
+            max_burst_kbps=BW_LIMIT_UPDATE_PORT)
 
-        # Check that actual BW while uploading file
-        # is as expected (Update BW)
-        common_utils.wait_until_true(lambda: self._check_bw(
-            ssh_client,
-            self.fip['floating_ip_address'],
-            port=self.NC_PORT,
-            expected_bw=test_qos.QoSTestMixin.LIMIT_BYTES_SEC * 3),
-            timeout=self.FILE_DOWNLOAD_TIMEOUT,
-            sleep=1)
+        data_utils.wait_until_true(
+            lambda: self._check_bw(
+                server, port=self.DEST_PORT,
+                configured_bw_kbps=BW_LIMIT_UPDATE_PORT, direction='egress'),
+            timeout=120,
+            exception=data_utils.WaitTimeout(
+                "Timed out waiting for traffic to be limited in egress "
+                "direction, updated QOS policy assigned to port"))
+
+        # Delete QOS policy on port
+        self.update_port(port, manager=self.admin_manager, qos_policy_id=None)
+        data_utils.wait_until_true(
+            lambda: self._check_bw(
+                server, port=self.DEST_PORT,
+                configured_bw_kbps=BW_LIMIT_UPDATE_NETWORK,
+                direction='egress'),
+            timeout=120,
+            exception=data_utils.WaitTimeout(
+                "Timed out waiting for traffic to be limited in egress "
+                "direction, after deleting QOS policy on Port."))
 
     def test_nuage_qos_fip_rate_limiting(self):
         """test_nuage_qos_fip_rate_limiting
@@ -224,131 +269,129 @@ class RateLimitingNuageQosScenarioTest(test_qos.QoSTest,
         fip rate limiting to an instance.
 
         """
-        KbPS_NETWORK = 1000
-        KbPS_FIP = 500
-        KbPS_PORT = 200
+        if 'bandwidth_limit' not in self.list_qos_rule_types():
+            self.skipTest("bandwidth_limit rule type is required.")
 
-        self._test_basic_resources()
-        ssh_client = self._create_ssh_client()
+        BW_LIMIT_NETWORK = 1000
+        BW_LIMIT_PORT = 600
+        BW_LIMIT_FIP = 400
+        BW_LIMIT_UPDATE_PORT = 200
+
+        network = self.create_network()
+        subnet4 = self.create_subnet(network=network)
+        router = self.create_router(
+            external_network_id=CONF.network.public_network_id)
+        self.router_attach(router, subnet4)
+
+        # Ensure TCP traffic is allowed
+        security_group = self.create_open_ssh_security_group()
+        self.create_traffic_sg_rule(security_group,
+                                    direction='ingress',
+                                    ip_version=4,
+                                    dest_port=self.DEST_PORT)
+
+        server = self.create_tenant_server(
+            networks=[network], security_groups=[security_group],
+            prepare_for_connectivity=True)
+        # Set MTU on server
+        server.send("sudo ip link set dev eth0 mtu 1400")
 
         # Create QoS policy
-        bw_limit_policy_id = self._create_qos_policy()
+        bw_limit_policy_id = self.create_qos_policy()['id']
+        self.create_qos_bandwidth_limit_rule(
+            qos_policy_id=bw_limit_policy_id,
+            max_kbps=BW_LIMIT_NETWORK,
+            max_burst_kbps=BW_LIMIT_NETWORK)
 
-        # As admin user create QoS rule
-        self.os_admin.network_client.create_bandwidth_limit_rule(
-            policy_id=bw_limit_policy_id,
-            max_kbps=KbPS_NETWORK,
-            max_burst_kbps=KbPS_NETWORK)
+        # Assign QOS policy to network
+        self.update_network(network['id'], qos_policy_id=bw_limit_policy_id,
+                            manager=self.admin_manager)
+        self.addCleanup(self.update_network, network['id'],
+                        manager=self.admin_manager, qos_policy_id=None)
 
-        # Associate QoS to the network
-        self.os_admin.network_client.update_network(
-            self.network['id'], qos_policy_id=bw_limit_policy_id)
-
-        fip = self.os_admin.network_client.get_floatingip(
-            self.fip['id'])['floatingip']
-        self.assertEqual(self.port['id'], fip['port_id'])
-
-        if hasattr(self, '_create_file_for_bw_tests'):
-            # Queens & Rocky: create file
-            self._create_file_for_bw_tests(ssh_client)
         # Check bw limited at network policy level
-        network_bw = KbPS_NETWORK * 1024 * self.TOLERANCE_FACTOR / 8
-        common_utils.wait_until_true(
-            lambda: self._check_bw(ssh_client, self.fip['floating_ip_address'],
-                                   port=self.NC_PORT, expected_bw=network_bw),
-            timeout=240)
-
-        self.os_admin.network_client.update_floatingip(
-            self.fip['id'],
-            nuage_egress_fip_rate_kbps=KbPS_FIP)
-        fip_bw = KbPS_FIP * 1024 * self.TOLERANCE_FACTOR / 8.0
-        common_utils.wait_until_true(
+        data_utils.wait_until_true(
             lambda: self._check_bw(
-                ssh_client, self.fip['floating_ip_address'],
-                port=self.NC_PORT, expected_bw=fip_bw),
-            timeout=120, sleep=1)
+                server, port=self.DEST_PORT,
+                configured_bw_kbps=BW_LIMIT_NETWORK, direction='egress'),
+            timeout=120,
+            exception=data_utils.WaitTimeout(
+                "Timed out waiting for traffic to be limited in egress "
+                "direction, QOS policy attached to Network."))
+
+        self.update_floatingip(server.associated_fip,
+                               nuage_egress_fip_rate_kbps=BW_LIMIT_FIP)
+        data_utils.wait_until_true(
+            lambda: self._check_bw(
+                server, port=self.DEST_PORT,
+                configured_bw_kbps=BW_LIMIT_FIP, direction='egress'),
+            timeout=120,
+            exception=data_utils.WaitTimeout(
+                "Timed out waiting for traffic to be limited in egress "
+                "direction, FIP rate limit active."))
 
         # Create a new QoS policy
-        bw_limit_policy_id_new = self._create_qos_policy()
+        port = server.get_server_port_in_network(network)
+        new_bw_limit_policy_id = self.create_qos_policy()['id']
+        new_rule_id = self.create_qos_bandwidth_limit_rule(
+            qos_policy_id=new_bw_limit_policy_id,
+            max_kbps=BW_LIMIT_PORT,
+            max_burst_kbps=BW_LIMIT_PORT)['id']
+        self.update_port(port, qos_policy_id=new_bw_limit_policy_id,
+                         manager=self.admin_manager)
+        self.addCleanup(self.update_port, port,
+                        manager=self.admin_manager,
+                        qos_policy_id=None)
 
-        # As admin user create a new QoS rule
-        self.os_admin.network_client.create_bandwidth_limit_rule(
-            policy_id=bw_limit_policy_id_new,
-            max_kbps=KbPS_PORT,
-            max_burst_kbps=KbPS_PORT)
-
-        # Associate a new QoS policy to Neutron port
-        self.os_admin.network_client.update_port(
-            self.port['id'], qos_policy_id=bw_limit_policy_id_new)
-
-        port_bw = KbPS_PORT * 1024 * self.TOLERANCE_FACTOR / 8
-        common_utils.wait_until_true(
+        # BW limit of the port is higher than that of the FIP
+        data_utils.wait_until_true(
             lambda: self._check_bw(
-                ssh_client, self.fip['floating_ip_address'],
-                port=self.NC_PORT, expected_bw=port_bw),
-            timeout=120, sleep=1)
+                server, port=self.DEST_PORT, configured_bw_kbps=BW_LIMIT_FIP,
+                direction='egress'),
+            timeout=120,
+            exception=data_utils.WaitTimeout(
+                "Timed out waiting for traffic to be limited in egress "
+                "direction, QOS policy assigned to port"))
+
+        # Update QOS policy so BW of port < BW of FIP
+        self.update_qos_bandwidth_limit_rule(
+            new_bw_limit_policy_id, new_rule_id, max_kbps=BW_LIMIT_UPDATE_PORT,
+            max_burst_kbps=BW_LIMIT_UPDATE_PORT)
+
+        data_utils.wait_until_true(
+            lambda: self._check_bw(
+                server, port=self.DEST_PORT,
+                configured_bw_kbps=BW_LIMIT_UPDATE_PORT, direction='egress'),
+            timeout=120,
+            exception=data_utils.WaitTimeout(
+                "Timed out waiting for traffic to be limited in egress "
+                "direction, updated QOS policy assigned to port."))
 
         # Delete network and port qos, expect fip QOS still active
-        self.os_admin.network_client.update_port(
-            self.port['id'], qos_policy_id=None)
-        self.os_admin.network_client.update_network(
-            self.network['id'], qos_policy_id=None)
+        self.update_network(network['id'], manager=self.admin_manager,
+                            qos_policy_id=None)
+        self.update_port(port, manager=self.admin_manager,
+                         qos_policy_id=None)
 
-        common_utils.wait_until_true(
+        data_utils.wait_until_true(
             lambda: self._check_bw(
-                ssh_client, self.fip['floating_ip_address'],
-                port=self.NC_PORT, expected_bw=fip_bw),
-            timeout=120, sleep=1)
+                server, port=self.DEST_PORT,
+                configured_bw_kbps=BW_LIMIT_FIP, direction='egress'),
+            timeout=120,
+            exception=data_utils.WaitTimeout(
+                "Timed out waiting for traffic to be limited in egress "
+                "direction, only FIP rate limiting active."))
 
 
-class QoSDscpTest(nuage_test.NuageBaseTest):
-
+class QoSDscpTest(nuage_test.NuageBaseTest, base_nuage_qos.NuageQosTestmixin):
     FILE_PATH = '/tmp/dscptest'
     DSCP_MARK = 10
     UPDATED_DSCP_MARK = 12
-
-    DEST_PORT = 1789
 
     @classmethod
     @utils.requires_ext(extension="qos", service="network")
     def resource_setup(cls):
         super(QoSDscpTest, cls).resource_setup()
-
-    @staticmethod
-    def kill_process(server, process):
-        cmd = "sudo killall -q {process}".format(process=process)
-        server.send(cmd, one_off_attempt=True)
-
-    def create_qos_policy(self, name=None,
-                          manager=None, cleanup=True):
-        manager = manager or self.admin_manager
-        name = name or data_utils.rand_name('test-policy')
-        args = {'name': name,
-                'description': 'test policy',
-                'shared': False}
-        qos_policy = manager.qos_client.create_qos_policy(
-            **args)['policy']
-        if cleanup:
-            self.addCleanup(manager.qos_client.delete_qos_policy,
-                            qos_policy['id'])
-        return qos_policy
-
-    def create_qos_dscp_marking_rule(self, qos_policy_id,
-                                     manager=None,
-                                     **kwargs):
-        manager = manager or self.admin_manager
-        uri = '/qos/policies/{}/dscp_marking_rules'.format(qos_policy_id)
-        post_data = {'dscp_marking_rule': kwargs}
-        return manager.qos_client.create_resource(uri, post_data)
-
-    def update_qos_dscp_marking_rule(self, qos_policy_id, dscp_marking_rule_id,
-                                     manager=None,
-                                     **kwargs):
-        manager = manager or self.admin_manager
-        uri = '/qos/policies/{}/dscp_marking_rules/{}'.format(
-            qos_policy_id, dscp_marking_rule_id)
-        post_data = {'dscp_marking_rule': kwargs}
-        return manager.qos_client.update_resource(uri, post_data)
 
     def tcpdump_run(self, server, protocol, ip_version, source_ip):
         """Create tcpdump listener for protocol traffic.
@@ -367,16 +410,6 @@ class QoSDscpTest(nuage_test.NuageBaseTest):
             "-c 1 &> {file} &".format(
                 tcpdump_cmd=tcpdump_cmd, file=self.FILE_PATH),
             one_off_attempt=True)
-
-    def nc_run(self, server, protocol, port):
-        udp = ''
-        if protocol.lower() == 'udp':
-            udp = '-u'
-        nc_cmd = ("screen -d -m sh -c '"
-                  "while true; do nc {udp} -p {port} -l > /dev/null; "
-                  "done;'".format(port=port, udp=udp))
-        server.send(nc_cmd, one_off_attempt=True, as_sudo=True)
-        server.send("sudo netstat -tln", one_off_attempt=True)
 
     def _check_dscp_marking(self, server_from, server_to,
                             expected_dscp_mark=DSCP_MARK):
@@ -400,7 +433,8 @@ class QoSDscpTest(nuage_test.NuageBaseTest):
                     server_from.ping(destination=destination)
                 else:
                     # Provision server
-                    self.nc_run(server_to, protocol, self.DEST_PORT)
+                    self.nc_run(server_to, self.DEST_PORT, 'ingress',
+                                protocol=protocol)
                     udp = '-u' if protocol == 'udp' else ''
                     send_cmd = ("echo -n 'HELLO' | "
                                 "nc -w 1 {udp} {dest} {port}").format(
@@ -491,8 +525,7 @@ class QoSDscpTest(nuage_test.NuageBaseTest):
         # As admin user create QoS rule
         rule_id = self.create_qos_dscp_marking_rule(
             qos_policy_id=dscp_marking_policy_id,
-            dscp_mark=self.DSCP_MARK)[
-                'dscp_marking_rule']['id']
+            dscp_mark=self.DSCP_MARK)['id']
 
         # Associate QoS to the network
         self.update_network(
@@ -522,8 +555,7 @@ class QoSDscpTest(nuage_test.NuageBaseTest):
         port = server_from.get_server_port_in_network(network)
         rule_id_new = self.create_qos_dscp_marking_rule(
             qos_policy_id=dscp_marking_policy_id_new,
-            dscp_mark=self.DSCP_MARK)[
-                'dscp_marking_rule']['id']
+            dscp_mark=self.DSCP_MARK)['id']
 
         # Associate a new QoS policy to Neutron port
         self.update_port(port, manager=self.admin_manager,

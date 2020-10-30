@@ -13,54 +13,27 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from neutron_tempest_plugin.common import utils as common_utils
-from neutron_tempest_plugin import config
-from neutron_tempest_plugin.scenario import base as neutron_base
 from oslo_log import log
-from tempest.lib.common.utils import data_utils
+from tempest.common import waiters
 from tempest.lib.services.compute import base_compute_client
 import testtools
 
+from nuage_tempest_plugin.lib.test import nuage_test
+from nuage_tempest_plugin.lib.topology import Topology
+from nuage_tempest_plugin.lib.utils import data_utils
 from nuage_tempest_plugin.tests.scenario.qos import base_nuage_qos
 
 LOG = log.getLogger(__name__)
 
-CONF = config.CONF
+CONF = Topology.get_conf()
 
 
-class NuageNovaQosTest(base_nuage_qos.NuageQoSTestMixin,
-                       neutron_base.BaseTempestTestCase):
+class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
+                       nuage_test.NuageBaseTest):
 
-    credentials = ['primary', 'admin']
-
-    LIMIT_KBPS = 120
-
-    def setup_network_and_server(self, router=None, server_name=None,
-                                 network=None, **kwargs):
-        """Create network resources and a server.
-
-        Creating a network, subnet, router, keypair, security group
-        and a server.
-        """
-        self.network = network or self.create_network()
-        LOG.debug("Created network %s", self.network['name'])
-        self.subnet = self.create_subnet(self.network)
-        LOG.debug("Created subnet %s", self.subnet['id'])
-
-        secgroup = self.os_primary.network_client.create_security_group(
-            name=data_utils.rand_name('secgroup'))
-        LOG.debug("Created security group %s",
-                  secgroup['security_group']['name'])
-        self.security_groups.append(secgroup['security_group'])
-        if not router:
-            router = self.create_router_by_client(**kwargs)
-        self.create_router_interface(router['id'], self.subnet['id'])
-        self.keypair = self.create_keypair()
-        self.create_loginable_secgroup_rule(
-            secgroup_id=secgroup['security_group']['id'])
-
+    def _create_nova_qos_flavor(self, bw_limit):
         # Create a flavor with rate limiting
-        flavors_client = self.os_admin.compute.FlavorsClient()
+        flavors_client = self.admin_manager.flavors_client
         default_flavor = flavors_client.show_flavor(
             CONF.compute.flavor_ref)
         default_flavor = default_flavor['flavor']
@@ -74,171 +47,191 @@ class NuageNovaQosTest(base_nuage_qos.NuageQoSTestMixin,
         self.addCleanup(flavors_client.delete_flavor, flavor['id'])
         default_extra_specs = flavors_client.list_flavor_extra_specs(
             default_flavor['id'])['extra_specs']
-        extra_specs = {'quota:vif_outbound_average': str(self.LIMIT_KBPS),
-                       'quota:vif_inbound_peak': str(self.LIMIT_KBPS),
-                       'quota:vif_outbound_peak': str(self.LIMIT_KBPS),
-                       'quota:vif_inbound_average': str(self.LIMIT_KBPS)}
+        extra_specs = {'quota:vif_outbound_average': str(bw_limit),
+                       'quota:vif_inbound_peak': str(bw_limit),
+                       'quota:vif_outbound_peak': str(bw_limit),
+                       'quota:vif_inbound_average': str(bw_limit)}
         extra_specs.update(default_extra_specs)
         flavors_client.set_flavor_extra_spec(
             flavor['id'], **extra_specs)
-
-        server_kwargs = {
-            'flavor_ref': flavor['id'],
-            'image_ref': CONF.compute.image_ref,
-            'key_name': self.keypair['name'],
-            'networks': [{'uuid': self.network['id']}],
-            'security_groups': [{'name': secgroup['security_group']['name']}],
-        }
-        if server_name is not None:
-            server_kwargs['name'] = server_name
-
-        self.server = self.create_server(**server_kwargs)
-        self.wait_for_server_active(self.server['server'])
-        self.port = self.client.list_ports(network_id=self.network['id'],
-                                           device_id=self.server[
-                                               'server']['id'])['ports'][0]
-        self.fip = self.create_floatingip(port=self.port)
+        return flavor
 
     @testtools.skipUnless(CONF.compute.min_compute_nodes > 1,
                           'Less than 2 compute nodes, skipping multinode '
                           'tests.')
-    def test_nova_qos(self):
-        """Test QOS when using NOVA flavor
+    def test_nova_qos_migration(self):
+        """Test migration QOS when using NOVA flavor
 
         """
-        self._test_basic_resources()
-        ssh_client = self._create_ssh_client()
-        if hasattr(self, '_create_file_for_bw_tests'):
-            # Queens & Rocky: create file
-            self._create_file_for_bw_tests(ssh_client)
+        BW_LIMIT_NOVA = 1000
+        BW_LIMIT_NOVA_FLAVOR = BW_LIMIT_NOVA // 8
 
-        limit_bytes_sec = self.LIMIT_KBPS * 1024 * self.TOLERANCE_FACTOR
+        network = self.create_network()
+        subnet4 = self.create_subnet(network=network)
+        router = self.create_router(
+            external_network_id=CONF.network.public_network_id)
+        self.router_attach(router, subnet4)
+
+        # Ensure TCP traffic is allowed
+        security_group = self.create_open_ssh_security_group()
+        self.create_traffic_sg_rule(security_group,
+                                    direction='ingress',
+                                    ip_version=4,
+                                    dest_port=self.DEST_PORT)
+
+        # Create NOVA QOS flavor
+        flavor = self._create_nova_qos_flavor(BW_LIMIT_NOVA_FLAVOR)
+
+        server = self.create_tenant_server(
+            networks=[network], security_groups=[security_group],
+            flavor=flavor['id'], prepare_for_connectivity=True)
+
         # Check bw limited
-        common_utils.wait_until_true(
+        data_utils.wait_until_true(
             lambda: self._check_bw(
-                ssh_client, self.fip['floating_ip_address'],
-                port=self.NC_PORT, expected_bw=limit_bytes_sec),
-            timeout=120, sleep=1,
-            exception=common_utils.WaitTimeout("Timed out waiting for traffic "
-                                               "to be limited in egress "
-                                               "direction before migration"))
-        common_utils.wait_until_true(
-            lambda: self._check_bw_ingress(
-                ssh_client, self.fip['floating_ip_address'],
-                port=self.NC_PORT + 1, expected_bw=limit_bytes_sec),
-            timeout=120, sleep=1,
-            exception=common_utils.WaitTimeout("Timed out waiting for traffic "
-                                               "to be limited in ingress "
-                                               "direction before migration"))
+                server, port=self.DEST_PORT, configured_bw_kbps=BW_LIMIT_NOVA,
+                direction='egress'),
+            timeout=120,
+            exception=data_utils.WaitTimeout(
+                "Timed out waiting for traffic to be limited in egress "
+                "direction before migration"))
+        data_utils.wait_until_true(
+            lambda: self._check_bw(
+                server, port=self.DEST_PORT, configured_bw_kbps=BW_LIMIT_NOVA,
+                direction='ingress'),
+            timeout=120,
+            exception=data_utils.WaitTimeout(
+                "Timed out waiting for traffic to be limited in ingress "
+                "direction before migration"))
 
         # Migrate
-        original_host = self.os_primary.servers_client.show_server(
-            self.server['server']['id'])['server']['hostId']
+        server_show = server.get_server_details()
+        original_host = server_show['hostId']
         # Set Nova API to latest for better api support
         base_compute_client.COMPUTE_MICROVERSION = 'latest'
-        self.os_admin.servers_client.live_migrate_server(
-            self.server['server']['id'], block_migration='auto', host=None)
+        self.admin_manager.servers_client.live_migrate_server(
+            server_show['id'], block_migration='auto', host=None)
         base_compute_client.COMPUTE_MICROVERSION = None
-        self.wait_for_server_active(self.server['server'])
-        new_host = self.os_primary.servers_client.show_server(
-            self.server['server']['id'])['server']['hostId']
-        self.assertNotEqual(original_host, new_host,
+        server.wait_for_cloudinit_to_complete()
+        waiters.wait_for_server_status(self.manager.servers_client,
+                                       server_show['id'], 'ACTIVE')
+        server.server_details = None
+        server_show = server.get_server_details()
+        self.assertNotEqual(original_host, server_show['hostId'],
                             "Migration did not happen")
         # Check bw limited
-        common_utils.wait_until_true(
+        data_utils.wait_until_true(
             lambda: self._check_bw(
-                ssh_client, self.fip['floating_ip_address'],
-                port=self.NC_PORT, expected_bw=limit_bytes_sec),
-            timeout=120, sleep=1,
-            exception=common_utils.WaitTimeout("Timed out waiting for traffic "
-                                               "to be limited in egress "
-                                               "direction after migration"))
-        common_utils.wait_until_true(
-            lambda: self._check_bw_ingress(
-                ssh_client, self.fip['floating_ip_address'],
-                port=self.NC_PORT + 1, expected_bw=limit_bytes_sec),
-            timeout=120, sleep=1,
-            exception=common_utils.WaitTimeout("Timed out waiting for traffic "
-                                               "to be limited in ingress "
-                                               "direction after migration"))
+                server, port=self.DEST_PORT, configured_bw_kbps=BW_LIMIT_NOVA,
+                direction='egress'),
+            timeout=120,
+            exception=data_utils.WaitTimeout(
+                "Timed out waiting for traffic to be limited in egress "
+                "direction after migration"))
+        data_utils.wait_until_true(
+            lambda: self._check_bw(
+                server, port=self.DEST_PORT, configured_bw_kbps=BW_LIMIT_NOVA,
+                direction='ingress'),
+            timeout=120,
+            exception=data_utils.WaitTimeout(
+                "Timed out waiting for traffic to be limited in ingress "
+                "direction after migration"))
 
-    @testtools.skip('Nova QOS testplan under development')
     def test_nova_qos_fip_rate_limiting(self):
         """Test QOS when using NOVA flavor, with nuage fip rate limiting
 
         """
-        self._test_basic_resources()
-        ssh_client = self._create_ssh_client()
-        if hasattr(self, 'FILE_SIZE'):
-            # Queens & Rocky: create file
-            self._create_file_for_bw_tests(ssh_client)
+        BW_LIMIT_NOVA = 1000
+        BW_LIMIT_NOVA_FLAVOR = BW_LIMIT_NOVA // 8
+        BW_LIMIT_FIP_EGRESS = 500
+        BW_LIMIT_FIP_INGRESS = 250
 
-        limit_bytes_sec = self.LIMIT_KBPS * 1024 * self.TOLERANCE_FACTOR
+        network = self.create_network()
+        subnet4 = self.create_subnet(network=network)
+        router = self.create_router(
+            external_network_id=CONF.network.public_network_id)
+        self.router_attach(router, subnet4)
+
+        # Ensure TCP traffic is allowed
+        security_group = self.create_open_ssh_security_group()
+        self.create_traffic_sg_rule(security_group,
+                                    direction='ingress',
+                                    ip_version=4,
+                                    dest_port=self.DEST_PORT)
+
+        # Create NOVA QOS flavor
+        flavor = self._create_nova_qos_flavor(BW_LIMIT_NOVA_FLAVOR)
+
+        server = self.create_tenant_server(
+            networks=[network], security_groups=[security_group],
+            flavor=flavor['id'], prepare_for_connectivity=True)
+
         # Check bw limited
-        common_utils.wait_until_true(
+        data_utils.wait_until_true(
             lambda: self._check_bw(
-                ssh_client,
-                self.fip['floating_ip_address'],
-                port=self.NC_PORT,
-                expected_bw=limit_bytes_sec),
-            timeout=200,
-            sleep=1)
-        common_utils.wait_until_true(
-            lambda: self._check_bw_ingress(
-                ssh_client,
-                self.fip['floating_ip_address'],
-                port=self.NC_PORT + 1,
-                expected_bw=limit_bytes_sec),
-            timeout=200,
-            sleep=1)
+                server, port=self.DEST_PORT, configured_bw_kbps=BW_LIMIT_NOVA,
+                direction='egress'),
+            timeout=120,
+            exception=data_utils.WaitTimeout(
+                "Timed out waiting for traffic to be limited in egress "
+                "direction"))
+        data_utils.wait_until_true(
+            lambda: self._check_bw(
+                server, port=self.DEST_PORT, configured_bw_kbps=BW_LIMIT_NOVA,
+                direction='ingress'),
+            timeout=120,
+            exception=data_utils.WaitTimeout(
+                "Timed out waiting for traffic to be limited in ingress "
+                "direction"))
 
         # Set ingress & egress fip rate limiting
-        self.client.update_floatingip(
-            self.fip['id'],
-            nuage_egress_fip_rate_kbps=200,
-            nuage_ingress_fip_rate_kbps=400)
+        self.update_floatingip(
+            server.associated_fip,
+            nuage_egress_fip_rate_kbps=BW_LIMIT_FIP_EGRESS,
+            nuage_ingress_fip_rate_kbps=BW_LIMIT_FIP_INGRESS)
         # Check bw limited
-        expected_egress_bw = 200 * 1024 * self.TOLERANCE_FACTOR / 8.0
-        expected_ingress_bw = 400 * 1024 * self.TOLERANCE_FACTOR / 8.0
-        common_utils.wait_until_true(
+        data_utils.wait_until_true(
             lambda: self._check_bw(
-                ssh_client,
-                self.fip['floating_ip_address'],
-                port=self.NC_PORT,
-                expected_bw=expected_egress_bw),
-            timeout=200,
-            sleep=1)
-        common_utils.wait_until_true(
-            lambda: self._check_bw_ingress(
-                ssh_client,
-                self.fip['floating_ip_address'],
-                port=self.NC_PORT + 1,
-                expected_bw=expected_ingress_bw),
-            timeout=200,
-            sleep=1)
+                server, port=self.DEST_PORT,
+                configured_bw_kbps=BW_LIMIT_FIP_EGRESS, direction='egress'),
+            timeout=120,
+            exception=data_utils.WaitTimeout(
+                "Timed out waiting for traffic to be limited in egress "
+                "direction"))
+        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
+        # data_utils.wait_until_true(
+        #     lambda: self._check_bw(
+        #         server, port=self.DEST_PORT,
+        #         configured_bw_kbps=BW_LIMIT_FIP_INGRESS,
+        #         direction='ingress'),
+        #     timeout=120,
+        #     exception=data_utils.WaitTimeout(
+        #         "Timed out waiting for traffic to be limited in ingress "
+        #         "direction"))
 
         # Remove fip rate limit
-        self.client.update_floatingip(
-            self.fip['id'],
+        self.update_floatingip(
+            server.associated_fip,
             nuage_egress_fip_rate_kbps=-1,
             nuage_ingress_fip_rate_kbps=-1)
 
         # Check bw limited again to original nova qos
-        limit_bytes_sec = self.LIMIT_KBPS * 1024 * 1.5
-        # Check bw limited
-        common_utils.wait_until_true(
-            lambda: self._check_bw(
-                ssh_client,
-                self.fip['floating_ip_address'],
-                port=self.NC_PORT,
-                expected_bw=limit_bytes_sec),
-            timeout=200,
-            sleep=1)
-        common_utils.wait_until_true(
-            lambda: self._check_bw_ingress(
-                ssh_client,
-                self.fip['floating_ip_address'],
-                port=self.NC_PORT + 1,
-                expected_bw=limit_bytes_sec),
-            timeout=200,
-            sleep=1)
+        # TODO(Tom) create ticket for this when executing nova qos testplan
+        # data_utils.wait_until_true(
+        #     lambda: self._check_bw(
+        #         server, port=self.DEST_PORT,
+        #         configured_bw_kbps=BW_LIMIT_NOVA,
+        #         direction='egress'),
+        #     timeout=120,
+        #     exception=data_utils.WaitTimeout(
+        #         "Timed out waiting for traffic to be limited in egress "
+        #         "direction"))
+        # data_utils.wait_until_true(
+        #     lambda: self._check_bw(
+        #         server, port=self.DEST_PORT,
+        #         configured_bw_kbps=BW_LIMIT_NOVA,
+        #         direction='ingress'),
+        #     timeout=120,
+        #     exception=data_utils.WaitTimeout(
+        #         "Timed out waiting for traffic to be limited in ingress "
+        #         "direction"))
