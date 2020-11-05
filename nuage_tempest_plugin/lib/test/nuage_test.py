@@ -590,7 +590,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                     **kwargs)
                 break
             except lib_exc.BadRequest as e:
-                is_overlapping_cidr = 'overlaps with another subnet' in str(e)
+                is_overlapping_cidr = 'overlaps with' in str(e)
                 if not is_overlapping_cidr:
                     raise
         else:

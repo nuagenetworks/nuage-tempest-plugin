@@ -19,6 +19,8 @@ from neutron_tempest_plugin import config
 from oslo_log import log
 from tempest.lib.common.utils import data_utils
 
+from nuage_tempest_plugin.lib.utils import data_utils as utils
+
 LOG = log.getLogger(__name__)
 
 CONF = config.CONF
@@ -37,7 +39,7 @@ class NuageQosTestmixin(object):
 
     @staticmethod
     def kill_process(server, process):
-        cmd = "sudo killall -q {process}".format(process=process)
+        cmd = 'sudo killall -q {process}'.format(process=process)
         server.send(cmd, one_off_attempt=True)
 
     @staticmethod
@@ -117,15 +119,15 @@ class NuageQosTestmixin(object):
                   "while true; do nc {udp} -p {port} {nc_arg} "
                   "done;'".format(port=port, udp=udp, nc_arg=nc_argument))
         server.send(nc_cmd, one_off_attempt=True, as_sudo=True)
-        server.send("sudo netstat -tln", one_off_attempt=True)
+        server.send('sudo netstat -tln', one_off_attempt=True)
 
-    def _check_bw(self, host, port, direction, configured_bw_kbps):
+    def _check_bw(self, host, direction, configured_bw_kbps):
         # configure nc server
         # Kill previous screen or nc processes
         self.kill_process(host, 'screen nc')
-        self.nc_run(host, port, direction)
+        self.nc_run(host, self.DEST_PORT, direction)
         # Open TCP socket to remote VM and download big file
-        client_socket = self._get_socket_to(host, port)
+        client_socket = self._get_socket_to(host, self.DEST_PORT)
         write_data = ('x' * (self.BUFFER_SIZE - 1) + '\n').encode()
         try:
             start_time = time.time()
@@ -140,15 +142,15 @@ class NuageQosTestmixin(object):
                     total_bytes += len(write_data)
 
             time_elapsed = time.time() - start_time
-            kbps_measured = total_bytes / time_elapsed * 8 / 1024
+            kbps_measured = (total_bytes / time_elapsed) / 125
             print(kbps_measured)
             min_bw = (configured_bw_kbps -
                       configured_bw_kbps * self.TOLERANCE_FACTOR)
             max_bw = (configured_bw_kbps +
                       configured_bw_kbps * self.TOLERANCE_FACTOR)
-            LOG.debug("time_elapsed = %(time_elapsed).16f, "
-                      "kbps_measured = %(kbps_measured)d, "
-                      "expected bw = %(min_bw)d-%(max_bw)d.",
+            LOG.debug('time_elapsed = %(time_elapsed).16f, '
+                      'kbps_measured = %(kbps_measured)d, '
+                      'expected bw = %(min_bw)d-%(max_bw)d.',
                       {'time_elapsed': time_elapsed,
                        'kbps_measured': kbps_measured,
                        'min_bw': min_bw,
@@ -159,3 +161,23 @@ class NuageQosTestmixin(object):
             return False
         finally:
             client_socket.close()
+
+    def _test_bandwidth(self, server, egress_bw=None, ingress_bw=None,
+                        test_msg=None):
+        error_msg = ('Timed out waiting for traffic to be limited in {} '
+                     'direction: {}')
+        if egress_bw:
+            utils.wait_until_true(
+                lambda: self._check_bw(
+                    server, configured_bw_kbps=egress_bw, direction='egress'),
+                timeout=120,
+                exception=utils.WaitTimeout(
+                    error_msg.format('egress', test_msg)))
+        if ingress_bw:
+            utils.wait_until_true(
+                lambda: self._check_bw(
+                    server, configured_bw_kbps=ingress_bw,
+                    direction='ingress'),
+                timeout=120,
+                exception=utils.WaitTimeout(
+                    error_msg.format('ingress', test_msg)))
