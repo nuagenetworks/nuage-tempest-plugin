@@ -16,6 +16,7 @@ from nuage_tempest_plugin.tests.api.orchestration import nuage_base
 from tempest.common.utils.linux.remote_client import RemoteClient
 from tempest.lib.common.utils import data_utils
 from tempest.lib.common.utils import test_utils
+from tempest.lib import exceptions
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.topology import Topology
@@ -116,4 +117,7 @@ class OrchestrationVMwithMetadata(
         self._clear_stacks()
 
     def is_userdata_ready(self):
-        return 'pass' in self.fip_acs.exec_command('cat /tmp/userdata.out')
+        try:
+            return 'pass' in self.fip_acs.exec_command('cat /tmp/userdata.out')
+        except exceptions.SSHExecCommandFailed:
+            return False
