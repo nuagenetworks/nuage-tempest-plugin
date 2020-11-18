@@ -5,4 +5,4 @@
   roles:
     - role: fetch-subunit-output-nuage
       zuul_work_dir: '{{ devstack_base_dir }}/tempest'
-  environment: '{{ proxy_env }}'
+  environment: '{{ proxy_env | default({}) }}'
