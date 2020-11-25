@@ -731,6 +731,7 @@
       - openstack/octavia-tempest-plugin
       - openstack/python-octaviaclient
     vars:
+      tempest_concurrency: 2
       devstack_localrc:
         DEFAULT_IMAGE_NAME: cirros
         OCTAVIA_MGMT_SUBNET: 192.168.0.0/28
@@ -759,13 +760,13 @@
         o-da: true
       devstack_plugins:
         octavia: https://opendev.org/openstack/octavia.git
+        octavia-tempest-plugin: https://opendev.org/openstack/octavia-tempest-plugin.git
       tempest_plugins:
         - octavia-tempest-plugin
-        - nuage-tempest-plugin
       tempest_test_regex: octavia_tempest_plugin
       # availability zone tests are a master only feature which is unstable
       # ipv6 only vms are not reachable as they have no fip
-      tempest_black_regex: 'octavia_tempest_plugin.tests.api.v2.test_availability_zone|octavia_tempest_plugin.tests.scenario.v2.test_ipv6_traffic_ops.IPv6TrafficOperationsScenarioTest'
+      tempest_black_regex: 'octavia_tempest_plugin.tests.api.v2.test_availability_zone|octavia_tempest_plugin.tests.scenario.v2.test_ipv6_traffic_ops.IPv6TrafficOperationsScenarioTest|octavia_tempest_plugin.tests.act_stdby_scenario'
       zuul_copy_output:
         '/var/log/dib-build' : logs
 
@@ -783,6 +784,10 @@
           $OCTAVIA_CONF:
             controller_worker:
                 loadbalancer_topology: ACTIVE_STANDBY
+      # Only execute active standby & scenario tests
+      tempest_test_regex: 'octavia_tempest_plugin.tests.act_stdby_scenario|octavia_tempest_plugin.tests.api.test_flavor_profile|octavia_tempest_plugin.tests.scenario'
+      # ipv6 only vms are not reachable as they have no fip
+      tempest_black_regex: 'octavia_tempest_plugin.tests.scenario.v2.test_ipv6_traffic_ops.IPv6TrafficOperationsScenarioTest'
 
 - job:
     name: ovs-restart
