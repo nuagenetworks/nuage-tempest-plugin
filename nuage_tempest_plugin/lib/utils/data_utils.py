@@ -18,7 +18,7 @@ def gimme_a_cidr_address(ip_version=4, netmask=None):
                                   netmask)
     else:
         netmask = netmask or 64
-        return '2001:db8:%x::/%d' % (random.getrandbits(16), netmask)
+        return '2001:babe:%x::/%d' % (random.getrandbits(16), netmask)
 
 
 def gimme_a_cidr(ip_version=4, netmask=None):
