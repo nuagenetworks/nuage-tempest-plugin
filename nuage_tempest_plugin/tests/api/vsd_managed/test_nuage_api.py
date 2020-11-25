@@ -79,6 +79,8 @@ class NuageApiTest(NuageBaseTest):
                           vspk_backend_subnet=None, with_enterprise=True):
         # The backend subnet is only relevant when the l3 subnet is linked
         # to a backend subnet in Shared Infrastructure.
+        openstack_2913_bug_applies = (vspk_backend_subnet and
+                                      Topology.before_nuage('6.0'))
         vspk_backend_subnet = vspk_backend_subnet or vspk_subnet
         self.assertEqual(vspk_subnet.id, vsd_api_subnet.get('id'))
         self.assertEqual(vspk_subnet.name, vsd_api_subnet.get('name'))
@@ -90,12 +92,13 @@ class NuageApiTest(NuageBaseTest):
             self.assertIsNone(vsd_api_subnet.get('cidr'))
         self.assertEqual(vspk_backend_subnet.ipv6_address,
                          vsd_api_subnet.get('ipv6_cidr'))
-        self.assertEqual(vspk_backend_subnet.gateway,
-                         vsd_api_subnet.get('gateway'))
-        self.assertEqual(vspk_backend_subnet.ipv6_gateway,
-                         vsd_api_subnet.get('ipv6_gateway'))
-        self.assertEqual(vspk_backend_subnet.ip_type,
-                         vsd_api_subnet.get('ip_version'))
+        if not openstack_2913_bug_applies:
+            self.assertEqual(vspk_backend_subnet.gateway,
+                             vsd_api_subnet.get('gateway'))
+            self.assertEqual(vspk_backend_subnet.ipv6_gateway,
+                             vsd_api_subnet.get('ipv6_gateway'))
+            self.assertEqual(vspk_backend_subnet.ip_type,
+                             vsd_api_subnet.get('ip_version'))
         if with_enterprise:
             self.assertEqual(self.vsd.get_default_enterprise().name,
                              vsd_api_subnet.get('net_partition'))
