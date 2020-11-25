@@ -15,6 +15,7 @@
 
 from netaddr import IPAddress
 from netaddr import IPNetwork
+import testtools
 
 from tempest.lib.common.utils import data_utils
 
@@ -216,6 +217,9 @@ class NuageApiTest(NuageBaseTest):
                          'found: {}'.format(len(subnets)))
         self._verify_l3_subnet(subnets[0], vspk_subnet, with_enterprise=False)
 
+    @testtools.skipIf(Topology.is_v5,
+                      'Test is skipped as os_router_ids is supported 6.0 '
+                      'onwards only')
     def test_get_vsd_domains_neg(self):
         router = self.create_router()
 
