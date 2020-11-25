@@ -190,6 +190,10 @@ class Topology(object):
         return not cls.is_v5
 
     @classmethod
+    def has_switchdev_virtio_forwarder_support(cls):
+        return cls.from_nuage('20.10R3') and cls.from_openstack('train')
+
+    @classmethod
     def has_secured_netpartitions_support(cls):
         return cls.from_openstack('queens')
 
