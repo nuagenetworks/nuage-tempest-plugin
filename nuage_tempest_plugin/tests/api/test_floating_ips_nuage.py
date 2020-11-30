@@ -106,8 +106,6 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
             port_id=self.ports[2]['id'])
 
         created_floating_ip = body['floatingip']
-        self.addCleanup(self.floating_ips_client.delete_floatingip,
-                        created_floating_ip['id'])
         self.assertIsNotNone(created_floating_ip['id'])
         self.assertIsNotNone(created_floating_ip['tenant_id'])
         self.assertIsNotNone(created_floating_ip['floating_ip_address'])
@@ -176,6 +174,19 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
         # VSD Validation
         self._verify_fip_on_vsd(
             created_floating_ip, self.router['id'], None, None, False)
+
+        # Delete floating ip
+        self.floating_ips_client.delete_floatingip(created_floating_ip['id'])
+        vsd_l3domain = self.nuage_client.get_l3domain(
+            filters='externalID',
+            filter_values=created_floating_ip['router_id'])
+        vsd_fips = self.nuage_client.get_floatingip(
+            constants.DOMAIN, vsd_l3domain[0]['ID'])
+        for vsd_fip in vsd_fips:
+            if (vsd_fip['address'] ==
+                    created_floating_ip['floating_ip_address']):
+                self.fail("No cleanup happened. Floatingip still exists on "
+                          "VSD and not in Neutron.")
 
     @decorators.attr(type='smoke')
     def test_create_update_floating_ip(self):
@@ -621,6 +632,14 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
                                port_id=port['id'],
                                fixed_ip_address=str(
                                    IPAddress(cidr4.first) + 4))
+        # Verify update did not go through
+        floating_ip = self.floating_ips_client.show_floatingip(
+            floating_ip['id'])['floatingip']
+        self.assertIsNone(floating_ip['port_id'])
+
+        # Explicit floating ip deletion check
+        self.floating_ips_client.delete_floatingip(floating_ip['id'])
+
         # 2. Assigning multiple ip address to a port with fip
         port = self.create_port(network=network)
         floating_ip = self.create_floatingip(
@@ -643,3 +662,7 @@ class FloatingIPTestJSONNuage(test_floating_ips.FloatingIPTestJSON):
                                msg,
                                self.update_port,
                                port=port, **port_args)
+        floating_ip = self.floating_ips_client.show_floatingip(
+            floating_ip['id'])['floatingip']
+        # Explicit floating ip deletion check
+        self.floating_ips_client.delete_floatingip(floating_ip['id'])
