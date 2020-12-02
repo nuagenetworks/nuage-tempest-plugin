@@ -69,8 +69,8 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
                                             addrpair_ip, addrpair_mac):
         ip_address = port['allowed_address_pairs'][0]['ip_address']
         mac_address = port['allowed_address_pairs'][0]['mac_address']
-        self.assertEqual(ip_address, addrpair_ip)
-        self.assertEqual(mac_address, addrpair_mac)
+        self.assertEqual(addrpair_ip, ip_address)
+        self.assertEqual(addrpair_mac, mac_address)
 
     def create_port(self, network, cleanup=True, **kwargs):
         if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
@@ -821,6 +821,174 @@ class AllowedAddressPairTest(base.BaseNetworkTest):
             parent=n_constants.DOMAIN, parent_id=nuage_domain[0]['ID'])
         self.assertEqual(
             nuage_static_route[0]['nextHopIp'], next_hop, "wrong nexthop")
+
+    @testtools.skipUnless(Topology.from_nuage('20.10R2') or
+                          Topology.from_nuage('6.0.12',
+                                              within_stream='6.0') or
+                          Topology.from_nuage('5.4.1.U16',
+                                              within_stream='5.4'),
+                          "Single IP VIP CIDR not allowed on older releases.")
+    def test_allowed_address_pair_single_ip_cidr(self):
+        """test_allowed_address_pair_single_ip_cidr
+
+        Test that using CIDR notation with an address range of only one ip
+        is allowed.
+
+        """
+        addrpair_port = self.create_port(self.l3network,
+                                         device_owner='nuage:vip')
+        cidr_suffix = '/32' if self._ip_version == 4 else '/128'
+        ip_address = addrpair_port['fixed_ips'][0]['ip_address'] + cidr_suffix
+        mac_address = addrpair_port['mac_address']
+        allowed_address_pairs = [
+            {'ip_address': ip_address,
+             'mac_address': mac_address}]
+        port = self.create_port(network=self.l3network,
+                                allowed_address_pairs=allowed_address_pairs)
+        self._verify_port_allowed_address_fields(
+            port, ip_address, mac_address)
+        # Check VIP is created in VSD
+        l3domain_ext_id = self.nuage_client.get_vsd_external_id(
+            self.router['id'])
+        nuage_domain = self.nuage_client.get_resource(
+            n_constants.DOMAIN,
+            filters='externalID',
+            filter_values=l3domain_ext_id)
+        nuage_subnet = self.nuage_client.get_domain_subnet(
+            n_constants.DOMAIN,
+            nuage_domain[0]['ID'],
+            by_subnet=self.l3subnet)
+        port_ext_id = self.nuage_client.get_vsd_external_id(port['id'])
+        nuage_vport = self.nuage_client.get_vport(
+            n_constants.SUBNETWORK,
+            nuage_subnet[0]['ID'],
+            filters='externalID',
+            filter_values=port_ext_id)
+        self.assertEqual(SPOOFING_DISABLED,
+                         nuage_vport[0]['addressSpoofing'])
+        nuage_vip = self.nuage_client.get_virtual_ip(
+            n_constants.VPORT,
+            nuage_vport[0]['ID'],
+            filters='virtualIP',
+            filter_values=addrpair_port['fixed_ips'][0]['ip_address'])
+        self.assertEqual(addrpair_port['mac_address'], nuage_vip[0]['MAC'])
+        self.assertEqual(nuage_vip[0]['externalID'],
+                         self.nuage_client.get_vsd_external_id(
+                             port['id']))
+        # Verify clearing
+        self.update_port(port=port, allowed_address_pairs=[])
+        nuage_vport = self.nuage_client.get_vport(
+            n_constants.SUBNETWORK,
+            nuage_subnet[0]['ID'],
+            filters='externalID',
+            filter_values=port_ext_id)
+        self.assertEqual(SPOOFING_DISABLED,
+                         nuage_vport[0]['addressSpoofing'])
+        nuage_vip = self.nuage_client.get_virtual_ip(
+            n_constants.VPORT,
+            nuage_vport[0]['ID'],
+            filters='virtualIP',
+            filter_values=addrpair_port['fixed_ips'][0]['ip_address'])
+        self.assertIsNot(nuage_vip, "Found VIP after deleting address pair")
+
+    @testtools.skipUnless(Topology.from_nuage('20.10R2') or
+                          Topology.from_nuage('6.0.12',
+                                              within_stream='6.0') or
+                          Topology.from_nuage('5.4.1.U16',
+                                              within_stream='5.4'),
+                          "Single IP VIP CIDR not allowed on older releases.")
+    def test_allowed_address_pair_single_ip_cidr_delete_other_aap(self):
+        """test_allowed_address_pair_single_ip_cidr_delete_other_aap
+
+        Test that using CIDR notation with an address range of only one ip
+        is allowed, a second AAP does not interfere and deleting that second
+        AAP does not delete the original /32 CIDR AAP. This tests the deletion
+        of AAP flow.
+
+        """
+        addrpair_port = self.create_port(self.l3network,
+                                         device_owner='nuage:vip')
+        addrpair_port2 = self.create_port(self.l3network,
+                                          device_owner='nuage:vip')
+        cidr_suffix = '/32' if self._ip_version == 4 else '/128'
+        ip_address = addrpair_port['fixed_ips'][0]['ip_address'] + cidr_suffix
+        mac_address = addrpair_port['mac_address']
+        allowed_address_pairs = [
+            {'ip_address': ip_address,
+             'mac_address': mac_address}]
+        port = self.create_port(network=self.l3network,
+                                allowed_address_pairs=allowed_address_pairs)
+        self._verify_port_allowed_address_fields(
+            port, ip_address, mac_address)
+        # Update port with second ip
+        ip_address2 = addrpair_port2['fixed_ips'][0]['ip_address']
+        mac_address2 = addrpair_port2['mac_address']
+        allowed_address_pairs_update = [
+            {'ip_address': ip_address,
+             'mac_address': mac_address},
+            {'ip_address': ip_address2,
+             'mac_address': mac_address2},
+        ]
+        self.update_port(port,
+                         allowed_address_pairs=allowed_address_pairs_update)
+        # Check VIPs are created in VSD
+        l3domain_ext_id = self.nuage_client.get_vsd_external_id(
+            self.router['id'])
+        nuage_domain = self.nuage_client.get_resource(
+            n_constants.DOMAIN,
+            filters='externalID',
+            filter_values=l3domain_ext_id)
+        nuage_subnet = self.nuage_client.get_domain_subnet(
+            n_constants.DOMAIN,
+            nuage_domain[0]['ID'],
+            by_subnet=self.l3subnet)
+        port_ext_id = self.nuage_client.get_vsd_external_id(port['id'])
+        nuage_vport = self.nuage_client.get_vport(
+            n_constants.SUBNETWORK,
+            nuage_subnet[0]['ID'],
+            filters='externalID',
+            filter_values=port_ext_id)
+        self.assertEqual(SPOOFING_DISABLED,
+                         nuage_vport[0]['addressSpoofing'])
+        # First VIP
+        nuage_vip = self.nuage_client.get_virtual_ip(
+            n_constants.VPORT,
+            nuage_vport[0]['ID'],
+            filters='virtualIP',
+            filter_values=addrpair_port['fixed_ips'][0]['ip_address'])
+        self.assertEqual(addrpair_port['mac_address'], nuage_vip[0]['MAC'])
+        self.assertEqual(nuage_vip[0]['externalID'],
+                         self.nuage_client.get_vsd_external_id(
+                             port['id']))
+        # Second vip
+        nuage_vip = self.nuage_client.get_virtual_ip(
+            n_constants.VPORT,
+            nuage_vport[0]['ID'],
+            filters='virtualIP',
+            filter_values=addrpair_port2['fixed_ips'][0]['ip_address'])
+        self.assertEqual(addrpair_port2['mac_address'], nuage_vip[0]['MAC'])
+        self.assertEqual(nuage_vip[0]['externalID'],
+                         self.nuage_client.get_vsd_external_id(
+                             port['id']))
+
+        # Verify clearing to only first address pair
+        self.update_port(port, allowed_address_pairs=allowed_address_pairs)
+        nuage_vport = self.nuage_client.get_vport(
+            n_constants.SUBNETWORK,
+            nuage_subnet[0]['ID'],
+            filters='externalID',
+            filter_values=port_ext_id)
+        self.assertEqual(SPOOFING_DISABLED,
+                         nuage_vport[0]['addressSpoofing'])
+        nuage_vip = self.nuage_client.get_virtual_ip(
+            n_constants.VPORT,
+            nuage_vport[0]['ID'],
+            filters='virtualIP',
+            filter_values=addrpair_port['fixed_ips'][0]['ip_address'])
+        self.assertEqual(addrpair_port['mac_address'], nuage_vip[0]['MAC'])
+        self.assertEqual(nuage_vip[0]['externalID'],
+                         self.nuage_client.get_vsd_external_id(
+                             port['id']))
 
 
 class AllowedAddressPairV6Test(AllowedAddressPairTest):
