@@ -11,6 +11,7 @@ class Release(object):
     # TODO(DEV TEAM) -- ADAPT FOR EACH NEW 0.0 RELEASE!
     # we want to make sure that Release('20.10') == Release('0.0') yields true
     current_0_0_release = '20.10'
+    current_sub_release = '2'  # we march towards 20.10R2
 
     def __init__(self, release_string):
         self._parse_release(release_string)
@@ -28,6 +29,10 @@ class Release(object):
             parsed.group(2) or '0.0')
         self.labelled = 'R' in release.upper()
         self.sub_release = parsed.group(5) or ''
+        if (self.major_release == self.current_0_0_release and
+                not self.sub_release):
+            self.labelled = True
+            self.sub_release = self.current_sub_release
         self.major_list = [int(rel) for rel in self.major_release.split('.')]
         self.sub_list = [int(rel) for rel in self.sub_release.split('.')
                          if rel]

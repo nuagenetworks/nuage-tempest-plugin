@@ -25,6 +25,10 @@ class ReleaseUnitTest(testtools.TestCase):
         assert not r_6_0 > r_6_0
         assert not r_6_0 < r_6_0
 
+        assert Release('20.10R2') > Release('20.10R1')
+        assert Release('20.10') > Release('20.10R1')
+        assert Release('20.10') == Release('20.10R2')
+
     @staticmethod
     def test_os_flavor_comparison():
         assert kilo < ocata < queens < master
