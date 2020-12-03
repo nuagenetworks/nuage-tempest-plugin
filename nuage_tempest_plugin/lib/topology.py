@@ -69,8 +69,13 @@ class Topology(object):
         return Topology.openstack_version > Release(openstack_version)
 
     @staticmethod
-    def from_nuage(nuage_release):
-        return Topology.nuage_release >= Release(nuage_release)
+    def from_nuage(nuage_release, within_stream=None):
+        # e.g use as :
+        # from_nuage('6.0.12', within_stream='6.0')
+        match = Topology.nuage_release >= Release(nuage_release)
+        if within_stream:
+            match = match and Topology.up_to_nuage(within_stream)
+        return match
 
     @staticmethod
     def from_openstack(openstack_version):
