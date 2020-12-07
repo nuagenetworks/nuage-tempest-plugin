@@ -26,12 +26,12 @@ class Release(object):
 
     def _parse_release(self, release):
         parsed = Release.release_regex.search(release)
+        if parsed is None:
+            raise Exception("Can not parse release String '%s'" % release)
+
         first_non_numerical_part = parsed.group(1)
         middle_part = parsed.group(2)
         last_numerical_part = parsed.group(5)
-
-        if parsed is None:
-            raise Exception("Can not parse release String '%s'" % release)
 
         self.openstack_release = (first_non_numerical_part or 'master').lower()
         if self.openstack_release == 'master':
