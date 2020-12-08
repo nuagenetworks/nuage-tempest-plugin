@@ -45,4 +45,9 @@
       lineinfile:
         path: /opt/stack/requirements/upper-constraints.txt
         line: uwsgi===2.0.18
+
+    - name: Workaround bandit 1.6.3
+      lineinfile:
+        path: /opt/stack/requirements/upper-constraints.txt
+        line: bandit===1.6.2
   environment: '{{ proxy_env | default({}) }}'
