@@ -14,12 +14,9 @@
 #    under the License.
 
 import tempest.test
-import testtools
 
-from .external_id import ExternalId
-
-from nuage_tempest_plugin.lib.release import Release
 from nuage_tempest_plugin.lib.utils import constants as n_constants
+from nuage_tempest_plugin.tests.api.external_id.external_id import ExternalId
 
 
 class ExternalIdTest(tempest.test.BaseTestCase):
@@ -51,43 +48,3 @@ class ExternalIdTest(tempest.test.BaseTestCase):
         self.assertEqual(
             external_id.uuid,
             n_constants.NUAGE_PLCY_GRP_ALLOW_ALL)
-
-
-class ReleaseTest(testtools.TestCase):
-    def test_release_full(self):
-        release = Release("kilo 4.0R3")
-        self.assertEqual(release.openstack_release, "kilo")
-        self.assertEqual(release.major_release, "4.0")
-        self.assertEqual(release.major_list[0], 4)
-        self.assertEqual(release.major_list[1], 0)
-        self.assertEqual(release.sub_release, '3')
-
-    def test_release_dot_release(self):
-        release = Release("4.0R3")
-        self.assertEqual(release.openstack_release, "master")
-        self.assertEqual(release.major_release, "4.0")
-        self.assertEqual(release.major_list[0], 4)
-        self.assertEqual(release.major_list[1], 0)
-        self.assertEqual(release.sub_release, '3')
-
-    def test_release_branch_release(self):
-        release = Release("liberty-PROD-2456-plugin-11")
-        self.assertEqual(release.openstack_release, "liberty")
-        # self.assertEqual(release.major_release, "4.0")
-        # self.assertEqual(release.major_list[0], "4")
-        # self.assertEqual(release.major_list[1], "0")
-        # self.assertEqual(release.sub_release, 3)
-
-    def test_release_compare(self):
-        release = Release('4.0R5')
-        current_release = Release('0.0')
-
-        self.assertFalse(current_release == release)
-        self.assertFalse(current_release < release)
-        self.assertTrue(current_release > release)
-        self.assertFalse(current_release <= release)
-
-        self.assertFalse(release == current_release)
-        self.assertTrue(release < current_release)
-        self.assertFalse(release > current_release)
-        self.assertTrue(release <= current_release)
