@@ -128,3 +128,18 @@ NuageSutGroup = [
                choices=['wbx', 'cisco'],
                help="The type of VTEP gateway")
 ]
+
+nuage_feature_group = cfg.OptGroup(name='nuage-feature-enabled',
+                                   title='Enabled nuage service features on '
+                                         'the system under test')
+
+NuageFeaturesGroup = [
+    cfg.BoolOpt('proprietary_fip_rate_limiting',
+                default=True,
+                help='Does the test environment support Nuage proprietary'
+                     ' floating ip rate limiting for all computes.'),
+    cfg.BoolOpt('nova_qos',
+                default=True,
+                help='Does the test environment support nova/libvirt qos for '
+                     'all computes'),
+]

@@ -37,9 +37,14 @@ class NuageTempestPlugin(plugins.TempestPlugin):
         config.register_opt_group(
             conf, project_config.nuage_sut_group,
             project_config.NuageSutGroup)
+        config.register_opt_group(
+            conf, project_config.nuage_feature_group,
+            project_config.NuageFeaturesGroup)
 
     def get_opt_lists(self):
         return [(project_config.nuage_vsd_group.name,
                  project_config.NuageVsdGroup),
                 (project_config.nuage_sut_group.name,
-                 project_config.NuageSutGroup)]
+                 project_config.NuageSutGroup),
+                (project_config.nuage_feature_group.name,
+                 project_config.NuageFeaturesGroup)]

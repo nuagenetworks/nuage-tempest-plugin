@@ -12,14 +12,16 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+import testtools
 import time
 
 from oslo_log import log
 from tempest.common import utils
+from tempest.common import waiters
+from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
-from nuage_tempest_plugin.lib.utils import data_utils
 from nuage_tempest_plugin.tests.scenario.qos import base_nuage_qos
 
 CONF = Topology.get_conf()
@@ -32,10 +34,14 @@ class NuageFloatingIPProprietaryQosTest(base_nuage_qos.NuageQosTestmixin,
     same_network = True
 
     @classmethod
-    @utils.requires_ext(extension="router", service="network")
+    @utils.requires_ext(extension='router', service='network')
     def resource_setup(cls):
         super(NuageFloatingIPProprietaryQosTest, cls).resource_setup()
 
+    @testtools.skipIf(
+        not CONF.nuage_feature_enabled.proprietary_fip_rate_limiting,
+        'Support for fip rate limiting required')
+    @decorators.attr(type='smoke')
     def test_nuage_fip_rate_limit(self):
         """test_nuage_fip_rate_limit
 
@@ -69,24 +75,12 @@ class NuageFloatingIPProprietaryQosTest(base_nuage_qos.NuageQosTestmixin,
             nuage_egress_fip_rate_kbps=egress_kbps,
             nuage_ingress_fip_rate_kbps=ingress_kbps)
 
-        data_utils.wait_until_true(
-            lambda: self._check_bw(
-                server, port=self.DEST_PORT, configured_bw_kbps=egress_kbps,
-                direction='egress'),
-            timeout=120,
-            exception=data_utils.WaitTimeout("Timed out waiting for traffic "
-                                             "to be limited in egress "
-                                             "direction"))
+        self._test_bandwidth(server, egress_bw=egress_kbps,
+                             test_msg='original Fip.')
         # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
-        # data_utils.wait_until_true(
-        #     lambda: self._check_bw(
-        #         server, port=self.DEST_PORT, configured_bw_kbps=egress_kbps,
-        #         direction='ingress'),
-        #     timeout=120,
-        # exception = data_utils.WaitTimeout("Timed out waiting for "
-        #                                      "traffic "
-        #                                      "to be limited in egress "
-        #                                      "direction"))
+        # self._test_bandwidth(server, egress_bw=egress_kbps,
+        #                      ingress_bw=ingress_kbps,
+        #                      test_msg='original Fip.')
 
         # Update floating ip QOS to new value
         egress_kbps = 200
@@ -96,31 +90,164 @@ class NuageFloatingIPProprietaryQosTest(base_nuage_qos.NuageQosTestmixin,
             nuage_egress_fip_rate_kbps=egress_kbps,
             nuage_ingress_fip_rate_kbps=ingress_kbps)
 
-        data_utils.wait_until_true(
-            lambda: self._check_bw(
-                server, port=self.DEST_PORT, configured_bw_kbps=egress_kbps,
-                direction='egress'),
-            timeout=120,
-            exception=data_utils.WaitTimeout("Timed out waiting for traffic "
-                                             "to be limited in egress "
-                                             "direction after fip rate limit"
-                                             " update"))
-        # data_utils.wait_until_true(
-        #     lambda: self._check_bw(
-        #         server, port=self.DEST_PORT, configured_bw_kbps=egress_kbps,
-        #         direction='ingress'),
-        #     timeout=120,
-        #  exception=data_utils.WaitTimeout("Timed out waiting for traffic"
-        #                                     "to be limited in ingress "
-        #                                     "direction after fip rate
-        #                                     "limit update"))
+        self._test_bandwidth(server, egress_bw=egress_kbps,
+                             test_msg='updated Fip.')
+        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
+        # self._test_bandwidth(server, egress_bw=egress_kbps,
+        #                      ingress_bw=ingress_kbps,
+        #                      test_msg='updated Fip.')
+
+    @testtools.skipIf(
+        not CONF.nuage_feature_enabled.proprietary_fip_rate_limiting,
+        'Support for fip rate limiting required')
+    def test_nuage_fip_rate_limit_reboot(self):
+        """test_nuage_fip_rate_limit_reboot
+
+           Test floating IP with ingress and egress bandwidth limiting enabled
+           by sending a file from the instance to the test node.
+           Then calculating the bandwidth every ~1 sec by the number of bits
+           received / elapsed time.
+           Specifically testing that after reboot of VM QOS rate is maintained.
+        """
+
+        network = self.create_network()
+        subnet4 = self.create_subnet(network=network)
+        router = self.create_router(
+            external_network_id=CONF.network.public_network_id)
+        self.router_attach(router, subnet4)
+
+        # Ensure TCP traffic is allowed
+        security_group = self.create_open_ssh_security_group()
+        self.create_traffic_sg_rule(security_group,
+                                    direction='ingress',
+                                    ip_version=4,
+                                    dest_port=self.DEST_PORT)
+
+        server = self.create_tenant_server(
+            networks=[network], security_groups=[security_group],
+            prepare_for_connectivity=True)
+
+        egress_kbps = 500
+        ingress_kbps = 1000
+        self.update_floatingip(
+            server.associated_fip,
+            nuage_egress_fip_rate_kbps=egress_kbps,
+            nuage_ingress_fip_rate_kbps=ingress_kbps)
+
+        self._test_bandwidth(server, egress_bw=egress_kbps,
+                             test_msg='original Fip.')
+        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
+        # self._test_bandwidth(server, egress_bw=egress_kbps,
+        #                      ingress_bw=ingress_kbps,
+        #                      test_msg='original Fip.')
+
+        # reboot server
+        self.manager.servers_client.reboot_server(server.id, type='HARD')
+        waiters.wait_for_server_status(self.manager.servers_client, server.id,
+                                       'ACTIVE')
+
+        self._test_bandwidth(server, egress_bw=egress_kbps,
+                             test_msg='original Fip after reboot.')
+        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
+        # self._test_bandwidth(server, egress_bw=egress_kbps,
+        #                      ingress_bw=ingress_kbps,
+        #                      test_msg='original Fip after reboot.')
+
+        # Update floating ip QOS to new value
+        egress_kbps = 200
+        ingress_kbps = 400
+        self.update_floatingip(
+            server.associated_fip,
+            nuage_egress_fip_rate_kbps=egress_kbps,
+            nuage_ingress_fip_rate_kbps=ingress_kbps)
+
+        self._test_bandwidth(server, egress_bw=egress_kbps,
+                             test_msg='updated Fip.')
+        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
+        # self._test_bandwidth(server, egress_bw=egress_kbps,
+        #                      ingress_bw=ingress_kbps,
+        #                      test_msg='updated Fip.')
+
+        # reboot server
+        self.manager.servers_client.reboot_server(server.id, type='HARD')
+        waiters.wait_for_server_status(self.manager.servers_client,
+                                       server.id,
+                                       'ACTIVE')
+
+        self._test_bandwidth(server, egress_bw=egress_kbps,
+                             test_msg='updated Fip after reboot.')
+        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
+        # self._test_bandwidth(server, egress_bw=egress_kbps,
+        #                      ingress_bw=ingress_kbps,
+        #                      test_msg='updated Fip after reboot.')
+
+    @testtools.skipIf(
+        not CONF.nuage_feature_enabled.proprietary_fip_rate_limiting,
+        'Support for fip rate limiting required')
+    def test_nuage_fip_rate_limit_multivm(self):
+        """test_nuage_fip_rate_limit_multivm
+
+           Test floating IP with ingress and egress bandwidth limiting enabled
+           by sending a file from the instance to the test node.
+           Enable multiple VMs with a rate limit, to make sure subsequent VMs
+           do not get stuck at one specific rate.
+        """
+
+        network = self.create_network()
+        subnet4 = self.create_subnet(network=network)
+        router = self.create_router(
+            external_network_id=CONF.network.public_network_id)
+        self.router_attach(router, subnet4)
+
+        # Ensure TCP traffic is allowed
+        security_group = self.create_open_ssh_security_group()
+        self.create_traffic_sg_rule(security_group,
+                                    direction='ingress',
+                                    ip_version=4,
+                                    dest_port=self.DEST_PORT)
+        server = self.create_tenant_server(
+            networks=[network], security_groups=[security_group],
+            prepare_for_connectivity=True)
+
+        egress_kbps = 500
+        ingress_kbps = 1000
+        self.update_floatingip(
+            server.associated_fip,
+            nuage_egress_fip_rate_kbps=egress_kbps,
+            nuage_ingress_fip_rate_kbps=ingress_kbps)
+
+        self._test_bandwidth(server, egress_bw=egress_kbps,
+                             test_msg='original Fip.')
+        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
+        # self._test_bandwidth(server, egress_bw=egress_kbps,
+        #                      ingress_bw=ingress_kbps,
+        #                      test_msg='original Fip.')
+
+        self.delete_server(server.id)
+        server2 = self.create_tenant_server(
+            networks=[network], security_groups=[security_group],
+            prepare_for_connectivity=True)
+
+        egress_kbps = 1000
+        ingress_kbps = 1500
+        self.update_floatingip(
+            server2.associated_fip,
+            nuage_egress_fip_rate_kbps=egress_kbps,
+            nuage_ingress_fip_rate_kbps=ingress_kbps)
+
+        self._test_bandwidth(server2, egress_bw=egress_kbps,
+                             test_msg='Updated Fip.')
+        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
+        # self._test_bandwidth(server, egress_bw=egress_kbps,
+        #                      ingress_bw=ingress_kbps,
+        #                      test_msg='Updated Fip.')
 
 
 class RateLimitingNuageQosScenarioTest(base_nuage_qos.NuageQosTestmixin,
                                        nuage_test.NuageBaseTest):
 
     @classmethod
-    @utils.requires_ext(extension="qos", service="network")
+    @utils.requires_ext(extension='qos', service='network')
     def resource_setup(cls):
         super(RateLimitingNuageQosScenarioTest, cls).resource_setup()
 
@@ -139,21 +266,21 @@ class RateLimitingNuageQosScenarioTest(base_nuage_qos.NuageQosTestmixin,
             this test is planned to verify that:
             - actual BW is affected as expected after updating QoS policy.
             Test scenario:
-            1) Associating QoS Policy with "Original_bandwidth"
+            1) Associating QoS Policy with 'Original_bandwidth'
                to the test node
             2) BW validation - by downloading file on test node.
-               ("Original_bandwidth" is expected)
+               ('Original_bandwidth' is expected)
             3) Updating existing QoS Policy to a new BW value
-               "Updated_bandwidth"
+               'Updated_bandwidth'
             4) BW validation - by downloading file on test node.
-               ("Updated_bandwidth" is expected)
+               ('Updated_bandwidth' is expected)
             Note:
             There are two options to associate QoS policy to VM:
-            "Neutron Port" or "Network", in this test
+            'Neutron Port' or 'Network', in this test
             both options are covered.
         """
         if 'bandwidth_limit' not in self.list_qos_rule_types():
-            self.skipTest("bandwidth_limit rule type is required.")
+            self.skipTest('bandwidth_limit rule type is required.')
         BW_LIMIT_NETWORK = 1000
         BW_LIMIT_UPDATE_NETWORK = 2000
         BW_LIMIT_PORT = 1000
@@ -176,7 +303,7 @@ class RateLimitingNuageQosScenarioTest(base_nuage_qos.NuageQosTestmixin,
             networks=[network], security_groups=[security_group],
             prepare_for_connectivity=True)
         # Set MTU on server
-        server.send("sudo ip link set dev eth0 mtu 1450")
+        server.send('sudo ip link set dev eth0 mtu 1400')
 
         bw_limit_policy_id = self.create_qos_policy()['id']
         rule_id = self.create_qos_bandwidth_limit_rule(
@@ -190,29 +317,17 @@ class RateLimitingNuageQosScenarioTest(base_nuage_qos.NuageQosTestmixin,
         self.addCleanup(self.update_network, network['id'],
                         manager=self.admin_manager, qos_policy_id=None)
 
-        data_utils.wait_until_true(
-            lambda: self._check_bw(
-                server, port=self.DEST_PORT,
-                configured_bw_kbps=BW_LIMIT_NETWORK, direction='egress'),
-            timeout=120,
-            exception=data_utils.WaitTimeout(
-                "Timed out waiting for traffic to be limited in egress "
-                "direction, QOS policy assigned to network"))
+        self._test_bandwidth(server, egress_bw=BW_LIMIT_NETWORK,
+                             test_msg='QOS policy assigned to network.')
 
         # update active QOS policy
         self.update_qos_bandwidth_limit_rule(
             bw_limit_policy_id, rule_id, max_kbps=BW_LIMIT_UPDATE_NETWORK,
             max_burst_kbps=BW_LIMIT_UPDATE_NETWORK)
 
-        data_utils.wait_until_true(
-            lambda: self._check_bw(
-                server, port=self.DEST_PORT,
-                configured_bw_kbps=BW_LIMIT_UPDATE_NETWORK,
-                direction='egress'),
-            timeout=120,
-            exception=data_utils.WaitTimeout(
-                "Timed out waiting for traffic to be limited in egress "
-                "direction, updated QOS policy assigned to network"))
+        self._test_bandwidth(server, egress_bw=BW_LIMIT_UPDATE_NETWORK,
+                             test_msg='updated QOS policy assigned '
+                                      'to network.')
 
         # Set QOS policy on Port
         port = server.get_server_port_in_network(network)
@@ -227,41 +342,27 @@ class RateLimitingNuageQosScenarioTest(base_nuage_qos.NuageQosTestmixin,
                         manager=self.admin_manager,
                         qos_policy_id=None)
 
-        data_utils.wait_until_true(
-            lambda: self._check_bw(
-                server, port=self.DEST_PORT, configured_bw_kbps=BW_LIMIT_PORT,
-                direction='egress'),
-            timeout=120,
-            exception=data_utils.WaitTimeout(
-                "Timed out waiting for traffic to be limited in egress "
-                "direction, QOS policy assigned to port"))
+        self._test_bandwidth(server, egress_bw=BW_LIMIT_PORT,
+                             test_msg='QOS policy assigned to port.')
 
         # update active QOS policy
         self.update_qos_bandwidth_limit_rule(
             new_bw_limit_policy_id, new_rule_id, max_kbps=BW_LIMIT_UPDATE_PORT,
             max_burst_kbps=BW_LIMIT_UPDATE_PORT)
 
-        data_utils.wait_until_true(
-            lambda: self._check_bw(
-                server, port=self.DEST_PORT,
-                configured_bw_kbps=BW_LIMIT_UPDATE_PORT, direction='egress'),
-            timeout=120,
-            exception=data_utils.WaitTimeout(
-                "Timed out waiting for traffic to be limited in egress "
-                "direction, updated QOS policy assigned to port"))
+        self._test_bandwidth(server, egress_bw=BW_LIMIT_UPDATE_PORT,
+                             test_msg='Updaed QOS policy assigned to port.')
 
         # Delete QOS policy on port
         self.update_port(port, manager=self.admin_manager, qos_policy_id=None)
-        data_utils.wait_until_true(
-            lambda: self._check_bw(
-                server, port=self.DEST_PORT,
-                configured_bw_kbps=BW_LIMIT_UPDATE_NETWORK,
-                direction='egress'),
-            timeout=120,
-            exception=data_utils.WaitTimeout(
-                "Timed out waiting for traffic to be limited in egress "
-                "direction, after deleting QOS policy on Port."))
 
+        self._test_bandwidth(server, egress_bw=BW_LIMIT_UPDATE_NETWORK,
+                             test_msg='Network QOS policy after delete of '
+                                      'policy on port.')
+
+    @testtools.skipIf(
+        not CONF.nuage_feature_enabled.proprietary_fip_rate_limiting,
+        'Support for fip rate limiting required')
     def test_nuage_qos_fip_rate_limiting(self):
         """test_nuage_qos_fip_rate_limiting
 
@@ -270,7 +371,7 @@ class RateLimitingNuageQosScenarioTest(base_nuage_qos.NuageQosTestmixin,
 
         """
         if 'bandwidth_limit' not in self.list_qos_rule_types():
-            self.skipTest("bandwidth_limit rule type is required.")
+            self.skipTest('bandwidth_limit rule type is required.')
 
         BW_LIMIT_NETWORK = 1000
         BW_LIMIT_PORT = 600
@@ -294,7 +395,7 @@ class RateLimitingNuageQosScenarioTest(base_nuage_qos.NuageQosTestmixin,
             networks=[network], security_groups=[security_group],
             prepare_for_connectivity=True)
         # Set MTU on server
-        server.send("sudo ip link set dev eth0 mtu 1400")
+        server.send('sudo ip link set dev eth0 mtu 1400')
 
         # Create QoS policy
         bw_limit_policy_id = self.create_qos_policy()['id']
@@ -310,25 +411,14 @@ class RateLimitingNuageQosScenarioTest(base_nuage_qos.NuageQosTestmixin,
                         manager=self.admin_manager, qos_policy_id=None)
 
         # Check bw limited at network policy level
-        data_utils.wait_until_true(
-            lambda: self._check_bw(
-                server, port=self.DEST_PORT,
-                configured_bw_kbps=BW_LIMIT_NETWORK, direction='egress'),
-            timeout=120,
-            exception=data_utils.WaitTimeout(
-                "Timed out waiting for traffic to be limited in egress "
-                "direction, QOS policy attached to Network."))
+        self._test_bandwidth(server, egress_bw=BW_LIMIT_NETWORK,
+                             test_msg='QOS policy assigned to network.')
 
         self.update_floatingip(server.associated_fip,
                                nuage_egress_fip_rate_kbps=BW_LIMIT_FIP)
-        data_utils.wait_until_true(
-            lambda: self._check_bw(
-                server, port=self.DEST_PORT,
-                configured_bw_kbps=BW_LIMIT_FIP, direction='egress'),
-            timeout=120,
-            exception=data_utils.WaitTimeout(
-                "Timed out waiting for traffic to be limited in egress "
-                "direction, FIP rate limit active."))
+
+        self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP,
+                             test_msg='Fip Rate limit active.')
 
         # Create a new QoS policy
         port = server.get_server_port_in_network(network)
@@ -344,28 +434,16 @@ class RateLimitingNuageQosScenarioTest(base_nuage_qos.NuageQosTestmixin,
                         qos_policy_id=None)
 
         # BW limit of the port is higher than that of the FIP
-        data_utils.wait_until_true(
-            lambda: self._check_bw(
-                server, port=self.DEST_PORT, configured_bw_kbps=BW_LIMIT_FIP,
-                direction='egress'),
-            timeout=120,
-            exception=data_utils.WaitTimeout(
-                "Timed out waiting for traffic to be limited in egress "
-                "direction, QOS policy assigned to port"))
+        self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP,
+                             test_msg='QOS policy assigned to port.')
 
         # Update QOS policy so BW of port < BW of FIP
         self.update_qos_bandwidth_limit_rule(
             new_bw_limit_policy_id, new_rule_id, max_kbps=BW_LIMIT_UPDATE_PORT,
             max_burst_kbps=BW_LIMIT_UPDATE_PORT)
 
-        data_utils.wait_until_true(
-            lambda: self._check_bw(
-                server, port=self.DEST_PORT,
-                configured_bw_kbps=BW_LIMIT_UPDATE_PORT, direction='egress'),
-            timeout=120,
-            exception=data_utils.WaitTimeout(
-                "Timed out waiting for traffic to be limited in egress "
-                "direction, updated QOS policy assigned to port."))
+        self._test_bandwidth(server, egress_bw=BW_LIMIT_UPDATE_PORT,
+                             test_msg='updated QOS policy assigned to port.')
 
         # Delete network and port qos, expect fip QOS still active
         self.update_network(network['id'], manager=self.admin_manager,
@@ -373,14 +451,8 @@ class RateLimitingNuageQosScenarioTest(base_nuage_qos.NuageQosTestmixin,
         self.update_port(port, manager=self.admin_manager,
                          qos_policy_id=None)
 
-        data_utils.wait_until_true(
-            lambda: self._check_bw(
-                server, port=self.DEST_PORT,
-                configured_bw_kbps=BW_LIMIT_FIP, direction='egress'),
-            timeout=120,
-            exception=data_utils.WaitTimeout(
-                "Timed out waiting for traffic to be limited in egress "
-                "direction, only FIP rate limiting active."))
+        self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP,
+                             test_msg='only FIP rate limiting active.')
 
 
 class QoSDscpTest(nuage_test.NuageBaseTest, base_nuage_qos.NuageQosTestmixin):
@@ -389,7 +461,7 @@ class QoSDscpTest(nuage_test.NuageBaseTest, base_nuage_qos.NuageQosTestmixin):
     UPDATED_DSCP_MARK = 12
 
     @classmethod
-    @utils.requires_ext(extension="qos", service="network")
+    @utils.requires_ext(extension='qos', service='network')
     def resource_setup(cls):
         super(QoSDscpTest, cls).resource_setup()
 
@@ -406,8 +478,8 @@ class QoSDscpTest(nuage_test.NuageBaseTest, base_nuage_qos.NuageQosTestmixin):
         else:
             tcpdump_cmd += protocol
         server.send(
-            "sudo /usr/sbin/tcpdump -vvv {tcpdump_cmd} "
-            "-c 1 &> {file} &".format(
+            'sudo /usr/sbin/tcpdump -vvv {tcpdump_cmd} '
+            '-c 1 &> {file} &'.format(
                 tcpdump_cmd=tcpdump_cmd, file=self.FILE_PATH),
             one_off_attempt=True)
 
@@ -419,7 +491,7 @@ class QoSDscpTest(nuage_test.NuageBaseTest, base_nuage_qos.NuageQosTestmixin):
             for ip_version in [4, 6]:
                 # Kill tcpdump process & delete result file
                 self.kill_process(server_to, 'tcpdump')
-                cmd = "sudo rm {}".format(self.FILE_PATH)
+                cmd = 'sudo rm {}'.format(self.FILE_PATH)
                 server_to.send(cmd, one_off_attempt=True)
                 # Run tcpdump process
                 source = server_from.get_server_ips(
@@ -449,15 +521,15 @@ class QoSDscpTest(nuage_test.NuageBaseTest, base_nuage_qos.NuageQosTestmixin):
                     'cat {}'.format(self.FILE_PATH), one_off_attempt=True)
                 if ts_header not in tcpdump_output:
                     msg = (
-                        "Failed to detect DSCP mark {} for "
-                        "protocol {}, ip_version {}.".format(
+                        'Failed to detect DSCP mark {} for '
+                        'protocol {}, ip_version {}.'.format(
                             expected_dscp_mark, protocol, ip_version))
                     LOG.error(msg)
                     failures.append(msg)
                 else:
                     LOG.debug(
-                        "Succesfully detected DSCP mark {} for "
-                        "protocol {}, ip_version {}.".format(
+                        'Succesfully detected DSCP mark {} for '
+                        'protocol {}, ip_version {}.'.format(
                             expected_dscp_mark, protocol, ip_version))
         if failures:
             self.fail('\n'.join(failures))
@@ -482,14 +554,14 @@ class QoSDscpTest(nuage_test.NuageBaseTest, base_nuage_qos.NuageQosTestmixin):
             - actual DSCP mark is affected as expected
               after updating QoS policy.
             Test scenario:
-            1) Associating QoS Policy with "original DSCP mark"
+            1) Associating QoS Policy with 'original DSCP mark'
                to the test node
             2) DSCP mark validation
             3) Updating existing QoS Policy to a new DSCP mark
             4) DSCP mark validation
             Note:
             There are two options to associate QoS policy to VM:
-            "Neutron Port" or "Network", in this test
+            'Neutron Port' or 'Network', in this test
             both options are covered.
         """
 
