@@ -419,7 +419,9 @@
     vars:
       tempest_test_regex: '^(nuage_tempest_plugin\.tests\.api\.(test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway)).*'
       devstack_localrc:
+        Q_ML2_PLUGIN_TYPE_DRIVERS: vxlan,vlan,flat
         Q_ML2_PLUGIN_MECHANISM_DRIVERS: nuage,nuage_sriov,testsriov
+        ML2_VLAN_RANGES: physnet1:200:300,physnet2:200:300
       devstack_plugins:
         networking-testsriov: https://github.com/nuagenetworks/networking-testsriov.git
       devstack_local_conf:
