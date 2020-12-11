@@ -124,12 +124,13 @@ class NuageQosTestmixin(object):
     def _check_bw(self, host, direction, configured_bw_kbps):
         # configure nc server
         # Kill previous screen or nc processes
-        self.kill_process(host, 'screen nc')
-        self.nc_run(host, self.DEST_PORT, direction)
-        # Open TCP socket to remote VM and download big file
-        client_socket = self._get_socket_to(host, self.DEST_PORT)
-        write_data = ('x' * (self.BUFFER_SIZE - 1) + '\n').encode()
+        client_socket = None
         try:
+            self.kill_process(host, 'screen nc')
+            self.nc_run(host, self.DEST_PORT, direction)
+            # Open TCP socket to remote VM and download big file
+            client_socket = self._get_socket_to(host, self.DEST_PORT)
+            write_data = ('x' * (self.BUFFER_SIZE - 1) + '\n').encode()
             start_time = time.time()
             total_bytes = 0
             while time.time() - start_time < self.DOWNLOAD_DURATION:
@@ -159,8 +160,12 @@ class NuageQosTestmixin(object):
         except socket.timeout:
             LOG.warning('Socket timeout while reading the remote file')
             return False
+        except Exception as e:
+            LOG.warning('Failure to measure bw: %s', e)
+            return False
         finally:
-            client_socket.close()
+            if client_socket:
+                client_socket.close()
 
     def _test_bandwidth(self, server, egress_bw=None, ingress_bw=None,
                         test_msg=None):
@@ -170,7 +175,7 @@ class NuageQosTestmixin(object):
             utils.wait_until_true(
                 lambda: self._check_bw(
                     server, configured_bw_kbps=egress_bw, direction='egress'),
-                timeout=120,
+                timeout=180,
                 exception=utils.WaitTimeout(
                     error_msg.format('egress', test_msg)))
         if ingress_bw:
@@ -178,6 +183,6 @@ class NuageQosTestmixin(object):
                 lambda: self._check_bw(
                     server, configured_bw_kbps=ingress_bw,
                     direction='ingress'),
-                timeout=120,
+                timeout=180,
                 exception=utils.WaitTimeout(
                     error_msg.format('ingress', test_msg)))
