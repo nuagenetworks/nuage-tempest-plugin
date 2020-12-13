@@ -1443,6 +1443,10 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         :returns: a tuple
         """
 
+        LOG.trace('[{}] _create_server: name={} key_name={} {}'.format(
+            self.test_tag, name, key_name,
+            ', '.join(['{}={!r}'.format(k, v) for k, v in kwargs.items()])))
+
         manager = manager or self.manager
         flavor = flavor or CONF.compute.flavor_ref
         image_id = image_id or CONF.compute.image_ref

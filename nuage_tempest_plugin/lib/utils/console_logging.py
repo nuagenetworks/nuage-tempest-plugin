@@ -19,6 +19,7 @@ class Console(object):
     UNDERLINE = '\033[4m'
 
     HEADER = MAGENTA
+    TRACE = BLUE
     DEBUG = BLUE
     EMPHASIS = GREEN
     WARNING = YELLOW
@@ -65,6 +66,10 @@ class Console(object):
     def debug(cls, msg, *args, **kwargs):
         cls.coloured(cls.DEBUG, 'DEBUG: {}'.format(msg), *args, **kwargs)
 
+    @classmethod
+    def trace(cls, msg, *args, **kwargs):
+        cls.coloured(cls.TRACE, 'TRACE: {}'.format(msg), *args, **kwargs)
+
 
 class ConsoleLogging(object):
 
@@ -98,3 +103,8 @@ class ConsoleLogging(object):
         if self.log.isEnabledFor(logging.DEBUG):
             self.console.debug(msg, *args, **kwargs)
         self.log.debug(msg, *args, **kwargs)
+
+    def trace(self, msg, *args, **kwargs):
+        if self.log.isEnabledFor(logging.TRACE):
+            self.console.trace(msg, *args, **kwargs)
+        self.log.trace(msg, *args, **kwargs)
