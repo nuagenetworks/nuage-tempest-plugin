@@ -126,6 +126,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
     _ip_version = 4
 
     cls_name = None
+    cls_tag = None
     credentials = ['primary', 'admin']
     default_netpartition_name = Topology.def_netpartition
     shared_infrastructure = 'Shared Infrastructure'
@@ -137,6 +138,8 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
     default_prepare_for_connectivity = False
     default_include_private_key_as_metadata = False
     enable_aggregate_flows_on_vsd_managed = False
+
+    _cls_name_randomize_helper = None
 
     @classmethod
     def setup_clients(cls):
@@ -158,22 +161,34 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
 
     @classmethod
     def setUpClass(cls):
-        cls.long_cls_name = cls.__name__
-        cls.cls_name = cls._shorten_name(cls.long_cls_name)
+        cls.cls_name = cls.__name__
+        cls.cls_tag = cls._shorten_name(cls.cls_name,
+                                        pre_dot=True,
+                                        pre_fill_with_spaces=True)
+
+        cls._cls_name_randomize_helper = cls._normalize_name(
+            cls._shorten_name(cls.cls_name))
+
         LOG.info('')
         LOG.info('========== [{}] Test setUpClass =========='.format(
-            cls.long_cls_name))
+            cls.cls_name))
         super(NuageBaseTest, cls).setUpClass()
 
     @classmethod
     def tearDownClass(cls):
-        LOG.info('[{}] Test {} tearDownClass'.format(cls.cls_name,
-                                                     cls.long_cls_name))
+        LOG.info('[{}] Test {} tearDownClass'.format(cls.cls_tag,
+                                                     cls.cls_name))
         super(NuageBaseTest, cls).tearDownClass()
 
     @staticmethod
+    def _normalize_name(name):
+        for c in ['(', ')', '.', ',', ' ']:
+            name = name.replace(c, '_')
+        return name.lower()
+
+    @staticmethod
     def _shorten_name(name, shorten_to_x_chars=32,
-                      pre_dot=True, pre_fill_with_spaces=True):
+                      pre_dot=False, pre_fill_with_spaces=False):
         if shorten_to_x_chars:
             if len(name) > shorten_to_x_chars:
                 if pre_dot:
@@ -202,24 +217,36 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         super(NuageBaseTest, self).skipTest(reason)
 
     def setUp(self):
-        self.long_test_name = self.get_long_test_name()
-        self.test_name = self._shorten_name(self.long_test_name)
+        self.test_name = self.get_test_name()
+        self.test_tag = self._shorten_name(self.test_name,
+                                           pre_dot=True,
+                                           pre_fill_with_spaces=True)
+
+        self._name_randomize_helper = self._normalize_name(
+            self._shorten_name(self.test_name))
 
         LOG.info('')
-        LOG.info('----- [{}] Test setUp -----'.format(self.long_test_name))
+        LOG.info('----- [{}] Test setUp -----'.format(self.test_name))
         super(NuageBaseTest, self).setUp()
 
     def tearDown(self):
-        LOG.info('[{}] Test {} tearDown'.format(self.test_name,
-                                                self.long_test_name))
+        LOG.info('[{}] Test {} tearDown'.format(self.test_tag,
+                                                self.test_name))
         super(NuageBaseTest, self).tearDown()
 
-    def get_long_test_name(self):
-        name = self.id().split('.')[-1]
+    def get_test_name(self):
+        name = self._normalize_name(self.id().split('.')[-1])
         for tag in ['[smoke]', '[negative]', '[slow]']:
             if name.endswith(tag):
                 name = name[:-len(tag)]
         return name
+
+    @classmethod
+    def get_cls_randomized_name(cls):
+        return data_utils.rand_name(cls._cls_name_randomize_helper)
+
+    def get_randomized_name(self):
+        return data_utils.rand_name(self._name_randomize_helper)
 
     def assertThat(self, matchee, matcher, message='', verbose=False):
         """Assert that matchee is matched by matcher.
@@ -252,12 +279,12 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
     def pre_fail(self, msg):
         # custom handling of a failed test
         LOG.error('[{}] {}.{} FATAL ERROR: {}'.format(
-            self.test_name, self.long_cls_name, self.long_test_name, msg))
+            self.test_tag, self.cls_name, self.test_name, msg))
         intervals_of_10_secs = int(
             CONF.nuage_sut.time_to_debug_on_failure / 10)
         for i in range(intervals_of_10_secs):
             LOG.error('[{}] Giving time to debug {}.{} ({}/{}) : {}'.format(
-                self.test_name, self.long_cls_name, self.long_test_name,
+                self.test_tag, self.cls_name, self.test_name,
                 i + 1, intervals_of_10_secs, msg))
             time.sleep(10)
 
@@ -406,8 +433,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                                      network_name=network['name'])
 
     def sleep(self, seconds=1, msg=None, tag=None):
-        if tag is None:
-            tag = self.test_name
+        tag = tag or self.test_tag
         if not msg:
             LOG.error(
                 "{}Added a {}s sleep without clarification. "
@@ -540,7 +566,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                           ip_version=None, manager=None, cleanup=True,
                           no_net_partition=False, **kwargs):
         manager = manager or cls.manager
-        subnet_name = subnet_name or data_utils.rand_name('test-subnet-')
+        subnet_name = subnet_name or cls.get_cls_randomized_name()
 
         # The cidr and mask_bits depend on the ip version.
         ip_version = ip_version or cls._ip_version
@@ -595,7 +621,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                 not network.get('router:external')):
             current_time = time.time()
             LOG.debug('[{}] Waiting for DHCP port resolution'.format(
-                cls.cls_name))
+                cls.cls_tag))
             dhcp_subnets = []
             while subnet['id'] not in dhcp_subnets:
                 if time.time() - current_time > 30:
@@ -612,7 +638,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                     continue
                 dhcp_port = dhcp_ports[0]
                 dhcp_subnets = [x['subnet_id'] for x in dhcp_port['fixed_ips']]
-            LOG.debug('[{}] DHCP port resolved'.format(cls.cls_name))
+            LOG.debug('[{}] DHCP port resolved'.format(cls.cls_tag))
 
         assert subnet
         if cleanup:
@@ -934,7 +960,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
     def create_security_group(self, manager=None, cleanup=True, **kwargs):
         manager = manager or self.manager
         client = manager.security_groups_client
-        sg = {'name': data_utils.rand_name('security-group')}
+        sg = {'name': self.get_randomized_name()}
         sg.update(kwargs)
         sg = client.create_security_group(**sg)['security_group']
         if cleanup:
@@ -1025,7 +1051,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                       no_net_partition=False,
                       **kwargs):
         ext_gw_info = {}
-        router_name = router_name or data_utils.rand_name('test-router-')
+        router_name = router_name or self.get_randomized_name()
         manager = manager or self.manager
         if not no_net_partition and 'net_partition' not in kwargs:
             kwargs['net_partition'] = self.default_netpartition_name
@@ -1272,7 +1298,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
     def create_keypair(self, name=None, manager=None, cleanup=True,
                        **kwargs):
         manager = manager or self.manager
-        name = name or data_utils.rand_name(self.__class__.__name__)
+        name = name or self.get_randomized_name()
         body = manager.keypairs_client.create_keypair(name=name,
                                                       **kwargs)
         if cleanup:
@@ -1479,7 +1505,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                 kwargs['security_groups'] = sg_name_dicts
 
         if volume_backed:
-            volume_name = data_utils.rand_name('volume')
+            volume_name = self.get_randomized_name()
             volumes_client = manager.volumes_v2_client
             if CONF.volume_feature_enabled.api_v1:
                 volumes_client = manager.volumes_client
@@ -1553,7 +1579,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
 
             if return_none_on_failure:
                 LOG.error('[{}] Deploying server {} failed'.format(
-                    self.test_name, name))
+                    self.test_tag, name))
                 return None
 
             else:
@@ -1586,11 +1612,11 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             cleanup_fip_infra = cleanup
 
         manager = manager or self.manager
-        name = name or data_utils.rand_name('server')
+        name = name or self.get_randomized_name()
 
-        LOG.info('[{}] --- INITIATE:{} ---'.format(self.test_name, name))
+        LOG.info('[{}] --- INITIATE:{} ---'.format(self.test_tag, name))
         LOG.info('[{}] Got {}'.format(
-            self.test_name,
+            self.test_tag,
             '{} network(s)'.format(len(networks)) if networks
             else '{} port(s)'.format(len(ports))))
 
@@ -1598,7 +1624,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             prepare_for_connectivity = self.default_prepare_for_connectivity
             if prepare_for_connectivity:
                 LOG.info('[{}] prepare_for_connectivity is set as of test '
-                         'class default'.format(self.test_name))
+                         'class default'.format(self.test_tag))
 
         def needs_provisioning(server_networks=None, server_ports=None):
             # we configure through cloudinit the interfaces for DHCP;
@@ -1672,10 +1698,10 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             kwargs['metadata'] = utils.chunk_str_to_dict(
                 keypair['private_key'], 'private_key', 255)
             LOG.info('[{}] metadata set: {}'.format(
-                self.test_name, kwargs['metadata']))
+                self.test_tag, kwargs['metadata']))
 
         LOG.info('[{}] Creating TenantServer {} ({})'.format(
-            self.test_name, name,
+            self.test_tag, name,
             '{} network(s)'.format(len(networks)) if networks
             else '{} port(s)'.format(len(ports))))
 
@@ -1695,7 +1721,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         # Check need for provisioning interfaces statically ...
         if provisioning_needed:
             LOG.info('[{}] {} will need provisioning'.format(
-                self.test_name, name))
+                self.test_tag, name))
             server.needs_provisioning = True
 
         # In both cases, the actual provisioning or the potential need for
@@ -1703,7 +1729,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         # of servers is maximized (and test execution minimized)
 
         LOG.info('[{}] {} deployed SUCCESSFULLY'.format(
-            self.test_name, name))
+            self.test_tag, name))
 
         # If to be prepared for connectivity, create/associate FIP now
         if prepare_for_connectivity:
@@ -1713,8 +1739,8 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                 self.make_fip_reachable(server, manager, cleanup_fip_infra)
 
         LOG.info('[{}] --- COMPLETE:{} ---'.format(
-            self.test_name, server.name))
-        LOG.info('[{}]'.format(self.test_name))
+            self.test_tag, server.name))
+        LOG.info('[{}]'.format(self.test_tag))
 
         return server
 
@@ -1784,7 +1810,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
 
     def make_fip_reachable(self, server, manager=None, cleanup=True):
         LOG.info('[{}] Making {} FIP reachable'.format(
-            self.test_name, server.name))
+            self.test_tag, server.name))
 
         # make reachable over the 1st port
         if server.networks:
@@ -1826,7 +1852,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             manager=None, cleanup=True):
 
         LOG.info('[{}] Preparing FIP topology for {}'.format(
-            self.test_name, server_name))
+            self.test_tag, server_name))
 
         # Current network (L2 or L3 pure v6)
         if networks:
@@ -1879,7 +1905,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                                     **fip_kwargs)
 
         LOG.info('[{}] FIP topology for {} set up'.format(
-            self.test_name, server_name))
+            self.test_tag, server_name))
 
         return [fip_port] + ports
 
@@ -1899,7 +1925,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         if not server.associated_fip:
             if vsd_domain:
                 LOG.info('[{}] Creating FIP for {} using VSD domain'.format(
-                    self.test_name, server.name))
+                    self.test_tag, server.name))
                 fip = self.create_floatingip(
                     manager=manager,
                     cleanup=cleanup)
@@ -1912,7 +1938,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                     cleanup=cleanup)
             else:
                 LOG.info('[{}] Creating FIP for {}'.format(
-                    self.test_name, server.name))
+                    self.test_tag, server.name))
                 fip = self.create_floatingip(
                     server.get_server_details(),
                     port_id=port['id'] if port else None,
@@ -1947,7 +1973,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                     should_pass=True, interface=None, address=None,
                     ping_count=3, ping_size=None, ping_timeout=10):
         LOG.info('[{}] Pinging {} > {}'.format(
-            self.test_name,
+            self.test_tag,
             server1.name, server2.name if server2 else address))
 
         ip_version = ip_version if ip_version else self._ip_version
@@ -1985,13 +2011,13 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             def ping_address():
 
                 LOG.info('[{}] Pinging {} from {}'.format(
-                    self.test_name, dest, server1.get_fip_ip()))
+                    self.test_tag, dest, server1.get_fip_ip()))
 
                 if ping_cmd(server1, interface):
                     success = True
                 else:
                     msg = '[{}] Failed to ping IP {} from {} ({})'.format(
-                        self.test_name, dest, server1.name,
+                        self.test_tag, dest, server1.name,
                         server1.get_fip_ip())
                     if should_pass:
                         LOG.warning(msg)
@@ -1999,12 +2025,12 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                         LOG.info(msg)
                     if ip_version == 4:
                         LOG.info('[{}] Clearing ARP cache for {}'.format(
-                            self.test_name, dest))
+                            self.test_tag, dest))
                         cmd = 'arp -d {}'.format(dest)
                         if server1.send(cmd, one_off_attempt=True,
                                         assert_success=False) is None:
                             LOG.debug('[{}] Failed to execute command on'
-                                      ' {}'.format(self.test_name,
+                                      ' {}'.format(self.test_tag,
                                                    server1.id))
                     else:
                         if should_pass:
@@ -2012,11 +2038,11 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                             #      include ip neigh in our cirros-ipv6 image
                             LOG.warn('[{}] Would need to clear IPv6 neighbors '
                                      'cache but need CI image support '
-                                     '({})'.format(self.test_name, dest))
+                                     '({})'.format(self.test_tag, dest))
                     success = False
 
                 LOG.info('[{}] Ping -{}- {}'.format(
-                    self.test_name,
+                    self.test_tag,
                     'expected' if success == should_pass else 'unexpected',
                     'SUCCESS' if success else 'FAIL'))
 
@@ -2026,13 +2052,13 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                 return test_utils.call_until_true(ping_address, timeout, 1)
 
             except lib_exc.SSHTimeout as ssh_e:
-                LOG.error('[{}] SSH Timeout! ({})'.format(self.test_name,
+                LOG.error('[{}] SSH Timeout! ({})'.format(self.test_tag,
                                                           ssh_e))
                 raise
 
         self.assertEqual(should_pass, ping(),
                          '[{}] Ping {} > {} unexpectedly {}!'.format(
-                             self.test_name,
+                             self.test_tag,
                              server1.name,
                              server2.name if server2 else address,
                              'FAILED' if should_pass else 'PASSED')
@@ -2192,7 +2218,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
     def create_segment(self, segment_name=None, cleanup=True,
                        manager=None, **kwargs):
         manager = manager or self.admin_manager
-        segment_name = segment_name or data_utils.rand_name('test-segment')
+        segment_name = segment_name or self.get_randomized_name()
         body = manager.segments_client.create_segment(
             name=segment_name, **kwargs)
         segment = body['segment']
@@ -2245,13 +2271,13 @@ class NuageBaseOrchestrationTest(NuageBaseTest):
         cls.build_interval = CONF.heat_plugin.build_interval
 
         cls.net_partition_name = Topology.def_netpartition
-        cls.private_net_name = data_utils.rand_name('heat-network-')
+        cls.private_net_name = cls.get_cls_randomized_name()
 
         cls.test_resources = {}
         cls.template_resources = {}
 
     def launch_stack(self, stack_file_name, stack_parameters):
-        stack_name = data_utils.rand_name('heat-' + stack_file_name)
+        stack_name = self.get_randomized_name()
         template = self.read_template(stack_file_name)
 
         self.launch_stack_template(stack_name, template, stack_parameters)
