@@ -131,8 +131,7 @@ class SriovBasicOpsTest(NuageBaseTest):
     def _create_vsd_domain(self, is_l3=True, ip_version=(4,)):
         cidr4 = None
         cidr6 = None
-        enable_dhcpv4 = False
-        enable_dhcpv6 = False
+        enable_dhcpv4 = enable_dhcpv6 = Topology.before_nuage('6.0')
         gateway4 = None
         gateway6 = None
 
@@ -202,7 +201,8 @@ class SriovBasicOpsTest(NuageBaseTest):
         for ip_type in ip_version:
             self.subnet.append(create_vsd_managed_subnet(
                 self.network, vsd_subnet, ip_version=ip_type,
-                manager=self.admin_manager, dhcp_managed=False))
+                manager=self.admin_manager,
+                dhcp_managed=Topology.before_nuage('6.0')))
 
         self.secgroup = self.create_open_ssh_security_group(
             manager=self.admin_manager)
