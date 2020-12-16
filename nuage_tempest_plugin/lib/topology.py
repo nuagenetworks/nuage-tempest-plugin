@@ -52,120 +52,120 @@ class Topology(object):
 
     # - - - - - -
 
-    @staticmethod
-    def at_nuage(nuage_release):
-        return Topology.nuage_release == Release(nuage_release)
+    @classmethod
+    def at_nuage(cls, nuage_release):
+        return cls.nuage_release == Release(nuage_release)
 
-    @staticmethod
-    def at_openstack(openstack_version):
-        return Topology.openstack_version == Release(openstack_version)
+    @classmethod
+    def at_openstack(cls, openstack_version):
+        return cls.openstack_version == Release(openstack_version)
 
-    @staticmethod
-    def beyond_nuage(nuage_release):
-        return Topology.nuage_release > Release(nuage_release)
+    @classmethod
+    def beyond_nuage(cls, nuage_release):
+        return cls.nuage_release > Release(nuage_release)
 
-    @staticmethod
-    def beyond_openstack(openstack_version):
-        return Topology.openstack_version > Release(openstack_version)
+    @classmethod
+    def beyond_openstack(cls, openstack_version):
+        return cls.openstack_version > Release(openstack_version)
 
-    @staticmethod
-    def from_nuage(nuage_release, within_stream=None):
+    @classmethod
+    def from_nuage(cls, nuage_release, within_stream=None):
         # e.g use as :
         # from_nuage('6.0.12', within_stream='6.0')
-        match = Topology.nuage_release >= Release(nuage_release)
+        match = cls.nuage_release >= Release(nuage_release)
         if within_stream:
-            match = match and Topology.up_to_nuage(within_stream)
+            match = match and cls.up_to_nuage(within_stream)
         return match
 
-    @staticmethod
-    def from_openstack(openstack_version):
-        return Topology.openstack_version >= Release(openstack_version)
+    @classmethod
+    def from_openstack(cls, openstack_version):
+        return cls.openstack_version >= Release(openstack_version)
 
-    @staticmethod
-    def before_nuage(nuage_release):
-        return Topology.nuage_release < Release(nuage_release)
+    @classmethod
+    def before_nuage(cls, nuage_release):
+        return cls.nuage_release < Release(nuage_release)
 
-    @staticmethod
-    def before_openstack(openstack_version):
-        return Topology.openstack_version < Release(openstack_version)
+    @classmethod
+    def before_openstack(cls, openstack_version):
+        return cls.openstack_version < Release(openstack_version)
 
-    @staticmethod
-    def up_to_nuage(nuage_release):
-        return Topology.nuage_release <= Release(nuage_release)
+    @classmethod
+    def up_to_nuage(cls, nuage_release):
+        return cls.nuage_release <= Release(nuage_release)
 
-    @staticmethod
-    def up_to_openstack(openstack_version):
-        return Topology.openstack_version <= Release(openstack_version)
+    @classmethod
+    def up_to_openstack(cls, openstack_version):
+        return cls.openstack_version <= Release(openstack_version)
 
     # - - - - - -
 
     nbr_retries_for_test_robustness = 5  # same as plugin
 
-    @staticmethod
-    def single_worker_run():
-        return Topology.api_workers == 1
+    @classmethod
+    def single_worker_run(cls):
+        return cls.api_workers == 1
 
-    @staticmethod
-    def neutron_restart_supported():
+    @classmethod
+    def neutron_restart_supported(cls):
         return False  # assumed as non-applicable capability, which is correct
         #               for the standard jobs that run in CI
 
-    @staticmethod
-    def nuage_fip_rate_limit_configs():
+    @classmethod
+    def nuage_fip_rate_limit_configs(cls):
         return None, None  # egress & ingress rate limit configured in neutron
         #                    Defaulting to None, None, according CI settings
 
-    @staticmethod
-    def is_existing_flat_vlan_allowed():
+    @classmethod
+    def is_existing_flat_vlan_allowed(cls):
         """Whether nuage sriov option allow_existing_flat_vlan is set to True
 
         See neutron setting [nuage_sriov] allow_existing_flat_vlan
         """
         return bool(CONF.nuage_sut.nuage_sriov_allow_existing_flat_vlan)
 
-    @staticmethod
-    def has_default_switchdev_port_profile():
+    @classmethod
+    def has_default_switchdev_port_profile(cls):
         """This condition is True for OVRS setups"""
         return (CONF.network.port_vnic_type == 'direct' and
                 'switchdev' in CONF.network.port_profile.get('capabilities',
                                                              []))
 
-    @staticmethod
-    def has_single_stack_v6_support():
-        return not Topology.is_v5
+    @classmethod
+    def has_single_stack_v6_support(cls):
+        return not cls.is_v5
 
-    @staticmethod
-    def has_full_dhcp_control_in_vsd():
-        return not Topology.is_v5
+    @classmethod
+    def has_full_dhcp_control_in_vsd(cls):
+        return not cls.is_v5
 
-    @staticmethod
-    def has_dhcp_v6_support():
-        return not Topology.is_v5
+    @classmethod
+    def has_dhcp_v6_support(cls):
+        return not cls.is_v5
 
-    @staticmethod
-    def has_fwaas_v6_support():
-        return not Topology.is_v5
+    @classmethod
+    def has_fwaas_v6_support(cls):
+        return not cls.is_v5
 
-    @staticmethod
-    def has_full_dhcp_options_support():
-        return not Topology.is_v5
+    @classmethod
+    def has_full_dhcp_options_support(cls):
+        return not cls.is_v5
 
-    @staticmethod
-    def has_domain_template_description_configured_support():
-        return not Topology.is_v5
+    @classmethod
+    def has_domain_template_description_configured_support(cls):
+        return not cls.is_v5
 
-    @staticmethod
-    def has_utf8_netpartition_names_support():
-        return not Topology.is_v5
+    @classmethod
+    def has_utf8_netpartition_names_support(cls):
+        return not cls.is_v5
 
-    @staticmethod
-    def has_unified_pg_for_all_support():
-        return not Topology.is_v5
+    @classmethod
+    def has_unified_pg_for_all_support(cls):
+        return not cls.is_v5
 
-    @staticmethod
-    def has_aggregate_flows_support():
-        return not Topology.is_v5
+    @classmethod
+    def has_aggregate_flows_support(cls):
+        return not cls.is_v5
 
-    @staticmethod
-    def has_secured_netpartitions_support():
-        return Topology.from_openstack('queens')
+    @classmethod
+    def has_secured_netpartitions_support(cls):
+        return cls.from_openstack('queens')
