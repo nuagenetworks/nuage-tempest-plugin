@@ -135,6 +135,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
 
     nuage_aggregate_flows = 'off'
     default_prepare_for_connectivity = False
+    default_include_private_key_as_metadata = False
     enable_aggregate_flows_on_vsd_managed = False
 
     @classmethod
@@ -158,8 +159,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
     @classmethod
     def setUpClass(cls):
         cls.long_cls_name = cls.__name__
-        cls.cls_name = cls._shorten_name(cls.__name__)
-
+        cls.cls_name = cls._shorten_name(cls.long_cls_name)
         LOG.info('')
         LOG.info('========== [{}] Test setUpClass =========='.format(
             cls.long_cls_name))
@@ -171,12 +171,15 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                                                      cls.long_cls_name))
         super(NuageBaseTest, cls).tearDownClass()
 
-    @classmethod
-    def _shorten_name(cls, name,
-                      shorten_to_x_chars=32, pre_fill_with_spaces=True):
+    @staticmethod
+    def _shorten_name(name, shorten_to_x_chars=32,
+                      pre_dot=True, pre_fill_with_spaces=True):
         if shorten_to_x_chars:
             if len(name) > shorten_to_x_chars:
-                name = '...' + name[-(shorten_to_x_chars - 3):]
+                if pre_dot:
+                    name = '...' + name[-(shorten_to_x_chars - 3):]
+                else:
+                    name = name[-shorten_to_x_chars:]
             elif pre_fill_with_spaces:
                 name = ' ' * (shorten_to_x_chars - len(name)) + name
         return name
@@ -464,7 +467,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             self.addCleanup(vsd_domain.delete)
         return vsd_domain
 
-    def vsd_create_zone(self, name=None, domain=None, cleanup=False,
+    def vsd_create_zone(self, name=None, domain=None, cleanup=True,
                         **kwargs):
         vsd_zone = self.vsd.create_zone(name, domain, **kwargs)
         self.assertIsNotNone(vsd_zone)
@@ -530,18 +533,6 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
 
     def is_l3_subnet(self, subnet, manager=None):
         return not self.is_l2_subnet(subnet, manager=manager)
-
-    def get_network(self, network_id, manager=None, **kwargs):
-        manager = manager or self.manager
-        body = manager.networks_client.show_network(network_id, **kwargs)
-        network = body['network']
-        return network
-
-    def get_subnet(self, subnet_id, manager=None, **kwargs):
-        manager = manager or self.manager
-        body = manager.subnets_client.show_subnet(subnet_id, **kwargs)
-        subnet = body['subnet']
-        return subnet
 
     @classmethod
     def create_cls_subnet(cls, network, subnet_name=None,
@@ -643,14 +634,16 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                 manager.subnets_client.delete_subnet, subnet['id'])
         return subnet
 
-    def create_public_subnet(self, fip_to_underlay=True):
+    def create_public_subnet(self, fip_to_underlay=True, cleanup=True):
         ext_network_req = {'router:external': True}
         ext_network = self.create_network(manager=self.admin_manager,
+                                          cleanup=cleanup,
                                           **ext_network_req)
         self.create_subnet(ext_network,
                            cidr=utils.gimme_a_cidr(),
                            manager=self.admin_manager,
-                           underlay=fip_to_underlay)
+                           underlay=fip_to_underlay,
+                           cleanup=cleanup)
         return ext_network
 
     def update_subnet(self, subnet, manager=None, **kwargs):
@@ -803,10 +796,14 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         manager = manager or self.manager
         manager.ports_client.delete_port(port['id'])
 
-    def get_ports(self, manager=None, **kwargs):
+    def get_ports(self, manager=None, **filters):
         manager = manager or self.manager
-        body = manager.ports_client.list_ports(**kwargs)
-        return body['ports']
+        return manager.ports_client.list_ports(**filters)['ports']
+
+    def get_port(self, port_id, manager=None, **kwargs):
+        manager = manager or self.manager
+        return manager.subnets_client.show_port(
+            port_id, **kwargs)['port']
 
     def _verify_port(self, port, subnet4=None, subnet6=None, **kwargs):
         testcase = kwargs.pop('testcase', 'unknown')
@@ -1013,8 +1010,10 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             manager=manager,
             **ruleset)
 
-    def create_public_router(self, manager=None, cleanup=True):
+    def create_public_router(self, router_name=None, manager=None,
+                             cleanup=True):
         return self.create_router(
+            router_name=router_name,
             external_network_id=self.ext_net_id,
             manager=manager,
             cleanup=cleanup)
@@ -1274,8 +1273,8 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                        **kwargs):
         manager = manager or self.manager
         name = name or data_utils.rand_name(self.__class__.__name__)
-        # We don't need to create a keypair by pubkey in scenario
-        body = manager.keypairs_client.create_keypair(name=name, **kwargs)
+        body = manager.keypairs_client.create_keypair(name=name,
+                                                      **kwargs)
         if cleanup:
             self.addCleanup(manager.keypairs_client.delete_keypair, name)
         return body['keypair']
@@ -1286,31 +1285,37 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             name, user_id=user_id)['keypair']
         return keypair
 
-    def list_networks(self, manager=None, *args, **kwargs):
+    def list_networks(self, manager=None, *args, **filters):
         manager = manager or self.manager
         networks_list = manager.networks_client.list_networks(
-            *args, **kwargs)
+            *args, **filters)
         return networks_list['networks']
 
-    def get_network_by_name(self, name, manager=None):
-        networks = self.list_networks(manager, name=name)
-        self.assertEqual(1, len(networks))  # assert uniqueness
-        return networks[0]
+    def get_network(self, network_id, manager=None, **fields):
+        manager = manager or self.manager
+        network = manager.networks_client.show_network(network_id, **fields)
+        return network['network']
 
-    def list_subnets(self, manager=None, *args, **kwargs):
+    def list_subnets(self, manager=None, *args, **filters):
         manager = manager or self.manager
         subnets_list = manager.subnets_client.list_subnets(
-            *args, **kwargs)
+            *args, **filters)
         return subnets_list['subnets']
 
-    def list_routers(self, manager=None, *args, **kwargs):
+    def get_subnet(self, subnet_id, manager=None, **fields):
         manager = manager or self.manager
-        routers_list = manager.routers_client.list_routers(*args, **kwargs)
+        subnet = manager.subnets_client.show_subnet(subnet_id, **fields)
+        return subnet['subnet']
+
+    @classmethod
+    def list_routers(cls, manager=None, *args, **filters):
+        manager = manager or cls.manager
+        routers_list = manager.routers_client.list_routers(*args, **filters)
         return routers_list['routers']
 
-    def list_ports(self, manager=None, *args, **kwargs):
+    def list_ports(self, manager=None, *args, **filters):
         manager = manager or self.manager
-        ports_list = manager.ports_client.list_ports(*args, **kwargs)
+        ports_list = manager.ports_client.list_ports(*args, **filters)
         return ports_list['ports']
 
     def get_port_in_network(self, owner_id, network, manager=None):
@@ -1333,15 +1338,6 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         manager = manager or self.manager
         server = manager.servers_client.show_server(server_id)
         return server['server']
-
-    def get_server_by_name(self, name, manager=None):
-        servers = self.list_servers(manager, name=name)
-        if len(servers) != 1:
-            LOG.warn('{} servers are present, got {}'.format(
-                self.list_servers(manager),
-                self.list_servers(manager, name=name)))
-        self.assertEqual(1, len(servers))  # assert uniqueness
-        return servers[0]
 
     def list_floating_ips(self, manager, **kwargs):
         manager = manager or self.manager
@@ -1394,10 +1390,10 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
     #
     # ---  This method is for internal use only, don't use from test case;  ---
     #      use create_tenant_server instead                                 ---
-    def _create_server(self, tag, tenant_networks=None, ports=None,
+    def _create_server(self, name, tag, tenant_networks=None, ports=None,
                        security_groups=None, wait_until='ACTIVE',
-                       volume_backed=False, name=None, flavor=None,
-                       image_id=None, keypair=None,
+                       volume_backed=False, flavor=None,
+                       image_id=None, key_name=None,
                        manager=None, cleanup=True,
                        return_none_on_failure=False,
                        **kwargs):
@@ -1413,15 +1409,15 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         :param name: Instance name.
         :param flavor: Instance flavor.
         :param image_id: Instance image ID.
-        :param keypair: Nova keypair for ssh access
+        :param key_name: Nova keypair name for ssh access
         :param manager: Client manager providing OpenStack Tempest clients.
         :param cleanup: Flag for cleanup (leave True for auto-cleanup).
         :param return_none_on_failure: if True, return None on failure instead
         of failing the test case
         :returns: a tuple
         """
+
         manager = manager or self.manager
-        name = name or data_utils.rand_name(__name__ + "-instance")
         flavor = flavor or CONF.compute.flavor_ref
         image_id = image_id or CONF.compute.image_ref
 
@@ -1462,6 +1458,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                     ports.append({'port': network['port']['id']})
                 else:
                     port = self.create_port(network,
+                                            name=name,
                                             manager=manager,
                                             **create_port_body)
                     ports.append({'port': port['id']})
@@ -1502,16 +1499,8 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             # to be specified.
             image_id = ''
 
-        if keypair:
-            kwargs['key_name'] = keypair['name']
-
-        vm = None
-
-        def cleanup_server():
-            test_utils.call_and_ignore_notfound_exc(
-                manager.servers_client.delete_server, vm['id'])
-            waiters.wait_for_server_termination(
-                manager.servers_client, vm['id'])
+        if key_name:
+            kwargs['key_name'] = key_name
 
         body = manager.servers_client.create_server(name=name,
                                                     imageRef=image_id,
@@ -1538,7 +1527,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                               'Destroying.'.format(name, str(e)))
 
                     try:
-                        cleanup_server()
+                        self.cleanup_server(vm['id'], manager)
                         vm = None  # mark deletion success
 
                     except Exception as e:
@@ -1554,7 +1543,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
 
         if vm:
             if cleanup:
-                self.addCleanup(cleanup_server)
+                self.addCleanup(self.cleanup_server, vm['id'], manager)
 
             return vm
 
@@ -1580,6 +1569,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                              volume_backed=False, name=None, flavor=None,
                              prepare_for_connectivity=None,
                              pre_prepared_fip=None,
+                             include_private_key_as_metadata=None,
                              start_web_server=False,
                              web_server_port=80,
                              force_dhcp_config=False,
@@ -1595,8 +1585,8 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         if cleanup_fip_infra is None:
             cleanup_fip_infra = cleanup
 
-        name = name or data_utils.rand_name('test-server')
         manager = manager or self.manager
+        name = name or data_utils.rand_name('server')
 
         LOG.info('[{}] --- INITIATE:{} ---'.format(self.test_name, name))
         LOG.info('[{}] Got {}'.format(
@@ -1674,6 +1664,16 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         keypair = keypair or self.create_keypair(manager=manager,
                                                  cleanup=cleanup)
 
+        if (include_private_key_as_metadata or
+                include_private_key_as_metadata is None and
+                self.default_include_private_key_as_metadata):
+            # story private key in metadata
+            # values are limited to 255 chars, so need to chunk...
+            kwargs['metadata'] = utils.chunk_str_to_dict(
+                keypair['private_key'], 'private_key', 255)
+            LOG.info('[{}] metadata set: {}'.format(
+                self.test_name, kwargs['metadata']))
+
         LOG.info('[{}] Creating TenantServer {} ({})'.format(
             self.test_name, name,
             '{} network(s)'.format(len(networks)) if networks
@@ -1717,6 +1717,70 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         LOG.info('[{}]'.format(self.test_name))
 
         return server
+
+    def cleanup_server(self, vm_id, manager=None):
+        manager = manager or self.manager
+        test_utils.call_and_ignore_notfound_exc(
+            manager.servers_client.delete_server, vm_id)
+        waiters.wait_for_server_termination(
+            manager.servers_client, vm_id)
+
+    def sync_network(self, name, cleanup=True):
+        networks = self.list_networks(name=name, manager=self.admin_manager)
+        self.assertEqual(1, len(networks),  # assert uniqueness
+                         'There are {} networks with name {}'.format(
+                             len(networks), name)
+                         if len(networks) else
+                         'Could not find any network with name {}'.format(
+                             name))
+        network = networks[0]
+        if cleanup:
+            self.addCleanup(
+                self.admin_manager.networks_client.delete_network,
+                network['id'])
+        return network
+
+    def sync_tenant_server(self, name, manager=None, cleanup=True):
+        manager = manager or self.admin_manager
+        new_tenant_server = TenantServer(self, name)
+        new_tenant_server.sync_with_os(manager=manager)
+
+        if cleanup:
+            def extended_cleanup_server(server):
+                self.cleanup_server(server.id, manager=manager)
+                if server.associated_fip:
+                    self.delete_floatingip(server.associated_fip['id'],
+                                           manager=manager)
+                for router in self.list_routers(name=server.name,
+                                                manager=manager):
+                    for subnet in self.list_subnets(name=server.name,
+                                                    manager=manager):
+                        self.router_detach(router, subnet,
+                                           manager=manager)
+                    self.delete_router(router, manager=manager)
+                for port in self.list_ports(name=server.name,
+                                            manager=manager):
+                    self.delete_port(port, manager=manager)
+                for network in self.list_networks(name=server.name,
+                                                  manager=manager):
+                    self.delete_network(network, manager=manager)
+
+            self.addCleanup(extended_cleanup_server, new_tenant_server)
+
+        return new_tenant_server
+
+    # this is more of a gimmick than anything else as such, but it is great
+    # as it provides great testing functionality of resyncing a server
+    def clone_tenant_server(self, tenant_server, manager=None, cleanup=True):
+        clone = self.sync_tenant_server(
+            tenant_server.name, manager=manager, cleanup=cleanup)
+        clone.set_internal_states(
+            tenant_server.set_to_prepare_for_connectivity,
+            tenant_server.cloudinit_complete,
+            tenant_server.waiting_for_cloudinit_completion,
+            tenant_server.needs_provisioning,
+            tenant_server.is_being_provisioned)
+        return clone
 
     def make_fip_reachable(self, server, manager=None, cleanup=True):
         LOG.info('[{}] Making {} FIP reachable'.format(
@@ -1773,6 +1837,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                     sgs.append(sg['id'])
             for network in networks:
                 port = self.create_port(network,
+                                        name=server_name,
                                         security_groups=sgs,
                                         # make sure this port does not
                                         # become the default port
@@ -1784,16 +1849,19 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                 ports.append(port)
 
         # Create a jump (FIP) network (L3)
-        fip_network = self.create_network(manager=manager, cleanup=cleanup)
+        fip_network = self.create_network(network_name=server_name,
+                                          manager=manager, cleanup=cleanup)
         fip_cidr = IPNetwork("192.168.0.0/24")
         subnet = self.create_subnet(
-            fip_network, cidr=fip_cidr, mask_bits=fip_cidr.prefixlen,
-            ip_version=4, manager=manager, cleanup=cleanup)
-        router = self.create_public_router(manager=manager, cleanup=cleanup)
+            fip_network, subnet_name=server_name, cidr=fip_cidr,
+            mask_bits=fip_cidr.prefixlen, ip_version=4, manager=manager,
+            cleanup=cleanup)
+        router = self.create_public_router(router_name=server_name,
+                                           manager=manager, cleanup=cleanup)
         self.router_attach(router, subnet, manager=manager, cleanup=cleanup)
 
-        open_ssh_sg = self.create_open_ssh_security_group(manager=manager,
-                                                          cleanup=cleanup)
+        open_ssh_sg = self.create_open_ssh_security_group(
+            sg_name=server_name, manager=manager, cleanup=cleanup)
 
         # Avoid mixing virtio and switchdev port
         # On RHEL-7-7, interfaces are ordered. VIRTIO comes first, then
@@ -1805,6 +1873,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             fip_kwargs['binding:profile'] = ports[0]['binding:profile']
 
         fip_port = self.create_port(fip_network,
+                                    name=server_name,
                                     security_groups=[open_ssh_sg['id']],
                                     manager=manager, cleanup=cleanup,
                                     **fip_kwargs)
@@ -1935,7 +2004,8 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                         if server1.send(cmd, one_off_attempt=True,
                                         assert_success=False) is None:
                             LOG.debug('[{}] Failed to execute command on'
-                                      ' {}'.format(self.test_name, server1.id))
+                                      ' {}'.format(self.test_name,
+                                                   server1.id))
                     else:
                         if should_pass:
                             # TODO(OPENSTACK-2664) : CI test robustness:
@@ -2127,6 +2197,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             name=segment_name, **kwargs)
         segment = body['segment']
         self.assertIsNotNone(segment)
+
         if cleanup:
             self.addCleanup(
                 self.admin_manager.segments_client.delete_segment,

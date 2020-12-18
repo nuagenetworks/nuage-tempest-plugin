@@ -26,23 +26,24 @@ class SingleStackOsMgdConnectivityTestBase(NuageBaseTest):
     _cidr2 = IPNetwork('10.10.2.1/24')
 
     def _create_resources(self, name=None, cidr=None, is_l3=False,
-                          enable_dhcp=True):
-        network = self.create_network(network_name=name)
+                          enable_dhcp=True, cleanup=True):
+        network = self.create_network(network_name=name, cleanup=cleanup)
         kwargs = {'enable_dhcp': enable_dhcp}
         if cidr:
             kwargs.update({'gateway': cidr.ip,
                            'cidr': cidr,
                            'mask_bits': cidr.prefixlen})
 
-        subnet = self.create_subnet(network, subnet_name=name, **kwargs)
+        subnet = self.create_subnet(network, subnet_name=name, cleanup=cleanup,
+                                    **kwargs)
 
         if is_l3:
             kwargs = {'router_name': name,
                       'external_network_id': self.ext_net_id}
             if self.nuage_aggregate_flows != 'off':
                 kwargs['nuage_aggregate_flows'] = self.nuage_aggregate_flows
-            router = self.create_router(**kwargs)
-            self.router_attach(router, subnet)
+            router = self.create_router(cleanup=cleanup, **kwargs)
+            self.router_attach(router, subnet, cleanup=cleanup)
         return network, subnet
 
     def _icmp_connectivity_l3_os_managed_by_name(self, name=None,
@@ -214,23 +215,35 @@ class SingleStackOsMgdConnectivityTestBase(NuageBaseTest):
             server1, server2, network)
 
 
-class Ipv4OsMgdL2ConnectivityTest(SingleStackOsMgdConnectivityTestBase):
+class Ipv4OsMgdL2ConnectivityBass(SingleStackOsMgdConnectivityTestBase):
 
-    def test_icmp_connectivity_l2_os_managed(self):
-        network, _ = self._create_resources()
+    def _get_l2_os_managed_topology(self, cleanup=True):
+        network, _ = self._create_resources(cleanup=cleanup)
 
         # create open-ssh security group
-        ssh_security_group = self.create_open_ssh_security_group()
+        ssh_security_group = self.create_open_ssh_security_group(
+            cleanup=cleanup)
 
         # Launch tenant servers in OpenStack network
         server2 = self.create_tenant_server(
             [network],
-            security_groups=[ssh_security_group])
+            security_groups=[ssh_security_group],
+            cleanup=cleanup)
 
         server1 = self.create_tenant_server(
             [network],
             security_groups=[ssh_security_group],
-            prepare_for_connectivity=True)
+            prepare_for_connectivity=True,
+            cleanup=cleanup)
+
+        return network, server1, server2
+
+
+class Ipv4OsMgdL2ConnectivityTest(Ipv4OsMgdL2ConnectivityBass):
+
+    @decorators.attr(type='smoke')
+    def test_icmp_connectivity_l2_os_managed(self):
+        network, server1, server2 = self._get_l2_os_managed_topology()
 
         # Test connectivity between peer servers
         self.assert_ping(server1, server2, network)
@@ -301,6 +314,34 @@ class Ipv4OsMgdL2ConnectivityTest(SingleStackOsMgdConnectivityTestBase):
         network = self.create_network()
         self.create_subnet(network)
         self.validate_tcp_stateful_traffic(network)
+
+
+class Ipv4OsMgdL2ConnectivityClonedTest(Ipv4OsMgdL2ConnectivityBass):
+
+    default_include_private_key_as_metadata = True
+
+    @decorators.attr(type='smoke')
+    def test_clone_servers_and_verify_connectivity(self):
+        # this test is verifying server cloning
+        network, server1, server2 = self._get_l2_os_managed_topology()
+
+        clone1 = self.clone_tenant_server(server1, cleanup=False)
+        clone2 = self.clone_tenant_server(server2, cleanup=False)
+
+        # Test connectivity between peer clones
+        self.assert_ping(clone1, clone2, network)
+
+    @decorators.attr(type='smoke')
+    def test_clone_servers_with_cleanup_and_verify_connectivity(self):
+        # this test is verifying server cloning
+        network, server1, server2 = self._get_l2_os_managed_topology(
+            cleanup=False)
+
+        clone1 = self.clone_tenant_server(server1, cleanup=True)
+        clone2 = self.clone_tenant_server(server2, cleanup=True)
+
+        # Test connectivity between peer clones
+        self.assert_ping(clone1, clone2, network)
 
 
 class Ipv4OsMgdL3ConnectivityTest(SingleStackOsMgdConnectivityTestBase):
