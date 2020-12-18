@@ -333,7 +333,7 @@ class TestFWaaS(fwaas_mixins.FWaaSClientMixin, NuageBaseTest):
     def _test_firewall_basic(self, block, allow=None,
                              confirm_allowed=None, confirm_blocked=None,
                              ports_for_webserver=(80,)):
-        LOG.info('[{}] Begin _test_firewall_basic'.format(self.test_name))
+        LOG.info('[{}] Begin _test_firewall_basic'.format(self.test_tag))
         if allow is None:
             allow = self._delete_firewall
         if confirm_allowed is None:
@@ -341,7 +341,7 @@ class TestFWaaS(fwaas_mixins.FWaaSClientMixin, NuageBaseTest):
         if confirm_blocked is None:
             confirm_blocked = self.assert_no_connectivity
 
-        LOG.info('[{}] 1. Creating topology'.format(self.test_name))
+        LOG.info('[{}] 1. Creating topology'.format(self.test_tag))
         router = self._get_router()
 
         (server2, server2_fixed_ip4,
@@ -356,33 +356,33 @@ class TestFWaaS(fwaas_mixins.FWaaSClientMixin, NuageBaseTest):
             self.start_web_server(server1, port=port)
             self.start_web_server(server2, port=port)
 
-        self.sleep(10, 'Naively mitigating slow CI', tag=self.test_name)
+        self.sleep(10, 'Naively mitigating slow CI')
 
         server1.echo_debug_info()
         server2.echo_debug_info()
 
-        LOG.info('[{}] 2. Verify connectivity'.format(self.test_name))
+        LOG.info('[{}] 2. Verify connectivity'.format(self.test_tag))
         self.assert_connectivity(from_server=server1,
                                  to_server=server2)
 
         self.sleep(10, 'Naively mitigating slow CI')
 
-        LOG.info('[{}] 3. Create firewall'.format(self.test_name))
+        LOG.info('[{}] 3. Create firewall'.format(self.test_tag))
         ctx = block(server1_fixed_ip=server1_fixed_ip6,
                     server2_fixed_ip=server2_fixed_ip6,
                     router_id=router['id'])
 
-        self.sleep(10, 'Naively mitigating slow CI', tag=self.test_name)
+        self.sleep(10, 'Naively mitigating slow CI')
 
-        LOG.info('[{}] 4. Verify no connectivity'.format(self.test_name))
+        LOG.info('[{}] 4. Verify no connectivity'.format(self.test_tag))
         confirm_blocked(from_server=server1, to_server=server2)
 
-        LOG.info('[{}] 5. Allow traffic'.format(self.test_name))
+        LOG.info('[{}] 5. Allow traffic'.format(self.test_tag))
         allow(ctx)
 
-        self.sleep(10, 'Naively mitigating slow CI', tag=self.test_name)
+        self.sleep(10, 'Naively mitigating slow CI')
 
-        LOG.info('[{}] 6. Verify connectivity'.format(self.test_name))
+        LOG.info('[{}] 6. Verify connectivity'.format(self.test_tag))
         confirm_allowed(from_server=server1, to_server=server2)
 
     def test_block_port(self):

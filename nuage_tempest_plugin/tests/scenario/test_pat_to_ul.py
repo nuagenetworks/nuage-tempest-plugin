@@ -43,8 +43,7 @@ class NuagePatToUnderlayScenarioTest(NuageBaseTest):
         server = self.create_tenant_server(
             ports=[port],
             user_data=ping_script)
-        self.sleep(240,
-                   msg='waiting for cloud-init script to finish.')
+        self.sleep(240, msg='waiting for cloud-init script to finish.')
 
         self.create_fip_to_server(server, port)
         result = server.send('cat {}'.format(output_path)).strip()

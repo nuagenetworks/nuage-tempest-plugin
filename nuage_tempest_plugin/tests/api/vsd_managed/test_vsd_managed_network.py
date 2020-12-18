@@ -131,7 +131,7 @@ class VSDManagedTestNetworks(BaseVSDManagedNetwork):
 
     def create_netpartition(self, np_name=None):
         """Wrapper utility that returns a test network."""
-        np_name = np_name or data_utils.rand_name('tempest-np-')
+        np_name = np_name or self.get_randomized_name()
         body = self.client.create_netpartition(np_name)
         netpartition = body['net_partition']
         self.net_partitions.append(netpartition)

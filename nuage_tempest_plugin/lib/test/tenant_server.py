@@ -9,7 +9,6 @@ from netaddr import IPAddress
 from netaddr import IPNetwork
 
 from tempest.common.utils.linux.remote_client import RemoteClient
-from tempest.lib.common.utils import data_utils
 from tempest.lib.common.utils import test_utils
 from tempest.lib import exceptions as lib_exc
 
@@ -108,7 +107,7 @@ class TenantServer(object):
                  security_groups=None, flavor=None, keypair=None,
                  volume_backed=False):
         self.parent = parent
-        self.name = name or data_utils.rand_name('server')
+        self.name = name or parent.get_randomized_name()
         self.tag = self.get_display_name()
         self.username = CONF.validation.image_ssh_user
         self.password = CONF.validation.image_ssh_password

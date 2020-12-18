@@ -959,14 +959,14 @@ class UpgradeTo60Test(NuageBaseTest, L3Mixin, NuageUpgradeMixin):
         self._test_upgrade(alembic_expected=True)
 
     def _test_pre_upgrade_neg(self):
-        LOG.info('[{}] _test_pre_upgrade_neg:start'.format(self.cls_name))
+        LOG.info('[{}] _test_pre_upgrade_neg:start'.format(self.cls_tag))
         self._execute_the_upgrade_script(expected_exit_code=1)
         error_message = ("Can't upgrade because plugin doesn't have v6"
                          " API set. Please change it (/nuage/api/v5_0)"
                          " to v6 api (e.g. /nuage/api/v6)"
                          " and run again.")
         self.assertIn(error_message, self._fetch_upgrade_log_data())
-        LOG.info('[{}] _test_pre_upgrade_neg:end'.format(self.cls_name))
+        LOG.info('[{}] _test_pre_upgrade_neg:end'.format(self.cls_tag))
 
     #   --------------------------------------------------------   #
     #
@@ -1049,7 +1049,7 @@ class UpgradeTo60Test(NuageBaseTest, L3Mixin, NuageUpgradeMixin):
 
             else:
                 LOG.warn('{}: Skipping bulk test in non-large setup'.format(
-                    self.parent.cls_name))
+                    self.parent.cls_tag))
 
         def verify(self):
             if self._is_large_setup:
@@ -1082,7 +1082,7 @@ class UpgradeTo60Test(NuageBaseTest, L3Mixin, NuageUpgradeMixin):
 
             else:
                 LOG.warn('{}: Skipping bulk test in non-large setup'.format(
-                    self.parent.cls_name))
+                    self.parent.cls_tag))
 
         def verify(self):
             if self._is_large_setup:
@@ -1156,7 +1156,7 @@ class UpgradeTo60Test(NuageBaseTest, L3Mixin, NuageUpgradeMixin):
                     vport_num=[251, 252])
             else:
                 LOG.warn('{}: Skipping bulk test in non-large setup'.format(
-                    self.parent.cls_name))
+                    self.parent.cls_tag))
 
         def verify(self):
             if self._is_large_setup:
