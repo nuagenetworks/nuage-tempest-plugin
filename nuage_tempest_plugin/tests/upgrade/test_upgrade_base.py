@@ -6,14 +6,15 @@ import inspect
 
 from nuage_tempest_plugin.lib.topology import Topology
 
-from vspk import v5_0 as vspk5
-try:
+if Topology.up_to_nuage('20.10'):
+    from vspk import v5_0 as vspk5
+else:
+    vspk5 = None
+
+if Topology.from_nuage('6.0'):
     from vspk import v6 as vspk6
-except ImportError as e:
-    if Topology.before_nuage('6.0'):
-        pass  # be tolerant
-    else:
-        raise
+else:
+    vspk6 = None
 
 CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
