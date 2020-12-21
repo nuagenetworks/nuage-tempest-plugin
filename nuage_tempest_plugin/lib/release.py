@@ -9,9 +9,10 @@ class Release(object):
                                r'((\d+(\.(?=\d))?)*)$')
 
     current_release = {
-        '5.4': '1.16',  # 5.4.1.U16
+        '5.4': '1.17',  # 5.4.1.U17
         '6.0': '12',  # 6.0.12
-        '20.10': '2'  # 20.10.R2
+        '20.10': '3',  # 20.10.R3
+        '21.4': '1'  # 21.4.1
     }
 
     current_rel_to_str = {float(x): x for x in current_release.keys()}
