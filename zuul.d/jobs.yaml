@@ -163,6 +163,7 @@
             neutron_plugin_options:
               available_type_drivers: flat,vlan,local,vxlan
               default_image_is_advanced: true
+              ipv6_metadata: False
 
 - job:
     name: networking-nuage-base
