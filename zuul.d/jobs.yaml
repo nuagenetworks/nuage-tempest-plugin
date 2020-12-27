@@ -154,6 +154,8 @@
               quota_port: 1000
         test-config:
           $TEMPEST_CONFIG:
+            network-feature-enabled:
+              available_features: ""
             scenario:
               dhcp_client: dhclient
             nuage_sut:
