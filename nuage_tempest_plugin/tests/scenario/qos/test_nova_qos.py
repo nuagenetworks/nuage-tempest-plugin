@@ -95,8 +95,9 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
         server = self.create_tenant_server(
             networks=[network], security_groups=[security_group],
             flavor=flavor['id'], prepare_for_connectivity=True)
-        # Set MTU on server
-        server.send('sudo ip link set dev eth0 mtu 1400')
+        # VRS-35132: Ethernet fragmentation causes QOS to drop packets.
+        server.send('sudo ip link set dev eth0 mtu {}'.format(
+            base_nuage_qos.QOS_MTU))
 
         # Check bw limited
         self._test_bandwidth(server, egress_bw=BW_LIMIT_NOVA,
@@ -118,7 +119,8 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
         server_show = server.get_server_details()
         self.assertNotEqual(original_host, server_show['hostId'],
                             'Migration did not happen')
-        server.send('sudo ip link set dev eth0 mtu 1400')
+        server.send('sudo ip link set dev eth0 mtu {}'.format(
+            base_nuage_qos.QOS_MTU))
 
         # Check bw limited
         self._test_bandwidth(server, egress_bw=BW_LIMIT_NOVA,
@@ -161,8 +163,9 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
         server = self.create_tenant_server(
             networks=[network], security_groups=[security_group],
             flavor=flavor['id'], prepare_for_connectivity=True)
-        # Set MTU on server
-        server.send('sudo ip link set dev eth0 mtu 1400')
+        # VRS-35132: Ethernet fragmentation causes QOS to drop packets.
+        server.send('sudo ip link set dev eth0 mtu {}'.format(
+            base_nuage_qos.QOS_MTU))
 
         # Set ingress & egress fip rate limiting
         self.update_floatingip(
@@ -193,7 +196,8 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
         server_show = server.get_server_details()
         self.assertNotEqual(original_host, server_show['hostId'],
                             'Migration did not happen')
-        server.send('sudo ip link set dev eth0 mtu 1400')
+        server.send('sudo ip link set dev eth0 mtu {}'.format(
+            base_nuage_qos.QOS_MTU))
 
         # Check bw limited
         self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS,
@@ -238,8 +242,9 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
         server = self.create_tenant_server(
             networks=[network], security_groups=[security_group],
             flavor=flavor['id'], prepare_for_connectivity=True)
-        # Set MTU on server
-        server.send('sudo ip link set dev eth0 mtu 1400')
+        # VRS-35132: Ethernet fragmentation causes QOS to drop packets.
+        server.send('sudo ip link set dev eth0 mtu {}'.format(
+            base_nuage_qos.QOS_MTU))
 
         flavors_client = self.admin_manager.flavors_client
         existing_extra_specs = flavors_client.list_flavor_extra_specs(
@@ -276,7 +281,8 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
         server_show = server.get_server_details()
         self.assertNotEqual(original_host, server_show['hostId'],
                             'Migration did not happen')
-        server.send('sudo ip link set dev eth0 mtu 1400')
+        server.send('sudo ip link set dev eth0 mtu {}'.format(
+            base_nuage_qos.QOS_MTU))
 
         # Check bw limited
         self._test_bandwidth(server, egress_bw=BW_LIMIT_NOVA,
@@ -325,8 +331,9 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
         server = self.create_tenant_server(
             networks=[network], security_groups=[security_group],
             flavor=flavor['id'], prepare_for_connectivity=True)
-        # Set MTU on server
-        server.send('sudo ip link set dev eth0 mtu 1400')
+        # VRS-35132: Ethernet fragmentation causes QOS to drop packets.
+        server.send('sudo ip link set dev eth0 mtu {}'.format(
+            base_nuage_qos.QOS_MTU))
 
         # Set ingress & egress fip rate limiting
         self.update_floatingip(
@@ -373,7 +380,8 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
         server_show = server.get_server_details()
         self.assertNotEqual(original_host, server_show['hostId'],
                             'Migration did not happen')
-        server.send('sudo ip link set dev eth0 mtu 1400')
+        server.send('sudo ip link set dev eth0 mtu {}'.format(
+            base_nuage_qos.QOS_MTU))
 
         # Check bw limited
         self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS,
@@ -419,8 +427,9 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
         server = self.create_tenant_server(
             networks=[network], security_groups=[security_group],
             flavor=flavor['id'], prepare_for_connectivity=True)
-        # Set MTU on server
-        server.send('sudo ip link set dev eth0 mtu 1400')
+        # VRS-35132: Ethernet fragmentation causes QOS to drop packets.
+        server.send('sudo ip link set dev eth0 mtu {}'.format(
+            base_nuage_qos.QOS_MTU))
 
         # Check bw limited
         self._test_bandwidth(server, egress_bw=BW_LIMIT_NOVA,
@@ -495,8 +504,9 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
         server = self.create_tenant_server(
             networks=[network], security_groups=[security_group],
             flavor=flavor['id'], prepare_for_connectivity=True)
-        # Set MTU on server
-        server.send('sudo ip link set dev eth0 mtu 1400')
+        # VRS-35132: Ethernet fragmentation causes QOS to drop packets.
+        server.send('sudo ip link set dev eth0 mtu {}'.format(
+            base_nuage_qos.QOS_MTU))
 
         # Check bw limited
         self._test_bandwidth(server, egress_bw=BW_LIMIT_NOVA,
@@ -507,7 +517,8 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
         self.manager.servers_client.reboot_server(server.id, type='HARD')
         waiters.wait_for_server_status(self.manager.servers_client, server.id,
                                        'ACTIVE')
-        server.send('sudo ip link set dev eth0 mtu 1400')
+        server.send('sudo ip link set dev eth0 mtu {}'.format(
+            base_nuage_qos.QOS_MTU))
 
         self._test_bandwidth(server, egress_bw=BW_LIMIT_NOVA,
                              ingress_bw=BW_LIMIT_NOVA,
@@ -533,7 +544,8 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
         self.manager.servers_client.reboot_server(server.id, type='HARD')
         waiters.wait_for_server_status(self.manager.servers_client, server.id,
                                        'ACTIVE')
-        server.send('sudo ip link set dev eth0 mtu 1400')
+        server.send('sudo ip link set dev eth0 mtu {}'.format(
+            base_nuage_qos.QOS_MTU))
 
         self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS,
                              test_msg='Nova Qos + FIP RL after reboot.')
@@ -559,7 +571,8 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
         self.manager.servers_client.reboot_server(server.id, type='HARD')
         waiters.wait_for_server_status(self.manager.servers_client, server.id,
                                        'ACTIVE')
-        server.send('sudo ip link set dev eth0 mtu 1400')
+        server.send('sudo ip link set dev eth0 mtu {}'.format(
+            base_nuage_qos.QOS_MTU))
 
         self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS_UPDATE,
                              test_msg='Nova Qos + FIP RL updated '
@@ -579,7 +592,8 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
         self.manager.servers_client.reboot_server(server.id, type='HARD')
         waiters.wait_for_server_status(self.manager.servers_client, server.id,
                                        'ACTIVE')
-        server.send('sudo ip link set dev eth0 mtu 1400')
+        server.send('sudo ip link set dev eth0 mtu {}'.format(
+            base_nuage_qos.QOS_MTU))
 
         self._test_bandwidth(server, egress_bw=BW_LIMIT_NOVA,
                              ingress_bw=BW_LIMIT_NOVA,
@@ -622,8 +636,9 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
         server = self.create_tenant_server(
             networks=[network], security_groups=[security_group],
             flavor=flavor['id'], prepare_for_connectivity=True)
-        # Set MTU on server
-        server.send('sudo ip link set dev eth0 mtu 1400')
+        # VRS-35132: Ethernet fragmentation causes QOS to drop packets.
+        server.send('sudo ip link set dev eth0 mtu {}'.format(
+            base_nuage_qos.QOS_MTU))
 
         # update ingress & egress fip rate limiting
         self.update_floatingip(
@@ -710,9 +725,10 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
         server = self.create_tenant_server(
             ports=[port1, port2],
             flavor=flavor['id'], prepare_for_connectivity=True)
-        # Set MTU on server
-        server.send('sudo ip link set dev eth0 mtu 1400')
-        # Set MTU on server
+        # VRS-35132: Ethernet fragmentation causes QOS to drop packets.
+        server.send('sudo ip link set dev eth0 mtu {}'.format(
+            base_nuage_qos.QOS_MTU))
+        # VRS-35132: Ethernet fragmentation causes QOS to drop packets.
         server.send('sudo ip link set dev eth1 mtu 1400')
 
         # Associate a second IP to the second interface

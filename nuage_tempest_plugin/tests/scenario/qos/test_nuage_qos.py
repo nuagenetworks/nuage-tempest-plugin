@@ -67,6 +67,9 @@ class NuageFloatingIPProprietaryQosTest(base_nuage_qos.NuageQosTestmixin,
         server = self.create_tenant_server(
             networks=[network], security_groups=[security_group],
             prepare_for_connectivity=True)
+        # VRS-35132: Ethernet fragmentation causes QOS to drop packets.
+        server.send('sudo ip link set dev eth0 mtu {}'.format(
+            base_nuage_qos.QOS_MTU))
 
         egress_kbps = 500
         ingress_kbps = 1000
@@ -126,6 +129,9 @@ class NuageFloatingIPProprietaryQosTest(base_nuage_qos.NuageQosTestmixin,
         server = self.create_tenant_server(
             networks=[network], security_groups=[security_group],
             prepare_for_connectivity=True)
+        # VRS-35132: Ethernet fragmentation causes QOS to drop packets.
+        server.send('sudo ip link set dev eth0 mtu {}'.format(
+            base_nuage_qos.QOS_MTU))
 
         egress_kbps = 500
         ingress_kbps = 1000
@@ -208,6 +214,9 @@ class NuageFloatingIPProprietaryQosTest(base_nuage_qos.NuageQosTestmixin,
         server = self.create_tenant_server(
             networks=[network], security_groups=[security_group],
             prepare_for_connectivity=True)
+        # VRS-35132: Ethernet fragmentation causes QOS to drop packets.
+        server.send('sudo ip link set dev eth0 mtu {}'.format(
+            base_nuage_qos.QOS_MTU))
 
         egress_kbps = 500
         ingress_kbps = 1000
@@ -302,8 +311,9 @@ class RateLimitingNuageQosScenarioTest(base_nuage_qos.NuageQosTestmixin,
         server = self.create_tenant_server(
             networks=[network], security_groups=[security_group],
             prepare_for_connectivity=True)
-        # Set MTU on server
-        server.send('sudo ip link set dev eth0 mtu 1400')
+        # VRS-35132: Ethernet fragmentation causes QOS to drop packets.
+        server.send('sudo ip link set dev eth0 mtu {}'.format(
+            base_nuage_qos.QOS_MTU))
 
         bw_limit_policy_id = self.create_qos_policy()['id']
         rule_id = self.create_qos_bandwidth_limit_rule(
@@ -394,8 +404,9 @@ class RateLimitingNuageQosScenarioTest(base_nuage_qos.NuageQosTestmixin,
         server = self.create_tenant_server(
             networks=[network], security_groups=[security_group],
             prepare_for_connectivity=True)
-        # Set MTU on server
-        server.send('sudo ip link set dev eth0 mtu 1400')
+        # VRS-35132: Ethernet fragmentation causes QOS to drop packets.
+        server.send('sudo ip link set dev eth0 mtu {}'.format(
+            base_nuage_qos.QOS_MTU))
 
         # Create QoS policy
         bw_limit_policy_id = self.create_qos_policy()['id']

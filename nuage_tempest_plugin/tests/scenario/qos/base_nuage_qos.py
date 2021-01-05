@@ -25,6 +25,10 @@ LOG = log.getLogger(__name__)
 
 CONF = config.CONF
 
+# VRS-35132: Ethernet fragmentation causes QOS to drop packets
+# 1400 mtu prevents fragmentation in single and doubly encapsulated vxlan
+QOS_MTU = 1400
+
 
 class NuageQosTestmixin(object):
     """NuageQosTestmixin
