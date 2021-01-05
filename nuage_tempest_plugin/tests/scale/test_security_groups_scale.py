@@ -11,160 +11,104 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+import testscenarios
 
-from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
+from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
-from nuage_tempest_plugin.tests.api.security_groups\
-    .test_security_groups_nuage \
-    import SecGroupTestNuageBase
 
 CONF = Topology.get_conf()
+load_tests = testscenarios.load_tests_apply_scenarios
 
 
-class TestSecGroupScaleBase(SecGroupTestNuageBase):
+class TestSecGroupScaleBase(nuage_test.NuageBaseTest):
 
-    def _test_create_port_with_security_groups(self, sg_num,
-                                               nuage_domain=None):
-        # Test the maximal number of security groups when creating a port
-        nuage_domain = nuage_domain or self.nuage_any_domain
-        sg_ids = []
-        for _ in range(sg_num):
-            group_create_body, name = self._create_security_group()
-            sg_ids.append(group_create_body['security_group']['id'])
-        if sg_num <= n_constants.MAX_SG_PER_PORT:
-            self._create_nuage_port_with_security_group(sg_ids, self.network)
-            vport = self.nuage_client.get_vport(
-                self.nuage_domain_type,
-                nuage_domain[0]['ID'],
-                filters='externalID',
-                filter_values=self.port['id'])
-            nuage_policy_grps = self.nuage_client.get_policygroup(
-                n_constants.VPORT,
-                vport[0]['ID'])
-            self.assertEqual(sg_num, len(nuage_policy_grps))
-        else:
-            msg = (("Number of %s specified security groups exceeds the "
-                    "maximum of %s security groups on a port "
-                    "supported on nuage VSP") % (sg_num,
-                                                 n_constants.MAX_SG_PER_PORT))
-            self.assertRaisesRegex(
-                exceptions.BadRequest,
-                msg,
-                self._create_nuage_port_with_security_group,
-                sg_ids,
-                self.network)
+    is_l3 = False
 
-    def _test_update_port_with_security_groups(self, sg_num,
-                                               nuage_domain=None):
-        # Test the maximal number of security groups when updating a port
-        nuage_domain = nuage_domain or self.nuage_any_domain
-        group_create_body, name = self._create_security_group()
-        self._create_nuage_port_with_security_group(
-            [group_create_body['security_group']['id']], self.network)
-        sg_ids = []
-        for _ in range(sg_num):
-            group_create_body, name = self._create_security_group()
-            sg_ids.append(group_create_body['security_group']['id'])
-        sg_body = {"security_groups": sg_ids}
-        if sg_num <= n_constants.MAX_SG_PER_PORT:
-            self.update_port(self.port, **sg_body)
-            vport = self.nuage_client.get_vport(self.nuage_domain_type,
-                                                nuage_domain[0]['ID'],
-                                                filters='externalID',
-                                                filter_values=self.port['id'])
-            nuage_policy_grps = self.nuage_client.get_policygroup(
-                n_constants.VPORT,
-                vport[0]['ID'])
-            self.assertEqual(sg_num, len(nuage_policy_grps))
+    ip_versions = (4, 6)
 
-            # clear sgs such that cleanup will work fine
-            sg_body = {"security_groups": []}
-            self.ports_client.update_port(self.port['id'], **sg_body)
-        else:
-            msg = (("Number of %s specified security groups exceeds the "
-                    "maximum of %s security groups on a port "
-                    "supported on nuage VSP") % (sg_num,
-                                                 n_constants.MAX_SG_PER_PORT))
-            self.assertRaisesRegex(
-                exceptions.BadRequest,
-                msg,
-                self.ports_client.update_port,
-                self.port['id'],
-                **sg_body)
+    scenarios = testscenarios.scenarios.multiply_scenarios([
+        ('L3', {'is_l3': True}),
+        ('L2', {'is_l3': False})
+    ], [
+        ('IPv4', {'ip_versions': (4,)}),
+        ('IPv6', {'ip_versions': (6,)}),
+        ('Dualstack', {'ip_versions': (4, 6)})
+    ])
 
-
-class TestSecGroupScaleTestL2Domain(TestSecGroupScaleBase):
+    @classmethod
+    def skip_checks(cls):
+        super(TestSecGroupScaleBase, cls).skip_checks()
+        if (not Topology.has_single_stack_v6_support() and
+                cls.ip_versions == (6,)):
+            raise cls.skipException("Single Stack IPV6 not supported")
 
     @classmethod
     def resource_setup(cls):
-        super(TestSecGroupScaleTestL2Domain, cls).resource_setup()
+        super(TestSecGroupScaleBase, cls).resource_setup()
+        cls.network = cls.create_cls_network()
+        cls.subnet4 = cls.subnet6 = None
+        if 4 in cls.ip_versions:
+            cls.subnet4 = cls.create_cls_subnet(cls.network, ip_version=4)
+        if 6 in cls.ip_versions:
+            cls.subnet6 = cls.create_cls_subnet(cls.network, ip_version=6)
+        cls.router = None
+        if cls.is_l3:
+            cls.router = cls.create_cls_router()
+            if cls.subnet4:
+                cls.router_cls_attach(cls.router, cls.subnet4)
+            if cls.subnet6:
+                cls.router_cls_attach(cls.router, cls.subnet6)
+            cls.domain = cls.vsd.get_l3_domain_by_subnet(
+                cls.subnet4 or cls.subnet6)
+        else:
+            cls.domain = cls.vsd.get_l2domain(
+                by_subnet=cls.subnet4 or cls.subnet6)
 
-        # Nuage specific resource addition
-        name = data_utils.rand_name('network-')
-        cls.network = cls.create_network(name)
-        cls.subnet = cls.create_subnet(cls.network)
-        nuage_l2domain = cls.nuage_client.get_l2domain(by_subnet=cls.subnet)
-        cls.nuage_any_domain = nuage_l2domain
-        cls.nuage_domain_type = n_constants.L2_DOMAIN
+    def test_create_update_port_with_max_security_groups(self):
+        """test_create_update_port_with_max_security_groups
 
-    def test_create_port_with_max_security_groups(self):
-        self._test_create_port_with_security_groups(
-            n_constants.MAX_SG_PER_PORT)
+        Create port with max nr SG
+        Create port with max+1 nr SG
+        update port with max nr SG
+        update port with max+1 nr SG
 
-    def test_create_port_with_overflow_security_groups_neg(self):
-        self._test_create_port_with_security_groups(
-            n_constants.MAX_SG_PER_PORT + 1)
+        """
+        num_sg = n_constants.MAX_SG_PER_PORT
+        sg_ids = []
+        for _ in range(num_sg):
+            sg = self.create_security_group()
+            sg_ids.append(sg['id'])
+        # Sunny side scenario
+        port = self.create_port(self.network, security_groups=sg_ids)
+        port_update = self.create_port(self.network)
+        self.update_port(port_update, security_groups=sg_ids)
+        ext_id_filter = self.vsd.get_external_id_filter(port['id'])
+        vport = self.domain.vports.get(filter=ext_id_filter)[0]
+        pgs = vport.policy_groups.get()
+        self.assertEqual(num_sg, len(pgs))
+        # Clear SG from port for cleanup
+        self.update_port(port, security_groups=[])
+        self.update_port(port_update, security_groups=[])
 
-    def test_update_port_with_max_security_groups(self):
-        self._test_update_port_with_security_groups(
-            n_constants.MAX_SG_PER_PORT)
+        # Exceed maximum capacity
+        sg = self.create_security_group()
+        sg_ids.append(sg['id'])
 
-    def test_update_port_with_overflow_security_groups_neg(self):
-        self._test_update_port_with_security_groups(
-            n_constants.MAX_SG_PER_PORT + 1)
-
-
-class TestSecGroupScaleTestL3Domain(TestSecGroupScaleBase):
-
-    @classmethod
-    def resource_setup(cls):
-        super(TestSecGroupScaleTestL3Domain, cls).resource_setup()
-
-        # Create a network
-        name = data_utils.rand_name('network-')
-        cls.network = cls.create_network(name)
-
-        # Create a subnet
-        cls.subnet = cls.create_subnet(cls.network)
-
-        # Create a router
-        name = data_utils.rand_name('router-')
-        cls.router = cls.create_router(
-            name, external_network_id=CONF.network.public_network_id)
-        cls.create_router_interface(cls.router['id'], cls.subnet['id'])
-
-        nuage_l3domain = cls.nuage_client.get_l3domain(
-            filters='externalID',
-            filter_values=cls.router['id'])
-
-        cls.nuage_any_domain = nuage_l3domain
-        cls.nuage_domain_type = n_constants.DOMAIN
-
-    def test_create_port_with_max_security_groups(self):
-        self._test_create_port_with_security_groups(
-            n_constants.MAX_SG_PER_PORT)
-
-    def test_create_port_with_overflow_security_groups_neg(self):
-        self._test_create_port_with_security_groups(
-            n_constants.MAX_SG_PER_PORT + 1)
-
-    def test_update_port_with_max_security_groups(self):
-        self._test_update_port_with_security_groups(
-            n_constants.MAX_SG_PER_PORT)
-
-    def test_update_port_with_overflow_security_groups_net(self):
-        self._test_update_port_with_security_groups(
-            n_constants.MAX_SG_PER_PORT + 1)
+        msg = (("Number of %s specified security groups exceeds the "
+                "maximum of %s security groups on a port "
+                "supported on nuage VSP") % (num_sg + 1,
+                                             n_constants.MAX_SG_PER_PORT))
+        self.assertRaisesRegex(
+            exceptions.BadRequest,
+            msg,
+            self.create_port,
+            self.network, security_groups=sg_ids)
+        port_update = self.create_port(self.network)
+        self.assertRaisesRegex(
+            exceptions.BadRequest,
+            msg,
+            self.update_port,
+            port_update, security_groups=sg_ids)

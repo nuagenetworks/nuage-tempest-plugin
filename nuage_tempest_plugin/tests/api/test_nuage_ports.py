@@ -102,12 +102,8 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         router = self.create_router(
             admin_state_up=True,
             external_network_id=self.ext_net_id)
-        self.create_router_interface(router_id=router["id"],
-                                     subnet_id=subnet["id"],
-                                     cleanup=False)
-
-        self.routers_client.remove_router_interface(router_id=router["id"],
-                                                    subnet_id=subnet["id"])
+        self.router_attach(router, subnet, cleanup=False)
+        self.router_detach(router, subnet)
         filters = {
             'device_owner': 'network:dhcp:nuage',
             'network_id': network['id']
@@ -237,10 +233,8 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             external_network_id=self.ext_net_id)
         self.assertIsNotNone(router, "Unable to create router")
         # Attach subnet
-        self.create_router_interface(router_id=router["id"],
-                                     subnet_id=subnet["id"])
-        self.create_router_interface(router_id=router["id"],
-                                     subnet_id=subnet2["id"])
+        self.router_attach(router, subnet)
+        self.router_attach(router, subnet2)
         # Create port
         fixed_ips = [
             {
@@ -300,9 +294,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
                 external_network_id=self.ext_net_id)
             self.assertIsNotNone(router, "Unable to create router")
             # Attach subnet
-            self.create_router_interface(router_id=router["id"],
-                                         subnet_id=subnetv6["id"],
-                                         cleanup=False)
+            self.router_attach(router, subnetv6, cleanup=False)
             resource = constants.SUBNETWORK
         filters, filter_values = self.vsd_client.get_subnet_filters(subnetv4)
         vsd_vport_parent = self.vsd_client.get_global_resource(
@@ -361,8 +353,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         if not Topology.has_single_stack_v6_support():
             self.delete_port(port)
             if not is_l2:
-                self.remove_router_interface(router_id=router["id"],
-                                             subnet_id=subnetv6["id"])
+                self.router_detach(router, subnetv6)
             self.delete_subnet(subnetv6)
             self.delete_subnet(subnetv4)
 
@@ -422,10 +413,8 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         self.assertIsNone(vm_interface.get('IPv6Address'))
 
         if not is_l2:
-            self.remove_router_interface(router_id=router["id"],
-                                         subnet_id=subnetv6["id"])
-            self.create_router_interface(router_id=router["id"],
-                                         subnet_id=subnetv4["id"])
+            self.router_detach(router, subnetv6)
+            self.router_attach(router, subnetv4)
         # Delete ipv6 subnet to changing dualstack to pure ipv4 stack with vm
         self.delete_subnet(subnetv6)
         vsd_vport_parent = self.vsd_client.get_global_resource(
@@ -549,8 +538,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             external_network_id=self.ext_net_id)
         self.assertIsNotNone(router, "Unable to create router")
         # Attach subnet
-        self.create_router_interface(router_id=router["id"],
-                                     subnet_id=subnet["id"])
+        self.router_attach(router, subnet)
         fixed_ips = [
             {
                 "ip_address": "10.0.0.4",
@@ -606,8 +594,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             external_network_id=self.ext_net_id)
         self.assertIsNotNone(router, "Unable to create router")
         # Attach subnet
-        self.create_router_interface(router_id=router["id"],
-                                     subnet_id=subnet["id"])
+        self.router_attach(router, subnet)
         fixed_ips = [
             {
                 "ip_address": "10.0.0.4",
@@ -667,8 +654,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             external_network_id=self.ext_net_id)
         self.assertIsNotNone(router, "Unable to create router")
         # Attach subnet
-        self.create_router_interface(router_id=router["id"],
-                                     subnet_id=subnet["id"])
+        self.router_attach(router, subnet)
         fixed_ips = [
             {
                 "ip_address": "10.0.0.4",
@@ -748,8 +734,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             external_network_id=self.ext_net_id)
         self.assertIsNotNone(router, "Unable to create router")
         # Attach subnet
-        self.create_router_interface(router_id=router["id"],
-                                     subnet_id=subnet["id"])
+        self.router_attach(router, subnet)
         fixed_ips = [
             {
                 "ip_address": "10.0.0.4",
@@ -992,8 +977,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             external_network_id=self.ext_net_id)
         self.assertIsNotNone(router, "Unable to create router")
         # Attach subnet
-        self.create_router_interface(router_id=router["id"],
-                                     subnet_id=subnet["id"])
+        self.router_attach(router, subnet)
         if CONF.nuage_sut.ipam_driver == 'nuage_vsd_managed':
             # vsd managed ipam requires nuage:vip port
             self.create_port(network=network,
@@ -1055,8 +1039,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             external_network_id=self.ext_net_id)
         self.assertIsNotNone(router, "Unable to create router")
         # Attach subnet
-        self.create_router_interface(router_id=router["id"],
-                                     subnet_id=subnet["id"])
+        self.router_attach(router, subnet)
         fixed_ips = [
             {
                 "ip_address": "10.0.0.4",
@@ -1111,8 +1094,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             external_network_id=self.ext_net_id)
         self.assertIsNotNone(router, "Unable to create router")
         # Attach subnet
-        self.create_router_interface(router_id=router["id"],
-                                     subnet_id=subnet["id"])
+        self.router_attach(router, subnet)
         fixed_ips = [
             {
                 "ip_address": "10.0.0.4",
@@ -1193,8 +1175,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             external_network_id=self.ext_net_id)
         self.assertIsNotNone(router, "Unable to create router")
         # Attach subnet
-        self.create_router_interface(router_id=router["id"],
-                                     subnet_id=subnet["id"])
+        self.router_attach(router, subnet)
         fixed_ips = [
             {
                 "ip_address": "10.0.0.4",
@@ -1294,8 +1275,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             external_network_id=self.ext_net_id)
         self.assertIsNotNone(router, "Unable to create router")
         # Attach subnet
-        self.create_router_interface(router_id=router["id"],
-                                     subnet_id=subnet["id"])
+        self.router_attach(router, subnet)
         fixed_ips = [
             {
                 "ip_address": "10.0.0.4",
@@ -1396,8 +1376,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             external_network_id=self.ext_net_id)
         self.assertIsNotNone(router, "Unable to create router")
         # Attach subnet
-        self.create_router_interface(router_id=router["id"],
-                                     subnet_id=subnet["id"])
+        self.router_attach(router, subnet)
         fixed_ips = [
             {
                 "ip_address": "10.0.0.4",
@@ -1509,8 +1488,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             external_network_id=self.ext_net_id)
         self.assertIsNotNone(router, "Unable to create router")
         # Attach subnet
-        self.create_router_interface(router_id=router["id"],
-                                     subnet_id=subnet["id"])
+        self.router_attach(router, subnet)
         fixed_ips = [
             {
                 "ip_address": "10.0.0.5",
@@ -1572,8 +1550,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             external_network_id=self.ext_net_id)
         self.assertIsNotNone(router, "Unable to create router")
         # Attach subnet
-        self.create_router_interface(router_id=router["id"],
-                                     subnet_id=subnet["id"])
+        self.router_attach(router, subnet)
         fixed_ips = [
             {
                 "ip_address": "10.0.0.4",
@@ -1701,8 +1678,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
         self.assertEqual(SPOOFING_ENABLED,
                          nuage_vport[0]['addressSpoofing'])
         # Attach subnet
-        self.create_router_interface(router_id=router["id"],
-                                     subnet_id=subnet["id"])
+        self.router_attach(router, subnet)
         vsd_vport_parent = self.vsd_client.get_global_resource(
             constants.SUBNETWORK,
             filters=filters,
@@ -1742,8 +1718,7 @@ class PortsTest(NuageBaseTest, NuageAdminNetworksTest,
             external_network_id=self.ext_net_id)
         self.assertIsNotNone(router, "Unable to create router")
         # Attach subnet
-        self.create_router_interface(router_id=router["id"],
-                                     subnet_id=subnet["id"], cleanup=False)
+        self.router_attach(router, subnet)
         fixed_ips = [
             {
                 "ip_address": "10.0.0.4",

@@ -168,16 +168,13 @@ class NuageHybridMplsTest(NuageBaseTest):
                                     manager=self.admin_manager)
 
         router = self.create_router(manager=self.admin_manager)
-        kwargs = {'router_id': router['id'],
-                  "subnet_id": subnet['id'],
-                  "manager": self.admin_manager}
         msg = ("It is not allowed to add a router interface to a "
                "network type nuage_hybrid_mpls, or if it has a "
                "segment of this type.")
         self.assertRaisesRegex(exceptions.BadRequest,
                                msg,
-                               self.create_router_interface,
-                               **kwargs)
+                               self.router_attach, router, subnet,
+                               manager=self.admin_manager)
 
         # Nuage Hybrid MPLS Segment
         kwargs = {'provider:network_type': 'nuage_hybrid_mpls'}
@@ -193,16 +190,13 @@ class NuageHybridMplsTest(NuageBaseTest):
         # This goes to update_network_precommit
         self.create_segment(**kwargs)
         router = self.create_router(manager=self.admin_manager)
-        kwargs = {'router_id': router['id'],
-                  "subnet_id": subnet['id'],
-                  "manager": self.admin_manager}
         msg = ("It is not allowed to add a router interface to a "
                "network type nuage_hybrid_mpls, or if it has a "
                "segment of this type.")
         self.assertRaisesRegex(exceptions.BadRequest,
                                msg,
-                               self.create_router_interface,
-                               **kwargs)
+                               self.router_attach, router, subnet,
+                               manager=self.admin_manager)
 
     @decorators.attr(type='smoke')
     @testtools.skipIf(Topology.at_openstack('queens'),

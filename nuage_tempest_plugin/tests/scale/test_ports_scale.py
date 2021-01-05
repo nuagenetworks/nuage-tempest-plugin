@@ -54,7 +54,7 @@ class PortsScaleTest(NuageBaseTest):
                 allowed_address_pairs=allowed_address_pairs)
             portids_to_aap[port['id']] = allowed_address_pairs
         router = self.create_router()
-        self.create_router_interface(router['id'], subnet['id'])
+        self.router_attach(router, subnet)
 
         l3domain_ext_id = self.nuage_client.get_vsd_external_id(router['id'])
         nuage_domain = self.nuage_client.get_resource(
