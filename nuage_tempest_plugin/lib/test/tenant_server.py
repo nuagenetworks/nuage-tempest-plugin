@@ -426,7 +426,10 @@ class TenantServer(object):
                         backoff_time = max_backoff_time  # 3, 6, 10, 10, ...
                 if backoff_time == max_backoff_time:
                     count += 1
-                    self.parent.assertTrue(count < 10, 'Cloudinit did not '
+                    if count > 10:
+                        LOG.warn('[{}] Extremely slow instance!'.format(
+                            self.tag))
+                    self.parent.assertTrue(count < 20, 'Cloudinit did not '
                                                        'complete on time')
                 self.sleep(backoff_time, 'Waiting for cloudinit to complete')
 
