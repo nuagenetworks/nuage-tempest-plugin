@@ -138,3 +138,6 @@ neutron_tempest_plugin\.scenario\.test_metadata\.MetadataTest\.test_metadata_rou
 
 # Old test which tries to access deprecated os-floating-ips API
 tempest.scenario.test_minimum_basic.TestMinimumBasicScenario.test_minimum_basic_scenario
+
+# Temporarily disable QOS scenario testing
+nuage_tempest_plugin.tests.scenario.qos
