@@ -23,6 +23,7 @@ from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
+from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
@@ -974,3 +975,86 @@ class SecGroupTestNuageL3DomainDualstackTest(SecGroupTestNuageBaseV6):
     def test_create_security_group_rule_with_icmp_type_code(self):
         self._test_create_security_group_rule_with_icmp_type_code(
             'ipv6-icmp', icmp_type_codes=self._icmp_type_codes)
+
+
+class TestSecGroupScaleTestRouterAttach(nuage_test.NuageBaseTest):
+
+    def test_pg_id_exhausted_for_this_resource(self):
+        # Create a network
+        name = data_utils.rand_name('network-')
+        network = self.create_network(name)
+
+        # Create a subnet
+        subnet = self.create_subnet(network)
+
+        # Create a router
+        name = data_utils.rand_name('router-')
+        router = self.create_router(
+            name, external_network_id=CONF.network.public_network_id)
+
+        # Create security groups
+        self.create_security_group()
+        sgA = self.create_security_group()
+        sgB = self.create_security_group()
+        sgC = self.create_security_group()
+        sgD = self.create_security_group()
+        sgE = self.create_security_group()
+        sgF = self.create_security_group()
+
+        # Create security group rules
+        self.create_security_group_rule(sgA, remote_ip_prefix='10.1.129.0/24',
+                                        protocol='tcp', direction='ingress')
+        self.create_security_group_rule(sgA, remote_ip_prefix='192.168.0.0/16',
+                                        protocol='tcp', port_range_min=22,
+                                        port_range_max=22, direction='ingress')
+        self.create_security_group_rule(sgA, remote_group_id=sgA['id'],
+                                        protocol='icmp', direction='ingress')
+        self.create_security_group_rule(sgA, remote_group_id=sgB['id'],
+                                        protocol='tcp', port_range_min=2344,
+                                        port_range_max=2344,
+                                        direction='ingress')
+        self.create_security_group_rule(sgA, remote_group_id=sgF['id'],
+                                        protocol='udp', port_range_min=161,
+                                        port_range_max=161,
+                                        direction='ingress')
+        self.create_security_group_rule(sgB, remote_group_id=sgA['id'],
+                                        protocol='tcp', port_range_min=2344,
+                                        port_range_max=2344,
+                                        direction='ingress')
+        self.create_security_group_rule(sgB, remote_group_id=sgB['id'],
+                                        protocol='tcp', direction='ingress')
+        self.create_security_group_rule(sgC, remote_group_id=sgC['id'],
+                                        protocol='tcp', direction='ingress')
+        self.create_security_group_rule(sgD, remote_group_id=sgD['id'],
+                                        protocol='tcp', direction='ingress')
+        self.create_security_group_rule(sgE, remote_group_id=sgA['id'],
+                                        protocol='tcp', port_range_min=12000,
+                                        port_range_max=12000,
+                                        direction='ingress')
+        self.create_security_group_rule(sgE, remote_group_id=sgE['id'],
+                                        protocol='tcp', direction='ingress')
+        self.create_security_group_rule(sgE, remote_group_id=sgF['id'],
+                                        protocol='tcp', port_range_min=1566,
+                                        port_range_max=1566,
+                                        direction='ingress')
+        self.create_security_group_rule(sgF, remote_group_id=sgA['id'],
+                                        protocol='udp', port_range_min=162,
+                                        port_range_max=162,
+                                        direction='ingress')
+        self.create_security_group_rule(sgF, remote_group_id=sgF['id'],
+                                        protocol='tcp', direction='ingress')
+
+        # Create ports
+        self.create_port(network)
+        self.create_port(network, security_groups=[sgA['id'], sgB['id']])
+        self.create_port(network, security_groups=[sgC['id'], sgA['id']])
+        self.create_port(network, security_groups=[sgE['id'], sgA['id']])
+        self.create_port(network, security_groups=[sgD['id'], sgA['id'],
+                                                   sgB['id']])
+        self.create_port(network, security_groups=[sgF['id'], sgA['id']])
+        self.create_port(network, security_groups=[sgA['id']])
+        self.create_port(network, security_groups=[sgC['id'], sgA['id']])
+        self.create_port(network, security_groups=[sgD['id'], sgA['id']])
+        self.create_port(network, security_groups=[sgD['id'], sgA['id']])
+
+        self.create_router_interface(router['id'], subnet['id'])
