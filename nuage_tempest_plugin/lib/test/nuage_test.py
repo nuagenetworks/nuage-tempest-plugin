@@ -127,6 +127,9 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
 
     cls_name = None
     cls_tag = None
+    manager = admin_manager = None
+    vsd = None
+    plugin_network_client = plugin_network_client_admin = None
     credentials = ['primary', 'admin']
     default_netpartition_name = Topology.def_netpartition
     shared_infrastructure = 'Shared Infrastructure'
@@ -272,8 +275,8 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             msg = self._formatMessage(msg, "%s is not true" % safe_repr(expr))
             self.fail(msg)
 
-    def fail(self, msg):
-        self.pre_fail(msg)
+    def fail(self, msg=None):
+        self.pre_fail(msg or '(no msg)')
         super(NuageBaseTest, self).fail(msg)
 
     def pre_fail(self, msg):

@@ -58,9 +58,7 @@ class UnicodeUserDataTest(NuageBaseTest):
             user_data=user_data,
             prepare_for_connectivity=True)
 
-        curl_cmd = 'curl http://169.254.169.254/2009-04-04/user-data'
-        result = server1.send(curl_cmd)
-        self.assertIn(user_data, result)
+        server1.verify_userdata(user_data)
 
     @decorators.attr(type='smoke')
     def test_unicode_userdata_l3_v4(self):
