@@ -2030,12 +2030,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                     if ip_version == 4:
                         LOG.info('[{}] Clearing ARP cache for {}'.format(
                             self.test_tag, dest))
-                        cmd = 'arp -d {}'.format(dest)
-                        if server1.send(cmd, one_off_attempt=True,
-                                        assert_success=False) is None:
-                            LOG.debug('[{}] Failed to execute command on'
-                                      ' {}'.format(self.test_tag,
-                                                   server1.id))
+                        server1.send('arp -d {}'.format(dest))
                     else:
                         if should_pass:
                             # TODO(OPENSTACK-2664) : CI test robustness:
