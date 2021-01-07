@@ -83,6 +83,9 @@ class BasicOffloadingL3Test(E2eTestBase):
             hypervisor, 'sudo ovs-dpctl dump-flows -m').splitlines()
         return OvrsFlowQuery(flows)
 
+    def _validate_interfaces(self, from_port, to_port):
+        pass
+
     def test_same_hv_switchdev_switchdev(self):
         hv = self.selected_hypervisors[0]['hypervisor_hostname']
 

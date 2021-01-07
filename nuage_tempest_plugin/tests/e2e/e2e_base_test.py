@@ -198,6 +198,9 @@ class E2eTestBase(NuageBaseTest):
         return self.execute_on_hypervisor(hypervisor,
                                           'sudo service avrs restart')
 
+    def _validate_interfaces(self, from_port, to_port):
+        pass
+
     def _get_server_extra_args(self):
         """Force config drive for L2 to work around metadata agent issue"""
         args = {}
@@ -389,6 +392,8 @@ class E2eTestBase(NuageBaseTest):
             name=data_utils.rand_name('test-server-offload-fip'),
             **self._get_server_extra_args())
 
+        self._validate_interfaces(from_port=from_port, to_port=to_port)
+
         self._offload_test(
             from_server=from_server, from_port=from_port,
             to_server=to_server, to_port=to_port,
@@ -424,6 +429,8 @@ class E2eTestBase(NuageBaseTest):
             manager=self.admin_manager,
             name=data_utils.rand_name('test-server-offload-fip'),
             **self._get_server_extra_args())
+
+        self._validate_interfaces(from_port=from_port, to_port=to_port)
 
         self._offload_test(
             from_server=from_server, from_port=from_port,

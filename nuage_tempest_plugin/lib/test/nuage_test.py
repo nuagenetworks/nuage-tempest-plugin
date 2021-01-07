@@ -813,6 +813,11 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         return (port['binding:vnic_type'] == 'direct' and
                 'switchdev' in port['binding:profile'].get('capabilities', []))
 
+    @staticmethod
+    def is_dpdk_capable(port):
+        return (port['binding:vif_type'] == 'vhostuser' and
+                'vhostuser_socket' in port['binding:vif_details'])
+
     def update_port(self, port, manager=None, **kwargs):
         manager = manager or self.manager
         body = manager.ports_client.update_port(port['id'], **kwargs)
@@ -828,7 +833,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
 
     def get_port(self, port_id, manager=None, **kwargs):
         manager = manager or self.manager
-        return manager.subnets_client.show_port(
+        return manager.ports_client.show_port(
             port_id, **kwargs)['port']
 
     def _verify_port(self, port, subnet4=None, subnet6=None, **kwargs):
