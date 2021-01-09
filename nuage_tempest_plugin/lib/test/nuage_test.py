@@ -443,7 +443,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                 "Please add motivation for this sleep.".format(
                     seconds, '[{}] '.format(tag) if tag else ''))
         else:
-            LOG.warning("{}Sleeping for {}s. {}.".format(
+            LOG.debug("{}Sleeping for {}s. {}.".format(
                 '[{}] '.format(tag) if tag else '', seconds, msg))
         time.sleep(seconds)
 
@@ -1319,6 +1319,11 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             name, user_id=user_id)['keypair']
         return keypair
 
+    def get_console_log(self, server_id):
+        output = self.admin_manager.servers_client.get_console_output(
+            server_id)['output']
+        return output
+
     def list_networks(self, manager=None, *args, **filters):
         manager = manager or self.manager
         networks_list = manager.networks_client.list_networks(
@@ -1709,7 +1714,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             # values are limited to 255 chars, so need to chunk...
             kwargs['metadata'] = utils.chunk_str_to_dict(
                 keypair['private_key'], 'private_key', 255)
-            LOG.info('[{}] metadata set: {}'.format(
+            LOG.debug('[{}] metadata set: {}'.format(
                 self.test_tag, kwargs['metadata']))
 
         LOG.info('[{}] Creating TenantServer {} ({})'.format(
@@ -1812,12 +1817,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
     def clone_tenant_server(self, tenant_server, manager=None, cleanup=True):
         clone = self.sync_tenant_server(
             tenant_server.name, manager=manager, cleanup=cleanup)
-        clone.set_internal_states(
-            tenant_server.set_to_prepare_for_connectivity,
-            tenant_server.cloudinit_complete,
-            tenant_server.waiting_for_cloudinit_completion,
-            tenant_server.needs_provisioning,
-            tenant_server.is_being_provisioned)
+        clone.clone_internal_states(tenant_server)
         return clone
 
     def make_fip_reachable(self, server, manager=None, cleanup=True):
@@ -1983,7 +1983,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
 
     def assert_ping(self, server1, server2=None, network=None, ip_version=None,
                     should_pass=True, interface=None, address=None,
-                    ping_count=3, ping_size=None, ping_timeout=10):
+                    ping_count=3, ping_size=None):
         LOG.info('[{}] Pinging {} > {}'.format(
             self.test_tag,
             server1.name, server2.name if server2 else address))
@@ -2003,67 +2003,77 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             assert address
             dest = address
 
-        def ping():
+        # check that the target IP under-test is up
+        if should_pass and server2.set_to_prepare_for_connectivity:
+            server2.wait_until_ip_established(dest, assert_permanent=True)
 
-            timeout = ping_timeout or CONF.validation.ping_timeout
-            count = ping_count or CONF.validation.ping_count
-            size = ping_size or CONF.validation.ping_size
+        count = ping_count or CONF.validation.ping_count
+        size = ping_size or CONF.validation.ping_size
 
-            def ping_cmd(source, nic=None):
+        def ping_cmd(source, nic=None):
 
-                # Use 'ping6' for IPv6 addresses, 'ping' for IPv4 and hostnames
+            # Use 'ping6' for IPv6 addresses, 'ping' for IPv4 and hostnames
+            cmd = 'ping6' if ip_version == 6 else 'ping'
 
-                cmd = 'ping6' if ip_version == 6 else 'ping'
-                if nic:
-                    cmd = '{cmd} -I {nic}'.format(cmd=cmd, nic=interface)
-                cmd += ' -c{0} -w{0} -s{1} {2}'.format(count, size, dest)
-                return source.send(cmd, as_sudo=False, one_off_attempt=True,
-                                   assert_success=False) is not None
+            if nic:
+                cmd = '{cmd} -I {nic}'.format(cmd=cmd, nic=interface)
+            cmd += ' -c{0} -w{0} -s{1} {2}'.format(count, size, dest)
 
-            def ping_address():
+            return source.send(cmd, as_sudo=False, one_off_attempt=True,
+                               assert_success=False) is not None
 
-                LOG.info('[{}] Pinging {} from {}'.format(
-                    self.test_tag, dest, server1.get_fip_ip()))
+        try:
+            LOG.info('[{}] Pinging {} from {}'.format(
+                self.test_tag, dest, server1.get_fip_ip()))
 
-                if ping_cmd(server1, interface):
-                    success = True
-                else:
-                    msg = '[{}] Failed to ping IP {} from {} ({})'.format(
-                        self.test_tag, dest, server1.name,
-                        server1.get_fip_ip())
-                    if should_pass:
-                        LOG.warning(msg)
-                    else:
-                        LOG.info(msg)
+            success = ping_cmd(server1, interface)
+
+            if not success:
+                msg = '[{}] Failed to ping IP {} from {} ({})'.format(
+                    self.test_tag, dest, server1.name, server1.get_fip_ip())
+
+                if should_pass:
+                    LOG.warning(msg)
+
                     if ip_version == 4:
                         LOG.info('[{}] Clearing ARP cache for {}'.format(
                             self.test_tag, dest))
                         server1.send('arp -d {}'.format(dest))
+
+                        # and retry
+                        LOG.warn('[{}] v4 ping retry (last chance)}'.format(
+                            self.test_tag))
+
+                        success = ping_cmd(server1, interface)
+
                     else:
-                        if should_pass:
-                            # TODO(OPENSTACK-2664) : CI test robustness:
-                            #      include ip neigh in our cirros-ipv6 image
-                            LOG.warn('[{}] Would need to clear IPv6 neighbors '
-                                     'cache but need CI image support '
-                                     '({})'.format(self.test_tag, dest))
-                    success = False
+                        # TODO(OPENSTACK-2664) : CI test robustness:
+                        #      include ip neigh in our cirros-ipv6 image
+                        LOG.warn(
+                            '[{}] Would need to clear IPv6 neighbors cache '
+                            'but need CI image support '
+                            '({})'.format(self.test_tag, dest))
 
-                LOG.info('[{}] Ping -{}- {}'.format(
-                    self.test_tag,
-                    'expected' if success == should_pass else 'unexpected',
-                    'SUCCESS' if success else 'FAIL'))
+                        # retry nevertheless - TODO(evaluate this)
+                        LOG.warn('[{}] v6 ping retry (last chance)}'.format(
+                            self.test_tag))
 
-                return success
+                        success = ping_cmd(server1, interface)
 
-            try:
-                return test_utils.call_until_true(ping_address, timeout, 1)
+                else:
+                    LOG.info(msg)
 
-            except lib_exc.SSHTimeout as ssh_e:
-                LOG.error('[{}] SSH Timeout! ({})'.format(self.test_tag,
-                                                          ssh_e))
-                raise
+            LOG.info('[{}] Ping -{}- {}'.format(
+                self.test_tag,
+                'expected' if success == should_pass else 'unexpected',
+                'SUCCESS' if success else 'FAIL'))
 
-        self.assertEqual(should_pass, ping(),
+        except lib_exc.SSHTimeout as ssh_e:
+            LOG.error('[{}] SSH Timeout! ({})'.format(self.test_tag,
+                                                      ssh_e))
+            raise
+
+        self.assertEqual(should_pass, success,
                          '[{}] Ping {} > {} unexpectedly {}!'.format(
                              self.test_tag,
                              server1.name,

@@ -3,6 +3,8 @@
 
 from __future__ import print_function
 import sys
+from time import gmtime
+from time import strftime
 
 from oslo_log import log as logging
 
@@ -25,6 +27,8 @@ class Console(object):
     WARNING = YELLOW
     FAIL = RED
 
+    DEFAULT_ADD_TIMESTAMP = False
+
     post_py_3_3 = sys.version_info[:2] >= (3, 3)
 
     @classmethod
@@ -43,7 +47,11 @@ class Console(object):
         cls.stdout()
 
     @classmethod
-    def coloured(cls, color, msg, *args, **kwargs):
+    def coloured(cls, color, msg, add_timestamp=None, *args, **kwargs):
+        if add_timestamp is None:
+            add_timestamp = cls.DEFAULT_ADD_TIMESTAMP
+        if add_timestamp:
+            msg = '[{}] {}'.format(strftime('%H:%M:%S', gmtime()), msg)
         cls.stdout('{}{}{}'.format(color, msg, cls.ENDC), *args, **kwargs)
 
     @classmethod
