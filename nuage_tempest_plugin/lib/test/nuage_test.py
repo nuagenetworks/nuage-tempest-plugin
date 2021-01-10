@@ -1320,9 +1320,9 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             name, user_id=user_id)['keypair']
         return keypair
 
-    def get_console_log(self, server_id):
+    def get_console_log(self, server_id, length=None):
         output = self.admin_manager.servers_client.get_console_output(
-            server_id)['output']
+            server_id, length=length)['output']
         return output
 
     def list_networks(self, manager=None, *args, **filters):

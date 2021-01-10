@@ -104,6 +104,10 @@ class TenantServer(object):
     - a baremetal server
     """
 
+    END_OF_CLOUDINIT_TAG = 'Cloud-init COMPLETE'
+    FILL_SERVER_NAME_UP_TO_X_CHARS = 51  # 7 + 1 + 32 + 1 + 10
+    # e.g. tempest-_icmp_connectivity_l2_os_managed-186135274
+
     def __init__(self, parent, name=None, networks=None, ports=None,
                  security_groups=None, flavor=None, keypair=None,
                  volume_backed=False):
@@ -194,10 +198,8 @@ class TenantServer(object):
                 LOG.error('ip a:\n{}'.format(self.send('ip a')))
             self.parent.fail(msg)
 
-    def init_console(self, validate=True):
+    def init_console(self):
         self._vm_console = FipAccessConsole(self)
-        if validate:
-            self.validate_authentication()
 
     def has_console(self):
         return bool(self._vm_console)
@@ -223,12 +225,12 @@ class TenantServer(object):
     def is_v6_ip(ip):
         return IPAddress(ip['ip_address']).version == 6
 
-    def get_console_log(self):
-        return self.parent.get_console_log(self.id)
+    def get_console_log(self, length=None):
+        return self.parent.get_console_log(self.id, length=length)
 
-    def compose_console_log_dump(self, log=None):
+    def compose_console_log_dump(self, log=None, length=None):
         if log is None:
-            log = self.get_console_log()
+            log = self.get_console_log(length=length)
         return '[{}] [console-log]\n{}\n[end]'.format(self.tag, log)
 
     def boot(self, wait_until='ACTIVE', manager=None, cleanup=True, **kwargs):
@@ -241,11 +243,7 @@ class TenantServer(object):
             else:
                 kwargs['user_data'] = extra_nic_user_data
 
-        # mark the end of cloudinit
-        end_of_cloudinit = "awk '{print $1*1000}' /proc/uptime > " \
-                           "/tmp/cloudinit_completed\n"
-        end_of_cloudinit += "echo '/tmp/cloudinit_completed generated:'\n"
-        end_of_cloudinit += "cat /tmp/cloudinit_completed\n"
+        end_of_cloudinit = 'echo {}\n'.format(self.END_OF_CLOUDINIT_TAG)
 
         if kwargs.get('user_data'):
             kwargs['user_data'] += ('\n' + end_of_cloudinit)
@@ -472,53 +470,48 @@ class TenantServer(object):
             LOG.debug('[{}] no userdata verified, '
                       'as metadata service is not enabled'.format(self.tag))
 
+    def poll_for_cloudinit_complete(self, debug_log_console_output=False):
+        cloudinit_completed = False
+        interval = 10  # seconds
+        max_intervals = int(CONF.nuage_sut.max_cloudinit_polling_time /
+                            interval)
+        # defaulting to 20, i.e. 200 secs in total
+        # -- to be increased on slow systems! --
+
+        # fill server name up with spaces in logging
+        server_name = self.name.ljust(self.FILL_SERVER_NAME_UP_TO_X_CHARS)
+
+        for attempt in range(1, max_intervals + 1):
+            console_log = self.get_console_log(length=50)
+            if debug_log_console_output:
+                LOG.debug(
+                    self.compose_console_log_dump(console_log))
+            if self.END_OF_CLOUDINIT_TAG in console_log:
+                cloudinit_completed = True
+                break
+            else:
+                self.sleep(interval, 'Waiting for {} cloudinit '
+                                     'end ({})'.format(server_name, attempt))
+
+        if cloudinit_completed:
+            self.cloudinit_complete_time = time.time()
+            time_to_cloudinit_complete = int(
+                self.cloudinit_complete_time - self.active_time)
+            LOG.info('[{}] Cloudinit completed in less than {} secs (since '
+                     'became active)'.format(
+                         self.tag, time_to_cloudinit_complete, interval))
+            self.sleep(5, 'Waiting for extra 5 seconds, as safety time for '
+                          'all interfaces to come up correctly')
+        else:
+            self.fail('Instance did not reach cloudinit end on time')
+
     def wait_for_cloudinit_to_complete(self):
         if (self.set_to_prepare_for_connectivity and
                 not self.cloudinit_complete and
                 not self.waiting_for_cloudinit_completion):
             LOG.info('[{}] Waiting for cloudinit to complete'.format(self.tag))
             self.waiting_for_cloudinit_completion = True
-
-            count = 0
-            backoff_time = 1.5
-            max_backoff_time = 10
-            while not self.send('[ -f /tmp/cloudinit_completed ] && echo 1 '
-                                '|| true', as_sudo=False):
-                if backoff_time < max_backoff_time:
-                    backoff_time = int(backoff_time * 2)  # 3, 6, 12, 24, ...
-                    if backoff_time > max_backoff_time:
-                        backoff_time = max_backoff_time  # 3, 6, 10, 10, ...
-                if backoff_time == max_backoff_time:
-                    count += 1
-                    self.parent.assertTrue(count < 10, 'Cloudinit did not '
-                                                       'complete on time')
-                self.sleep(backoff_time, 'Waiting for cloudinit to complete')
-
-            # check the cloudinit completion time and add up to 3 secs if no
-            # 3 secs elapsed yet
-            extra_elapse_time = 3  # this is the 3 seconds - adjust to need...
-            cloudinit_uptime = int(self.send('cat /tmp/cloudinit_completed'))
-            current_uptime = int(self.send(
-                "awk '{print $1*1000}' /proc/uptime"))
-            cloudinit_completion_time = int(
-                (current_uptime - cloudinit_uptime) / 1000)
-            LOG.debug('[{}] Cloudinit completed {} secs ago'.format(
-                self.tag, cloudinit_completion_time))
-
-            self.cloudinit_complete_time = time.time()
-            time_to_cloudinit_complete = int(
-                self.cloudinit_complete_time - cloudinit_completion_time
-                - self.active_time)
-            LOG.info('[{}] Cloudinit completed in {} secs '
-                     '(since became active)'.format(
-                         self.tag, time_to_cloudinit_complete))
-
-            if cloudinit_completion_time < extra_elapse_time:
-                # give elapse time after cloudinit completed, to make sure the
-                # server got fully initialized and is now ready for ping test
-                extra_sleep = extra_elapse_time - cloudinit_completion_time
-                self.sleep(extra_sleep, 'Giving cloudinit some extra time')
-
+            self.poll_for_cloudinit_complete()
             self.waiting_for_cloudinit_completion = False
             self.cloudinit_complete = True
 
