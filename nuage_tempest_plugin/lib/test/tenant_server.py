@@ -396,9 +396,11 @@ class TenantServer(object):
                 self.tag, self._vm_console.ip_address))
             try:
                 self.console().validate_authentication()
+
             except lib_exc.SSHTimeout as e:
                 self.parent.fail('[{}] SSH timeout: {}'.format(
                     self.tag, e))
+
             LOG.info('[{}] Authentication succeeded'.format(self.tag))
         else:
             self.console()  # doing more than authentication check alone
@@ -407,6 +409,27 @@ class TenantServer(object):
     def prepare_for_connectivity(self):
         self.wait_for_cloudinit_to_complete()
         self.provision()
+
+    def verify_metadata(self):
+        if CONF.compute_feature_enabled.metadata_service:
+            LOG.info('[{}] Verify metadata'.format(self.tag))
+            metadata = self.send(
+                'curl http://169.254.169.254/2009-04-04/meta-data/hostname')
+            name_match = self.name.replace('_', '-')  # why is nova replacing?
+            self.parent.assertIn(name_match, metadata)
+        else:
+            LOG.debug('[{}] no metadata verified, '
+                      'as metadata service is not enabled'.format(self.tag))
+
+    def verify_userdata(self, string_to_match_with_userdata):
+        if CONF.compute_feature_enabled.metadata_service:
+            LOG.info('[{}] Verify userdata'.format(self.tag))
+            userdata = self.send(
+                'curl http://169.254.169.254/2009-04-04/user-data')
+            self.parent.assertIn(string_to_match_with_userdata, userdata)
+        else:
+            LOG.debug('[{}] no userdata verified, '
+                      'as metadata service is not enabled'.format(self.tag))
 
     def wait_for_cloudinit_to_complete(self):
         if (self.set_to_prepare_for_connectivity and
