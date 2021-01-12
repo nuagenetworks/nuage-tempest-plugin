@@ -4,6 +4,7 @@
 from base64 import b64encode
 import re
 import textwrap
+import time
 
 from netaddr import IPAddress
 from netaddr import IPNetwork
@@ -138,6 +139,12 @@ class TenantServer(object):
         self.needs_provisioning = False
         self.is_being_provisioned = False
 
+        self.boot_time = None
+        self.active_time = None
+        self.cloudinit_complete_time = None
+
+        self.in_failed_state = False
+
     def __repr__(self):
         return 'TenantServer [{}]: {}'.format(
             self.name,
@@ -150,18 +157,18 @@ class TenantServer(object):
             }
         )
 
-    def set_internal_states(self,
-                            set_to_prepare_for_connectivity=False,
-                            cloudinit_complete=False,
-                            waiting_for_cloudinit_completion=False,
-                            needs_provisioning=False,
-                            is_being_provisioned=False):
-        self.set_to_prepare_for_connectivity = set_to_prepare_for_connectivity
-        self.cloudinit_complete = cloudinit_complete
+    def clone_internal_states(self, origin_server):
+        self.set_to_prepare_for_connectivity = \
+            origin_server.set_to_prepare_for_connectivity
+        self.cloudinit_complete = origin_server.cloudinit_complete
         self.waiting_for_cloudinit_completion = \
-            waiting_for_cloudinit_completion
-        self.needs_provisioning = needs_provisioning
-        self.is_being_provisioned = is_being_provisioned
+            origin_server.waiting_for_cloudinit_completion
+        self.needs_provisioning = origin_server.needs_provisioning
+        self.is_being_provisioned = origin_server.is_being_provisioned
+
+        self.boot_time = origin_server.boot_time
+        self.active_time = origin_server.active_time
+        self.cloudinit_complete_time = origin_server.cloudinit_complete_time
 
     def get_display_name(self, shorten_to_x_chars=32,
                          pre_fill_with_spaces=True):
@@ -175,6 +182,17 @@ class TenantServer(object):
 
     def sleep(self, seconds=1, msg=None):
         self.parent.sleep(seconds, msg, tag=self.tag)
+
+    def fail(self, msg, exc=None):
+        if exc:
+            msg += ': {}'.format(exc)
+        LOG.error('[{}] {}'.format(self.tag, msg))
+        if not self.in_failed_state:
+            self.in_failed_state = True
+            LOG.error(self.compose_console_log_dump())
+            if self.cloudinit_complete:
+                LOG.error('ip a:\n{}'.format(self.send('ip a')))
+            self.parent.fail(msg)
 
     def init_console(self, validate=True):
         self._vm_console = FipAccessConsole(self)
@@ -205,6 +223,14 @@ class TenantServer(object):
     def is_v6_ip(ip):
         return IPAddress(ip['ip_address']).version == 6
 
+    def get_console_log(self):
+        return self.parent.get_console_log(self.id)
+
+    def compose_console_log_dump(self, log=None):
+        if log is None:
+            log = self.get_console_log()
+        return '[{}] [console-log]\n{}\n[end]'.format(self.tag, log)
+
     def boot(self, wait_until='ACTIVE', manager=None, cleanup=True, **kwargs):
         extra_nic_user_data = self.get_user_data_for_nic_prep(
             dhcp_client=CONF.scenario.dhcp_client, manager=manager)
@@ -218,6 +244,9 @@ class TenantServer(object):
         # mark the end of cloudinit
         end_of_cloudinit = "awk '{print $1*1000}' /proc/uptime > " \
                            "/tmp/cloudinit_completed\n"
+        end_of_cloudinit += "echo '/tmp/cloudinit_completed generated:'\n"
+        end_of_cloudinit += "cat /tmp/cloudinit_completed\n"
+
         if kwargs.get('user_data'):
             kwargs['user_data'] += ('\n' + end_of_cloudinit)
         else:
@@ -238,18 +267,22 @@ class TenantServer(object):
 
         # and boot the server
         LOG.info('[{}] Booting {}'.format(self.tag, self.name))
-        # (calling  _create_server which is private method, which is intended)
+        self.boot_time = time.time()
         self.openstack_data = self.parent._create_server(
             self.name, self.tag, self.networks, self.ports,
             self.security_groups, wait_until, self.volume_backed, self.flavor,
             self.image_id, self.key_name, manager, cleanup, **kwargs)
 
-        LOG.info('[{}] Became {}'.format(self.tag, wait_until))
+        self.active_time = time.time()
+
+        LOG.info('[{}] Became {} in {} secs'.format(
+            self.tag, wait_until, int(self.active_time - self.boot_time)))
         LOG.info('[{}] IP\'s are {}'.format(
             self.tag,
             ' and '.join(
                 ('/'.join(address for address in addresses))
                 for addresses in self.get_server_ips(manager=manager))))
+
         return self.openstack_data
 
     def did_deploy(self):
@@ -257,6 +290,8 @@ class TenantServer(object):
 
     def sync_with_os(self, server_id=None, manager=None):
         manager = manager or self.parent.admin_manager
+        LOG.info('[{}] Resyncing with OS'.format(self.tag))
+
         if not server_id:
             servers = self.parent.list_servers(name=self.name, manager=manager)
             self.parent.assertEqual(1, len(servers),  # assert uniqueness
@@ -270,28 +305,33 @@ class TenantServer(object):
         # 1. sync openstack data
         self.openstack_data = self.get_server_details(server_id, manager)
         osc_server = self.openstack_data
-        LOG.info('sync_with_os: {}'.format(osc_server))
+        LOG.debug('[{}] [resync] OS server resynced: {}'.format(
+            self.tag, osc_server))
+
+        # 1b. assert server name matches
+        self.parent.assertEqual(self.name, osc_server['name'])
 
         # 2. sync keypair
         self.get_server_private_key()
         self.parent.assertIsNotNone(self.private_key)
-        LOG.info('sync_with_os: resynced private_key = {}'.format(
-            self.private_key))
+        LOG.debug('[{}] [resync] private_key resynced:\n{}'.format(
+            self.tag, self.private_key))
 
         # 3. sync networks
         self.networks = []
         for network_name in osc_server['addresses']:
             self.networks.append(self.parent.sync_network(network_name,
                                                           cleanup=False))
-        LOG.info('sync_with_os: {} networks resynced'.format(len(
-            self.networks)))
+        LOG.debug('[{}] [resync] {} networks resynced'.format(
+            self.tag, len(self.networks)))
 
         # 4. sync ports
         self.ports = []
         for network in self.networks:
             self.ports.append(
                 self.get_server_port_in_network(network, manager))
-        LOG.info('sync_with_os: {} ports resynced'.format(len(self.ports)))
+        LOG.debug('[{}] [resync] {} ports resynced'.format(
+            self.tag, len(self.ports)))
 
         # 5. sync fip
         self.associated_fip = None
@@ -302,10 +342,12 @@ class TenantServer(object):
                 self.associated_fip = fip
                 break
         if self.associated_fip:
-            LOG.info('sync_with_os: server FIP resynced ({})'.format(
-                self.associated_fip))
+            LOG.debug('[{}] [resync] server FIP resynced: {}'.format(
+                self.tag, self.associated_fip))
         else:
-            LOG.info('sync_with_os: no server FIP resynced')
+            LOG.debug('[{}] [resync] no server FIP resynced'.format(self.tag))
+
+        LOG.info('[{}] Resync complete'.format(self.tag))
 
     def get_server_details(self, server_id=None, manager=None):
         if not self.server_details:
@@ -398,9 +440,8 @@ class TenantServer(object):
                 self.console().validate_authentication()
 
             except lib_exc.SSHTimeout as e:
-                self.parent.fail('[{}] SSH timeout: {}'.format(
-                    self.tag, e))
-
+                self.fail('SSH timeout when connecting to {}'.format(
+                    self._vm_console.ip_address), exc=e)
             LOG.info('[{}] Authentication succeeded'.format(self.tag))
         else:
             self.console()  # doing more than authentication check alone
@@ -464,6 +505,14 @@ class TenantServer(object):
             LOG.debug('[{}] Cloudinit completed {} secs ago'.format(
                 self.tag, cloudinit_completion_time))
 
+            self.cloudinit_complete_time = time.time()
+            time_to_cloudinit_complete = int(
+                self.cloudinit_complete_time - cloudinit_completion_time
+                - self.active_time)
+            LOG.info('[{}] Cloudinit completed in {} secs '
+                     '(since became active)'.format(
+                         self.tag, time_to_cloudinit_complete))
+
             if cloudinit_completion_time < extra_elapse_time:
                 # give elapse time after cloudinit completed, to make sure the
                 # server got fully initialized and is now ready for ping test
@@ -472,6 +521,7 @@ class TenantServer(object):
 
             self.waiting_for_cloudinit_completion = False
             self.cloudinit_complete = True
+
             LOG.info('[{}] Ready for action'.format(self.tag))
 
     @staticmethod
@@ -547,13 +597,12 @@ class TenantServer(object):
                                                 '| grep "{}.* scope global" '
                                                 '|| true'.format(ip)))
                 if ip_established:
-                    # it did -that means it remained tentative, i.e. DAD failed
-                    self.parent.fail('[{}] ip {} remained tentative '
-                                     '(DAD failed)'.format(self.tag, ip))
+                    # it did - that means it remained tentative (DAD issue)
+                    self.fail('ip {} remained tentative, indicating a '
+                              'DAD issue'.format(ip))
 
             if assert_true or assert_permanent and not ip_established:
-                self.parent.fail('[{}] ip {} failed to get '
-                                 'established'.format(self.tag, ip))
+                self.fail('ip {} failed to get established'.format(ip))
 
         return ip_established
 
