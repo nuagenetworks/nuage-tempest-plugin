@@ -98,22 +98,18 @@ class SriovBasicOpsTest(NuageBaseTest):
             connectivity_check_pairs.append((server_from, server_to))
 
         for server_from, server_to in connectivity_check_pairs:
-            self.assert_ping(
-                server_from['server'],
-                ip_version=ip_version,
-                address=server_to['port']['fixed_ips'][0]['ip_address'])
+            self.assert_ping(server_from, server_to, ip_version=ip_version)
 
     def _create_server_with_virtio_port(self, availability_zone):
         port = self.create_port(self.network, security_groups=[
             self.secgroup['id']],
             manager=self.admin_manager,
             **VIRTIO_ARGS)
-        server = self.create_tenant_server(
+        return self.create_tenant_server(
             availability_zone=availability_zone,
             ports=[port],
             prepare_for_connectivity=True,
             manager=self.admin_manager)
-        return {'port': port, 'server': server}
 
     def _create_server_with_direct_port(self, availability_zone):
         kwargs = {'config_drive': True}
