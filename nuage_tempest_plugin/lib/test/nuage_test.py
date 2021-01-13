@@ -2043,7 +2043,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                         server1.send('arp -d {}'.format(dest))
 
                         # and retry
-                        LOG.warn('[{}] v4 ping retry (last chance)}'.format(
+                        LOG.warn('[{}] v4 ping retry (last chance)'.format(
                             self.test_tag))
 
                         success = ping_cmd(server1, interface)
@@ -2057,7 +2057,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                             '({})'.format(self.test_tag, dest))
 
                         # retry nevertheless - TODO(evaluate this)
-                        LOG.warn('[{}] v6 ping retry (last chance)}'.format(
+                        LOG.warn('[{}] v6 ping retry (last chance)'.format(
                             self.test_tag))
 
                         success = ping_cmd(server1, interface)
