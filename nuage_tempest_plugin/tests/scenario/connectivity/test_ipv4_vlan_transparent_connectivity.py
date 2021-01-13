@@ -60,9 +60,8 @@ class VlanTransparentConnectivityTest(NuageBaseTest):
         self.assert_ping(vm1, vm2, network,
                          address=str(ping_tgt.ip), interface='eth1.10')
 
-    @testtools.skipUnless(
-        CONF.nuage_sut.image_is_advanced,
-        "Advanced image is required to run this test.")
+    @testtools.skipUnless(Topology.has_vlan_transparency_support(),
+                          'Test skipped as no vlan transparency supported')
     @skip_because(bug='OPENSTACK-2325')
     def test_l3_transparent_network(self):
         kwargs = {

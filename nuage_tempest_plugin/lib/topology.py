@@ -169,3 +169,9 @@ class Topology(object):
     @classmethod
     def has_secured_netpartitions_support(cls):
         return cls.from_openstack('queens')
+
+    @classmethod
+    def has_vlan_transparency_support(cls):
+        return ('vlan-transparent' in
+                CONF.network_feature_enabled.api_extensions and
+                CONF.nuage_sut.image_is_advanced)

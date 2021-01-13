@@ -12,6 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import testtools
+
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions
@@ -142,6 +144,8 @@ class BaremetalTrunkTest(network_mixin.NetworkMixin,
                           segmentation_ids=[0])
 
     @decorators.attr(type=['negative'])
+    @testtools.skipUnless(Topology.has_vlan_transparency_support(),
+                          'Test skipped as no vlan transparency supported')
     def test_single_subport_negative_vlan_transparent(self):
         # the network of the parent port cannot be vlan transparent
 

@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import testtools
 import time
 
 from testtools import matchers
@@ -142,6 +143,8 @@ class BaremetalRedcyTest(network_mixin.NetworkMixin,
         topology = self._create_topology(with_router=True)
         self._test_redundancy_port(topology, update=True)
 
+    @testtools.skipUnless(Topology.has_vlan_transparency_support(),
+                          'Test skipped as no vlan transparency supported')
     def test_baremetal_redcy_l3_update_vlan_transparent(self):
         topology = self._create_topology(with_router=True,
                                          vlan_transparent=True)
@@ -153,6 +156,8 @@ class BaremetalRedcyTest(network_mixin.NetworkMixin,
         topology = self._create_topology(with_router=False)
         self._test_redundancy_port(topology, update=False)
 
+    @testtools.skipUnless(Topology.has_vlan_transparency_support(),
+                          'Test skipped as no vlan transparency supported')
     def test_baremetal_redcy_l2_create_vlan_transparent(self):
         topology = self._create_topology(with_router=False,
                                          vlan_transparent=True)

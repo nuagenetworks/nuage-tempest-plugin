@@ -114,6 +114,8 @@ class BaremetalPortsTest(network_mixin.NetworkMixin,
         topology = self._create_topology(with_router=True)
         self._test_baremetal_port(topology, update=False)
 
+    @testtools.skipUnless(Topology.has_vlan_transparency_support(),
+                          'Test skipped as no vlan transparency supported')
     def test_baremetal_port_l3_create_vlan_transparent(self):
         topology = self._create_topology(with_router=True,
                                          vlan_transparent=True)
@@ -125,6 +127,8 @@ class BaremetalPortsTest(network_mixin.NetworkMixin,
         topology = self._create_topology(with_router=True)
         self._test_baremetal_port(topology, update=True)
 
+    @testtools.skipUnless(Topology.has_vlan_transparency_support(),
+                          'Test skipped as no vlan transparency supported')
     def test_baremetal_port_l3_update_vlan_transparent(self):
         topology = self._create_topology(with_router=True,
                                          vlan_transparent=True)
