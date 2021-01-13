@@ -2001,13 +2001,14 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                 assert network
                 dest = server2.get_server_ip_in_network(
                     network['name'], ip_version)
+
+            # check that the target IP under-test is up
+            if should_pass and server2.set_to_prepare_for_connectivity:
+                server2.wait_until_ip_established(dest, assert_permanent=True)
+
         else:
             assert address
             dest = address
-
-        # check that the target IP under-test is up
-        if should_pass and server2.set_to_prepare_for_connectivity:
-            server2.wait_until_ip_established(dest, assert_permanent=True)
 
         count = ping_count or CONF.validation.ping_count
         size = ping_size or CONF.validation.ping_size
