@@ -683,7 +683,7 @@
             ml2_type_vlan:
               network_vlan_ranges: physnet1:1:1000,physnet2:1:1000,physnet3:1:1000
             ml2_type_flat:
-              flat_networks: physnet1,physnet2,physnet3
+              flat_networks: physnet1,physnet2,physnet3,physnet4
             ml2_type_vxlan:
               vni_ranges: 1:2000
             agent:
@@ -705,7 +705,7 @@
     timeout: 21600
     vars:
       tempest_test_blacklist: ''
-      tempest_black_regex: '^(?:.*(neutron_tempest_plugin\.(api\.(admin\.test_routers_ha\.RoutersTestHA\.(test_delete_ha_router_keeps_ha_network_segment_data|test_ha_router_creation)|test_floating_ips\.FloatingIPPoolTestJSON|test_ports\.PortsTestJSON\.test_change_dhcp_flag_then_create_port|test_subnets)|scenario\.(test_mtu|test_trunk|test_network_v6\.TestGettingAddress\.test_multi_prefix))|tempest\.api\.(network\.(admin\.test_routers\.RoutersIpV6AdminTest\.test_create_router_set_gateway_with_fixed_ip|test_dhcp_ipv6\.NetworksTestDHCPv6\.test_dhcpv6_two_subnets|test_ports\.(PortsIpV6TestJSON|PortsTestJSON)\.(test_create_update_port_with_second_ip|test_update_port_with_security_group_and_extra_attributes|test_update_port_with_two_security_groups_and_extra_attributes))|compute\.servers\.test_multiple_create\.MultipleCreateTestJSON\.test_multiple_create)|tempest\.scenario\.(test_network_v6\.TestGettingAddress\.(test_multi|test_dualnet_multi)|test_network_basic_ops\.TestNetworkBasicOps\.(test_hotplug_nic|test_subnet_details|test_network_basic_ops|test_connectivity_between_vms_on_different_networks))).*)'
+      tempest_black_regex: '^(?:.*(neutron_tempest_plugin\.(api\.(admin\.(test_routers_ha\.RoutersTestHA\.(test_delete_ha_router_keeps_ha_network_segment_data|test_ha_router_creation)|test_tag)|test_floating_ips\.FloatingIPPoolTestJSON|test_ports\.PortsTestJSON\.test_change_dhcp_flag_then_create_port|test_subnets|test_trunk.*)|scenario\.(test_mtu|test_trunk|test_network_v6\.TestGettingAddress\.test_multi_prefix))|tempest\.api\.(network\.(admin\.test_routers\.RoutersIpV6AdminTest\.test_create_router_set_gateway_with_fixed_ip|test_dhcp_ipv6\.NetworksTestDHCPv6\.test_dhcpv6_two_subnets|test_ports\.(PortsIpV6TestJSON|PortsTestJSON)\.(test_create_update_port_with_second_ip|test_update_port_with_security_group_and_extra_attributes|test_update_port_with_two_security_groups_and_extra_attributes))|compute\.servers\.test_multiple_create\.MultipleCreateTestJSON\.test_multiple_create)|tempest\.scenario\.(test_network_v6\.TestGettingAddress\.(test_multi|test_dualnet_multi)|test_network_basic_ops\.TestNetworkBasicOps\.(test_hotplug_nic|test_subnet_details|test_network_basic_ops|test_connectivity_between_vms_on_different_networks))).*)'
       devstack_localrc:
         Q_ML2_TENANT_NETWORK_TYPE: vlan
 
@@ -714,8 +714,9 @@
     parent: networking-nuage-vtep-vlan-upstream
     branches: .*
     vars:
-      tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.(test_nuage_hwvtep|ipv6\.(os_managed\.test_nuage_networks|test_os_managed_singlestack_l2_subnets|vsd_managed\.test_ipv6_subnet_l2)|vsd_managed\.test_vsd_managed_network).*'
-      tempest_black_regex: '^(?:nuage_tempest_plugin\.tests\.api\.(ipv6\.os_managed\.test_nuage_networks\.NuageNetworksIpV6TestAttrs|vsd_managed\.(.*with_vm.*|.*test_link_multi_l2domain_to_network|.*test_link_multi_l3domain_subnets_to_network|.*l3)))'
+      tempest_concurrency: 1
+      tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.(test_trunk.*|test_trunk_details|test_trunk_negative|test_nuage_hwvtep|ipv6\.(os_managed\.test_nuage_networks|test_os_managed_singlestack_l2_subnets|vsd_managed\.test_ipv6_subnet_l2)|vsd_managed\.test_vsd_managed_network).*'
+      tempest_black_regex: '^(?:nuage_tempest_plugin\.tests\.api\.(test_trunk_negative\.(.*test_create_subport_invalid_inherit_network_segmentation_type)|ipv6\.os_managed\.test_nuage_networks\.NuageNetworksIpV6TestAttrs|vsd_managed\.(.*with_vm.*|.*test_link_multi_l2domain_to_network|.*test_link_multi_l3domain_subnets_to_network|.*l3)))'
       tempest_plugins:
         - nuage-tempest-plugin
       devstack_plugins:

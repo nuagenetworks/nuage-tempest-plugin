@@ -839,6 +839,15 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         return manager.ports_client.show_port(
             port_id, **kwargs)['port']
 
+    def wait_for_port_status(self, port_id, status, manager=None):
+        utils.wait_until_true(
+            lambda: self.get_port(port_id,
+                                  manager=manager)['status'] == status,
+            exception=RuntimeError("Timed out waiting for port {} to"
+                                   " transition to {}.".format(port_id,
+                                                               status))
+        )
+
     def _verify_port(self, port, subnet4=None, subnet6=None, **kwargs):
         testcase = kwargs.pop('testcase', 'unknown')
         message = 'testcase: %s' % testcase
@@ -1303,6 +1312,23 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             utils.wait_until_true(is_parent_port_detached)
 
         client.delete_trunk(trunk['id'])
+
+    def add_trunk_subports(self, subports, trunk_id, client=None,
+                           cleanup=True):
+        client = client or self.plugin_network_client
+        client.add_subports(trunk_id, subports)
+        if cleanup:
+            self.addCleanup(test_utils.call_and_ignore_notfound_exc,
+                            client.remove_subports, trunk_id, subports)
+
+    def wait_for_trunk_status(self, trunk_id, status, client=None):
+        client = client or self.plugin_network_client
+        utils.wait_until_true(
+            lambda: client.show_trunk(trunk_id)['trunk']['status'] == status,
+            exception=RuntimeError("Timed out waiting for trunk {} to"
+                                   " transition to {}.".format(trunk_id,
+                                                               status))
+        )
 
     def create_keypair(self, name=None, manager=None, cleanup=True,
                        **kwargs):
