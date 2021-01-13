@@ -28,12 +28,20 @@ class HwvtepBasicOpsTest(NuageBaseTest):
     def resource_setup(cls):
         super(HwvtepBasicOpsTest, cls).resource_setup()
         cls.aggregates = cls.admin_manager.aggregates_client.list_aggregates()
-        cls.hosts_ovs = [aggregate['hosts'] for aggregate in
-                         cls.aggregates['aggregates']
-                         if aggregate['metadata']['flavor'] == 'hwvtep'][0]
+        cls.hosts_ovs = next((aggregate['hosts'] for aggregate in
+                              cls.aggregates['aggregates']
+                              if aggregate['metadata']['flavor'] == 'hwvtep'),
+                             [])
 
         cls.availability_zones_ovs = ['nova:' + host for host
                                       in cls.hosts_ovs]
+
+    @classmethod
+    def skip_checks(cls):
+        """Raise skip exception if needed"""
+        super(HwvtepBasicOpsTest, cls).skip_checks()
+        if not len(cls.hosts_ovs):
+            raise cls.skipException('Not enough hwvtep hosts available')
 
     def _create_server_hwvtep(self, prepare_for_connectivity,
                               availability_zone):
