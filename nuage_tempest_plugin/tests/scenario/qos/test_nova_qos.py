@@ -474,6 +474,9 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
         #                      ingress_bw=BW_LIMIT_NOVA,
         #                      test_msg='Nova Qos After Fip RL delete.')
 
+    @testtools.skipIf(
+        not CONF.nuage_feature_enabled.proprietary_fip_rate_limiting,
+        'Support for fip rate limiting required')
     def test_nova_qos_fip_rate_limiting_reboot_vm(self):
         """Test QOS when using NOVA flavor, with nuage fip rate limiting
 
