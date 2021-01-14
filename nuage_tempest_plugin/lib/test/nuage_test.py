@@ -2074,15 +2074,20 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         except lib_exc.SSHTimeout as ssh_e:
             LOG.error('[{}] SSH Timeout! ({})'.format(self.test_tag,
                                                       ssh_e))
+            server1.print_debug_info(include_on_instance_info=False)
             raise
 
-        self.assertEqual(should_pass, success,
-                         '[{}] Ping {} > {} unexpectedly {}!'.format(
-                             self.test_tag,
-                             server1.name,
-                             server2.name if server2 else address,
-                             'FAILED' if should_pass else 'PASSED')
-                         )
+        if success != should_pass:
+            err_string = '[{}] Ping {} > {} unexpectedly {}!'.format(
+                self.test_tag,
+                server1.name,
+                server2.name if server2 else address,
+                'FAILED' if should_pass else 'PASSED')
+            LOG.error(err_string)
+            server1.print_debug_info()
+            if server2:
+                server2.print_debug_info()
+            self.fail(err_string)
 
     def assertDictEqual(self, d1, d2, ignore, msg):
         for k in d1:
