@@ -83,7 +83,8 @@ class HwvtepSriovBasicOpsTest(NuageBaseTest):
         server_from = self._create_server_hwvtep(
             availability_zone=ovs_compute_from)
 
-        self.assert_ping(server_from, server_to, ip_version=ip_version)
+        self.assert_ping(server_from, server_to, network=self.network,
+                         ip_version=ip_version)
 
     def _create_server_hwvtep(self, availability_zone):
         port = self.create_port(self.network,
