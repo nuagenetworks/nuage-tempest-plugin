@@ -116,13 +116,12 @@ class SriovBasicOpsTest(NuageBaseTest):
         port = self.create_port(self.network,
                                 port_security_enabled=False,
                                 manager=self.admin_manager)
-        server = self.create_tenant_server(
+        return self.create_tenant_server(
             availability_zone=availability_zone,
             ports=[port],
             prepare_for_connectivity=False,  # explicit, as must be
             manager=self.admin_manager,
             **kwargs)
-        return {'port': port, 'server': server}
 
     def _create_vsd_domain(self, is_l3=True, ip_version=(4,)):
         cidr4 = None
