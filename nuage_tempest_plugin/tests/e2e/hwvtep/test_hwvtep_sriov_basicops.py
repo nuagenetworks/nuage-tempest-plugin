@@ -83,36 +83,31 @@ class HwvtepSriovBasicOpsTest(NuageBaseTest):
         server_from = self._create_server_hwvtep(
             availability_zone=ovs_compute_from)
 
-        self.assert_ping(
-            server_from['server'],
-            ip_version=ip_version,
-            address=server_to['port']['fixed_ips'][0]['ip_address'])
+        self.assert_ping(server_from, server_to, ip_version=ip_version)
 
     def _create_server_hwvtep(self, availability_zone):
         port = self.create_port(self.network,
                                 manager=self.admin_manager,
                                 **OVS_ARGS)
-        server = self.create_tenant_server(
+        return self.create_tenant_server(
             availability_zone=availability_zone,
             ports=[port],
             prepare_for_connectivity=True,
             manager=self.admin_manager,
             config_drive=True,
             no_net_partition=True)
-        return {'port': port, 'server': server}
 
     def _create_server_with_direct_port(self, availability_zone):
         kwargs = {'config_drive': True}
         port = self.create_port(self.network,
                                 port_security_enabled=False,
                                 manager=self.admin_manager)
-        server = self.create_tenant_server(
+        return self.create_tenant_server(
             availability_zone=availability_zone,
             ports=[port],
             prepare_for_connectivity=False,
             manager=self.admin_manager,
             **kwargs)
-        return {'port': port, 'server': server}
 
     def _create_vsd_domain(self, is_l3=True, ip_version=(4,)):
         cidr4 = None
