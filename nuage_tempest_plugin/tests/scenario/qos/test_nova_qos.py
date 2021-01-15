@@ -732,7 +732,8 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
         server.send('sudo ip link set dev eth0 mtu {}'.format(
             base_nuage_qos.QOS_MTU))
         # VRS-35132: Ethernet fragmentation causes QOS to drop packets.
-        server.send('sudo ip link set dev eth1 mtu 1400')
+        server.send('sudo ip link set dev eth1 mtu {}'.format(
+            base_nuage_qos.QOS_MTU))
 
         # Associate a second IP to the second interface
         floatingip1 = server.associated_fip

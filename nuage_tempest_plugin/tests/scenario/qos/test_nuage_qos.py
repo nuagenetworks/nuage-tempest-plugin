@@ -151,6 +151,9 @@ class NuageFloatingIPProprietaryQosTest(base_nuage_qos.NuageQosTestmixin,
         self.manager.servers_client.reboot_server(server.id, type='HARD')
         waiters.wait_for_server_status(self.manager.servers_client, server.id,
                                        'ACTIVE')
+        # VRS-35132: Ethernet fragmentation causes QOS to drop packets.
+        server.send('sudo ip link set dev eth0 mtu {}'.format(
+            base_nuage_qos.QOS_MTU))
 
         self._test_bandwidth(server, egress_bw=egress_kbps,
                              test_msg='original Fip after reboot.')
@@ -179,6 +182,9 @@ class NuageFloatingIPProprietaryQosTest(base_nuage_qos.NuageQosTestmixin,
         waiters.wait_for_server_status(self.manager.servers_client,
                                        server.id,
                                        'ACTIVE')
+        # VRS-35132: Ethernet fragmentation causes QOS to drop packets.
+        server.send('sudo ip link set dev eth0 mtu {}'.format(
+            base_nuage_qos.QOS_MTU))
 
         self._test_bandwidth(server, egress_bw=egress_kbps,
                              test_msg='updated Fip after reboot.')
@@ -236,6 +242,9 @@ class NuageFloatingIPProprietaryQosTest(base_nuage_qos.NuageQosTestmixin,
         server2 = self.create_tenant_server(
             networks=[network], security_groups=[security_group],
             prepare_for_connectivity=True)
+        # VRS-35132: Ethernet fragmentation causes QOS to drop packets.
+        server.send('sudo ip link set dev eth0 mtu {}'.format(
+            base_nuage_qos.QOS_MTU))
 
         egress_kbps = 1000
         ingress_kbps = 1500
