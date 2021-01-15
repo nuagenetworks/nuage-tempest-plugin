@@ -3,6 +3,7 @@
 
 from base64 import b64encode
 import re
+import socket
 import textwrap
 import time
 
@@ -187,15 +188,26 @@ class TenantServer(object):
     def sleep(self, seconds=1, msg=None):
         self.parent.sleep(seconds, msg, tag=self.tag)
 
+    def print_debug_info(self, include_on_instance_info=True):
+        LOG.debug('Dumping info for instance {} with ID {}'.format(
+            self.name, self.id))
+        LOG.debug(self.compose_console_log_dump())
+        if (include_on_instance_info and
+                self.set_to_prepare_for_connectivity and
+                self.cloudinit_complete):
+            self.send('ip a')
+        if self.get_hypervisor_hostname() == socket.gethostname():
+            # this is a locally deployed VM
+            self.parent.execute_from_shell('sudo ovs-appctl vm/port-show')
+
     def fail(self, msg, exc=None):
+        LOG.error('Instance {} with ID {} FAILED'.format(self.name, self.id))
         if exc:
             msg += ': {}'.format(exc)
         LOG.error('[{}] {}'.format(self.tag, msg))
         if not self.in_failed_state:
             self.in_failed_state = True
-            LOG.error(self.compose_console_log_dump())
-            if self.cloudinit_complete:
-                LOG.error('ip a:\n{}'.format(self.send('ip a')))
+            self.print_debug_info()
             self.parent.fail(msg)
 
     def init_console(self):
@@ -220,6 +232,9 @@ class TenantServer(object):
     def id(self):
         assert self.openstack_data
         return self.openstack_data['id']
+
+    def get_hypervisor_hostname(self):
+        return self.get_server_details()['OS-EXT-SRV-ATTR:hypervisor_hostname']
 
     @staticmethod
     def is_v6_ip(ip):
@@ -301,7 +316,7 @@ class TenantServer(object):
             server_id = servers[0]['id']
 
         # 1. sync openstack data
-        self.openstack_data = self.get_server_details(server_id, manager)
+        self.openstack_data = self.get_server_details(server_id)
         osc_server = self.openstack_data
         LOG.debug('[{}] [resync] OS server resynced: {}'.format(
             self.tag, osc_server))
@@ -347,10 +362,11 @@ class TenantServer(object):
 
         LOG.info('[{}] Resync complete'.format(self.tag))
 
-    def get_server_details(self, server_id=None, manager=None):
+    def get_server_details(self, server_id=None):
         if not self.server_details:
             self.server_details = \
-                self.parent.get_server(server_id or self.id, manager)
+                self.parent.get_server(server_id or self.id,
+                                       self.parent.admin_manager)
         return self.server_details
 
     def get_server_private_key(self):
@@ -368,8 +384,7 @@ class TenantServer(object):
 
     def get_server_interfaces(self, network_name=None, manager=None):
         # returning a list of lists, per network
-        server_addresses = self.get_server_details(
-            manager=manager)['addresses']
+        server_addresses = self.get_server_details()['addresses']
         return ([server_addresses[network_name]] if network_name
                 else server_addresses.values())
 
@@ -472,6 +487,7 @@ class TenantServer(object):
 
     def poll_for_cloudinit_complete(self, debug_log_console_output=False):
         cloudinit_completed = False
+        console_log = None
         interval = 10  # seconds
         max_intervals = int(CONF.nuage_sut.max_cloudinit_polling_time /
                             interval)
@@ -503,6 +519,9 @@ class TenantServer(object):
             self.sleep(5, 'Waiting for extra 5 seconds, as safety time for '
                           'all interfaces to come up correctly')
         else:
+            LOG.error('Instance {} with ID {} did not reach cloudinit end '
+                      'on time'.format(self.name, self.id))
+            LOG.error('Last console log received:\n{}'.format(console_log))
             self.fail('Instance did not reach cloudinit end on time')
 
     def wait_for_cloudinit_to_complete(self):
