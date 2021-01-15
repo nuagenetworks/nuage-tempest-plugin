@@ -21,7 +21,8 @@ from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services import nuage_client
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
-from nuage_tempest_plugin.tests.api import test_security_groups_nuage
+from nuage_tempest_plugin.tests.api.security_groups import \
+    test_security_groups_nuage
 
 LOG = Topology.get_logger(__name__)
 

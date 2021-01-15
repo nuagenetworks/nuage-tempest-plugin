@@ -17,7 +17,8 @@ from tempest.lib import exceptions
 
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
-from nuage_tempest_plugin.tests.api.test_security_groups_nuage \
+from nuage_tempest_plugin.tests.api.security_groups\
+    .test_security_groups_nuage \
     import SecGroupTestNuageBase
 
 CONF = Topology.get_conf()
