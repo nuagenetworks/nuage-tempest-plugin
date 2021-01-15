@@ -84,7 +84,6 @@ function configure_tempest_nuage {
     iniset $TEMPEST_CONFIG nuage_sut openstack_version ${NUAGE_OPENSTACK_RELEASE}
     iniset $TEMPEST_CONFIG nuage_sut release ${NUAGE_VSP_RELEASE}
     iniset $TEMPEST_CONFIG nuage_sut api_workers ${API_WORKERS}  # from devstack itself
-    iniset $TEMPEST_CONFIG nuage_sut console_logging ${NUAGE_CONSOLE_LOGGING}
     iniset $TEMPEST_CONFIG nuage_sut nuage_fip_underlay $NUAGE_FIP_UNDERLAY
 
     if [ "$NUAGE_SRIOV_ALLOW_EXISTING_FLAT_VLAN" == "True" ]; then

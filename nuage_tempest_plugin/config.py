@@ -54,7 +54,7 @@ NuageSutGroup = [
     cfg.StrOpt('openstack_version',
                default='master',
                help="The OpenStack version run. Can be 'queens', 'rocky', "
-                    "'stein', etc, or 'master'"),
+                    "etc, or 'master'"),
     cfg.StrOpt('nuage_baremetal_driver',
                default=constants.BAREMETAL_DRIVER_BRIDGE,
                choices=[constants.BAREMETAL_DRIVER_BRIDGE,
@@ -66,9 +66,8 @@ NuageSutGroup = [
                help="The segmentation ID which the baremetal mechanism "
                     "driver will use."),
     cfg.StrOpt('release',
-               default='5.2',
-               help="The release of the sut. "
-                    "Valid examples: 3.2R1, 4.0, 4.0r2"),
+               default='20.10',
+               help="The Nuage release of the sut"),
     cfg.BoolOpt('console_access_to_vm',
                 default=False,
                 help='Whether console access to vm is enabled in topology.'),
@@ -78,9 +77,6 @@ NuageSutGroup = [
     cfg.BoolOpt('image_is_advanced',
                 default=False,
                 help='Whether image supports advanced features like 8021q'),
-    cfg.BoolOpt('console_logging',
-                default=False,
-                help='Enable for console logging'),
     cfg.BoolOpt('nuage_sriov_allow_existing_flat_vlan',
                 default=False,
                 help='Set to true to enable driver to complete port '
@@ -119,14 +115,22 @@ NuageSutGroup = [
                      "E.g.: hypervisors_connectivity_overwrite = "
                      "overcloud-avrscompute-0.localdomain:172.31.0.16, "
                      "overcloud-avrscompute-1.localdomain:172.31.0.28"),
-    cfg.IntOpt('time_to_debug_on_failure',
-               default=0,
-               help='Time to debug (in secs) on failure, before running the '
-                    'test cleanup.'),
     cfg.StrOpt('gateway_type',
                default='wbx',
                choices=['wbx', 'cisco'],
-               help="The type of VTEP gateway")
+               help="The type of VTEP gateway"),
+
+    # TEST EXECUTION RELATED SETTINGS
+    cfg.IntOpt('max_cloudinit_polling_time',
+               default=200,
+               help='Time (in secs) for end-of-cloudinit to be polled for'),
+    cfg.IntOpt('time_to_debug_on_failure',
+               default=0,
+               help='Time to debug (in secs) on failure, before running the '
+                    'test cleanup'),
+    cfg.BoolOpt('console_logging',
+                default=False,
+                help='Enable for console logging')
 ]
 
 nuage_feature_group = cfg.OptGroup(name='nuage-feature-enabled',
