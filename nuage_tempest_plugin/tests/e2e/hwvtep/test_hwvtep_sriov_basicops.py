@@ -49,13 +49,18 @@ class HwvtepSriovBasicOpsTest(NuageBaseTest):
         super(HwvtepSriovBasicOpsTest, cls).resource_setup()
         cls.aggregates = cls.admin_manager.aggregates_client.list_aggregates()
 
-        cls.hosts_ovs = [aggregate['hosts'] for aggregate in
-                         cls.aggregates['aggregates']
-                         if aggregate['metadata']['flavor'] == 'hwvtep'][0]
+        cls.hosts_ovs = next((aggregate['hosts'] for aggregate in
+                              cls.aggregates['aggregates'] if
+                              aggregate['metadata']['flavor'] == 'hwvtep'), [])
+        if not len(cls.hosts_ovs):
+            raise cls.skipException('Not enough hwvtep hosts available')
 
-        cls.hosts_sriov = [aggregate['hosts'] for aggregate in
-                           cls.aggregates['aggregates']
-                           if aggregate['metadata']['flavor'] == 'sriov'][0]
+        cls.hosts_sriov = next((aggregate['hosts'] for aggregate in
+                                cls.aggregates['aggregates'] if
+                                aggregate['metadata']['flavor'] == 'sriov'),
+                               [])
+        if not len(cls.hosts_sriov):
+            raise cls.skipException('Not enough sriov hosts available')
 
         cls.availability_zones_ovs = ['nova:' + host for host
                                       in cls.hosts_ovs]
