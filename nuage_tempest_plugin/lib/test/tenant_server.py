@@ -258,12 +258,12 @@ class TenantServer(object):
             else:
                 kwargs['user_data'] = extra_nic_user_data
 
-        end_of_cloudinit = 'echo {}\n'.format(self.END_OF_CLOUDINIT_TAG)
+        echo_end_of_cloudinit = 'echo {}\n'.format(self.END_OF_CLOUDINIT_TAG)
 
         if kwargs.get('user_data'):
-            kwargs['user_data'] += ('\n' + end_of_cloudinit)
+            kwargs['user_data'] += ('\n' + echo_end_of_cloudinit)
         else:
-            kwargs['user_data'] = end_of_cloudinit
+            kwargs['user_data'] = echo_end_of_cloudinit
 
         if not kwargs['user_data'].startswith('#!'):
             kwargs['user_data'] = '#!/bin/sh\n' + kwargs['user_data']
@@ -498,7 +498,7 @@ class TenantServer(object):
         server_name = self.name.ljust(self.FILL_SERVER_NAME_UP_TO_X_CHARS)
 
         for attempt in range(1, max_intervals + 1):
-            console_log = self.get_console_log(length=50)
+            console_log = self.get_console_log(length=100)
             if debug_log_console_output:
                 LOG.debug(
                     self.compose_console_log_dump(console_log))
