@@ -516,8 +516,6 @@ class TenantServer(object):
             LOG.info('[{}] Cloudinit completed in less than {} secs (since '
                      'became active)'.format(
                          self.tag, time_to_cloudinit_complete, interval))
-            self.sleep(5, 'Waiting for extra 5 seconds, as safety time for '
-                          'all interfaces to come up correctly')
         else:
             LOG.error('Instance {} with ID {} did not reach cloudinit end '
                       'on time'.format(self.name, self.id))
