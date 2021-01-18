@@ -497,17 +497,17 @@ class TenantServer(object):
         # fill server name up with spaces in logging
         server_name = self.name.ljust(self.FILL_SERVER_NAME_UP_TO_X_CHARS)
 
-        for attempt in range(1, max_intervals + 1):
+        for attempt in range(max_intervals):
             console_log = self.get_console_log(length=100)
             if debug_log_console_output:
-                LOG.debug(
-                    self.compose_console_log_dump(console_log))
+                LOG.debug(self.compose_console_log_dump(console_log))
             if self.END_OF_CLOUDINIT_TAG in console_log:
                 cloudinit_completed = True
                 break
-            else:
+            elif attempt < max_intervals - 1:
                 self.sleep(interval, 'Waiting for {} cloudinit '
-                                     'end ({})'.format(server_name, attempt))
+                                     'end ({})'.format(server_name,
+                                                       attempt + 1))
 
         if cloudinit_completed:
             self.cloudinit_complete_time = time.time()
