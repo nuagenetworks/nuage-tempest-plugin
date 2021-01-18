@@ -498,7 +498,7 @@ class TenantServer(object):
         server_name = self.name.ljust(self.FILL_SERVER_NAME_UP_TO_X_CHARS)
 
         for attempt in range(max_intervals):
-            console_log = self.get_console_log(length=100)
+            console_log = self.get_console_log()
             if debug_log_console_output:
                 LOG.debug(self.compose_console_log_dump(console_log))
             if self.END_OF_CLOUDINIT_TAG in console_log:
