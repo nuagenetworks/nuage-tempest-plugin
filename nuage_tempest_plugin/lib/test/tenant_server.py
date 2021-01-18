@@ -523,8 +523,7 @@ class TenantServer(object):
             self.fail('Instance did not reach cloudinit end on time')
 
     def wait_for_cloudinit_to_complete(self):
-        if (self.set_to_prepare_for_connectivity and
-                not self.cloudinit_complete and
+        if (not self.cloudinit_complete and
                 not self.waiting_for_cloudinit_completion):
             LOG.info('[{}] Waiting for cloudinit to complete'.format(self.tag))
             self.waiting_for_cloudinit_completion = True
