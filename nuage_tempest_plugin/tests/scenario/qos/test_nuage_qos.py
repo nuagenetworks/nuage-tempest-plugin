@@ -243,7 +243,7 @@ class NuageFloatingIPProprietaryQosTest(base_nuage_qos.NuageQosTestmixin,
             networks=[network], security_groups=[security_group],
             prepare_for_connectivity=True)
         # VRS-35132: Ethernet fragmentation causes QOS to drop packets.
-        server.send('sudo ip link set dev eth0 mtu {}'.format(
+        server2.send('sudo ip link set dev eth0 mtu {}'.format(
             base_nuage_qos.QOS_MTU))
 
         egress_kbps = 1000
