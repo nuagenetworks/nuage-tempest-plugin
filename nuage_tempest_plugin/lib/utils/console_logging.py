@@ -27,7 +27,7 @@ class Console(object):
     WARNING = YELLOW
     FAIL = RED
 
-    DEFAULT_ADD_TIMESTAMP = False
+    ADD_TIMESTAMP = False
 
     post_py_3_3 = sys.version_info[:2] >= (3, 3)
 
@@ -47,10 +47,8 @@ class Console(object):
         cls.stdout()
 
     @classmethod
-    def coloured(cls, color, msg, add_timestamp=None, *args, **kwargs):
-        if add_timestamp is None:
-            add_timestamp = cls.DEFAULT_ADD_TIMESTAMP
-        if add_timestamp:
+    def coloured(cls, color, msg, *args, **kwargs):
+        if cls.ADD_TIMESTAMP:
             msg = '[{}] {}'.format(strftime('%H:%M:%S', gmtime()), msg)
         cls.stdout('{}{}{}'.format(color, msg, cls.ENDC), *args, **kwargs)
 
