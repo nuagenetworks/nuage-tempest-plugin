@@ -192,11 +192,11 @@ class E2eTestBase(NuageBaseTest):
 
     def restart_openvswitch(self, hypervisor):
         return self.execute_on_hypervisor(hypervisor,
-                                          'sudo service openvswitch restart')
+                                          'sudo systemctl restart openvswitch')
 
     def restart_avrs(self, hypervisor):
         return self.execute_on_hypervisor(hypervisor,
-                                          'sudo service avrs restart')
+                                          'sudo systemctl restart avrs')
 
     def _validate_interfaces(self, from_port, to_port):
         pass

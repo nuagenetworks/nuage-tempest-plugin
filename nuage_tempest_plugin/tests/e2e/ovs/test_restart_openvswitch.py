@@ -68,7 +68,7 @@ class RestartOpenvSwitchScenarioTest(nuage_test.NuageBaseTest):
 
         # restart openvswitch service
         # limitation: would only work on a devstack!
-        self.execute_from_shell('sudo service openvswitch restart')
+        self.execute_from_shell('sudo systemctl restart openvswitch')
         self.sleep(60, msg='Waiting for OvS to be restarted!')
 
         # check connectivity again
