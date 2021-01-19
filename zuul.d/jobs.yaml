@@ -1,8 +1,7 @@
 - job:
     name: devstack-tempest
     parent: devstack
-    # This currently works from stable/pike on.
-    branches: ^(?!stable/(newton|ocata)).*$
+    branches: .*
     description: |
       Base Tempest job.
 
@@ -191,8 +190,7 @@
 - job:
     name: networking-nuage-base
     parent: nuage-base
-    description: Base job for nuage based job on 6.0|stable/queens|rocky branch
-    branches: ^((20.5|6.0)/(queens|rocky)|stable/queens)
+    branches: ^(6.0|20.10)/(queens|rocky)
     nodeset: openstack-single-node-centos7
     vars:
       vsp_release: "{{ zuul.branch.split('/')[0] if 'stable' not in zuul.branch else '0.0' }}"
@@ -203,8 +201,7 @@
 - job:
     name: networking-nuage-base
     parent: nuage-base
-    description: Base job for nuage based job on stable/rocky branch
-    branches: ^(stable/rocky)
+    branches: ^(stable)/(queens|rocky)
     nodeset: openstack-single-node-centos7
     vars:
       vsp_release: "{{ zuul.branch.split('/')[0] if 'stable' not in zuul.branch else '20.10' }}"
@@ -217,8 +214,7 @@
 - job:
     name: networking-nuage-base
     parent: nuage-base
-    description: Base job for nuage based job on 6.0|stable/stein|train branch
-    branches: ^(20.5|6.0)/(stein|train)
+    branches: ^(6.0|20.10)/(train)
     nodeset: openstack-single-node-centos7
     vars:
       vsp_release: "{{ zuul.branch.split('/')[0] if 'stable' not in zuul.branch else '0.0' }}"
@@ -237,7 +233,7 @@
     name: networking-nuage-base
     parent: nuage-base
     description: Base job for nuage based job on 6.0|stable/stein|train branch
-    branches: ^(stable)/(stein|train)
+    branches: ^(stable/train)
     nodeset: openstack-single-node-centos7
     vars:
       vsp_release: "{{ zuul.branch.split('/')[0] if 'stable' not in zuul.branch else '20.10' }}"
@@ -253,15 +249,29 @@
             compute-feature-enabled:
               metadata_service: False
       tempest_test_blacklist: "{{devstack_base_dir}}/nuage-tempest-plugin/tempest-blacklist.txt"
+
+- job:
+    name: networking-nuage-base
+    parent: nuage-base
+    description: Base job for stable/victoria
+    branches: ^(stable/victoria)
+    nodeset: openstack-single-node-centos
+    vars:
+      vsp_release: '0.0'
+      tempest_test_blacklist: "{{devstack_base_dir}}/nuage-tempest-plugin/tempest-blacklist.txt"
+      devstack_localrc:
+        Q_ML2_PLUGIN_EXT_DRIVERS: nuage_subnet,nuage_port,port_security,nuage_network,qos
+        EXTRA_SERVICE_PLUGIN_CLASSES: qos
+        NUAGE_VSD_BASE_URI: /nuage/api/v7
 
 - job:
     name: networking-nuage-base
     parent: nuage-base
     description: Base job for nuage based job
-    branches: ^(?!(stable|20.5|5.4|6.0)/(pike|queens|rocky|stein|train)).*$
+    branches: ^(?!(stable|20.10|5.4|6.0)/(pike|queens|rocky|train|victoria)).*$
     nodeset: openstack-single-node-centos
     vars:
-      vsp_release: '0.0'
+      vsp_release: '20.10'
       tempest_test_blacklist: "{{devstack_base_dir}}/nuage-tempest-plugin/tempest-blacklist.txt"
       devstack_localrc:
         Q_ML2_PLUGIN_EXT_DRIVERS: nuage_subnet,nuage_port,port_security,nuage_network,qos
@@ -270,9 +280,6 @@
 - job:
     name: tempest-full
     parent: networking-nuage-base
-    # This currently works from stable/pike on.
-    # Before stable/pike, legacy version of tempest-full
-    # 'legacy-tempest-dsvm-neutron-full' run.
     branches: .*
     description: |
       Base integration test with upstream tempest.
@@ -297,7 +304,7 @@
 - job:
     name: tempest-full-vsdipam
     parent: tempest-full
-    branches: ^(?!stable/(newton|ocata)).*$
+    branches: .*
     vars: &vsd_ipam_vars
       devstack_localrc:
         NUAGE_IPAM_DRIVER: "nuage_vsd_managed"
@@ -337,7 +344,7 @@
 - job:
     name: networking-nuage-tempest-smoke-vsdipam
     parent: networking-nuage-tempest-smoke
-    branches: ^(?!stable/(newton|ocata)).*$
+    branches: .*
     vars: *vsd_ipam_vars
 
 - job:
@@ -345,7 +352,7 @@
     parent: networking-nuage-tempest-smoke
     description: job running smoke annotated tests agains q-dhcp enabled deployment
     # This currently works from stable/pike on
-    branches: ^(?!stable/(newton|ocata)).*$
+    branches: .*
     vars:
       devstack_localrc:
         NEUTRON_AGENT: nuagevrs
@@ -357,7 +364,7 @@
     parent: networking-nuage-base
     description: job running all virtio tests
     # This currently works from stable/pike on
-    branches: ^(?!stable/(newton|ocata)).*$
+    branches: .*
     timeout: 18000
     vars:
       devstack_localrc: *mpls-type-driver-devstack
@@ -368,13 +375,13 @@
 - job:
     name: networking-nuage-tempest-virtio-vsdipam
     parent: networking-nuage-tempest-virtio
-    branches: ^(?!stable/(newton|ocata)).*$
+    branches: .*
     vars: *vsd_ipam_vars
 
 - job:
     name: networking-nuage-tempest-api-switchdev
     parent: networking-nuage-tempest-virtio
-    branches: ^(?!stable/(newton|ocata)).*$
+    branches: .*
     vars:
       devstack_localrc:
         NUAGE_USE_SWITCHDEV: true
@@ -415,7 +422,6 @@
     name: networking-nuage-tempest-sriov
     parent: networking-nuage-base
     description: job running api tests against nuage sriov mech driver
-    # This currently works from stable/pike on
     branches: ^(5.4)
     required-projects:
       - OpenStack/networking-testsriov
@@ -441,8 +447,7 @@
 - job:
     name: networking-nuage-tempest-sriov-flat-vlan
     parent: networking-nuage-tempest-sriov
-    # This currently works from stable/pike on
-    branches: ^(?!stable/(newton|ocata)).*$
+    branches: .*
     description: job running api tests against nuage sriov mech driver with allow_existing_flat_vlan
     vars:
       devstack_localrc:
@@ -452,8 +457,7 @@
     name: networking-nuage-tempest-sriov-switchdev
     parent: networking-nuage-tempest-sriov
     description: job running api tests against nuage sriov mech driver with switchdev capability
-    # This currently works from stable/pike on
-    branches: ^(?!stable/(newton|ocata)).*$
+    branches: .*
     vars:
       devstack_localrc:
         NUAGE_USE_SWITCHDEV: true
@@ -469,22 +473,20 @@
     name: networking-nuage-tempest-baremetal
     parent: networking-nuage-base
     description: job running all baremetal tests
-    # This currently works from stable/pike on
-    branches: ^(?!stable/(newton|ocata)).*$
+    branches: .*
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.baremetal\..*'
 
 - job:
     name: networking-nuage-tempest-baremetal-vsdipam
     parent: networking-nuage-tempest-baremetal
-    branches: ^(?!stable/(newton|ocata)).*$
+    branches: .*
     vars: *vsd_ipam_vars
 
 - job:
     name: networking-nuage-tempest-scenario
     parent: networking-nuage-base
     description: job running all scenario tests
-    # This currently works from stable/pike on
     branches: ^(?!5.4)
     timeout: 18000
     vars:
@@ -496,7 +498,6 @@
     name: networking-nuage-tempest-scenario
     parent: networking-nuage-base
     description: job running all scenario tests
-    # This currently works from stable/pike on
     branches: ^(5.4)
     timeout: 18000
     vars:
@@ -548,7 +549,7 @@
 - job:
     name: networking-nuage-tempest-scenario-vsdipam
     parent: networking-nuage-tempest-scenario
-    branches: ^(?!stable/(newton|ocata)).*$
+    branches: .*
     vars: *vsd_ipam_vars
 
 
@@ -556,7 +557,6 @@
     name: networking-nuage-tempest-cli
     parent: networking-nuage-base
     description: job running all cli tests
-    # This currently works from stable/pike on
     branches: .*
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.cli\..*'
@@ -565,8 +565,7 @@
     name: networking-nuage-tempest-aggregateflows
     parent: networking-nuage-tempest-scenario
     description: job running l3 vsd managed connectivity tests with aggregate flows enabled
-    # This currently works from stable/pike on
-    branches: ^(?!stable/(newton|ocata)).*$
+    branches: .*
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.scenario\.connectivity\..*\..*AggrFlowsTest\..*'
       tempest_black_regex: ''
@@ -632,7 +631,7 @@
 - job:
     name: networking-nuage-vtep-vxlan
     parent: tempest-full
-    branches: ^(?!stable/(newton|ocata)).*$
+    branches: .*
     required-projects:
       - OpenStack/networking-testsriov
     vars:
@@ -701,7 +700,7 @@
 - job:
     name: networking-nuage-vtep-vlan-upstream
     parent: networking-nuage-vtep-vxlan
-    branches: ^(?!stable/(newton|ocata)).*$
+    branches: .*
     timeout: 21600
     vars:
       tempest_test_blacklist: ''
@@ -712,7 +711,7 @@
 - job:
     name: networking-nuage-vtep-vlan-nuage
     parent: networking-nuage-vtep-vlan-upstream
-    branches: ^(?!stable/(newton|ocata)).*$
+    branches: .*
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.(test_nuage_hwvtep|ipv6\.(os_managed\.test_nuage_networks|test_os_managed_singlestack_l2_subnets|vsd_managed\.test_ipv6_subnet_l2)|vsd_managed\.test_vsd_managed_network).*'
       tempest_black_regex: '^(?:nuage_tempest_plugin\.tests\.api\.(ipv6\.os_managed\.test_nuage_networks\.NuageNetworksIpV6TestAttrs|vsd_managed\.(.*with_vm.*|.*test_link_multi_l2domain_to_network|.*test_link_multi_l3domain_subnets_to_network|.*l3)))'
@@ -727,8 +726,7 @@
     name: networking-nuage-octavia
     parent: networking-nuage-base
     description: basic nuage octavia integration job
-    # This currently works from stable/pike on
-    branches: ^(?!stable/(newton|ocata)).*$
+    branches: .*
     timeout: 18000
     required-projects:
       - openstack/octavia
@@ -778,8 +776,7 @@
     name: networking-nuage-octavia-standby
     parent: networking-nuage-octavia
     description: nuage octavia integration job for active-standby
-    # This currently works from stable/pike on
-    branches: ^(?!stable/(newton|ocata)).*$
+    branches: .*
     timeout: 18000
     vars:
       tempest_concurrency: 1
@@ -792,7 +789,7 @@
 - job:
     name: ovs-restart
     parent: networking-nuage-base
-    branches: ^(?!stable/(newton|ocata)).*$
+    branches: .*
     description: |
       OpenvSwitch restart tests.
     vars:
@@ -804,7 +801,7 @@
     name: networking-nuage-tempest-multinode-base
     parent: networking-nuage-base
     description: multinode job base
-    branches: ^(?!stable/(newton|ocata|pike)).*$
+    branches: .*
     nodeset: openstack-two-node-centos-8
     timeout: 18000
     vars:
@@ -846,14 +843,14 @@
     name: networking-nuage-tempest-multinode
     parent: networking-nuage-tempest-multinode-base
     description: multinode job
-    branches: ^(?!(stable|20.5|5.4|6.0)/(pike|queens|rocky|stein|train)).*$
+    branches: ^(?!(stable|5.4|6.0)/(pike|queens|rocky|stein|train)).*$
     nodeset: openstack-two-node-centos-8
 
 - job:
     name: networking-nuage-tempest-multinode
     parent: networking-nuage-tempest-multinode-base
     description: multinode job
-    branches: ^((20.5|6.0|stable)/(queens|rocky))
+    branches: ^((6.0|stable)/(queens|rocky))
     nodeset: openstack-two-node-centos-7
     group-vars:
       subnode:
@@ -864,6 +861,6 @@
     name: networking-nuage-tempest-multinode
     parent: networking-nuage-tempest-multinode-base
     description: multinode job
-    branches: ^((20.5|6.0|stable)/(stein|train))
+    branches: ^((6.0|stable)/(stein|train))
     nodeset: openstack-two-node-centos-7
 
