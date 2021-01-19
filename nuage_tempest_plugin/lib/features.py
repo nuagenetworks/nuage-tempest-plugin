@@ -28,26 +28,18 @@ class NuageFeatures(object):
         'update_port_postcommit failed'
         'update_port_precommit failed'
     """
+    def __init__(self):
+        self.ipv6_enabled = CONF.network_feature_enabled.ipv6
 
-    def _set_features(self):
-
-        if Topology.nuage_release.major_release == '4.0':
-            self.full_external_id_support = Topology.from_nuage('4.0R5')
-            self.vsd_managed_dualstack_subnets = Topology.from_nuage('4.0VZ')
-
-        else:
-            self.full_external_id_support = True
-            self.ml2_limited_exceptions = False
-            self.full_os_networking = True
-            self.vsd_managed_dualstack_subnets = Topology.is_ml2
-            self.os_managed_dualstack_subnets = (
-                Topology.from_nuage('5.1') and self.ipv6_enabled)
-            self.project_name_in_vsd = Topology.from_nuage('5.1')
-            self.stateless_security_groups = Topology.from_nuage('5.2')
-            self.route_to_underlay = Topology.from_nuage('5.2')
-            self.switchdev_offload = Topology.from_nuage('6.0')
-
-    def _log_features(self):
+        self.full_external_id_support = True
+        self.ml2_limited_exceptions = False
+        self.full_os_networking = True
+        self.vsd_managed_dualstack_subnets = True
+        self.os_managed_dualstack_subnets = self.ipv6_enabled
+        self.project_name_in_vsd = True
+        self.stateless_security_groups = True
+        self.route_to_underlay = True
+        self.switchdev_offload = Topology.from_nuage('6.0')
 
         LOG.info('')
         LOG.info('RELEASES:')
@@ -59,40 +51,6 @@ class NuageFeatures(object):
                  format(Topology.python_version.major,
                         Topology.python_version.minor,
                         Topology.python_version.micro))
-        LOG.info('')
-        LOG.info('FEATURES:')
-        LOG.info('full_external_id_support         : {}'.
-                 format(self.full_external_id_support))
-        LOG.info('ml2_limited_exceptions           : {}'.
-                 format(self.ml2_limited_exceptions))
-        LOG.info('full_os_networking               : {}'.
-                 format(self.full_os_networking))
-        LOG.info('vsd_managed_dualstack_subnets    : {}'.
-                 format(self.vsd_managed_dualstack_subnets))
-        LOG.info('os_managed_dualstack_subnets     : {}'.
-                 format(self.os_managed_dualstack_subnets))
-        LOG.info('stateless_security_groups        : {}'.
-                 format(self.stateless_security_groups))
-        LOG.info('route_to_underlay                : {}'.
-                 format(self.route_to_underlay))
-        LOG.info('switchdev_offload                : {}'.
-                 format(self.switchdev_offload))
-
-    def __init__(self):
-        super(NuageFeatures, self).__init__()
-
-        self.ipv6_enabled = CONF.network_feature_enabled.ipv6
-
-        self.full_external_id_support = False
-        self.ml2_limited_exceptions = Topology.is_ml2
-        self.full_os_networking = not Topology.is_ml2
-        self.vsd_managed_dualstack_subnets = False
-        self.os_managed_dualstack_subnets = False
-        self.ipv6_enabled = CONF.network_feature_enabled.ipv6
-        self.stateless_security_groups = False
-        self.route_to_underlay = False
-        self._set_features()
-        self._log_features()
 
 
 NUAGE_FEATURES = NuageFeatures()
