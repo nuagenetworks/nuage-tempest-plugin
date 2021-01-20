@@ -190,7 +190,7 @@
 - job:
     name: networking-nuage-base
     parent: nuage-base
-    branches: ^(6.0|20.10)/(queens|rocky)
+    branches: ^((6.0|20.10)/(queens|rocky)|stable/queens)
     nodeset: openstack-single-node-centos7
     vars:
       vsp_release: "{{ zuul.branch.split('/')[0] if 'stable' not in zuul.branch else '0.0' }}"
@@ -201,7 +201,7 @@
 - job:
     name: networking-nuage-base
     parent: nuage-base
-    branches: ^(stable)/(queens|rocky)
+    branches: ^(stable)/(rocky)
     nodeset: openstack-single-node-centos7
     vars:
       vsp_release: "{{ zuul.branch.split('/')[0] if 'stable' not in zuul.branch else '20.10' }}"
