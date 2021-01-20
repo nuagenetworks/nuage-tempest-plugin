@@ -215,7 +215,7 @@ class SingleStackOsMgdConnectivityTestBase(NuageBaseTest):
             server1, server2, network)
 
 
-class Ipv4OsMgdL2ConnectivityBass(SingleStackOsMgdConnectivityTestBase):
+class Ipv4OsMgdL2ConnectivityBase(SingleStackOsMgdConnectivityTestBase):
 
     def _get_l2_os_managed_topology(self, cleanup=True):
         network, _ = self._create_resources(cleanup=cleanup)
@@ -239,7 +239,7 @@ class Ipv4OsMgdL2ConnectivityBass(SingleStackOsMgdConnectivityTestBase):
         return network, server1, server2
 
 
-class Ipv4OsMgdL2ConnectivityTest(Ipv4OsMgdL2ConnectivityBass):
+class Ipv4OsMgdL2ConnectivityTest(Ipv4OsMgdL2ConnectivityBase):
 
     @decorators.attr(type='smoke')
     def test_icmp_connectivity_l2_os_managed(self):
@@ -316,7 +316,7 @@ class Ipv4OsMgdL2ConnectivityTest(Ipv4OsMgdL2ConnectivityBass):
         self.validate_tcp_stateful_traffic(network)
 
 
-class Ipv4OsMgdL2ConnectivityClonedTest(Ipv4OsMgdL2ConnectivityBass):
+class Ipv4OsMgdL2ConnectivityClonedTest(Ipv4OsMgdL2ConnectivityBase):
 
     default_include_private_key_as_metadata = True
 
@@ -377,6 +377,9 @@ class Ipv4OsMgdL3ConnectivityTest(SingleStackOsMgdConnectivityTestBase):
         server2 = self.create_tenant_server(
             [network],  # in default sg - so not accessible!
             #             -- hence also can't set prepare_for_connectivity
+            #             -- also, force config drive on v6, as metadata agent
+            #             -- won't act on pure v6
+            force_config_drive=self._ip_version == 6,
             prepare_for_connectivity=False)
 
         server1 = self.create_tenant_server(

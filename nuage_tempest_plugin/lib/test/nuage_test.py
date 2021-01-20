@@ -1617,6 +1617,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                              start_web_server=False,
                              web_server_port=80,
                              force_dhcp_config=False,
+                             force_config_drive=False,
                              manager=None, cleanup=True,
                              no_net_partition=False,
                              cleanup_fip_infra=None,
@@ -1731,7 +1732,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                                    self._get_start_web_server_cmd(
                                        web_server_port))
 
-        server.boot(wait_until, manager, cleanup, **kwargs)
+        server.boot(wait_until, force_config_drive, manager, cleanup, **kwargs)
         server.force_dhcp = force_dhcp_config
         server.set_to_prepare_for_connectivity = prepare_for_connectivity
         server.needs_provisioning = provisioning_needed

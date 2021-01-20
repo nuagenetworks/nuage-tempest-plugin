@@ -248,7 +248,8 @@ class TenantServer(object):
             log = self.get_console_log(length=length)
         return '[{}] [console-log]\n{}\n[end]'.format(self.tag, log)
 
-    def boot(self, wait_until='ACTIVE', manager=None, cleanup=True, **kwargs):
+    def boot(self, wait_until='ACTIVE', force_config_drive=False,
+             manager=None, cleanup=True, **kwargs):
         extra_nic_user_data = self.get_user_data_for_nic_prep(
             dhcp_client=CONF.scenario.dhcp_client, manager=manager)
         if extra_nic_user_data:
@@ -275,7 +276,8 @@ class TenantServer(object):
             kwargs['user_data']).lstrip().encode('utf8'))
 
         # force use of config drive if no metadata agent is configured
-        if not CONF.compute_feature_enabled.metadata_service:
+        if (force_config_drive or
+                not CONF.compute_feature_enabled.metadata_service):
             kwargs['config_drive'] = True
 
         # and boot the server
