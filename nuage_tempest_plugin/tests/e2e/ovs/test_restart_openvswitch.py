@@ -24,7 +24,7 @@ class RestartOpenvSwitchScenarioTest(nuage_test.NuageBaseTest):
     @classmethod
     def skip_checks(cls):
         super(RestartOpenvSwitchScenarioTest, cls).skip_checks()
-        if Topology.api_workers > 1:
+        if Topology.tempest_concurrency > 1:
             raise cls.skipException('Skip OVS restart tests when multiple '
                                     'workers are present')
 

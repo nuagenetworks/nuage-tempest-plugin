@@ -18,7 +18,7 @@ class Topology(object):
     python_version = sys.version_info
 
     is_ml2 = True
-    api_workers = int(CONF.nuage_sut.api_workers)
+    tempest_concurrency = int(CONF.nuage_sut.tempest_concurrency)
     console_logging = CONF.nuage_sut.console_logging
 
     vsd_server = CONF.nuage.nuage_vsd_server
@@ -100,10 +100,6 @@ class Topology(object):
     # - - - - - -
 
     nbr_retries_for_test_robustness = 5  # same as plugin
-
-    @classmethod
-    def single_worker_run(cls):
-        return cls.api_workers == 1
 
     @classmethod
     def neutron_restart_supported(cls):

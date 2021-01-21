@@ -58,7 +58,7 @@ class AvrsOsManagedConnectivityTest(E2eTestBase):
         self.assertTrue(self.is_dpdk_capable(from_port_dpdk))
 
     def test_restart_avrs(self):
-        if Topology.api_workers > 1:
+        if Topology.tempest_concurrency > 1:
             raise self.skipException('Skip OVS restart tests when multiple '
                                      'workers are present')
 

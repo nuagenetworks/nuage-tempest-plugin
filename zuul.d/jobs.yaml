@@ -91,6 +91,7 @@
         NUAGE_PAT: legacy_disabled
         OVS_BRIDGE: alubr0
         USE_PYTHON3: True
+        TEMPEST_CONCURRENCY: "{{ tempest_concurrency }}"
       devstack_plugins:
         nuage-openstack-neutron: https://github.com/nuagenetworks/nuage-openstack-neutron.git
         nuage-openstack-neutronclient: https://github.com/nuagenetworks/nuage-openstack-neutronclient.git
@@ -795,7 +796,6 @@
     vars:
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.e2e\.ovs\.test_restart_openvswitch\..*'
       tempest_concurrency: 1
-      api_workers: 1
 
 - job:
     name: networking-nuage-tempest-multinode-base
