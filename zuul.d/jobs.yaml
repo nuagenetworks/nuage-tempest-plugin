@@ -193,7 +193,7 @@
     branches: ^((6.0|20.10)/(queens|rocky)|stable/queens)
     nodeset: openstack-single-node-centos7
     vars:
-      vsp_release: "{{ zuul.branch.split('/')[0] if 'stable' not in zuul.branch else '0.0' }}"
+      vsp_release: "{{ zuul.branch.split('/')[0] if 'stable' not in zuul.branch else '20.10' }}"
       devstack_localrc:
         USE_PYTHON3: false
       tempest_test_blacklist: "{{devstack_base_dir}}/nuage-tempest-plugin/tempest-blacklist.txt"
