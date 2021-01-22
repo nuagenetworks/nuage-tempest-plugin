@@ -17,7 +17,6 @@ from testtools import matchers
 from tempest.lib import decorators
 from tempest.lib import exceptions as lib_exc
 
-from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.mixins import l3
 from nuage_tempest_plugin.lib.mixins import network as network_mixin
 from nuage_tempest_plugin.lib.mixins import sg as sg_mixin
@@ -149,9 +148,6 @@ class StatelessSecuritygroupTest(network_mixin.NetworkMixin,
         if not CONF.service_available.neutron:
             # this check prevents this test to be run in unittests
             raise cls.skipException("Neutron support is required")
-        if not NUAGE_FEATURES.stateless_security_groups:
-            msg = "Stateless securitygroups feature is not available"
-            raise cls.skipException(msg)
 
     @decorators.attr(type='smoke')
     def test_stateless_default_securitygroup(self):

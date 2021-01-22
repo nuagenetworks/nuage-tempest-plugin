@@ -15,7 +15,6 @@
 
 from tempest.lib.common.utils import data_utils
 
-from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
@@ -154,14 +153,9 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
                     filters='locationID',
                     filter_values=self.vsd_security_policy_group['ID'])
 
-            if NUAGE_FEATURES.os_managed_dualstack_subnets:
-                self.test.assertEqual(
-                    2, len(vsd_ingress_security_policy_entries),
-                    "Should find exact 2 matches for ingress policy entries")
-            else:
-                self.test.assertEqual(
-                    1, len(vsd_ingress_security_policy_entries),
-                    "Should find exact 1 match for ingress policy entries")
+            self.test.assertEqual(
+                2, len(vsd_ingress_security_policy_entries),
+                "Should find exact 2 matches for ingress policy entries")
 
             if with_external_id is None:
                 self.test.assertIsNone(
@@ -175,14 +169,9 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
                         filters='externalID',
                         filter_values=with_external_id)
 
-                if NUAGE_FEATURES.os_managed_dualstack_subnets:
-                    self.test.assertEqual(
-                        2, len(vsd_ingress_security_policy_entries),
-                        "Policy groups not found by external id")
-                else:
-                    self.test.assertEqual(
-                        1, len(vsd_ingress_security_policy_entries),
-                        "Policy group not found by external id")
+                self.test.assertEqual(
+                    2, len(vsd_ingress_security_policy_entries),
+                    "Policys group not found by external id")
 
                 self.test.assertEqual(
                     with_external_id,
@@ -208,14 +197,9 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
                     child_resource=n_constants.EGRESS_ACL_ENTRY_TEMPLATE,
                     filters='locationID',
                     filter_values=self.vsd_security_policy_group['ID'])
-            if NUAGE_FEATURES.os_managed_dualstack_subnets:
-                self.test.assertEqual(
-                    2, len(vsd_egress_security_policy_entries),
-                    "Should find exact 2 matches for egress policy entries")
-            else:
-                self.test.assertEqual(
-                    1, len(vsd_egress_security_policy_entries),
-                    "Should find exact 1 match for egress policy entries")
+            self.test.assertEqual(
+                2, len(vsd_egress_security_policy_entries),
+                "Should find exact 2 matches for egress policy entries")
 
             if with_external_id is None:
                 self.test.assertIsNone(
@@ -229,14 +213,9 @@ class ExternalIdForVPortTest(nuage_test.NuageAdminNetworksTest):
                         filters='externalID',
                         filter_values=with_external_id)
 
-                if NUAGE_FEATURES.os_managed_dualstack_subnets:
-                    self.test.assertEqual(
-                        2, len(vsd_egress_security_policy_entries),
-                        "Policy groups not found by external id")
-                else:
-                    self.test.assertEqual(
-                        1, len(vsd_egress_security_policy_entries),
-                        "Policy group not found by external id")
+                self.test.assertEqual(
+                    2, len(vsd_egress_security_policy_entries),
+                    "Policy groups not found by external id")
 
                 self.test.assertEqual(
                     with_external_id,

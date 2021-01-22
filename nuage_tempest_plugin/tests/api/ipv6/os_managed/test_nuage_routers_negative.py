@@ -18,18 +18,9 @@ from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions as lib_exc
 
-from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
-
 
 class NuageRoutersNegativeIpV6Test(test_routers_negative.RoutersNegativeTest):
     _ip_version = 6
-
-    @classmethod
-    def skip_checks(cls):
-        super(NuageRoutersNegativeIpV6Test, cls).skip_checks()
-        if not NUAGE_FEATURES.os_managed_dualstack_subnets:
-            raise cls.skipException(
-                'OS Managed Dual Stack is not supported in this release')
 
     @classmethod
     def _create_subnet(cls, network, gateway='', cidr=None, mask_bits=None,

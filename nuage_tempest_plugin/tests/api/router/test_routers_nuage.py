@@ -17,7 +17,6 @@ from future.utils import listitems
 
 import netaddr
 from random import randint
-import testtools
 import uuid
 
 from tempest.api.network import base
@@ -26,8 +25,8 @@ from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
-from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test.nuage_test import NuageAdminNetworksTest
+from nuage_tempest_plugin.lib.test.nuage_test import skip_because
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.lib.utils import data_utils as nuage_data_utils
@@ -746,8 +745,7 @@ class NuageRoutersAdminTest(NuageAdminNetworksTest):
     # End of copy from upstream
 
     @utils.requires_ext(extension='ext-gw-mode', service='network')
-    @testtools.skipIf(NUAGE_FEATURES.route_to_underlay,
-                      'Skipping test as relying on OS-911 bug')
+    @skip_because(bug='OPENSTACK-911')
     @decorators.attr(type='smoke')
     def test_create_router_with_default_snat_value(self):
         # Start of copy from upstream
@@ -1028,13 +1026,6 @@ class NuageRoutersAdminTest(NuageAdminNetworksTest):
 class NuageRoutersV6Test(NuageRoutersTest):
 
     _ip_version = 6
-
-    @classmethod
-    def skip_checks(cls):
-        super(NuageRoutersV6Test, cls).skip_checks()
-        if not NUAGE_FEATURES.os_managed_dualstack_subnets:
-            raise cls.skipException(
-                'OS Managed Dual Stack is not supported in this release')
 
     def _verify_router_interface(self, router_id, subnet_id, port_id):
         show_port_body = self.ports_client.show_port(port_id)

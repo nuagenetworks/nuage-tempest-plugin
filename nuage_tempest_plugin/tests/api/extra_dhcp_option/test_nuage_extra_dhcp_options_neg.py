@@ -9,7 +9,6 @@ from tempest.lib import exceptions
 from nuage_tempest_plugin.tests.api.extra_dhcp_option import \
     base_nuage_extra_dhcp_options
 
-from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as constants
 
@@ -626,19 +625,13 @@ class NuageExtraDHCPOptionsNegativeTest(
                           if p['fixed_ips'][0]['subnet_id'] ==
                           self.osmgd_l2_subnet['id']]
         self.assertTrue(our_nuage_port)
-        if NUAGE_FEATURES.os_managed_dualstack_subnets:
-            new_nuage_port = self._update_port_with_dhcp_opts(
-                our_nuage_port[0]['id'],
-                extra_dhcp_opts)
-            # with ipv6 patchset we don't raise exception on update of
-            # nuage:dhcp owned ports (upstream allows this)
-            # Openstack-1897
-            self.assertIsNone(new_nuage_port)
-        else:
-            self.assertRaises(exceptions.BadRequest,
-                              self._update_port_with_dhcp_opts,
-                              our_nuage_port[0]['id'],
-                              extra_dhcp_opts)
+        new_nuage_port = self._update_port_with_dhcp_opts(
+            our_nuage_port[0]['id'],
+            extra_dhcp_opts)
+        # with ipv6 patchset we don't raise exception on update of
+        # nuage:dhcp owned ports (upstream allows this)
+        # Openstack-1897
+        self.assertIsNone(new_nuage_port)
 
     def test_nuage_create_port_with_dhcp_opts_multiple_times_neg(
             self):

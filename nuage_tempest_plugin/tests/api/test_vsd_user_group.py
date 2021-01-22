@@ -1,7 +1,6 @@
 # Copyright 2017 - Nokia
 # All Rights Reserved.
 
-from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as nuage_constants
@@ -12,13 +11,6 @@ net_partition_name = Topology.def_netpartition
 
 
 class VSDUserGroup(nuage_test.NuageBaseTest):
-
-    @classmethod
-    def skip_checks(cls):
-        super(VSDUserGroup, cls).skip_checks()
-        if not NUAGE_FEATURES.project_name_in_vsd:
-            raise cls.skipException('Project name in user group is not'
-                                    ' supported in this release')
 
     @classmethod
     def setup_clients(cls):

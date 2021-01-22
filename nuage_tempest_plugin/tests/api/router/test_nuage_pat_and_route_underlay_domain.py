@@ -5,7 +5,6 @@ from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions
 
-from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.tests.api.external_id.external_id \
@@ -16,13 +15,6 @@ LOG = Topology.get_logger(__name__)
 
 
 class TestNuagePATAndRouteUnderlayDomain(NuageBaseTest):
-
-    @classmethod
-    def skip_checks(cls):
-        super(NuageBaseTest, cls).skip_checks()
-        if not NUAGE_FEATURES.route_to_underlay:
-            msg = "Route to underlay not enabled"
-            raise cls.skipException(msg)
 
     @decorators.attr(type='smoke')
     def test_nuage_pat_and_route_to_underlay_domain_create(self):
