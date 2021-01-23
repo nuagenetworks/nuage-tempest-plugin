@@ -116,7 +116,7 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
                                             pat_enabled, underlay_enabled,
                                             router, network):
         subnet = self.create_subnet(network, cleanup=False)
-        self.create_router_interface(router['id'], subnet['id'], cleanup=False)
+        self.router_attach(router, subnet, cleanup=False)
         try:
             self.update_subnet(
                 subnet,
@@ -149,7 +149,7 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
                                              no_op_nuage_underlay,
                                              router, network):
         subnet = self.create_subnet(network, cleanup=False)
-        self.create_router_interface(router['id'], subnet['id'], cleanup=False)
+        self.router_attach(router, subnet, cleanup=False)
         try:
             self.update_subnet(
                 subnet,
@@ -203,7 +203,7 @@ class TestNuagePATAndRouteUnderlaySubnet(NuageBaseTest):
                                  pat_enabled, underlay_enabled,
                                  router, network):
         subnet = self.create_subnet(network, cleanup=False)
-        self.create_router_interface(router['id'], subnet['id'], cleanup=False)
+        self.router_attach(router, subnet, cleanup=False)
         try:
             self.update_subnet(
                 subnet,

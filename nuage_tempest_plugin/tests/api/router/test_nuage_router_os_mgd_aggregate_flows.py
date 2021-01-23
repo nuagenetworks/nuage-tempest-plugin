@@ -215,7 +215,7 @@ class TestNuageRouterOSMgdAggregateFlows(NuageBaseTest):
         if with_vm:
             network = self.create_network()
             subnet = self.create_subnet(network)
-            self.create_router_interface(router['id'], subnet['id'])
+            self.router_attach(router, subnet)
             # Aggregate flows does not support stateful ACL
             port = self.create_port(network, port_security_enabled=False)
             self.create_tenant_server(name=name, ports=[port])

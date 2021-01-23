@@ -50,12 +50,12 @@ class RouterAttachmentTest(NuageBaseTest):
         router2 = self.create_router()
         port1 = self.create_port(network, cleanup=False)
         port2 = self.create_port(network)
-        self.router_attach_with_port_id(router1, port1)
+        self.router_attach_with_port(router1, port1)
         msg = 'Cannot attach Subnet %s to multiple routers. ' \
               'Router-IF add failed' % subnet['id']
         self.assertRaisesRegex(tempest_exceptions.BadRequest,
                                msg,
-                               self.router_attach_with_port_id,
+                               self.router_attach_with_port,
                                router2,
                                port2)
 
@@ -99,7 +99,7 @@ class RouterAttachmentTest(NuageBaseTest):
         port1_subnet2 = self.create_port(
             network2, fixed_ips=[{'subnet_id': subnet2['id']}])
 
-        self.router_attach_with_port_id(router1, port1_subnet1, cleanup=False)
+        self.router_attach_with_port(router1, port1_subnet1, cleanup=False)
 
         # try to delete non-existing router-interfaces
         should_fail = [(router1, port2_subnet1), (router1, port1_subnet2),
@@ -111,11 +111,11 @@ class RouterAttachmentTest(NuageBaseTest):
                   "an interface with id {}".format(router['id'], port['id'])
             self.assertRaisesRegex(
                 tempest_exceptions.NotFound, msg,
-                self.router_detach_with_port_id, router, port)
+                self.router_detach_with_port, router, port)
 
         # try to delete the existing router interface
         self._validate_is_attached_to_router(subnet1, router1)
-        self.router_detach_with_port_id(router1, port1_subnet1)
+        self.router_detach_with_port(router1, port1_subnet1)
         self._validate_is_not_attached_to_router(subnet1, router1)
 
     def _validate_is_attached_to_router(self, subnet, router):

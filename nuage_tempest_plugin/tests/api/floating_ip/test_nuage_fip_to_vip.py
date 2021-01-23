@@ -27,8 +27,7 @@ class NuageFipToVip(NuageBaseTest):
             admin_state_up=True,
             external_network_id=self.ext_net_id)
         self.assertIsNotNone(router, "Unable to create router")
-        self.create_router_interface(router_id=router["id"],
-                                     subnet_id=subnet["id"])
+        self.router_attach(router, subnet)
 
         # Create VIP_port
         vip_port = self.create_port(network=network, device_owner="nuage:vip")
@@ -71,8 +70,7 @@ class NuageFipToVip(NuageBaseTest):
             admin_state_up=True,
             external_network_id=self.ext_net_id)
         self.assertIsNotNone(router, "Unable to create router")
-        self.create_router_interface(router_id=router["id"],
-                                     subnet_id=subnet["id"])
+        self.router_attach(router, subnet)
         # Create VIP_port
         # VIP port is wrongly created without appropriate device owner
         vip_port = self.create_port(network=network)
@@ -163,10 +161,8 @@ class NuageFipToVip(NuageBaseTest):
             admin_state_up=True,
             external_network_id=self.ext_net_id)
         self.assertIsNotNone(router, "Unable to create router")
-        self.create_router_interface(router_id=router["id"],
-                                     subnet_id=subnet["id"])
-        self.create_router_interface(router_id=router["id"],
-                                     subnet_id=subnet2["id"])
+        self.router_attach(router, subnet)
+        self.router_attach(router, subnet2)
 
         # Create VIP_port
         vip_port = self.create_port(network=network, device_owner="nuage:vip")
@@ -226,10 +222,8 @@ class NuageFipToVip(NuageBaseTest):
             admin_state_up=True,
             external_network_id=self.ext_net_id)
         self.assertIsNotNone(router, "Unable to create router")
-        self.create_router_interface(router_id=router["id"],
-                                     subnet_id=subnet["id"])
-        self.create_router_interface(router_id=router["id"],
-                                     subnet_id=subnet2["id"])
+        self.router_attach(router, subnet)
+        self.router_attach(router, subnet2)
 
         # Create VIP_port
         vip_port = self.create_port(network=network, device_owner="nuage:vip")
@@ -287,8 +281,7 @@ class NuageFipToVip(NuageBaseTest):
             admin_state_up=True,
             external_network_id=self.ext_net_id)
         self.assertIsNotNone(router, "Unable to create router")
-        self.create_router_interface(router_id=router["id"],
-                                     subnet_id=subnet["id"])
+        self.router_attach(router, subnet)
         # Create VIP_port
         vip_port = self.create_port(network=network, device_owner="nuage:vip",
                                     cleanup=False)

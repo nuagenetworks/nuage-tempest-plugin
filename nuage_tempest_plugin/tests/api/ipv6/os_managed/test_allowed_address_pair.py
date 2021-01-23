@@ -199,7 +199,7 @@ class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
             network, ip_version=6, enable_dhcp=False)
         router = self.create_router()
 
-        self.create_router_interface(router['id'], subnet4['id'])
+        self.router_attach(router, subnet4)
 
         port_args = {'fixed_ips': [{'subnet_id': subnet4['id'],
                      'ip_address': str(IPAddress(self.cidr4.first) + 10)}],
@@ -225,7 +225,7 @@ class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
             network, ip_version=6, enable_dhcp=False)
         router = self.create_router()
 
-        self.create_router_interface(router['id'], subnet6['id'])
+        self.router_attach(router, subnet6)
 
         port_args = {'fixed_ips': [{'subnet_id': subnet6['id'],
                                     'ip_address': str(
@@ -312,8 +312,7 @@ class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
             admin_state_up=True,
             external_network_id=CONF.network.public_network_id)
         self.assertIsNotNone(router, "Unable to create router")
-        self.create_router_interface(router_id=router["id"],
-                                     subnet_id=subnet4["id"])
+        self.router_attach(router, subnet4)
 
         # Create VIP_port
         port_args = {
@@ -362,7 +361,7 @@ class AllowedAddressPairIpV6OSManagedTest(BaseAllowedAddressPair):
         subnet6 = self.create_subnet(
             network, ip_version=6, enable_dhcp=False)
         router = self.create_router()
-        self.create_router_interface(router['id'], subnet4['id'])
+        self.router_attach(router, subnet4)
 
         domain = self.vsd.get_domain(by_router_id=router['id'])
         zone = self.vsd.get_zone(domain=domain, by_router_id=router['id'])

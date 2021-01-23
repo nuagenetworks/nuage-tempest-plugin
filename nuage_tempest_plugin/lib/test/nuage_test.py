@@ -536,7 +536,6 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         manager = manager or self.manager
         network = self.create_cls_network(
             network_name, manager, cleanup=False, **kwargs)
-        self.assertIsNotNone(network)
         if cleanup:
             self.addCleanup(
                 manager.networks_client.delete_network, network['id'])
@@ -990,6 +989,11 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         client = manager.security_groups_client
         return client.show_security_group(sg_id)['security_group']
 
+    def update_security_group(self, sg, manager=None, **kwargs):
+        manager = manager or self.manager
+        return manager.security_groups_client.update_security_group(
+            sg['id'], **kwargs)['security_group']
+
     def delete_security_group(self, sg_id, manager=None):
         manager = manager or self.manager
         client = manager.security_groups_client
@@ -1062,17 +1066,18 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             cleanup=cleanup,
             no_net_partition=no_net_partition)
 
-    def create_router(self, router_name=None, admin_state_up=True,
-                      external_network_id=None, enable_snat=None,
-                      external_gateway_info_on=True,
-                      manager=None, cleanup=True,
-                      no_net_partition=False,
-                      **kwargs):
+    @classmethod
+    def create_cls_router(cls, router_name=None, admin_state_up=True,
+                          external_network_id=None, enable_snat=None,
+                          external_gateway_info_on=True,
+                          manager=None, cleanup=True,
+                          no_net_partition=False,
+                          **kwargs):
         ext_gw_info = {}
-        router_name = router_name or self.get_randomized_name()
-        manager = manager or self.manager
+        router_name = router_name or cls.get_cls_randomized_name()
+        manager = manager or cls.manager
         if not no_net_partition and 'net_partition' not in kwargs:
-            kwargs['net_partition'] = self.default_netpartition_name
+            kwargs['net_partition'] = cls.default_netpartition_name
         if external_gateway_info_on:
             if external_network_id:
                 ext_gw_info['network_id'] = external_network_id
@@ -1086,6 +1091,22 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                 name=router_name, admin_state_up=admin_state_up, **kwargs)
 
         router = body['router']
+        if cleanup:
+            cls.addClassResourceCleanup(manager.routers_client.delete_router,
+                                        router['id'])
+        return router
+
+    def create_router(self, router_name=None, admin_state_up=True,
+                      external_network_id=None, enable_snat=None,
+                      external_gateway_info_on=True,
+                      manager=None, cleanup=True,
+                      no_net_partition=False,
+                      **kwargs):
+
+        router = self.create_cls_router(
+            router_name, admin_state_up, external_network_id, enable_snat,
+            external_gateway_info_on, manager, cleanup=False,
+            no_net_partition=no_net_partition, **kwargs)
         if cleanup:
             self.addCleanup(self.delete_router, router, manager)
         return router
@@ -1206,55 +1227,47 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         fip = body['floatingip']
         return fip
 
-    def create_router_interface(self, router_id, subnet_id, manager=None,
-                                cleanup=True):
-        manager = manager or self.manager
+    @classmethod
+    def router_cls_attach(cls, router, subnet, manager=None, cleanup=True):
+        manager = manager or cls.manager
         interface = manager.routers_client.add_router_interface(
-            router_id, subnet_id=subnet_id)
+            router['id'], subnet_id=subnet['id'])
+        if cleanup:
+            cls.addClassResourceCleanup(
+                test_utils.call_and_ignore_notfound_exc,
+                manager.routers_client.remove_router_interface, router['id'],
+                subnet_id=subnet['id'])
+        return interface
+
+    def router_attach(self, router, subnet, manager=None, cleanup=True):
+        interface = self.router_cls_attach(router, subnet, manager,
+                                           cleanup=False)
         if cleanup:
             self.addCleanup(test_utils.call_and_ignore_notfound_exc,
-                            self.remove_router_interface, router_id, subnet_id,
+                            self.router_detach, router,
+                            subnet,
                             manager)
         return interface
 
-    def remove_router_interface(self, router_id, subnet_id, manager=None):
+    def router_detach(self, router, subnet, manager=None):
         manager = manager or self.manager
         manager.routers_client.remove_router_interface(
-            router_id, subnet_id=subnet_id)
+            router['id'], subnet_id=subnet['id'])
 
-    def router_attach(self, router, subnet, manager=None, cleanup=True):
-        self.create_router_interface(router['id'], subnet['id'],
-                                     manager=manager, cleanup=cleanup)
-
-    def router_detach(self, router, subnet, manager=None):
-        self.remove_router_interface(router['id'], subnet['id'],
-                                     manager=manager)
-
-    def create_router_interface_with_port_id(self, router_id, port_id,
-                                             manager=None, cleanup=True):
+    def router_attach_with_port(self, router, port, manager=None,
+                                cleanup=True):
         manager = manager or self.manager
         interface = manager.routers_client.add_router_interface(
-            router_id, port_id=port_id)
+            router['id'], port_id=port['id'])
         if cleanup:
-            self.addCleanup(self.remove_router_interface_with_port_id,
-                            router_id, port_id, manager)
+            self.addCleanup(self.router_detach_with_port, router, port,
+                            manager)
         return interface
 
-    def remove_router_interface_with_port_id(self, router_id,
-                                             port_id, manager=None):
+    def router_detach_with_port(self, router, port, manager=None):
         manager = manager or self.manager
         manager.routers_client.remove_router_interface(
-            router_id, port_id=port_id)
-
-    def router_attach_with_port_id(self, router, port, manager=None,
-                                   cleanup=True):
-        self.create_router_interface_with_port_id(router['id'], port['id'],
-                                                  manager=manager,
-                                                  cleanup=cleanup)
-
-    def router_detach_with_port_id(self, router, port, manager=None):
-        self.remove_router_interface_with_port_id(router['id'], port['id'],
-                                                  manager=manager)
+            router['id'], port_id=port['id'])
 
     def get_router_interface(self, by_router_id, by_subnet_id, manager=None):
         ports = self.list_ports(
