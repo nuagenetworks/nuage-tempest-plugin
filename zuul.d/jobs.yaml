@@ -675,6 +675,7 @@
               quota_security_group: 150
               quota_security_group_rule: 1000
             DEFAULT:
+              vlan_transparent: false
               enable_dvr: false
               enable_snat_by_default: true
           /$NEUTRON_CORE_PLUGIN_CONF:
