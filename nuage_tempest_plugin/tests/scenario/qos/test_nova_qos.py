@@ -47,8 +47,9 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
         default_flavor = flavors_client.show_flavor(
             CONF.compute.flavor_ref)
         default_flavor = default_flavor['flavor']
+        flavor_name = self.get_randomized_name()
         body = flavors_client.create_flavor(
-            name='Nova RateLimit',
+            name=flavor_name,
             disk=default_flavor['disk'],
             ram=default_flavor['ram'],
             vcpus=default_flavor['vcpus']
