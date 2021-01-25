@@ -2124,9 +2124,15 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                 server2.name if server2 else address,
                 'FAILED' if should_pass else 'PASSED')
             LOG.error(err_string)
-            server1.print_debug_info()
+            # we reached server1 - no need to print console log
+            server1.print_debug_info(include_console_log=False)
             if server2:
-                server2.print_debug_info()
+                include_console_log = (
+                    not server2.set_to_prepare_for_connectivity)
+                # we reached server2 before if it had prepare for connectivity
+                # set (see higher up), no need to print console log then
+                server2.print_debug_info(
+                    include_console_log=include_console_log)
             self.fail(err_string)
 
     def assertDictEqual(self, d1, d2, ignore, msg):
