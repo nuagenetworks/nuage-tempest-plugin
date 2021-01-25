@@ -132,8 +132,7 @@ class BaseNuageQOSTest(NuageBaseTest):
             filtered_entries = []
             for entry in entries:
                 policygroup_id = entry.location_id
-                pg = self.vsd.vspk.nupolicygroup.NUPolicyGroup(
-                    id=policygroup_id)
+                pg = self.vsd.vspk.NUPolicyGroup(id=policygroup_id)
                 pg.fetch()
                 vports = pg.vports.get()
                 if vsd_port.id in [vport.id for vport in vports]:
@@ -166,8 +165,7 @@ class BaseNuageQOSTest(NuageBaseTest):
             if vsd_port:
                 self.assertEqual('POLICYGROUP', rule.location_type)
                 policygroup_id = rule.location_id
-                pg = self.vsd.vspk.nupolicygroup.NUPolicyGroup(
-                    id=policygroup_id)
+                pg = self.vsd.vspk.NUPolicyGroup(id=policygroup_id)
                 pg.fetch()
                 self.assertEqual(self.vsd.external_id(policy_id),
                                  rule.external_id,

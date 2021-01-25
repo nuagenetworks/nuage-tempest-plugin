@@ -150,7 +150,7 @@ class NuageApiTest(NuageBaseTest):
         l2dom = self.vsd.create_l2domain(name, enterprise, l2dom_temp)
 
         # Gateway = DHCP option 3
-        dhcp_option = self.vsd.vspk.nudhcpoption.NUDHCPOption(
+        dhcp_option = self.vsd.vspk.NUDHCPOption(
             actual_type=3, actual_values=[str(self.cidr4[1])])
         l2dom.create_child(dhcp_option)
 
@@ -189,7 +189,7 @@ class NuageApiTest(NuageBaseTest):
         # check attributes
         self._verify_l2domain(domain, l2dom)
 
-        dhcp_option = self.vsd.vspk.nudhcpoption.NUDHCPOption(
+        dhcp_option = self.vsd.vspk.NUDHCPOption(
             actual_type=3, actual_values=[str(self.cidr4[1])])
         l2dom.create_child(dhcp_option)
         domain = self.NuageNetworksClient.get_domains(
