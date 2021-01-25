@@ -287,7 +287,7 @@ class TestNuageHWVTEP(NuageBaseTest):
         # One parent port and 4 subports
         self._verify_switchport_bindings(expected_number_bindings=5)
 
-        # Force DEGRADED trunk status
+        # Force ERROR trunk status
         kwargs = {'provider:network_type': 'flat',
                   'provider:physical_network': 'physnet4'}
         network = self.create_network(manager=self.admin_manager,
@@ -303,7 +303,7 @@ class TestNuageHWVTEP(NuageBaseTest):
         self.add_trunk_subports(deg_subport, trunk1_id, client=self.client)
         self.wait_for_port_status(deg_port['id'], 'DOWN',
                                   manager=self.admin_manager)
-        self.wait_for_trunk_status(trunk1_id, 'DEGRADED', client=self.client)
+        self.wait_for_trunk_status(trunk1_id, 'ERROR', client=self.client)
 
         self.client.remove_subports(trunk1_id, deg_subport)
         self.wait_for_trunk_status(trunk1_id, 'ACTIVE', client=self.client)
