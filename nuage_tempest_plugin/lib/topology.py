@@ -32,6 +32,8 @@ class Topology(object):
 
     is_v5 = nuage_release < Release('6.0.0')
 
+    consume_cnt = 0
+
     # - - - - - -
 
     def __init__(self):
@@ -39,16 +41,37 @@ class Topology(object):
 
     # - - - - - -
 
-    @staticmethod
-    def get_logger(name, console_logging=None):
+    @classmethod
+    def get_logger(cls, name, console_logging=None):
         if console_logging is None:
             console_logging = Topology.console_logging
-        return (ConsoleLogging(name) if console_logging
-                else logging.getLogger(name))
+        logger = (ConsoleLogging(name) if console_logging
+                  else logging.getLogger(name))
+        if cls.consume_cnt == 1:  # skip count 0 as that is the interpreter
+            cls.log_platform_versions(logger)
+        cls.consume_cnt += 1
+        return logger
 
-    @staticmethod
-    def get_conf():
+    @classmethod
+    def get_conf(cls):
         return CONF
+
+    # - - - - - -
+
+    @classmethod
+    def log_platform_versions(cls, log):
+        log.info('')
+        log.info('(C) NOKIA Nuage Tempest plugin')
+        log.info('')
+        log.info('RELEASES:')
+        log.info('Nuage version                    : {}'.
+                 format(cls.nuage_release_qualifier))
+        log.info('OpenStack version                : {}'.
+                 format(cls.openstack_version_qualifier))
+        log.info('Python version                   : {}.{}.{}'.
+                 format(cls.python_version.major,
+                        cls.python_version.minor,
+                        cls.python_version.micro))
 
     # - - - - - -
 
@@ -160,6 +183,10 @@ class Topology(object):
 
     @classmethod
     def has_aggregate_flows_support(cls):
+        return not cls.is_v5
+
+    @classmethod
+    def has_switchdev_offload_support(cls):
         return not cls.is_v5
 
     @classmethod

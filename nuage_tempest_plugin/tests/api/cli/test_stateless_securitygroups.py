@@ -17,7 +17,6 @@ from netaddr import IPNetwork
 from tempest.lib.common.utils import data_utils
 from tempest.lib import decorators
 
-from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.tests.api.cli import base_nuage_networks_cli as base
 
 
@@ -30,13 +29,6 @@ class TestStatelessSGCli(base.BaseNuageNetworksCliTestCase):
     @classmethod
     def setup_clients(cls):
         super(TestStatelessSGCli, cls).setup_clients()
-
-    @classmethod
-    def skip_checks(cls):
-        super(TestStatelessSGCli, cls).skip_checks()
-        if not NUAGE_FEATURES.stateless_security_groups:
-            msg = "Stateless SecurityGroups feature is not available"
-            raise cls.skipException(msg)
 
     def _verify_created_sg(self, sg_id, expected):
         sg = self.show_security_group(sg_id)

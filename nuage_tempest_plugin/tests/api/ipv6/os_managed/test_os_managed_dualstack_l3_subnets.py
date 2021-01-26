@@ -5,7 +5,6 @@ import testtools
 
 from tempest.lib import decorators
 
-from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as nuage_constants
@@ -15,13 +14,6 @@ from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 class OsManagedDualStackL3SubnetsTest(NuageBaseTest):
     _vsd_ipv4_address = 'address'
     _vsd_ipv6_address = 'IPv6Address'
-
-    @classmethod
-    def skip_checks(cls):
-        super(OsManagedDualStackL3SubnetsTest, cls).skip_checks()
-        if not NUAGE_FEATURES.os_managed_dualstack_subnets:
-            raise cls.skipException(
-                'OS Managed Dual Stack is not supported in this release')
 
     @classmethod
     def setup_clients(cls):

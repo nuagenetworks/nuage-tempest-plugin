@@ -19,7 +19,6 @@ from tempest.lib.common.utils import data_utils
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.cli import client_testcase
-from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 
@@ -533,11 +532,6 @@ class VSDManagedRedirectTargetCliTest(
         rtport_2 = self.create_port(cli_network)
         msg = "Cannot have more than 1 vPort under a redirectiontarget with " \
               "redundancy disabled"
-        if NUAGE_FEATURES.ml2_limited_exceptions:
-            if Topology.at_openstack('kilo'):
-                msg = "update_port_postcommit failed"
-            else:
-                msg = "update_port_precommit failed"
         self.assertCommandFailed(
             msg,
             self._cli_associate_rt_port,
@@ -626,12 +620,6 @@ class VSDManagedRedirectTargetCliTest(
         # Then I expect a failure
         rtport = self.create_port(cli_network)
         msg = 'Bad request: Multiple redirect targets on a port not supported'
-        if NUAGE_FEATURES.ml2_limited_exceptions:
-            if Topology.at_openstack('kilo'):
-                msg = "update_port_postcommit failed"
-            else:
-                msg = "update_port_precommit failed"
-
         self.assertCommandFailed(
             msg,
             self._cli_associate_multiple_rt_port,
@@ -1528,12 +1516,6 @@ class VSDManagedAssociateFIPCLITest(
         # I expect a failure
         msg = self.err_msg_base + 'Floating IP {} is already in use'.format(
             claimed_fip[0]['address'])
-        if NUAGE_FEATURES.ml2_limited_exceptions:
-            if Topology.at_openstack('kilo'):
-                msg = "update_port_postcommit failed"
-            else:
-                msg = "update_port_precommit failed"
-
         self.assertCommandFailed(
             msg,
             self.cli_associate_fip_to_port,

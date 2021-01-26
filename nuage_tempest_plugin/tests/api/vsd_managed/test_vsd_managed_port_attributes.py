@@ -19,7 +19,6 @@ from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 from tempest.test import decorators
 
-from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.tests.api.external_id.external_id \
@@ -1865,14 +1864,6 @@ class VSDManagedAssociateFIPTest(
         expected_exception = exceptions.BadRequest
         msg = self.err_msg_base + 'Floating IP {} is already in use'.format(
             claimed_fip[0]['address'])
-
-        if NUAGE_FEATURES.ml2_limited_exceptions:
-            expected_exception = exceptions.ServerFault
-            if Topology.at_openstack('kilo'):
-                msg = "update_port_postcommit failed"
-            else:
-                msg = "Got server fault"
-
         self.assertRaisesRegex(
             expected_exception,
             msg,

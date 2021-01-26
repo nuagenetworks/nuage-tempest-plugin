@@ -8,7 +8,6 @@ from netaddr import IPAddress
 from tempest.lib.common.utils import data_utils
 from tempest.test import decorators
 
-from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.test import nuage_test
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseOrchestrationTest
 from nuage_tempest_plugin.lib.test.nuage_test import TenantServer
@@ -23,9 +22,7 @@ class OsManagedDualStackOrchestrationTest(NuageBaseOrchestrationTest):
     @classmethod
     def skip_checks(cls):
         super(OsManagedDualStackOrchestrationTest, cls).skip_checks()
-        if not NUAGE_FEATURES.os_managed_dualstack_subnets:
-            raise cls.skipException(
-                'OS Managed Dual Stack is not supported in this release')
+        # TODO(OPENSTACK-2907 - check)
         raise cls.skipException('TODO(OPENSTACK-2907) Fix tests')
 
     @classmethod

@@ -5,7 +5,6 @@ from netaddr import IPAddress
 from netaddr import IPNetwork
 
 from .base_nuage_networks_cli import BaseNuageNetworksCliTestCase
-from nuage_tempest_plugin.lib.features import NUAGE_FEATURES
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.services.nuage_network_client \
@@ -30,13 +29,6 @@ SPOOFING_DISABLED = (constants.INHERITED if Topology.is_v5
 ###############################################################################
 class OSManagedAllowedAddressPairsCliTest(
         BaseNuageNetworksCliTestCase, BaseVSDManagedNetworksIPv6Test):
-
-    @classmethod
-    def skip_checks(cls):
-        super(OSManagedAllowedAddressPairsCliTest, cls).skip_checks()
-        if not NUAGE_FEATURES.os_managed_dualstack_subnets:
-            raise cls.skipException(
-                'OS Managed Dual Stack is not supported in this release')
 
     def _cli_create_os_managed_dualstack_subnet(self):
         network_name = data_utils.rand_name('cli_network')
