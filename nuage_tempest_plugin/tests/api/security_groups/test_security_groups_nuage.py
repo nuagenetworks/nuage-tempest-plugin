@@ -354,40 +354,44 @@ class SecGroupNuageTest(nuage_test.NuageBaseTest):
     def test_sg_rule_icmp(self):
         # ICMP has stateless and stateful types
         sg = self.create_security_group()
-        icmp_protocols = {
-            4: ['icmp'],
-            # Do not test icmpv6 on 5.4 and below.
-            6: (['ipv6-icmp', 'icmpv6'] if not Topology.up_to_nuage('5.4')
-                else [])
-        }
         for ip_version in self.ip_versions:
+            if Topology.up_to_nuage('5.4') and ip_version == 6:
+                # do not test ipv6 icmp on 5.4 and below
+                continue
+
             ethertype = 'IPv' + str(ip_version)
             stateful_types = (n_constants.STATEFUL_ICMP_V4_TYPES if
                               ip_version == 4 else
                               n_constants.STATEFUL_ICMP_V6_TYPES)
-            for protocol in icmp_protocols[ip_version]:
-                # Create stateful rules
-                for stateful_type in stateful_types:
+            icmp_protocol = 'icmp' if ip_version == 4 else 'ipv6-icmp'
+            # Create stateful rules
+            for stateful_type in stateful_types:
+                self.create_security_group_rule(
+                    security_group=sg, direction='ingress',
+                    ethertype=ethertype, protocol=icmp_protocol,
+                    port_range_min=stateful_type, port_range_max=0)
+            # Create stateless rule: icmp_type: 69
+            self.create_security_group_rule(
+                security_group=sg, direction='egress',
+                ethertype=ethertype, protocol=icmp_protocol,
+                port_range_min=69, port_range_max=0)
+            # Check for cross-contamination between IPV4 and IPV6 stateful
+            # types by creating with icmp_code that is stateful in the
+            # other ethertype
+            all_stateful_types = (n_constants.STATEFUL_ICMP_V4_TYPES +
+                                  n_constants.STATEFUL_ICMP_V6_TYPES)
+            for stateful_type in all_stateful_types:
+                if stateful_type not in stateful_types:
                     self.create_security_group_rule(
                         security_group=sg, direction='ingress',
-                        ethertype=ethertype, protocol=protocol,
+                        ethertype=ethertype, protocol=icmp_protocol,
                         port_range_min=stateful_type, port_range_max=0)
-                # Create stateless rule: icmp_type: 69
+            # Check legacy icmpv6 usage
+            if ip_version == 6:
                 self.create_security_group_rule(
                     security_group=sg, direction='egress',
-                    ethertype=ethertype, protocol=protocol,
-                    port_range_min=69, port_range_max=0)
-                # Check for cross-contamination between IPV4 and IPV6 stateful
-                # types by creating with icmp_code that is stateful in the
-                # other ethertype
-                all_stateful_types = (n_constants.STATEFUL_ICMP_V4_TYPES +
-                                      n_constants.STATEFUL_ICMP_V6_TYPES)
-                for stateful_type in all_stateful_types:
-                    if stateful_type not in stateful_types:
-                        self.create_security_group_rule(
-                            security_group=sg, direction='ingress',
-                            ethertype=ethertype, protocol=protocol,
-                            port_range_min=stateful_type, port_range_max=0)
+                    ethertype=ethertype, protocol='icmpv6',
+                    port_range_min=68, port_range_max=0)
 
         sg = self.get_security_group(sg['id'])
 
