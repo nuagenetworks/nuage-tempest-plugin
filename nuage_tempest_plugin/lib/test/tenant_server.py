@@ -188,10 +188,12 @@ class TenantServer(object):
     def sleep(self, seconds=1, msg=None):
         self.parent.sleep(seconds, msg, tag=self.tag)
 
-    def print_debug_info(self, include_on_instance_info=True):
+    def print_debug_info(self, include_console_log=True,
+                         include_on_instance_info=True):
         LOG.debug('Dumping info for instance {} with ID {}'.format(
             self.name, self.id))
-        LOG.debug(self.compose_console_log_dump())
+        if include_console_log:
+            LOG.debug(self.compose_console_log_dump())
         if (include_on_instance_info and
                 self.set_to_prepare_for_connectivity and
                 self.cloudinit_complete):
