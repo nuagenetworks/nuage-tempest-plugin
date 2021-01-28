@@ -132,7 +132,7 @@ class NuageUpgradeMixin(object):
 
             msg = ('Upgrade tests to {} are applicable only when the deployed '
                    'Nuage version (i.e. version of VSD/VSC/VRS) is set '
-                   'accordingly').format(cls.cls_name, cls._from_release)
+                   'accordingly').format(cls._from_release)
             raise cls.skipException(msg)
 
     @classmethod
