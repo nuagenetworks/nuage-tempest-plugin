@@ -352,7 +352,7 @@ class PortsDirectTest(network_mixin.NetworkMixin, l3.L3Mixin):
         else:
             nr_vports = 3
         self._test_direct_subport(verify_topology, subport_mapping,
-                                  nr_vports=nr_vports)
+                                  nr_vports=nr_vports, is_l3=True)
 
         verify_topology = SriovTopology(
             topology.vsd_client,
@@ -370,7 +370,8 @@ class PortsDirectTest(network_mixin.NetworkMixin, l3.L3Mixin):
                             'host_id': 'host-hierarchical',
                             'pci_slot': '0000:03:50.5'}
         self._test_direct_subport(verify_topology, subport2_mapping,
-                                  use_subport_check=True, nr_vports=nr_vports)
+                                  use_subport_check=True, nr_vports=nr_vports,
+                                  is_l3=True)
 
     @utils.requires_ext(extension='trunk', service='network')
     def test_direct_port_l3_create_with_trunk_vlan0_in_use(self):
@@ -977,7 +978,8 @@ class PortsDirectTest(network_mixin.NetworkMixin, l3.L3Mixin):
         return topology
 
     def _test_direct_subport(self, subport_topology, subport_mapping,
-                             use_subport_check=False, nr_vports=1):
+                             use_subport_check=False, nr_vports=1,
+                             is_l3=False):
         with self.switchport_mapping(do_delete=False, **subport_mapping) as sm:
             self.addCleanup(
                 self.plugin_network_client_admin.delete_switchport_mapping,
@@ -991,14 +993,15 @@ class PortsDirectTest(network_mixin.NetworkMixin, l3.L3Mixin):
                             **self.clear_binding)
         self._validate_vsd(subport_topology, is_trunk=False,
                            nr_vports=nr_vports,
-                           use_subport_check=use_subport_check)
+                           use_subport_check=use_subport_check,
+                           is_l3=is_l3)
         self._validate_os(subport_topology, is_subport=True,
                           use_subport_vlan=use_subport_check)
 
     # Validation part
 
     def _validate_vsd(self, topology, is_trunk=False, nr_vports=1,
-                      use_subport_check=False):
+                      use_subport_check=False, is_l3=False):
         self._validate_direct_vport(topology)
         self._validate_vlan(topology, is_trunk, use_subport_check)
         self._validate_interface(topology)
@@ -1006,7 +1009,7 @@ class PortsDirectTest(network_mixin.NetworkMixin, l3.L3Mixin):
             if Topology.is_v5:
                 self._validate_policygroup(
                     topology, pg_name='defaultPG-VSG-BRIDGE',
-                    nr_vports=nr_vports)
+                    nr_vports=nr_vports, is_l3=is_l3)
             else:
                 self._validate_policygroup(topology, nr_vports=nr_vports)
 
@@ -1042,38 +1045,51 @@ class PortsDirectTest(network_mixin.NetworkMixin, l3.L3Mixin):
                 topology.vsd_direct_interface['IPAddress'],
                 matchers.Equals(neutron_port['fixed_ips'][0]['ip_address']))
 
-    def _validate_policygroup(self, topology, pg_name=None, nr_vports=1):
+    def _validate_policygroup(self, topology, pg_name=None, nr_vports=1,
+                              is_l3=False):
         expected_pgs = 1  # Expecting only one hardware
+        expected_nr_vports_per_pg = nr_vports
+
+        # PG behavior is different pre 6.0
+        if Topology.before_nuage('6.0') and is_l3:
+            expected_pgs = nr_vports
+            expected_nr_vports_per_pg = 1
+
         if self.is_dhcp_agent_present():
             expected_pgs += 1  # Expecting one hardware and one software
         self.assertThat(topology.vsd_policygroups,
                         matchers.HasLength(expected_pgs),
                         message="Unexpected amount of PGs found")
-        vsd_policygroup = topology.vsd_policygroups[expected_pgs - 1]
-        self.assertEqual(vsd_policygroup['type'], 'HARDWARE')
-        if pg_name:
-            self.assertThat(vsd_policygroup['name'],
-                            matchers.Contains(pg_name))
-        else:
-            self.assertEqual(vsd_policygroup['name'],
-                             constants.NUAGE_PLCY_GRP_ALLOW_ALL_HW)
-            self.assertEqual(vsd_policygroup['description'],
-                             constants.NUAGE_PLCY_GRP_ALLOW_ALL_HW)
-            self.assertEqual(vsd_policygroup['externalID'],
-                             "hw:" +
-                             (ExternalId(constants.NUAGE_PLCY_GRP_ALLOW_ALL)
-                              .at_cms_id()))
+        vsd_pg_vports = []
+        for vsd_policygroup in topology.vsd_policygroups:
+            if vsd_policygroup['type'] == 'HARDWARE':
+                if pg_name:
+                    self.assertThat(vsd_policygroup['name'],
+                                    matchers.Contains(pg_name))
+                else:
+                    self.assertEqual(vsd_policygroup['name'],
+                                     constants.NUAGE_PLCY_GRP_ALLOW_ALL_HW)
+                    self.assertEqual(vsd_policygroup['description'],
+                                     constants.NUAGE_PLCY_GRP_ALLOW_ALL_HW)
+                    self.assertEqual(vsd_policygroup['externalID'],
+                                     "hw:" +
+                                     (ExternalId(
+                                         constants.NUAGE_PLCY_GRP_ALLOW_ALL)
+                                      .at_cms_id()))
 
-        vsd_pg_vports = self.vsd_client.get_vport(constants.POLICYGROUP,
-                                                  vsd_policygroup['ID'])
-        self.assertThat(vsd_pg_vports, matchers.HasLength(nr_vports),
-                        message="Expected to find exactly {} "
-                                "vport(s) in PG".format(nr_vports))
+                vsd_pg_vports = self.vsd_client.get_vport(
+                    constants.POLICYGROUP,
+                    vsd_policygroup['ID'])
+                self.assertThat(vsd_pg_vports,
+                                matchers.HasLength(expected_nr_vports_per_pg),
+                                message="Expected to find exactly {} "
+                                        "vport(s) in PG".format(nr_vports))
 
-        vsd_pg_vport_ids = [v['ID'] for v in vsd_pg_vports]
-        self.assertIn(topology.vsd_direct_vport['ID'],
-                      vsd_pg_vport_ids,
-                      "Vport should be part of HARDWARE PG")
+        if Topology.from_nuage('6.0'):
+            vsd_pg_vport_ids = [v['ID'] for v in vsd_pg_vports]
+            self.assertIn(topology.vsd_direct_vport['ID'],
+                          vsd_pg_vport_ids,
+                          "Vport should be part of HARDWARE PG")
 
     def _validate_dhcp_option(self, topology):
         self.assertThat(topology.vsd_direct_dhcp_opts,
