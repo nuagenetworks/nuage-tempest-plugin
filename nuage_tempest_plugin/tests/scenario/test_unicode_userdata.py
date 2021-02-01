@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import six
 import testtools
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
@@ -26,25 +27,24 @@ class UnicodeUserDataTest(NuageBaseTest):
     @classmethod
     def skip_checks(cls):
         super(UnicodeUserDataTest, cls).skip_checks()
+        if six.PY2:
+            raise cls.skipException('Test skipped under python 2')
         if not CONF.compute_feature_enabled.metadata_service:
             raise cls.skipException('Test requires functional metadata agent')
 
     def _test_unicode_userdata(self, l3=None, ip_versions=None):
-        # Verifying that nuage-metadata-agent can handle user-data with
-        # unicode.
-
+        # Verifying that nuage-metadata-agent correctly passes userdata
         # Provision OpenStack network resources
         network = self.create_network()
+        router = self.create_router(
+            external_network_id=CONF.network.public_network_id) if l3 else None
         for ip_version in ip_versions:
             subnet = self.create_subnet(
                 network, ip_version=ip_version,
                 mask_bits=24 if ip_version == 4 else 64,
                 enable_dhcp=True)
-        if l3:
-            router = self.create_router(
-                external_network_id=CONF.network.public_network_id
-            )
-            self.router_attach(router, subnet)
+            if router:
+                self.router_attach(router, subnet)
 
         security_group = self.create_open_ssh_security_group()
 
