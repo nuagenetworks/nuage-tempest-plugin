@@ -310,8 +310,8 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
         BW_LIMIT_NOVA_FLAVOR = BW_LIMIT_NOVA // 8
         BW_LIMIT_NOVA_UPDATE = 200
         BW_LIMIT_NOVA_UPDATE_FLAVOR = BW_LIMIT_NOVA_UPDATE // 8
-        BW_LIMIT_FIP_EGRESS = 1500
-        BW_LIMIT_FIP_INGRESS = 1250
+        BW_LIMIT_FIP_EGRESS = 500
+        BW_LIMIT_FIP_INGRESS = 250
 
         network = self.create_network()
         subnet4 = self.create_subnet(network=network)
