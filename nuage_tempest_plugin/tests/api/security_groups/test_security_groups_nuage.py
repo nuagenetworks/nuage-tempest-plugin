@@ -552,6 +552,28 @@ class SecGroupNuageTest(nuage_test.NuageBaseTest):
         port2 = self.create_port(self.network, security_groups=[sg2['id']])
         self._verify_sg(sg2, [port2])
 
+    def test_circular_remote_group_id(self):
+        """"test_circular_remote_group_id
+
+        Test whether a circular dependency between two SG within their rules
+        is handled.
+        """
+        sg = self.create_security_group()
+        sg2 = self.create_security_group()
+        for ip_version in self.ip_versions:
+            ethertype = 'IPv' + str(ip_version)
+            self.create_security_group_rule(
+                security_group=sg, direction='egress',
+                ethertype=ethertype, remote_group_id=sg2['id'])
+            self.create_security_group_rule(
+                security_group=sg2, direction='egress',
+                ethertype=ethertype, remote_group_id=sg['id'])
+        port = self.create_port(self.network, security_groups=[sg['id']])
+        sg = self.get_security_group(sg['id'])
+        sg2 = self.get_security_group(sg2['id'])
+        self._verify_sg(sg, [port])
+        self._verify_sg(sg2, [], pg_expected_without_port=True)
+
 
 class TestSecGroupScaleTestRouterAttach(nuage_test.NuageBaseTest):
 
