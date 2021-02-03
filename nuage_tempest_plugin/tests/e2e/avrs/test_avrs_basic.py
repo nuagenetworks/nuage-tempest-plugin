@@ -50,12 +50,13 @@ class AvrsOsManagedConnectivityTest(E2eTestBase):
         return AvrsFlowQuery(flows)
 
     def _validate_interfaces(self, from_port, to_port):
-        to_port_dpdk = self.get_port(
-            to_port['id'], manager=self.admin_manager)
-        self.assertTrue(self.is_dpdk_capable(to_port_dpdk))
-        from_port_dpdk = self.get_port(
-            from_port['id'], manager=self.admin_manager)
-        self.assertTrue(self.is_dpdk_capable(from_port_dpdk))
+        if Topology.has_avrs_with_ovs_fp_deployed():
+            to_port_dpdk = self.get_port(
+                to_port['id'], manager=self.admin_manager)
+            self.assertTrue(self.is_dpdk_capable(to_port_dpdk))
+            from_port_dpdk = self.get_port(
+                from_port['id'], manager=self.admin_manager)
+            self.assertTrue(self.is_dpdk_capable(from_port_dpdk))
 
     def test_restart_avrs(self):
         if Topology.tempest_concurrency > 1:

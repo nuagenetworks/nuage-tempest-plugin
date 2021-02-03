@@ -198,3 +198,9 @@ class Topology(object):
         return ('vlan-transparent' in
                 CONF.network_feature_enabled.api_extensions and
                 CONF.nuage_sut.image_is_advanced)
+
+    @classmethod
+    def has_avrs_with_ovs_fp_deployed(cls):
+        # Indicates whether AVRS is deployed with the ovs-fp mech driver
+        # One can tell by the OpenStack version (Rocky+ -> True)
+        return cls.from_openstack('Rocky')
