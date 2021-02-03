@@ -27,7 +27,8 @@ CONF = config.CONF
 
 # VRS-35132: Ethernet fragmentation causes QOS to drop packets
 # 1400 mtu prevents fragmentation in single and doubly encapsulated vxlan
-QOS_MTU = 1400
+# Lowered to 1350 to accomodate Wallaby safety margins wrt MTU.
+QOS_MTU = 1350
 
 
 class NuageQosTestmixin(object):
