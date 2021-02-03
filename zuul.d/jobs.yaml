@@ -395,6 +395,22 @@
       tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway|nuage_hybrid_mpls\.test_nuage_hybrid_mpls_sriov|.*_with_vm.*).*))'
 
 - job:
+    name: networking-nuage-tempest-api-virtio-forwarder
+    parent: networking-nuage-tempest-virtio
+    description: job running tests for virtio-forwarder vnic type
+    branches: .*
+    vars:
+      devstack_localrc:
+        NUAGE_USE_SWITCHDEV: true
+      devstack_local_conf:
+        test-config:
+          $TEMPEST_CONFIG:
+            network:
+              port_profile: capabilities:[switchdev]
+              port_vnic_type: virtio-forwarder
+      tempest_black_regex: '^(?:.*(\[.*\bslow\b.*\]|nuage_tempest_plugin\.tests\.api\.(cli|baremetal|orchestration|test_ports_direct|l2bridge\.test_nuage_l2bridge_sriov|test_nuage_gateway|nuage_hybrid_mpls\.test_nuage_hybrid_mpls_sriov|.*_with_vm.*).*))'
+
+- job:
     name: networking-nuage-tempest-sriov
     parent: networking-nuage-base
     description: job running api tests against nuage sriov mech driver

@@ -13,6 +13,7 @@
 #    under the License.
 
 from netaddr import IPNetwork
+import testscenarios
 from testtools import matchers
 
 from tempest.common import utils
@@ -29,34 +30,36 @@ from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 
 CONF = Topology.get_conf()
 
+load_tests = testscenarios.load_tests_apply_scenarios
 
-class SriovTopology(object):
+
+class SwitchdevTopology(object):
     def __init__(self, vsd_client, network, subnet, router, port, subnetv6,
                  trunk, l2domain=None):
-        super(SriovTopology, self).__init__()
+        super(SwitchdevTopology, self).__init__()
         self.vsd_client = vsd_client
         self.network = network
         self.subnet = subnet
         self.router = router
         self.normal_port = port
         self.trunk = trunk
-        self.direct_port = None
+        self.switchdev_port = None
         self.subnetv6 = subnetv6
         self.vsd_managed = l2domain is not None
 
         self.binding_data = None
-        self._direct_port_is_subport = False
+        self._switchdev_port_is_subport = False
         self._vsd_vport_parent = l2domain
         self._vsd_vport_parent_resource = None
-        self._vsd_direct_vport = None
+        self._vsd_switchdev_vport = None
         self._vsd_domain = None
         self._vsd_domain_resource = None
         self._vsd_policygroups = None
-        self._vsd_direct_interface_resource = None
-        self._vsd_direct_interface = None
+        self._vsd_switchdev_interface_resource = None
+        self._vsd_switchdev_interface = None
         self._vsd_egress_acl_templates = None
         self._vsd_egress_acl_entries = None
-        self._vsd_direct_dhcp_opts = None
+        self._vsd_switchdev_dhcp_opts = None
 
     @property
     def vsd_vport_parent(self):
@@ -79,15 +82,15 @@ class SriovTopology(object):
         return self._vsd_vport_parent_resource
 
     @property
-    def vsd_direct_vport(self):
-        if not getattr(self, '_vsd_direct_vport', False):
+    def vsd_switchdev_vport(self):
+        if not getattr(self, '_vsd_switchdev_vport', False):
             vsd_vports = self.vsd_client.get_vport(
                 self.vsd_vport_parent_resource,
                 self.vsd_vport_parent['ID'],
                 filters='externalID',
-                filter_values=self.direct_port['id'])
-            self._vsd_direct_vport = vsd_vports[0]
-        return self._vsd_direct_vport
+                filter_values=self.switchdev_port['id'])
+            self._vsd_switchdev_vport = vsd_vports[0]
+        return self._vsd_switchdev_vport
 
     @property
     def vsd_domain(self):
@@ -120,19 +123,19 @@ class SriovTopology(object):
         return self._vsd_policygroups
 
     @property
-    def vsd_direct_interface_resource(self):
-        if not getattr(self, '_vsd_direct_interface_resource', False):
-            self._vsd_direct_interface_resource = constants.VM_IFACE
-        return self._vsd_direct_interface_resource
+    def vsd_switchdev_interface_resource(self):
+        if not getattr(self, '_vsd_switchdev_interface_resource', False):
+            self._vsd_switchdev_interface_resource = constants.VM_IFACE
+        return self._vsd_switchdev_interface_resource
 
     @property
-    def vsd_direct_interface(self):
-        if not getattr(self, '_vsd_direct_interface', False):
-            self._vsd_direct_interface = self.vsd_client.get_child_resource(
+    def vsd_switchdev_interface(self):
+        if not getattr(self, '_vsd_switchdev_interface', False):
+            self._vsd_switchdev_interface = self.vsd_client.get_child_resource(
                 constants.VPORT,
-                self.vsd_direct_vport['ID'],
-                self.vsd_direct_interface_resource)[0]
-        return self._vsd_direct_interface
+                self.vsd_switchdev_vport['ID'],
+                self.vsd_switchdev_interface_resource)[0]
+        return self._vsd_switchdev_interface
 
     @property
     def vsd_egress_acl_template(self):
@@ -153,48 +156,62 @@ class SriovTopology(object):
         return self._vsd_egress_acl_entries
 
     @property
-    def vsd_direct_dhcp_opts(self):
-        if not getattr(self, '_vsd_direct_dhcp_opts', False):
-            self._vsd_direct_dhcp_opts = self.vsd_client.get_dhcpoption(
-                self.vsd_direct_interface_resource,
-                self.vsd_direct_interface['ID'])
-        return self._vsd_direct_dhcp_opts
+    def vsd_switchdev_dhcp_opts(self):
+        if not getattr(self, '_vsd_switchdev_dhcp_opts', False):
+            self._vsd_switchdev_dhcp_opts = self.vsd_client.get_dhcpoption(
+                self.vsd_switchdev_interface_resource,
+                self.vsd_switchdev_interface['ID'])
+        return self._vsd_switchdev_dhcp_opts
 
 
-class PortsDirectTest(network_mixin.NetworkMixin, l3.L3Mixin):
+class SwitchdevPortTest(network_mixin.NetworkMixin, l3.L3Mixin):
 
     credentials = ['admin']
 
+    vnic_type = 'direct'
+    vif_type = 'ovs'
+
+    # Switchdev with DIRECT and with virtio-forwarder
+    scenarios = [
+        ('direct', {'vnic_type': 'direct', 'vif_type': 'ovs'}),
+        ('virtio-forwarder', {'vnic_type': 'virtio-forwarder',
+                              'vif_type': 'vhostuser'})]
+
     @classmethod
     def setUpClass(cls):
-        super(PortsDirectTest, cls).setUpClass()
+        super(SwitchdevPortTest, cls).setUpClass()
         cls.expected_vport_type = constants.VPORT_TYPE_VM
-        cls.expected_vif_type = 'ovs'
+        cls.expected_vif_type = cls.vif_type
 
     @classmethod
     def setup_clients(cls):
-        super(PortsDirectTest, cls).setup_clients()
+        super(SwitchdevPortTest, cls).setup_clients()
         cls.vsd_client = NuageRestClient()
 
     @classmethod
     def resource_setup(cls):
-        super(PortsDirectTest, cls).resource_setup()
+        super(SwitchdevPortTest, cls).resource_setup()
         # for VSD managed
         cls.vsd_l2dom_template = []
         cls.vsd_l2domain = []
 
     @classmethod
     def skip_checks(cls):
-        super(PortsDirectTest, cls).skip_checks()
+        super(SwitchdevPortTest, cls).skip_checks()
         if not CONF.service_available.neutron:
             raise cls.skipException("Neutron is not available")
         if not Topology.has_switchdev_offload_support():
             raise cls.skipException(
                 "OVS HW offload is not supported in current release")
+        if (cls.vnic_type == 'virtio-forwarder' and not
+                Topology.has_switchdev_virtio_forwarder_support()):
+            raise cls.skipException(
+                "OVS HW offload with virtio forwarder"
+                " not supported in current release")
 
     @classmethod
     def resource_cleanup(cls):
-        super(PortsDirectTest, cls).resource_cleanup()
+        super(SwitchdevPortTest, cls).resource_cleanup()
 
         for vsd_l2domain in cls.vsd_l2domain:
             cls.vsd_client.delete_l2domain(vsd_l2domain['ID'])
@@ -216,7 +233,7 @@ class PortsDirectTest(network_mixin.NetworkMixin, l3.L3Mixin):
         return t['status'] == 'ACTIVE'
 
     def setUp(self):
-        super(PortsDirectTest, self).setUp()
+        super(SwitchdevPortTest, self).setUp()
         self.clear_binding = {
             'binding:host_id': '',
             'binding:profile': {
@@ -287,15 +304,15 @@ class PortsDirectTest(network_mixin.NetworkMixin, l3.L3Mixin):
                                           subnet_id=subnetv6['id'])
         if with_port:
             port = self.create_port(network['id'])
-        return SriovTopology(self.vsd_client, network, subnet, router, port,
-                             subnetv6, trunk, vsd_l2dom)
+        return SwitchdevTopology(self.vsd_client, network, subnet, router,
+                                 port, subnetv6, trunk, vsd_l2dom)
 
-    def _test_direct_port(self, topology, update=False,
-                          with_port_security=True, aap=False,
-                          multi_ips=False, is_trunk=False):
+    def _test_switchdev_port(self, topology, update=False,
+                             with_port_security=True, aap=False,
+                             multi_ips=False, is_trunk=False):
 
         create_data = {
-            'binding:vnic_type': 'direct',
+            'binding:vnic_type': self.vnic_type,
             'binding:profile': {
                 'capabilities': ['switchdev']
             }
@@ -321,19 +338,19 @@ class PortsDirectTest(network_mixin.NetworkMixin, l3.L3Mixin):
 
         if not update:
             create_data.update(self.binding_data)
-        direct_port = self.create_port(topology.network['id'], cleanup=True,
-                                       **create_data)
-        topology.direct_port = direct_port
+        switchdev_port = self.create_port(topology.network['id'], cleanup=True,
+                                          **create_data)
+        topology.switchdev_port = switchdev_port
         if is_trunk:
-            trunk = self.create_trunk(direct_port['id'], subports=None,
+            trunk = self.create_trunk(switchdev_port['id'], subports=None,
                                       cleanup=True, name="trunk1")
-            self.addCleanup(self.update_port, direct_port['id'],
+            self.addCleanup(self.update_port, switchdev_port['id'],
                             as_admin=True, **self.clear_binding)
             topology.trunk = trunk
         if update:
-            topology.direct_port = self.update_port(direct_port['id'],
-                                                    as_admin=True,
-                                                    **self.binding_data)
+            topology.switchdev_port = self.update_port(switchdev_port['id'],
+                                                       as_admin=True,
+                                                       **self.binding_data)
         if is_trunk:
             # ensure trunk transitions to ACTIVE
             lib_utils.wait_until_true(
@@ -352,28 +369,28 @@ class PortsDirectTest(network_mixin.NetworkMixin, l3.L3Mixin):
     # Validation part
 
     def _validate_vsd(self, topology, is_trunk=False):
-        self._validate_direct_vport(topology, is_trunk)
+        self._validate_switchdev_port(topology, is_trunk)
         self._validate_interface(topology)
         self._validate_dhcp_option(topology)
         if not topology.vsd_managed:
             self._validate_policygroup(topology)
 
-    def _validate_direct_vport(self, topology, is_trunk):
-        self.assertThat(topology.vsd_direct_vport['type'],
+    def _validate_switchdev_port(self, topology, is_trunk):
+        self.assertThat(topology.vsd_switchdev_vport['type'],
                         matchers.Equals(self.expected_vport_type),
                         message="Vport has wrong type")
         if is_trunk:
-            self.assertThat(topology.vsd_direct_vport['trunkRole'],
+            self.assertThat(topology.vsd_switchdev_vport['trunkRole'],
                             matchers.Equals('PARENT_PORT'),
                             message="Vport has wrong trunkRole")
 
     def _validate_interface(self, topology):
-        neutron_port = topology.direct_port
+        neutron_port = topology.switchdev_port
 
-        self.assertThat(topology.vsd_direct_interface['MAC'],
+        self.assertThat(topology.vsd_switchdev_interface['MAC'],
                         matchers.Equals(neutron_port['mac_address']))
         self.assertThat(
-            topology.vsd_direct_interface['IPAddress'],
+            topology.vsd_switchdev_interface['IPAddress'],
             matchers.Equals(neutron_port['fixed_ips'][0]['ip_address']))
 
     def _validate_policygroup(self, topology, pg_name=None):
@@ -398,22 +415,22 @@ class PortsDirectTest(network_mixin.NetworkMixin, l3.L3Mixin):
             if topology.subnet['id'] in vsd_pg_vports[0]['externalID']:
                 self.assertThat(
                     vsd_pg_vports[0]['ID'],
-                    matchers.Equals(topology.vsd_direct_vport['ID']),
+                    matchers.Equals(topology.vsd_switchdev_vport['ID']),
                     message="Vport should be part of PG")
 
     def _validate_dhcp_option(self, topology):
         expected_len = 0 if topology.router else 1
-        self.assertThat(topology.vsd_direct_dhcp_opts,
+        self.assertThat(topology.vsd_switchdev_dhcp_opts,
                         matchers.HasLength(expected_len))
         DHCP_ROUTER_OPT = 3
 
-        for dhcp_opt in topology.vsd_direct_dhcp_opts:
+        for dhcp_opt in topology.vsd_switchdev_dhcp_opts:
             if dhcp_opt['actualType'] == DHCP_ROUTER_OPT:
                 self.assertThat(dhcp_opt['actualValues'][0],
                                 matchers.Equals(topology.subnet['gateway_ip']))
 
     def _validate_os(self, topology, is_trunk=False, is_subport=False):
-        port = topology.direct_port
+        port = topology.switchdev_port
         actual_profile = port.get('binding:profile')
         expected_profile = self.binding_data.get('binding:profile')
         self.assertThat(actual_profile, matchers.Equals(expected_profile),
@@ -432,7 +449,7 @@ class PortsDirectTest(network_mixin.NetworkMixin, l3.L3Mixin):
             if is_subport:
                 sub_port_details = self.get_subports(
                     topology.trunk['id'])[0]
-                expected = {'port_id': topology.direct_port['id'],
+                expected = {'port_id': topology.switchdev_port['id'],
                             'segmentation_id': self.expected_vlan,
                             'segmentation_type': 'vlan'}
                 self.assertThat(expected, matchers.Equals(sub_port_details),
@@ -446,55 +463,55 @@ class PortsDirectTest(network_mixin.NetworkMixin, l3.L3Mixin):
 
     # os managed
     @decorators.attr(type='smoke')
-    def test_direct_port_l3_create(self):
+    def test_switchdev_port_l3_create(self):
         topology = self._create_topology(with_router=True)
-        self._test_direct_port(topology, update=False)
+        self._test_switchdev_port(topology, update=False)
 
-    def test_direct_port_l3_update(self):
+    def test_switchdev_port_l3_update(self):
         topology = self._create_topology(with_router=True)
-        self._test_direct_port(topology, update=True)
+        self._test_switchdev_port(topology, update=True)
 
-    def test_direct_port_l3_ipv6_create(self):
+    def test_switchdev_port_l3_ipv6_create(self):
         topology = self._create_topology(with_router=True, dualstack=True)
-        self._test_direct_port(topology, update=False)
+        self._test_switchdev_port(topology, update=False)
 
     @decorators.attr(type='smoke')
-    def test_direct_port_l3_ipv6_update(self):
+    def test_switchdev_port_l3_ipv6_update(self):
         topology = self._create_topology(with_router=True, dualstack=True)
-        self._test_direct_port(topology, update=True)
+        self._test_switchdev_port(topology, update=True)
 
-    def test_direct_port_l3_create_with_aap(self):
+    def test_switchdev_port_l3_create_with_aap(self):
         topology = self._create_topology(with_router=True)
-        self._test_direct_port(topology, update=False, aap=True)
+        self._test_switchdev_port(topology, update=False, aap=True)
 
-    def test_direct_port_l2_create(self):
+    def test_switchdev_port_l2_create(self):
         topology = self._create_topology(with_router=False)
-        self._test_direct_port(topology, update=False)
+        self._test_switchdev_port(topology, update=False)
 
-    def test_direct_port_l2_update(self):
+    def test_switchdev_port_l2_update(self):
         topology = self._create_topology(with_router=False)
-        self._test_direct_port(topology, update=True)
+        self._test_switchdev_port(topology, update=True)
 
     @decorators.attr(type='smoke')
-    def test_direct_port_l2_ipv6_create(self):
+    def test_switchdev_port_l2_ipv6_create(self):
         topology = self._create_topology(with_router=False, dualstack=True)
-        self._test_direct_port(topology, update=False)
+        self._test_switchdev_port(topology, update=False)
 
-    def test_direct_port_l2_ipv6_update(self):
+    def test_switchdev_port_l2_ipv6_update(self):
         topology = self._create_topology(with_router=False, dualstack=True)
-        self._test_direct_port(topology, update=True)
+        self._test_switchdev_port(topology, update=True)
 
     @decorators.attr(type='smoke')
-    def test_direct_port_l2_update_with_aap(self):
+    def test_switchdev_port_l2_update_with_aap(self):
         topology = self._create_topology(with_router=False)
-        self._test_direct_port(topology, update=True, aap=True)
+        self._test_switchdev_port(topology, update=True, aap=True)
 
     @utils.requires_ext(extension='trunk', service='network')
-    def test_direct_port_l3_create_with_trunk(self):
+    def test_switchdev_port_l3_create_with_trunk(self):
         topology = self._create_topology(with_router=True, for_trunk=True)
-        self._test_direct_port(topology, update=True, is_trunk=True)
+        self._test_switchdev_port(topology, update=True, is_trunk=True)
 
     @utils.requires_ext(extension='trunk', service='network')
-    def test_direct_port_l2_create_with_trunk(self):
+    def test_switchdev_port_l2_create_with_trunk(self):
         topology = self._create_topology(with_router=False, for_trunk=True)
-        self._test_direct_port(topology, update=True, is_trunk=True)
+        self._test_switchdev_port(topology, update=True, is_trunk=True)
