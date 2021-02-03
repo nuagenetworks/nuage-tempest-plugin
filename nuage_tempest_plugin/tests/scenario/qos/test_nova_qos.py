@@ -176,11 +176,8 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
 
         # Check bw limited
         self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS,
+                             ingress_bw=BW_LIMIT_FIP_INGRESS,
                              test_msg='FIP QOS before migration.')
-        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
-        # self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS,
-        #                      ingress_bw = BW_LIMIT_FIP_INGRESS,
-        #                      test_msg='Nova Qos + FIP.')
 
         # Migrate
         server_show = server.get_server_details()
@@ -202,11 +199,8 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
 
         # Check bw limited
         self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS,
+                             ingress_bw=BW_LIMIT_FIP_INGRESS,
                              test_msg='FIP QOS after migration.')
-        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
-        # self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS,
-        #                      ingress_bw = BW_LIMIT_FIP_INGRESS,
-        #                      test_msg='Nova Qos + FIP.')
 
     @testtools.skipUnless(CONF.compute.min_compute_nodes > 1,
                           'Less than 2 compute nodes, skipping multinode '
@@ -344,11 +338,8 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
 
         # Check bw limited
         self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS,
+                             ingress_bw=BW_LIMIT_FIP_INGRESS,
                              test_msg='FIP QOS before migration.')
-        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
-        # self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS,
-        #                      ingress_bw = BW_LIMIT_FIP_INGRESS,
-        #                      test_msg='Nova Qos + FIP.')
 
         # Update flavor
         flavors_client = self.admin_manager.flavors_client
@@ -386,11 +377,8 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
 
         # Check bw limited
         self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS,
+                             ingress_bw=BW_LIMIT_FIP_INGRESS,
                              test_msg='FIP QOS after migration.')
-        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
-        # self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS,
-        #                      ingress_bw = BW_LIMIT_FIP_INGRESS,
-        #                      test_msg='Nova Qos + FIP.')
 
     @testtools.skipIf(
         not CONF.nuage_feature_enabled.proprietary_fip_rate_limiting,
@@ -444,11 +432,8 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
             nuage_ingress_fip_rate_kbps=BW_LIMIT_FIP_INGRESS)
         # Check bw limited
         self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS,
+                             ingress_bw=BW_LIMIT_FIP_INGRESS,
                              test_msg='Nova Qos + FIP.')
-        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
-        # self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS,
-        #                      ingress_bw=BW_LIMIT_FIP_INGRESS,
-        #                      test_msg='Nova Qos + FIP.')
 
         # update ingress & egress fip rate limiting
         self.update_floatingip(
@@ -457,11 +442,8 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
             nuage_ingress_fip_rate_kbps=BW_LIMIT_FIP_INGRESS_UPDATE)
         # Check bw limited
         self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS_UPDATE,
+                             ingress_bw=BW_LIMIT_FIP_INGRESS_UPDATE,
                              test_msg='Nova Qos + FIP updated.')
-        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
-        # self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS_UPDATE,
-        #                      ingress_bw=BW_LIMIT_FIP_INGRESS_UPDATE,
-        #                      test_msg='Nova Qos + FIP updated.')
 
         # Remove fip rate limit
         self.update_floatingip(
@@ -538,11 +520,8 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
             nuage_ingress_fip_rate_kbps=BW_LIMIT_FIP_INGRESS)
         # Check bw limited
         self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS,
+                             ingress_bw=BW_LIMIT_FIP_INGRESS,
                              test_msg='Nova Qos + FIP RL.')
-        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
-        # self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS,
-        #                      ingress_bw=BW_LIMIT_FIP_INGRESS,
-        #                      test_msg='Nova Qos + FIP RL.')
 
         # Reboot server
         self.manager.servers_client.reboot_server(server.id, type='HARD')
@@ -552,11 +531,8 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
             base_nuage_qos.QOS_MTU))
 
         self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS,
+                             ingress_bw=BW_LIMIT_FIP_INGRESS,
                              test_msg='Nova Qos + FIP RL after reboot.')
-        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
-        # self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS,
-        #                      ingress_bw=BW_LIMIT_FIP_INGRESS,
-        #                      test_msg='Nova Qos + FIP RL.')
 
         # update ingress & egress fip rate limiting
         self.update_floatingip(
@@ -565,11 +541,8 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
             nuage_ingress_fip_rate_kbps=BW_LIMIT_FIP_INGRESS_UPDATE)
         # Check bw limited
         self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS_UPDATE,
-                             test_msg='Nova Qos + FIP RL updated.')
-        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
-        # self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS,
-        #                      ingress_bw=BW_LIMIT_FIP_INGRESS_UPDATE,
-        #                      test_msg='Nova Qos + FIP RL Updated.')
+                             ingress_bw=BW_LIMIT_FIP_INGRESS_UPDATE,
+                             test_msg='Nova Qos + FIP RL Updated.')
 
         # Reboot server
         self.manager.servers_client.reboot_server(server.id, type='HARD')
@@ -579,13 +552,9 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
             base_nuage_qos.QOS_MTU))
 
         self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS_UPDATE,
+                             ingress_bw=BW_LIMIT_FIP_INGRESS_UPDATE,
                              test_msg='Nova Qos + FIP RL updated '
                                       'after reboot.')
-        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
-        # self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS_UPDATE,
-        #                      ingress_bw=BW_LIMIT_FIP_INGRESS_UPDATE,
-        #                      test_msg='Nova Qos + FIP RL updated '
-        #                               'after reboot.')
 
         # Remove fip rate limit
         self.update_floatingip(
@@ -652,11 +621,8 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
 
         # Check bw limited
         self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS,
+                             ingress_bw=BW_LIMIT_FIP_INGRESS,
                              test_msg='First associated floating ip.')
-        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
-        # self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS,
-        #                      ingress_bw=BW_LIMIT_FIP_INGRESS,
-        #                      test_msg='First associated floating ip.')
 
         # Disassociate current FIP & Associate new FIP
         self.update_floatingip(server.associated_fip, port_id=None)
@@ -673,11 +639,8 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
 
         # Check bw limited
         self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS_UPDATE,
-                             test_msg='First associated floating ip.')
-        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
-        # self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS,
-        #                      ingress_bw=BW_LIMIT_FIP_INGRESS,
-        #                      test_msg='First associated floating ip.')
+                             ingress_bw=BW_LIMIT_FIP_INGRESS_UPDATE,
+                             test_msg='Second associated floating ip.')
 
     @testtools.skipIf(
         not CONF.nuage_feature_enabled.proprietary_fip_rate_limiting,
@@ -791,11 +754,8 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
 
         # Check bw limited
         self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS1,
+                             ingress_bw=BW_LIMIT_FIP_INGRESS1,
                              test_msg='Fip1 with Fip RL active.')
-        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
-        # self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS1,
-        #                      ingress_bw=BW_LIMIT_FIP_INGRESS1,
-        #                      test_msg='Fip1 with Fip RL active.')
         # Flip floating ip of server, change default route
         server.console().ssh_client.timeout = 10
         try:
@@ -809,8 +769,5 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
         server.associated_fip = floatingip2
         server.init_console()
         self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS2,
+                             ingress_bw=BW_LIMIT_FIP_INGRESS2,
                              test_msg='Fip2 with Fip RL active.')
-        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
-        # self._test_bandwidth(server, egress_bw=BW_LIMIT_FIP_EGRESS2,
-        #                      ingress_bw=BW_LIMIT_FIP_INGRESS2,
-        #                      test_msg='Fip2 with Fip RL active.')

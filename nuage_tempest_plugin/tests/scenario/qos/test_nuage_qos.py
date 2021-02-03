@@ -79,11 +79,8 @@ class NuageFloatingIPProprietaryQosTest(base_nuage_qos.NuageQosTestmixin,
             nuage_ingress_fip_rate_kbps=ingress_kbps)
 
         self._test_bandwidth(server, egress_bw=egress_kbps,
+                             ingress_bw=ingress_kbps,
                              test_msg='original Fip.')
-        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
-        # self._test_bandwidth(server, egress_bw=egress_kbps,
-        #                      ingress_bw=ingress_kbps,
-        #                      test_msg='original Fip.')
 
         # Update floating ip QOS to new value
         egress_kbps = 200
@@ -94,11 +91,8 @@ class NuageFloatingIPProprietaryQosTest(base_nuage_qos.NuageQosTestmixin,
             nuage_ingress_fip_rate_kbps=ingress_kbps)
 
         self._test_bandwidth(server, egress_bw=egress_kbps,
+                             ingress_bw=ingress_kbps,
                              test_msg='updated Fip.')
-        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
-        # self._test_bandwidth(server, egress_bw=egress_kbps,
-        #                      ingress_bw=ingress_kbps,
-        #                      test_msg='updated Fip.')
 
     @testtools.skipIf(
         not CONF.nuage_feature_enabled.proprietary_fip_rate_limiting,
@@ -141,11 +135,8 @@ class NuageFloatingIPProprietaryQosTest(base_nuage_qos.NuageQosTestmixin,
             nuage_ingress_fip_rate_kbps=ingress_kbps)
 
         self._test_bandwidth(server, egress_bw=egress_kbps,
+                             ingress_bw=ingress_kbps,
                              test_msg='original Fip.')
-        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
-        # self._test_bandwidth(server, egress_bw=egress_kbps,
-        #                      ingress_bw=ingress_kbps,
-        #                      test_msg='original Fip.')
 
         # reboot server
         self.manager.servers_client.reboot_server(server.id, type='HARD')
@@ -156,11 +147,8 @@ class NuageFloatingIPProprietaryQosTest(base_nuage_qos.NuageQosTestmixin,
             base_nuage_qos.QOS_MTU))
 
         self._test_bandwidth(server, egress_bw=egress_kbps,
+                             ingress_bw=ingress_kbps,
                              test_msg='original Fip after reboot.')
-        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
-        # self._test_bandwidth(server, egress_bw=egress_kbps,
-        #                      ingress_bw=ingress_kbps,
-        #                      test_msg='original Fip after reboot.')
 
         # Update floating ip QOS to new value
         egress_kbps = 200
@@ -171,11 +159,8 @@ class NuageFloatingIPProprietaryQosTest(base_nuage_qos.NuageQosTestmixin,
             nuage_ingress_fip_rate_kbps=ingress_kbps)
 
         self._test_bandwidth(server, egress_bw=egress_kbps,
+                             ingress_bw=ingress_kbps,
                              test_msg='updated Fip.')
-        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
-        # self._test_bandwidth(server, egress_bw=egress_kbps,
-        #                      ingress_bw=ingress_kbps,
-        #                      test_msg='updated Fip.')
 
         # reboot server
         self.manager.servers_client.reboot_server(server.id, type='HARD')
@@ -187,11 +172,8 @@ class NuageFloatingIPProprietaryQosTest(base_nuage_qos.NuageQosTestmixin,
             base_nuage_qos.QOS_MTU))
 
         self._test_bandwidth(server, egress_bw=egress_kbps,
+                             ingress_bw=ingress_kbps,
                              test_msg='updated Fip after reboot.')
-        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
-        # self._test_bandwidth(server, egress_bw=egress_kbps,
-        #                      ingress_bw=ingress_kbps,
-        #                      test_msg='updated Fip after reboot.')
 
     @testtools.skipIf(
         not CONF.nuage_feature_enabled.proprietary_fip_rate_limiting,
@@ -232,11 +214,8 @@ class NuageFloatingIPProprietaryQosTest(base_nuage_qos.NuageQosTestmixin,
             nuage_ingress_fip_rate_kbps=ingress_kbps)
 
         self._test_bandwidth(server, egress_bw=egress_kbps,
+                             ingress_bw=ingress_kbps,
                              test_msg='original Fip.')
-        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
-        # self._test_bandwidth(server, egress_bw=egress_kbps,
-        #                      ingress_bw=ingress_kbps,
-        #                      test_msg='original Fip.')
 
         self.delete_server(server.id)
         server2 = self.create_tenant_server(
@@ -254,11 +233,8 @@ class NuageFloatingIPProprietaryQosTest(base_nuage_qos.NuageQosTestmixin,
             nuage_ingress_fip_rate_kbps=ingress_kbps)
 
         self._test_bandwidth(server2, egress_bw=egress_kbps,
+                             ingress_bw=ingress_kbps,
                              test_msg='Updated Fip.')
-        # VRS-47436: No OS ingress RL, no VSD egress fip rate limiting
-        # self._test_bandwidth(server, egress_bw=egress_kbps,
-        #                      ingress_bw=ingress_kbps,
-        #                      test_msg='Updated Fip.')
 
 
 class RateLimitingNuageQosScenarioTest(base_nuage_qos.NuageQosTestmixin,
