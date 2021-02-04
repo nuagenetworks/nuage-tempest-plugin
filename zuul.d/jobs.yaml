@@ -888,3 +888,12 @@
     description: multinode job
     branches: stable/train
     nodeset: openstack-two-node-centos-7
+
+- job:
+    name: networking-nuage-tempest-nova-evacuate
+    parent: networking-nuage-tempest-multinode
+    description: Multinode job for testing nova evacuate with original HV coming back up after a while (VRS testing).
+    branches: .*
+    vars:
+      tempest_test_regex: 'test_nova_evacuate_reboot_hv'
+      tempest_concurrency: 1
