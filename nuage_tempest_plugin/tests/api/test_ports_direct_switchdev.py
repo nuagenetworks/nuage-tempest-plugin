@@ -203,11 +203,6 @@ class SwitchdevPortTest(network_mixin.NetworkMixin, l3.L3Mixin):
         if not Topology.has_switchdev_offload_support():
             raise cls.skipException(
                 "OVS HW offload is not supported in current release")
-        if (cls.vnic_type == 'virtio-forwarder' and not
-                Topology.has_switchdev_virtio_forwarder_support()):
-            raise cls.skipException(
-                "OVS HW offload with virtio forwarder"
-                " not supported in current release")
 
     @classmethod
     def resource_cleanup(cls):
@@ -234,6 +229,12 @@ class SwitchdevPortTest(network_mixin.NetworkMixin, l3.L3Mixin):
 
     def setUp(self):
         super(SwitchdevPortTest, self).setUp()
+
+        if (self.vnic_type == 'virtio-forwarder' and not
+                Topology.has_switchdev_virtio_forwarder_support()):
+            self.skipTest("OVS HW offload with virtio forwarder"
+                          " not supported in current release")
+
         self.clear_binding = {
             'binding:host_id': '',
             'binding:profile': {
