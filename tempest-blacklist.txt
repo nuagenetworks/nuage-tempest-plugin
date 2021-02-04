@@ -7,6 +7,9 @@ neutron_tempest_plugin\.api\.admin\.test_agent_management
 tempest\.api\.network\.admin\.test_agent_management
 tempest\.api\.network\.admin\.test_dhcp_agent_scheduler
 
+# Cirros image can't handle domain-name dhcp option
+neutron_tempest_plugin\.scenario\.test_dhcp\.DHCPTest\.test_extra_dhcp_opts
+
 # Nuage does not support creation of of BOOTP options via non-standard DHCP extensions such as dnsmasq server-ip-address
 neutron_tempest_plugin\.api\.test_extra_dhcp_options\.ExtraDHCPOptionsTestJSON
 tempest\.api\.network\.test_extra_dhcp_options\.ExtraDHCPOptionsTestJSON
