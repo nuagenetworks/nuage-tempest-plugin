@@ -1,14 +1,5 @@
 - hosts: all
   tasks:
-    - name: Upgrade pip
-      become: yes
-      command: pip3 install --upgrade pip
-
-    - name: Install pyOpenSSL
-      become: yes
-      pip:
-        name: pyOpenSSL
-
     - name: Uninstall tox
       become: yes
       pip:
@@ -17,10 +8,7 @@
 
     - name: Install tox with pip3
       become: yes
-      pip:
-        name: tox
-        state: present
-        executable: pip3
+      command: python3 -m pip install tox
 
     - name: Make sure 'wheel' group exists
       become: yes
