@@ -71,8 +71,8 @@ class NuageFloatingIPProprietaryQosTest(base_nuage_qos.NuageQosTestmixin,
         server.send('sudo ip link set dev eth0 mtu {}'.format(
             base_nuage_qos.QOS_MTU))
 
-        egress_kbps = 500
-        ingress_kbps = 1000
+        egress_kbps = 1500
+        ingress_kbps = 2000
         self.update_floatingip(
             server.associated_fip,
             nuage_egress_fip_rate_kbps=egress_kbps,
@@ -83,8 +83,8 @@ class NuageFloatingIPProprietaryQosTest(base_nuage_qos.NuageQosTestmixin,
                              test_msg='original Fip.')
 
         # Update floating ip QOS to new value
-        egress_kbps = 200
-        ingress_kbps = 400
+        egress_kbps = 1200
+        ingress_kbps = 1400
         self.update_floatingip(
             server.associated_fip,
             nuage_egress_fip_rate_kbps=egress_kbps,
@@ -127,8 +127,8 @@ class NuageFloatingIPProprietaryQosTest(base_nuage_qos.NuageQosTestmixin,
         server.send('sudo ip link set dev eth0 mtu {}'.format(
             base_nuage_qos.QOS_MTU))
 
-        egress_kbps = 500
-        ingress_kbps = 1000
+        egress_kbps = 1500
+        ingress_kbps = 2000
         self.update_floatingip(
             server.associated_fip,
             nuage_egress_fip_rate_kbps=egress_kbps,
@@ -151,8 +151,8 @@ class NuageFloatingIPProprietaryQosTest(base_nuage_qos.NuageQosTestmixin,
                              test_msg='original Fip after reboot.')
 
         # Update floating ip QOS to new value
-        egress_kbps = 200
-        ingress_kbps = 400
+        egress_kbps = 1200
+        ingress_kbps = 1400
         self.update_floatingip(
             server.associated_fip,
             nuage_egress_fip_rate_kbps=egress_kbps,
@@ -206,8 +206,8 @@ class NuageFloatingIPProprietaryQosTest(base_nuage_qos.NuageQosTestmixin,
         server.send('sudo ip link set dev eth0 mtu {}'.format(
             base_nuage_qos.QOS_MTU))
 
-        egress_kbps = 500
-        ingress_kbps = 1000
+        egress_kbps = 1500
+        ingress_kbps = 2000
         self.update_floatingip(
             server.associated_fip,
             nuage_egress_fip_rate_kbps=egress_kbps,
@@ -225,8 +225,8 @@ class NuageFloatingIPProprietaryQosTest(base_nuage_qos.NuageQosTestmixin,
         server2.send('sudo ip link set dev eth0 mtu {}'.format(
             base_nuage_qos.QOS_MTU))
 
-        egress_kbps = 1000
-        ingress_kbps = 1500
+        egress_kbps = 2000
+        ingress_kbps = 2500
         self.update_floatingip(
             server2.associated_fip,
             nuage_egress_fip_rate_kbps=egress_kbps,
@@ -275,10 +275,10 @@ class RateLimitingNuageQosScenarioTest(base_nuage_qos.NuageQosTestmixin,
         """
         if 'bandwidth_limit' not in self.list_qos_rule_types():
             self.skipTest('bandwidth_limit rule type is required.')
-        BW_LIMIT_NETWORK = 1000
-        BW_LIMIT_UPDATE_NETWORK = 2000
-        BW_LIMIT_PORT = 1000
-        BW_LIMIT_UPDATE_PORT = 3000
+        BW_LIMIT_NETWORK = 2000
+        BW_LIMIT_UPDATE_NETWORK = 3000
+        BW_LIMIT_PORT = 2000
+        BW_LIMIT_UPDATE_PORT = 4000
 
         network = self.create_network()
         subnet4 = self.create_subnet(network=network)
@@ -368,10 +368,10 @@ class RateLimitingNuageQosScenarioTest(base_nuage_qos.NuageQosTestmixin,
         if 'bandwidth_limit' not in self.list_qos_rule_types():
             self.skipTest('bandwidth_limit rule type is required.')
 
-        BW_LIMIT_NETWORK = 1000
-        BW_LIMIT_PORT = 600
-        BW_LIMIT_FIP = 400
-        BW_LIMIT_UPDATE_PORT = 200
+        BW_LIMIT_NETWORK = 2000
+        BW_LIMIT_PORT = 1600
+        BW_LIMIT_FIP = 1400
+        BW_LIMIT_UPDATE_PORT = 1200
 
         network = self.create_network()
         subnet4 = self.create_subnet(network=network)

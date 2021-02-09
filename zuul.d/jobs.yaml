@@ -873,7 +873,7 @@
     name: networking-nuage-tempest-multinode
     parent: networking-nuage-tempest-multinode-base
     description: multinode job
-    branches: ^((6.0|stable)/(queens|rocky))
+    branches: ^((5.4|6.0|stable)/(queens|rocky))
     nodeset: openstack-two-node-centos-7
     group-vars:
       subnode:
@@ -884,6 +884,5 @@
     name: networking-nuage-tempest-multinode
     parent: networking-nuage-tempest-multinode-base
     description: multinode job
-    branches: ^((6.0|stable)/(stein|train))
+    branches: stable/train
     nodeset: openstack-two-node-centos-7
-
