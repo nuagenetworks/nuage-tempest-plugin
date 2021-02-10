@@ -919,7 +919,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             tenant_id=tenant_id, stateful=stateful, cleanup=cleanup)
 
         # Add rules to the security group
-        rules = self._create_loginable_secgroup_rule(
+        rules = self.create_loginable_secgroup_rule(
             security_group_rules_client=security_group_rules_client,
             secgroup=secgroup,
             security_groups_client=security_groups_client)
@@ -933,7 +933,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                     'direction': direction,
                     'ethertype': 'IPv4'
                 }
-                self.create_security_group_rule(
+                self.create_security_group_rule_with_manager(
                     security_group=secgroup,
                     **ruleset)
         return secgroup
@@ -1013,10 +1013,8 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             stateful=stateful,
             cleanup=cleanup)
 
-    def create_security_group_rule(self, security_group=None, manager=None,
-                                   **kwargs):
-        if 'security_group_id' not in kwargs:
-            security_group = security_group or self.ssh_security_group
+    def create_security_group_rule_with_manager(
+            self, security_group=None, manager=None, **kwargs):
         if security_group:
             security_group_id = kwargs.setdefault('security_group_id',
                                                   security_group['id'])
@@ -1025,7 +1023,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
 
         manager = manager or self.manager
         security_group_rules_client = manager.security_group_rules_client
-        return self._create_security_group_rule(
+        return super(NuageBaseTest, self).create_security_group_rule(
             security_group, security_group_rules_client, **kwargs)
 
     def delete_security_group_rule(self, sg_rule_id, manager=None):
@@ -1052,7 +1050,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             'direction': direction,
             'ethertype': 'ipv' + str(ip_version)
         }
-        self.create_security_group_rule(
+        self.create_security_group_rule_with_manager(
             security_group=sec_grp,
             manager=manager,
             **ruleset)

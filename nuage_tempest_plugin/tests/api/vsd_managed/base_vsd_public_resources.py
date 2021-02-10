@@ -246,7 +246,7 @@ class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
                 port_found = True
                 break
         if not port_found:
-            raise exceptions.NotFound("ERROR: this VM (%s) has no "
+            raise exceptions.NotFound("ERROR: this VM ({}) has no "
                                       "port".format(str(vm_id)))
         else:
             ext_id = cls.nuage_client.get_vsd_external_id(the_port['id'])
@@ -321,7 +321,7 @@ class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
             'net_partition': Topology.def_netpartition,
             'nuagenet': vsd_entity[0]['ID']
         }
-        if gateway_ip is not '':
+        if gateway_ip != '':
             kwargs['gateway'] = gateway_ip
 
         if os_shared_network:
@@ -360,8 +360,8 @@ class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
             # And gateway_ip equals to expected_gateway_ip
             self.assertEqual(str(subnet['gateway_ip']),
                              str(kwargs_expect['expected_gateway_ip']),
-                             message="subnet gateway (%s) != expected value "
-                                     "%s".format(str(subnet['gateway_ip']),
+                             message="subnet gateway ({}) != expected value "
+                                     "{}".format(str(subnet['gateway_ip']),
                                                  kwargs_expect[
                                                      'expected_gateway_ip']))
 
@@ -384,7 +384,7 @@ class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
             vm, vsd_l2dom_unmgd[0]['ID'])
 
         if "expect_vm_ip_addresses_equal" in kwargs_expect:
-            if kwargs_expect['expect_vm_ip_addresses_equal'] is '':
+            if kwargs_expect['expect_vm_ip_addresses_equal'] == '':
                 self.assertIsNone(vm_interface_ip_address)
             else:
                 self.assertEqual(str(vm_interface_ip_address), str(vm_ip_addr),
@@ -420,8 +420,8 @@ class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
             # And gateway_ip equals to expected_gateway_ip
             self.assertEqual(str(subnet['gateway_ip']),
                              str(kwargs_expect['expected_gateway_ip']),
-                             message="subnet gateway (%s) != expected value "
-                                     "%s".format(str(subnet['gateway_ip']),
+                             message="subnet gateway ({}) != expected value "
+                                     "{}".format(str(subnet['gateway_ip']),
                                                  kwargs_expect[
                                                      'expected_gateway_ip']))
 
@@ -444,34 +444,9 @@ class BaseVSDPublicResources(base_vsd_managed_networks.BaseVSDManagedNetwork):
             vm, vsd_l3_dom_subnet[0]['ID'])
 
         if "expect_vm_ip_addresses_equal" in kwargs_expect:
-            if kwargs_expect['expect_vm_ip_addresses_equal'] is '':
+            if kwargs_expect['expect_vm_ip_addresses_equal'] == '':
                 self.assertIsNone(vm_interface_ip_address)
             else:
                 self.assertEqual(str(vm_interface_ip_address), str(vm_ip_addr),
                                  message="VM-interface-IP-address different ()"
                                          " from OS VM Ip address ()!")
-
-    def _create_security_group_for_nuage(self,
-                                         security_group_rules_client=None,
-                                         tenant_id=None,
-                                         namestart='secgroup-smoke',
-                                         security_groups_client=None):
-        if security_group_rules_client is None:
-            security_group_rules_client = self.security_group_rules_client
-        if security_groups_client is None:
-            security_groups_client = self.security_groups_client
-        if tenant_id is None:
-            tenant_id = security_groups_client.tenant_id
-        secgroup = self._create_empty_security_group(
-            namestart=namestart, client=security_groups_client,
-            tenant_id=tenant_id)
-
-        # Add rules to the security group
-        rules = self._create_loginable_secgroup_rule_for_nuage(
-            security_group_rules_client=security_group_rules_client,
-            secgroup=secgroup,
-            security_groups_client=security_groups_client)
-        for rule in rules:
-            self.assertEqual(tenant_id, rule['tenant_id'])
-            self.assertEqual(secgroup['id'], rule['security_group_id'])
-        return secgroup

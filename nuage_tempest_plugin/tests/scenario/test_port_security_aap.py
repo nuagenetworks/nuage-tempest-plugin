@@ -62,10 +62,10 @@ class PortSecAAPTest(NuageBaseTest):
         self.router_attach(router, self.subnet)
         self.keypair = self.create_keypair()
         self.secgroup = self._create_empty_security_group()
-        self.create_security_group_rule(
+        self.create_security_group_rule_with_manager(
             security_group=self.secgroup,
             direction='ingress', ethertype='IPv4', protocol='tcp')
-        self.create_security_group_rule(
+        self.create_security_group_rule_with_manager(
             security_group=self.secgroup,
             direction='ingress', ethertype='IPv4', protocol='icmp')
         # create additional network for L2

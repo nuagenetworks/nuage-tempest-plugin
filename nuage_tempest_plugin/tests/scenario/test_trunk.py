@@ -98,7 +98,7 @@ class TrunkTest(NuageBaseTest):
         self.router_attach(router, self.subnet)
         self.keypair = self.create_keypair()
         self.secgroup = self._create_empty_security_group()
-        self.create_security_group_rule(
+        self.create_security_group_rule_with_manager(
             security_group=self.secgroup,
             direction='ingress', ethertype='IPv4', protocol='tcp')
 
@@ -217,7 +217,7 @@ class TrunkTest(NuageBaseTest):
             should_pass=False)
 
         # allow intra-securitygroup traffic
-        self.create_security_group_rule(
+        self.create_security_group_rule_with_manager(
             security_group=self.secgroup,
             direction='ingress', ethertype='IPv4', protocol='icmp',
             remote_group_id=self.secgroup['id'])

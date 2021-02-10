@@ -133,8 +133,8 @@
         s-proxy: false
         horizon: false
       tempest_plugins:
-        - nuage-tempest-plugin
         - neutron-tempest-plugin
+        - nuage-tempest-plugin
       devstack_local_conf:
         post-config:
           $NEUTRON_CONF:
@@ -643,6 +643,7 @@
         NETWORK_API_EXTENSIONS: "address-scope,agent,agent-resources-synced,allowed-address-pairs,auto-allocated-topology,availability_zone,availability_zone_filter,binding,binding-extended,default-subnetpools,dhcp_agent_scheduler,empty-string-filtering,ext-gw-mode,external-net,extra_dhcp_opt,extraroute,flavors,ip-substring-filtering,ip_allocation,l2_adjacency,multi-provider,net-mtu,net-mtu-writable,net-partition,net-topology,network-ip-availability,network_availability_zone,nuage-external-security-group,nuage-floatingip,nuage-gateway,nuage-l2bridge,nuage-network,nuage-policy-group,nuage-redirect-target,nuage-router,nuage-security-group,nuage-subnet,nuage-vsd-floatingip,pagination,port-mac-address-regenerate,port-security,port-security-groups-filtering,project-id,provider,quota_details,quotas,rbac-policies,rbac-security-groups,revision-if-match,router,security-group,segment,segments-peer-subnet-host-routes,service-type,sorting,standard-attr-description,standard-attr-revisions,standard-attr-segment,standard-attr-tag,standard-attr-timestamp,subnet-segmentid-writable,subnet-service-types,subnet_allocation,subnet_onboard,subnetpool-prefix-ops,trunk,trunk-details,vlan-transparent,vsd-resource,fwaas,fwaasrouterinsertion"
       tempest_plugins:
         - neutron-fwaas
+        - neutron-tempest-plugin
         - nuage-tempest-plugin
 
 - job:
@@ -735,6 +736,7 @@
       tempest_test_regex: '^nuage_tempest_plugin\.tests\.api\.(test_trunk.*|test_trunk_details|test_trunk_negative|test_nuage_hwvtep|ipv6\.(os_managed\.test_nuage_networks|test_os_managed_singlestack_l2_subnets|vsd_managed\.test_ipv6_subnet_l2)|vsd_managed\.test_vsd_managed_network).*'
       tempest_black_regex: '^(?:nuage_tempest_plugin\.tests\.api\.(test_trunk_negative\.(.*test_create_subport_invalid_inherit_network_segmentation_type)|ipv6\.os_managed\.test_nuage_networks\.NuageNetworksIpV6TestAttrs|vsd_managed\.(.*with_vm.*|.*test_link_multi_l2domain_to_network|.*test_link_multi_l3domain_subnets_to_network|.*l3)))'
       tempest_plugins:
+        - neutron-tempest-plugin
         - nuage-tempest-plugin
       devstack_plugins:
         nuage-tempest-plugin: https://github.com/nuagenetworks/nuage-tempest-plugin.git

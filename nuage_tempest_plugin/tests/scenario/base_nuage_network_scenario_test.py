@@ -32,9 +32,9 @@ class NuageNetworkScenarioTest(manager.NetworkScenarioTest):
 
     default_prepare_for_connectivity = True
 
-    def _create_loginable_secgroup_rule(self, security_group_rules_client=None,
-                                        secgroup=None,
-                                        security_groups_client=None):
+    def create_loginable_secgroup_rule(self, security_group_rules_client=None,
+                                       secgroup=None,
+                                       security_groups_client=None):
         """Create loginable security group rule
 
         These rules are intended to permit inbound ssh and icmp
@@ -54,18 +54,18 @@ class NuageNetworkScenarioTest(manager.NetworkScenarioTest):
                 protocol='tcp',
                 port_range_min=22,
                 port_range_max=22,
-                ),
+            ),
             dict(
                 # ping
                 protocol='icmp',
-                )
+            )
         ]
         sec_group_rules_client = security_group_rules_client
         for ruleset in rulesets:
             for r_direction in ['ingress', 'egress']:
                 ruleset['direction'] = r_direction
                 try:
-                    sg_rule = self._create_security_group_rule(
+                    sg_rule = self.create_security_group_rule(
                         sec_group_rules_client=sec_group_rules_client,
                         secgroup=secgroup,
                         security_groups_client=security_groups_client,

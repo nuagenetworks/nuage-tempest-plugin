@@ -96,7 +96,7 @@ class DualstackOsMgdConnectivityTest(DualstackOsMgdConnectivityTestBase):
 
         # and re-add v6 ICMP rules, such that DAD can happen
         for direction in ('ingress', 'egress'):
-            self.create_security_group_rule(
+            self.create_security_group_rule_with_manager(
                 dedicated_ssh_sg,
                 direction=direction, ethertype='IPv6', protocol='icmp')
 
@@ -115,7 +115,7 @@ class DualstackOsMgdConnectivityTest(DualstackOsMgdConnectivityTestBase):
         # now add a rule to allow v6 TCP traffic from server 1
         ipv6_ip_prefix = server1.get_server_ip_in_network(
             network['name'], ip_version=6) + '/128'
-        self.create_security_group_rule(
+        self.create_security_group_rule_with_manager(
             dedicated_ssh_sg,
             direction='ingress', ethertype='IPv6', protocol='tcp',
             remote_ip_prefix=ipv6_ip_prefix)

@@ -121,7 +121,7 @@ class SingleStackOsMgdConnectivityTestBase(NuageBaseTest):
                 'port_range_min': 128,
                 'ethertype': 'IPv6'
             }
-        self.create_security_group_rule(sg_hollywood, **kwargs)
+        self.create_security_group_rule_with_manager(sg_hollywood, **kwargs)
 
         sg_actor = self.create_security_group()
         for sg_rule in sg_actor['security_group_rules']:
@@ -140,7 +140,7 @@ class SingleStackOsMgdConnectivityTestBase(NuageBaseTest):
                 'protocol': 'ipv6-icmp',
                 'ethertype': 'IPv6'
             }
-        self.create_security_group_rule(sg_actor, **kwargs)
+        self.create_security_group_rule_with_manager(sg_actor, **kwargs)
 
         port_hollywood = self.create_port(
             network=network,
