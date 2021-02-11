@@ -74,7 +74,7 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
         """Test migration QOS when using NOVA flavor
 
         """
-        BW_LIMIT_NOVA = 1000
+        BW_LIMIT_NOVA = 2000
         BW_LIMIT_NOVA_FLAVOR = BW_LIMIT_NOVA // 8
 
         network = self.create_network()
@@ -140,10 +140,10 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
         Test migration QOS when using NOVA flavor and fip rate limiting
 
         """
-        BW_LIMIT_NOVA = 1000
+        BW_LIMIT_NOVA = 2000
         BW_LIMIT_NOVA_FLAVOR = BW_LIMIT_NOVA // 8
-        BW_LIMIT_FIP_EGRESS = 500
-        BW_LIMIT_FIP_INGRESS = 250
+        BW_LIMIT_FIP_EGRESS = 1500
+        BW_LIMIT_FIP_INGRESS = 1250
 
         network = self.create_network()
         subnet4 = self.create_subnet(network=network)
@@ -213,9 +213,9 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
         - Update Flavor after deploy, no datapath impact expected
         - Migrate VM, check original Nova QOS is active
         """
-        BW_LIMIT_NOVA = 1000
+        BW_LIMIT_NOVA = 2000
         BW_LIMIT_NOVA_FLAVOR = BW_LIMIT_NOVA // 8
-        BW_LIMIT_NOVA_UPDATE = 500
+        BW_LIMIT_NOVA_UPDATE = 1500
         BW_LIMIT_NOVA_UPDATE_FLAVOR = BW_LIMIT_NOVA_UPDATE // 8
 
         network = self.create_network()
@@ -300,12 +300,12 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
         - Migrate VM, check FIP rate limit is still active
 
         """
-        BW_LIMIT_NOVA = 1000
+        BW_LIMIT_NOVA = 2000
         BW_LIMIT_NOVA_FLAVOR = BW_LIMIT_NOVA // 8
-        BW_LIMIT_NOVA_UPDATE = 200
+        BW_LIMIT_NOVA_UPDATE = 1200
         BW_LIMIT_NOVA_UPDATE_FLAVOR = BW_LIMIT_NOVA_UPDATE // 8
-        BW_LIMIT_FIP_EGRESS = 500
-        BW_LIMIT_FIP_INGRESS = 250
+        BW_LIMIT_FIP_EGRESS = 1500
+        BW_LIMIT_FIP_INGRESS = 1250
 
         network = self.create_network()
         subnet4 = self.create_subnet(network=network)
@@ -390,12 +390,12 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
         Test NOVA QOS with fip rate limiting interaction
 
         """
-        BW_LIMIT_NOVA = 1000
+        BW_LIMIT_NOVA = 2000
         BW_LIMIT_NOVA_FLAVOR = BW_LIMIT_NOVA // 8
-        BW_LIMIT_FIP_EGRESS = 500
-        BW_LIMIT_FIP_INGRESS = 250
-        BW_LIMIT_FIP_EGRESS_UPDATE = 200
-        BW_LIMIT_FIP_INGRESS_UPDATE = 100
+        BW_LIMIT_FIP_EGRESS = 1500
+        BW_LIMIT_FIP_INGRESS = 1250
+        BW_LIMIT_FIP_EGRESS_UPDATE = 1200
+        BW_LIMIT_FIP_INGRESS_UPDATE = 1100
 
         network = self.create_network()
         subnet4 = self.create_subnet(network=network)
@@ -464,12 +464,12 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
         """Test QOS when using NOVA flavor, with nuage fip rate limiting
 
         """
-        BW_LIMIT_NOVA = 1000
+        BW_LIMIT_NOVA = 2000
         BW_LIMIT_NOVA_FLAVOR = BW_LIMIT_NOVA // 8
-        BW_LIMIT_FIP_EGRESS = 500
-        BW_LIMIT_FIP_INGRESS = 250
-        BW_LIMIT_FIP_EGRESS_UPDATE = 200
-        BW_LIMIT_FIP_INGRESS_UPDATE = 100
+        BW_LIMIT_FIP_EGRESS = 1500
+        BW_LIMIT_FIP_INGRESS = 1250
+        BW_LIMIT_FIP_EGRESS_UPDATE = 1200
+        BW_LIMIT_FIP_INGRESS_UPDATE = 1100
 
         network = self.create_network()
         subnet4 = self.create_subnet(network=network)
@@ -583,12 +583,12 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
         associated fip.
 
         """
-        BW_LIMIT_NOVA = 1000
+        BW_LIMIT_NOVA = 2000
         BW_LIMIT_NOVA_FLAVOR = BW_LIMIT_NOVA // 8
-        BW_LIMIT_FIP_EGRESS = 500
-        BW_LIMIT_FIP_INGRESS = 250
-        BW_LIMIT_FIP_EGRESS_UPDATE = 200
-        BW_LIMIT_FIP_INGRESS_UPDATE = 100
+        BW_LIMIT_FIP_EGRESS = 1500
+        BW_LIMIT_FIP_INGRESS = 1250
+        BW_LIMIT_FIP_EGRESS_UPDATE = 1200
+        BW_LIMIT_FIP_INGRESS_UPDATE = 1100
 
         network = self.create_network()
         subnet4 = self.create_subnet(network=network)
@@ -652,12 +652,12 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
         associated fip.
 
         """
-        BW_LIMIT_NOVA = 1000
+        BW_LIMIT_NOVA = 2000
         BW_LIMIT_NOVA_FLAVOR = BW_LIMIT_NOVA // 8
-        BW_LIMIT_FIP_EGRESS1 = 500
-        BW_LIMIT_FIP_INGRESS1 = 250
-        BW_LIMIT_FIP_EGRESS2 = 200
-        BW_LIMIT_FIP_INGRESS2 = 100
+        BW_LIMIT_FIP_EGRESS1 = 1500
+        BW_LIMIT_FIP_INGRESS1 = 1250
+        BW_LIMIT_FIP_EGRESS2 = 1200
+        BW_LIMIT_FIP_INGRESS2 = 1100
 
         network1 = self.create_network()
         cidr1 = data_utils.gimme_a_cidr()
