@@ -919,10 +919,18 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             tenant_id=tenant_id, stateful=stateful, cleanup=cleanup)
 
         # Add rules to the security group
-        rules = self.create_loginable_secgroup_rule(
-            security_group_rules_client=security_group_rules_client,
-            secgroup=secgroup,
-            security_groups_client=security_groups_client)
+        try:
+            rules = self.create_loginable_secgroup_rule(
+                security_group_rules_client=security_group_rules_client,
+                secgroup=secgroup,
+                security_groups_client=security_groups_client)
+        except AttributeError:
+            # In queens/rocky-em this function is defined as
+            # _create_loginable_secgroup_rule
+            rules = self._create_loginable_secgroup_rule(
+                security_group_rules_client=security_group_rules_client,
+                secgroup=secgroup,
+                security_groups_client=security_groups_client)
         for rule in rules:
             self.assertEqual(tenant_id, rule['tenant_id'])
             self.assertEqual(secgroup['id'], rule['security_group_id'])
@@ -1023,8 +1031,15 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
 
         manager = manager or self.manager
         security_group_rules_client = manager.security_group_rules_client
-        return super(NuageBaseTest, self).create_security_group_rule(
-            security_group, security_group_rules_client, **kwargs)
+        try:
+            sg_rule = self.create_security_group_rule(
+                security_group, security_group_rules_client, **kwargs)
+        except AttributeError:
+            # In queens/rocky-em this function is defined as
+            # _create_security_group_rule
+            sg_rule = self._create_security_group_rule(
+                security_group, security_group_rules_client, **kwargs)
+        return sg_rule
 
     def delete_security_group_rule(self, sg_rule_id, manager=None):
         manager = manager or self.manager

@@ -32,6 +32,20 @@ class NuageNetworkScenarioTest(manager.NetworkScenarioTest):
 
     default_prepare_for_connectivity = True
 
+    def _create_loginable_secgroup_rule(self, security_group_rules_client=None,
+                                        secgroup=None,
+                                        security_groups_client=None):
+        """_create_loginable_secgroup_rule
+
+        On queens-em and rocky-em tempest, the create_loginable_secgroup_rule
+        is called _create_loginable_secgroup_rule. To support both master
+        branch of tempest and queens/rocky-em branch of tempest we refer both
+        to the same implementation.
+
+        """
+        self.create_loginable_secgroup_rule(
+            security_group_rules_client, secgroup, security_groups_client)
+
     def create_loginable_secgroup_rule(self, security_group_rules_client=None,
                                        secgroup=None,
                                        security_groups_client=None):
@@ -65,11 +79,20 @@ class NuageNetworkScenarioTest(manager.NetworkScenarioTest):
             for r_direction in ['ingress', 'egress']:
                 ruleset['direction'] = r_direction
                 try:
-                    sg_rule = self.create_security_group_rule(
-                        sec_group_rules_client=sec_group_rules_client,
-                        secgroup=secgroup,
-                        security_groups_client=security_groups_client,
-                        **ruleset)
+                    try:
+                        sg_rule = self.create_security_group_rule(
+                            sec_group_rules_client=sec_group_rules_client,
+                            secgroup=secgroup,
+                            security_groups_client=security_groups_client,
+                            **ruleset)
+                    except AttributeError:
+                        # In queens/rocky-em this function is defined as
+                        # self._create_security_group_rule
+                        sg_rule = self._create_security_group_rule(
+                            sec_group_rules_client=sec_group_rules_client,
+                            secgroup=secgroup,
+                            security_groups_client=security_groups_client,
+                            **ruleset)
                 except lib_exc.Conflict as ex:
                     # if rule already exist - skip rule and continue
                     msg = 'Security group rule already exists'
