@@ -652,6 +652,7 @@
     branches: .*
     required-projects:
       - OpenStack/networking-testsriov
+    pre-run: playbooks/hwvtep/pre.yaml
     vars:
       devstack_localrc:
         OVS_BRIDGE: br-int

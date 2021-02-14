@@ -1,0 +1,16 @@
+- hosts: all
+  tasks:
+    - name: Remove VRS repo
+      become: yes
+      yum_repository:
+        name: vrs
+        state: absent
+      when: ansible_os_family == "RedHat"
+
+    - name: Remove VRS repo
+      become: yes
+      apt_repository:
+        repo: deb http://{{ mirror_fqdn }}/{{ ansible_distribution | lower }}-nuage/{{ ansible_distribution_release }}/{{ vsp_release }} {{ ansible_distribution_release }} main
+        state: absent
+      when: ansible_os_family == "Debian"
+
