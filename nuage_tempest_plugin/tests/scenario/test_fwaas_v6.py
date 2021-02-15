@@ -317,9 +317,10 @@ class TestFWaaS(fwaas_mixins.FWaaSClientMixin, NuageBaseTest):
         self.router_attach(router, subnet)
         self.router_attach(router, subnet6)
         security_group = self._create_security_group()
-        self.create_security_group_rule(security_group, direction='ingress',
-                                        protocol='tcp', ethertype='IPv6',
-                                        port_range_min=80, port_range_max=9999)
+        self.create_security_group_rule_with_manager(
+            security_group, direction='ingress',
+            protocol='tcp', ethertype='IPv6',
+            port_range_min=80, port_range_max=9999)
         server = self.create_tenant_server([network],
                                            security_groups=[security_group],
                                            prepare_for_connectivity=True)
