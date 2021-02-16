@@ -56,18 +56,6 @@ class TrunkTest(NuageBaseTest):
             prepare_for_connectivity=True)
         return {'port': port, 'trunk': trunk, 'server': server}
 
-    def _is_port_down(self, port_id):
-        p = self.plugin_network_client.show_port(port_id)['port']
-        return p['status'] == 'DOWN'
-
-    def _is_port_active(self, port_id):
-        p = self.plugin_network_client.show_port(port_id)['port']
-        return p['status'] == 'ACTIVE'
-
-    def _is_trunk_active(self, trunk_id):
-        t = self.plugin_network_client.show_trunk(trunk_id)['trunk']
-        return t['status'] == 'ACTIVE'
-
     def _create_server_with_port_and_subport(self, subport_network, vlan_tag):
         parent_port = self.create_port(self.network, security_groups=[
             self.secgroup['id']])
@@ -131,25 +119,16 @@ class TrunkTest(NuageBaseTest):
 
         trunk1_id, trunk2_id = server1['trunk']['id'], server2['trunk']['id']
         # trunks should transition to ACTIVE without any subports
-        utils.wait_until_true(
-            lambda: self._is_trunk_active(trunk1_id),
-            exception=RuntimeError("Timed out waiting for trunk %s to "
-                                   "transition to ACTIVE." % trunk1_id))
-        utils.wait_until_true(
-            lambda: self._is_trunk_active(trunk2_id),
-            exception=RuntimeError("Timed out waiting for trunk %s to "
-                                   "transition to ACTIVE." % trunk2_id))
+        self.wait_for_trunk_status(trunk1_id, 'ACTIVE')
+        self.wait_for_trunk_status(trunk2_id, 'ACTIVE')
 
         # add all subports to server1
-        self.plugin_network_client.add_subports(trunk1_id, subports)
+        self.add_trunk_subports(subports, trunk1_id)
         # ensure trunk transitions to ACTIVE
-        utils.wait_until_true(
-            lambda: self._is_trunk_active(trunk1_id),
-            exception=RuntimeError("Timed out waiting for trunk %s to "
-                                   "transition to ACTIVE." % trunk1_id))
+        self.wait_for_trunk_status(trunk1_id, 'ACTIVE')
         # ensure all underlying subports transitioned to ACTIVE
         for s in subports:
-            utils.wait_until_true(lambda: self._is_port_active(s['port_id']))
+            self.wait_for_port_status(s['port_id'], 'ACTIVE')
 
         # ensure main dataplane wasn't interrupted
         server1['server'].validate_authentication()
@@ -158,26 +137,14 @@ class TrunkTest(NuageBaseTest):
         self.plugin_network_client.remove_subports(trunk1_id, subports)
         # ensure all subports go down
         for s in subports:
-            utils.wait_until_true(
-                lambda: self._is_port_down(s['port_id']),
-                exception=RuntimeError("Timed out waiting for subport %s to "
-                                       "transition to DOWN." % s['port_id']))
+            self.wait_for_port_status(s['port_id'], 'DOWN')
         self.plugin_network_client.add_subports(trunk2_id, subports)
         # wait for both trunks to go back to ACTIVE
-        utils.wait_until_true(
-            lambda: self._is_trunk_active(trunk1_id),
-            exception=RuntimeError("Timed out waiting for trunk %s to "
-                                   "transition to ACTIVE." % trunk1_id))
-        utils.wait_until_true(
-            lambda: self._is_trunk_active(trunk2_id),
-            exception=RuntimeError("Timed out waiting for trunk %s to "
-                                   "transition to ACTIVE." % trunk2_id))
+        self.wait_for_trunk_status(trunk1_id, 'ACTIVE')
+        self.wait_for_trunk_status(trunk2_id, 'ACTIVE')
         # ensure subports come up on other trunk
         for s in subports:
-            utils.wait_until_true(
-                lambda: self._is_port_active(s['port_id']),
-                exception=RuntimeError("Timed out waiting for subport %s to "
-                                       "transition to ACTIVE." % s['port_id']))
+            self.wait_for_port_status(s['port_id'], 'ACTIVE')
 
         # final connectivity check
         server1['server'].validate_authentication()

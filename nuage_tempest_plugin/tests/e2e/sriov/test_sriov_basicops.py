@@ -331,18 +331,6 @@ class SriovTrunkTest(NuageBaseTest):
             security_group=self.secgroup,
             direction='ingress', ethertype='IPv4', protocol='tcp')
 
-    def _is_port_down(self, port_id):
-        p = self.plugin_network_client.show_port(port_id)['port']
-        return p['status'] == 'DOWN'
-
-    def _is_port_active(self, port_id):
-        p = self.plugin_network_client.show_port(port_id)['port']
-        return p['status'] == 'ACTIVE'
-
-    def _is_trunk_active(self, trunk_id):
-        t = self.plugin_network_client.show_trunk(trunk_id)['trunk']
-        return t['status'] == 'ACTIVE'
-
     def _create_server_with_direct_trunk_port(self):
         kwargs = {'config_drive': True}
         port = self.create_port(self.network,
@@ -413,51 +401,29 @@ class SriovTrunkTest(NuageBaseTest):
 
         trunk1_id, trunk2_id = server1['trunk']['id'], server2['trunk']['id']
         # trunks should transition to ACTIVE without any subports
-        data_utils.wait_until_true(
-            lambda: self._is_trunk_active(trunk1_id),
-            exception=RuntimeError("Timed out waiting for trunk %s to "
-                                   "transition to ACTIVE." % trunk1_id))
-        data_utils.wait_until_true(
-            lambda: self._is_trunk_active(trunk2_id),
-            exception=RuntimeError("Timed out waiting for trunk %s to "
-                                   "transition to ACTIVE." % trunk2_id))
+        self.wait_for_trunk_status(trunk1_id, 'ACTIVE')
+        self.wait_for_trunk_status(trunk2_id, 'ACTIVE')
 
         # add all subports to server1
-        self.plugin_network_client.add_subports(trunk1_id, subports)
+        self.add_trunk_subports(subports, trunk1_id)
         # ensure trunk transitions to ACTIVE
-        data_utils.wait_until_true(
-            lambda: self._is_trunk_active(trunk1_id),
-            exception=RuntimeError("Timed out waiting for trunk %s to "
-                                   "transition to ACTIVE." % trunk1_id))
+        self.wait_for_trunk_status(trunk1_id, 'ACTIVE')
         # ensure all underlying subports transitioned to ACTIVE
         for s in subports:
-            data_utils.wait_until_true(
-                lambda: self._is_port_active(s['port_id']))
+            self.wait_for_port_status(s['port_id'], 'ACTIVE')
 
         # move subports over to other server
         self.plugin_network_client.remove_subports(trunk1_id, subports)
         # ensure all subports go down
         for s in subports:
-            data_utils.wait_until_true(
-                lambda: self._is_port_down(s['port_id']),
-                exception=RuntimeError("Timed out waiting for subport %s to "
-                                       "transition to DOWN." % s['port_id']))
-        self.plugin_network_client.add_subports(trunk2_id, subports)
+            self.wait_for_port_status(s['port_id'], 'DOWN')
+        self.add_trunk_subports(subports, trunk2_id)
         # wait for both trunks to go back to ACTIVE
-        data_utils.wait_until_true(
-            lambda: self._is_trunk_active(trunk1_id),
-            exception=RuntimeError("Timed out waiting for trunk %s to "
-                                   "transition to ACTIVE." % trunk1_id))
-        data_utils.wait_until_true(
-            lambda: self._is_trunk_active(trunk2_id),
-            exception=RuntimeError("Timed out waiting for trunk %s to "
-                                   "transition to ACTIVE." % trunk2_id))
+        self.wait_for_trunk_status(trunk1_id, 'ACTIVE')
+        self.wait_for_trunk_status(trunk2_id, 'ACTIVE')
         # ensure subports come up on other trunk
         for s in subports:
-            data_utils.wait_until_true(
-                lambda: self._is_port_active(s['port_id']),
-                exception=RuntimeError("Timed out waiting for subport %s to "
-                                       "transition to ACTIVE." % s['port_id']))
+            self.wait_for_port_status(s['port_id'], 'ACTIVE')
 
     @testtools.skipUnless(
         CONF.nuage_sut.image_is_advanced,
