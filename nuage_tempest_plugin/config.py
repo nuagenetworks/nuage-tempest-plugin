@@ -119,6 +119,12 @@ NuageSutGroup = [
                default='wbx',
                choices=['wbx', 'cisco'],
                help="The type of VTEP gateway"),
+    cfg.StrOpt('undercloud_name',
+               default='boreas',
+               help='Name of the undercloud where the hypervisors of the'
+                    'openstack SUT are running. This is used by openstacksdk'
+                    'to connect to the undercloud controller and '
+                    'manage the hypervisor lifecycle.'),
 
     # TEST EXECUTION RELATED SETTINGS
     cfg.IntOpt('max_cloudinit_polling_time',
