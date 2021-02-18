@@ -39,7 +39,8 @@ class NuageQosTestmixin(object):
     """
     DOWNLOAD_DURATION = 10
     BUFFER_SIZE = 512  # Bytes
-    TOLERANCE_FACTOR = 0.20  # within 20 % of expected bw
+    TOLERANCE_FACTOR_EGRESS = 0.20  # within 20 % of expected bw
+    TOLERANCE_FACTOR_INGRESS = 0.50  # within 50 % of expected bw
     DEST_PORT = 1789
 
     @staticmethod
@@ -150,10 +151,14 @@ class NuageQosTestmixin(object):
             time_elapsed = time.time() - start_time
             kbps_measured = (total_bytes / time_elapsed) / 125
             print(kbps_measured)
+            if direction == 'egress':
+                tolerance_factor = self.TOLERANCE_FACTOR_EGRESS
+            else:
+                tolerance_factor = self.TOLERANCE_FACTOR_INGRESS
             min_bw = (configured_bw_kbps -
-                      configured_bw_kbps * self.TOLERANCE_FACTOR)
+                      configured_bw_kbps * tolerance_factor)
             max_bw = (configured_bw_kbps +
-                      configured_bw_kbps * self.TOLERANCE_FACTOR)
+                      configured_bw_kbps * tolerance_factor)
             LOG.debug('time_elapsed = %(time_elapsed).16f, '
                       'kbps_measured = %(kbps_measured)d, '
                       'expected bw = %(min_bw)d-%(max_bw)d.',
