@@ -142,9 +142,8 @@ class CLIClientTestCase(test.BaseTestCase):
             cls.project['id'], cls.user['id'])['roles']
 
         if len(roles) == 0:
-            # assert len(available_roles) > 0
-            # role_name = available_roles[0]['name']
-            role_name = CONF.auth.tempest_roles[0]
+            role_name = (CONF.auth.tempest_roles[0] if
+                         CONF.auth.tempest_roles else 'member')
             cls.creds_client.assign_user_role(
                 project=cls.project,
                 user=cls.user,
