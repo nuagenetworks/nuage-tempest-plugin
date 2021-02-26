@@ -117,7 +117,7 @@ class ExternalIdForVmTest(
 
     def test_with_vm_on_neutron_port_matching_vsd(self):
         # Create a network
-        network = self._create_network(namestart='network-')
+        network = self.create_network(namestart='network-')
         subnet = self.create_subnet(network, namestart='subnet-')
         self.assertIsNotNone(subnet)  # dummy check to use local variable
 
@@ -134,7 +134,7 @@ class ExternalIdForVmTest(
 
     def test_with_vm_on_neutron_network_matching_vsd(self):
         # Create a network
-        network = self._create_network(namestart='network-')
+        network = self.create_network(namestart='network-')
         subnet = self.create_subnet(network, namestart='subnet-')
         self.assertIsNotNone(subnet)  # dummy check to use local variable
 
@@ -185,7 +185,7 @@ class ExternalIdForVmTest(
         self.addCleanup(
             self.nuage_client.delete_l2domain, vsd_l2domain['ID'])
 
-        network = self._create_network(namestart='network-')
+        network = self.create_network(namestart='network-')
         subnet_kwargs = {
             'name': network['name'],
             'cidr': '10.10.100.0/24',
@@ -234,7 +234,7 @@ class ExternalIdForVmTest(
         self.addCleanup(
             self.nuage_client.delete_l2domain, vsd_l2domain['ID'])
 
-        network = self._create_network(namestart='network-')
+        network = self.create_network(namestart='network-')
         subnet_kwargs = {
             'name': network['name'],
             'cidr': '10.10.100.0/24',

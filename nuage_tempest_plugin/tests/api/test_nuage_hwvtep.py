@@ -85,7 +85,7 @@ class TestNuageHWVTEP(NuageBaseTest):
     def _create_network_subnets(self, is_ipv4, is_ipv6, is_vsd_managed,
                                 is_flat):
         # Use fake network to get tenant_id of current user
-        network = self._create_network()
+        network = self.create_network()
         project_id = network['project_id']
         if is_flat:
             kwargs = {'provider:network_type': 'flat',

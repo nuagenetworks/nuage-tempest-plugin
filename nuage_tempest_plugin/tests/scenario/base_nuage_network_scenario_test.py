@@ -32,6 +32,21 @@ class NuageNetworkScenarioTest(manager.NetworkScenarioTest):
 
     default_prepare_for_connectivity = True
 
+    def create_network(self, networks_client=None,
+                       project_id=None,
+                       namestart='network-smoke-',
+                       port_security_enabled=True, **net_dict):
+        # deal with https://review.opendev.org/c/openstack/tempest/+/776933
+        parent = super(NuageNetworkScenarioTest, self)
+        try:
+            return parent.create_network(
+                networks_client, project_id, namestart, port_security_enabled,
+                **net_dict)
+        except AttributeError:
+            return parent._create_network(
+                networks_client, project_id, namestart, port_security_enabled,
+                **net_dict)
+
     def _create_loginable_secgroup_rule(self, security_group_rules_client=None,
                                         secgroup=None,
                                         security_groups_client=None):
