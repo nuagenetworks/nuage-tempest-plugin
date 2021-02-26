@@ -130,18 +130,6 @@ class NuageExtraDHCPOptionsNegativeTest(
                               self.os_l2_port['id'],
                               extra_dhcp_opts)
 
-    def _create_network(self, external=False):
-        if external:
-            post_body = {'name': data_utils.rand_name('ext-network'),
-                         'router:external': external}
-        else:
-            post_body = {'name': data_utils.rand_name('network')}
-        body = self.admin_networks_client.create_network(**post_body)
-        network = body['network']
-        self.addCleanup(self.admin_networks_client.delete_network,
-                        network['id'])
-        return network
-
     def test_nuage_create_port_with_dhcp_opts_001_netmask_neg(self):
         network_id = self.osmgd_l2_network['id']
         self._assert_create_update_port_with_bad_dhcp_opts_neg(
@@ -592,7 +580,9 @@ class NuageExtraDHCPOptionsNegativeTest(
     def test_nuage_create_port_with_dhcp_opts_external_network_neg(self):
         # Try to create a port with  extra dhcp options on an external network
         # Should fail, as DHCP is handled externally
-        ext_network = self._create_network(external=True)
+        post_body = {'name': data_utils.rand_name('ext-network'),
+                     'router:external': True}
+        ext_network = self.create_network(**post_body)
         # subnet is needed for trying port creation
         ext_subnet = self.create_subnet(ext_network,
                                         manager=self.admin_manager)

@@ -16,20 +16,16 @@
 from netaddr import IPNetwork
 
 from tempest.lib.common.utils import data_utils
+from tempest.scenario import manager
 
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants as n_constants
 from nuage_tempest_plugin.lib.utils import exceptions as n_exceptions
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.tests.api.external_id.external_id import ExternalId
-from nuage_tempest_plugin.tests.scenario \
-    import base_nuage_network_scenario_test
-
-LOG = Topology.get_logger(__name__)
 
 
-class ExternalIdForVmTest(
-        base_nuage_network_scenario_test.NuageNetworkScenarioTest):
+class ExternalIdForVmTest(manager.NetworkScenarioTest):
 
     class MatchingVsdVm(object):
         def __init__(self, outer, vm):
@@ -114,6 +110,21 @@ class ExternalIdForVmTest(
             key_name=keypair['name'],
             wait_until='ACTIVE')
         return server
+
+    def create_network(self, networks_client=None,
+                       project_id=None,
+                       namestart='network-smoke-',
+                       port_security_enabled=True, **net_dict):
+        # deal with https://review.opendev.org/c/openstack/tempest/+/776933
+        parent = super(ExternalIdForVmTest, self)
+        try:
+            return parent.create_network(
+                networks_client, project_id, namestart, port_security_enabled,
+                **net_dict)
+        except AttributeError:
+            return parent._create_network(
+                networks_client, project_id, namestart, port_security_enabled,
+                **net_dict)
 
     def test_with_vm_on_neutron_port_matching_vsd(self):
         # Create a network

@@ -316,7 +316,7 @@ class TestFWaaS(fwaas_mixins.FWaaSClientMixin, NuageBaseTest):
         subnet6 = self.create_subnet(network, ip_version=6, cidr=cidrv6)
         self.router_attach(router, subnet)
         self.router_attach(router, subnet6)
-        security_group = self._create_security_group()
+        security_group = self.create_security_group()
         self.create_security_group_rule_with_manager(
             security_group, direction='ingress',
             protocol='tcp', ethertype='IPv6',

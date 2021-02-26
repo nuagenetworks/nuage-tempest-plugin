@@ -992,6 +992,17 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
                             manager=manager)
         return sg
 
+    def create_open_ssh_security_group(self, sg_name=None, manager=None,
+                                       stateful=True, cleanup=True):
+        manager = manager or self.manager
+        return self._create_security_group(
+            namestart=sg_name or 'tempest-open-ssh',
+            security_group_rules_client=(
+                manager.security_group_rules_client),
+            security_groups_client=manager.security_groups_client,
+            stateful=stateful,
+            cleanup=cleanup)
+
     def get_security_group(self, sg_id, manager=None):
         manager = manager or self.manager
         client = manager.security_groups_client
@@ -1009,17 +1020,6 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             client.delete_security_group(sg_id)
         except lib_exc.NotFound:
             pass
-
-    def create_open_ssh_security_group(self, sg_name=None, manager=None,
-                                       stateful=True, cleanup=True):
-        manager = manager or self.manager
-        return self._create_security_group(
-            namestart=sg_name or 'tempest-open-ssh',
-            security_group_rules_client=(
-                manager.security_group_rules_client),
-            security_groups_client=manager.security_groups_client,
-            stateful=stateful,
-            cleanup=cleanup)
 
     def create_security_group_rule_with_manager(
             self, security_group=None, manager=None, **kwargs):

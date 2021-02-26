@@ -1198,7 +1198,7 @@ class VSDManagedPolicyGroupsTest(
                         policy_group[0]['ID'])
 
         # And I have created a security group on the OS subnet
-        security_group = self._create_security_group()
+        security_group = self.create_security_group()
 
         # And I have a redirect target
         os_redirect_target = self._create_redirect_target_in_l2_subnet(subnet)
