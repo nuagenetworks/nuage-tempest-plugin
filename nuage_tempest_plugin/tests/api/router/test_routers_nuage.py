@@ -1022,6 +1022,57 @@ class NuageRoutersAdminTest(NuageAdminNetworksTest):
                           name=data_utils.rand_name('router-'),
                           nuage_backhaul_rd="2:-3")
 
+    def test_create_router_different_owner_attach(self):
+        """"test_create_router_admin_attach
+
+        Test attaching subnet to router with a different tenant than the
+        owner . Upon delete of router, appropriate error should be
+        thrown as a port is still attached.
+        Admin: owner of network, subnet, port (of attached subnet)
+        Normal user: owner of router
+        OPENSTACK-3001
+        """
+        body = self.admin_networks_client.create_network(name='test-admin')
+        network = body['network']
+        self.addCleanup(self.admin_networks_client.delete_network,
+                        network['id'])
+        self.create_subnet(network, client=self.admin_subnets_client)
+        # Add router interface with subnet id
+        router = self._create_router(
+            data_utils.rand_name('router-'), True)
+
+        # Create router interface as admin
+        body = self.admin_ports_client.create_port(network_id=network['id'])
+        port = body['port']
+        self.admin_routers_client.add_router_interface(
+            router['id'], port_id=port['id'])
+        self.addCleanup(self.admin_routers_client.remove_router_interface,
+                        router['id'], port_id=port['id'])
+
+        # VSD validation
+        nuage_domain = self.nuage_client.get_l3domain(
+            filters='externalID', filter_values=router['id'])
+        self.assertEqual(1, len(nuage_domain),
+                         "Nuage l3 domain not created")
+        self.assertEqual(
+            nuage_domain[0]['description'], router['name'])
+
+        # Delete router as normal user, resulting in error
+        self.assertRaisesRegex(exceptions.Conflict,
+                               "Router {} still has ports".format(
+                                   router['id']),
+                               self.routers_client.delete_router,
+                               router['id'])
+        # VSD validation
+        # Verify Router is still there in VSD
+        nuage_domain = self.nuage_client.get_l3domain(
+            filters='externalID', filter_values=router['id'])
+        self.assertEqual(1, len(nuage_domain),
+                         "Nuage domain was deleted during failed router "
+                         "delete call")
+        self.assertEqual(
+            nuage_domain[0]['description'], router['name'])
+
 
 class NuageRoutersV6Test(NuageRoutersTest):
 
