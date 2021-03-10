@@ -700,16 +700,16 @@
             ml2:
               type_drivers: flat,vlan,local,vxlan
             ml2_type_vlan:
-              network_vlan_ranges: physnet1:1:1000,physnet2:1:1000,physnet3:1:1000
+              network_vlan_ranges: physnet1:1:1000,physnet2:1:1000,physnet3:1:1000,physnet4:1:1000
             ml2_type_flat:
-              flat_networks: physnet1,physnet2,physnet3,physnet4
+              flat_networks: physnet1,physnet2,physnet3,physnet4,physnet5
             ml2_type_vxlan:
               vni_ranges: 1:2000
             agent:
               tunnel_types: vxlan
             ovs:
               tunnel_bridge: br-tun
-              bridge_mappings: physnet1:br-ex,physnet2:br-active,physnet3:br-standby
+              bridge_mappings: physnet1:br-ex,physnet2:br-active,physnet3:br-standby,physnet4:br-srl
           $NEUTRON_L3_CONF:
             agent:
               availability_zone: nova

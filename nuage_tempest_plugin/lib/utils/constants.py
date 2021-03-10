@@ -8,6 +8,9 @@
 #
 # GATEWAY
 GATEWAY = 'gateways'
+GATEWAY_TEMPLATES = 'gatewaytemplates'
+GNMI_PROFILES = 'gnmiprofiles'
+
 
 # TODO(team): duplicate
 REDUNDANCY_GROUPS = 'redundancygroups'
@@ -137,6 +140,7 @@ SW_GW_TYPES = ['VRSG', 'VRSB']
 
 GW_TYPES_UNDER_TEST = ['VRSG', 'NUAGE_210_WBX_32_Q']
 GW_TYPES_UNDER_TEST_5_3 = ['VRSG', 'VSG']
+SRL_GW_TYPE = 'SR_LINUX'
 
 # Vport type
 HOST_VPORT = 'HOST'

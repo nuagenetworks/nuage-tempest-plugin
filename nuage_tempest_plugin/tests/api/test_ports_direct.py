@@ -15,7 +15,9 @@
 import contextlib
 
 from netaddr import IPNetwork
+import random
 
+import testscenarios
 import testtools
 from testtools import matchers
 
@@ -28,11 +30,14 @@ from nuage_tempest_plugin.lib.test.nuage_test import skip_because
 from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import constants
 from nuage_tempest_plugin.lib.utils import data_utils as lib_utils
+from nuage_tempest_plugin.lib.utils import exceptions
 from nuage_tempest_plugin.services.nuage_client import NuageRestClient
 from nuage_tempest_plugin.tests.api.external_id.external_id import ExternalId
 
 CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
+
+load_tests = testscenarios.load_tests_apply_scenarios
 
 
 class SriovTopology(object):
@@ -187,19 +192,30 @@ class SriovTopology(object):
 
 
 class SubPortTopology(object):
-        def __init__(self, subport_network, subport_subnet,
-                     subport_subnet_ipv6, sub_port):
-            super(SubPortTopology, self).__init__()
-            self.subport_network = subport_network
-            self.subport_subnet = subport_subnet
-            self.subport_subnet_ipv6 = subport_subnet_ipv6
-            self.direct_subport = sub_port
+    def __init__(self, subport_network, subport_subnet,
+                 subport_subnet_ipv6, sub_port):
+        super(SubPortTopology, self).__init__()
+        self.subport_network = subport_network
+        self.subport_subnet = subport_subnet
+        self.subport_subnet_ipv6 = subport_subnet_ipv6
+        self.direct_subport = sub_port
 
 
 class PortsDirectTest(network_mixin.NetworkMixin, l3.L3Mixin):
 
     credentials = ['admin']
+
     personality = 'NUAGE_210_WBX_48_S'
+
+    if Topology.from_nuage('20.10R4'):
+        scenarios = [
+            ('WBX', {'personality': 'NUAGE_210_WBX_48_S'}),
+            ('SRL', {'personality': 'SR_LINUX'}),
+        ]
+    else:
+        scenarios = [
+            ('WBX', {'personality': 'NUAGE_210_WBX_48_S'}),
+        ]
 
     @classmethod
     def setUpClass(cls):
@@ -226,9 +242,34 @@ class PortsDirectTest(network_mixin.NetworkMixin, l3.L3Mixin):
         super(PortsDirectTest, cls).resource_setup()
         # Only gateway here, to support parallel testing each tests makes its
         # own gateway port so no VLAN overlap should occur.
-        cls.gateway = cls.vsd_client.create_gateway(
-            data_utils.rand_name(name='vsg'),
-            data_utils.rand_name(name='sys_id'), cls.personality)[0]
+        if cls.personality == 'SR_LINUX':
+            # First create a dummy gNMI profile
+            name = data_utils.rand_name('SRL')
+            gnmi_profile = cls.vsd_client.create_gnmi_profile(name)[0]
+            cls.addClassCleanup(cls.vsd_client.delete_gnmi_profile,
+                                gnmi_profile['ID'])
+            # Create template
+            gw_template = cls.vsd_client.create_gateway_template(
+                name, cls.personality)[0]
+            cls.addClassCleanup(cls.vsd_client.delete_gateway_template,
+                                gw_template['ID'])
+
+            ip_address = '{}.{}.{}.{}'.format(random.randint(10, 20),
+                                              random.randint(3, 254),
+                                              random.randint(3, 254),
+                                              random.randint(3, 254))
+            extra_params = {
+                'associatedGNMIProfileID': gnmi_profile['ID'],
+                'templateID': gw_template['ID'],
+                'managementID': ip_address
+            }
+            cls.gateway = cls.vsd_client.create_gateway(
+                name, data_utils.rand_name(name='sys_id'),
+                cls.personality, extra_params=extra_params)[0]
+        else:
+            cls.gateway = cls.vsd_client.create_gateway(
+                data_utils.rand_name(name='vsg'),
+                data_utils.rand_name(name='sys_id'), cls.personality)[0]
 
         # for VSD managed
         cls.vsd_l2dom_template = []
@@ -237,7 +278,10 @@ class PortsDirectTest(network_mixin.NetworkMixin, l3.L3Mixin):
     @classmethod
     def resource_cleanup(cls):
         super(PortsDirectTest, cls).resource_cleanup()
-        cls.vsd_client.delete_gateway(cls.gateway['ID'])
+        try:
+            cls.vsd_client.delete_gateway(cls.gateway['ID'])
+        except exceptions.NotFound:
+            pass
 
         for vsd_l2domain in cls.vsd_l2domain:
             cls.vsd_client.delete_l2domain(vsd_l2domain['ID'])
