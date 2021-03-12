@@ -14,7 +14,7 @@
 
 import contextlib
 
-from tempest.common.utils import data_utils
+from tempest.lib.common.utils import data_utils
 
 from nuage_tempest_plugin.lib.mixins import base
 from nuage_tempest_plugin.services.bgpvpn import bgpvpn_client
