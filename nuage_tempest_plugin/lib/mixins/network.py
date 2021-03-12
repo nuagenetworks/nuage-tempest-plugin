@@ -15,7 +15,7 @@
 import contextlib
 import netaddr
 
-from tempest.common.utils import data_utils
+from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
 from nuage_tempest_plugin.lib.mixins import base
