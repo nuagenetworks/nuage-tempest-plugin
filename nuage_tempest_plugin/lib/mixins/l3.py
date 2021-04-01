@@ -129,10 +129,6 @@ class L3Mixin(base.BaseMixin):
         except exceptions.NotFound:
             if not ignore_not_found:
                 raise
-        except Exception:
-            # TODO(Tom) Circumventing VSD error here for SRL
-            LOG.error("Error when trying to do subnet detach!")
-            pass
 
     # ---------- Floatingips ----------
 
