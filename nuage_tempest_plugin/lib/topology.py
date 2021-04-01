@@ -208,3 +208,7 @@ class Topology(object):
         # Indicates whether AVRS is deployed with the ovs-fp mech driver
         # One can tell by the OpenStack version (Rocky+ -> True)
         return cls.from_openstack('Rocky')
+
+    @classmethod
+    def has_srl_support(cls):
+        return cls.from_nuage('20.10R4')

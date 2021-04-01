@@ -289,7 +289,7 @@ class TestNuageHWVTEP(NuageBaseTest):
 
         # Force ERROR trunk status
         kwargs = {'provider:network_type': 'flat',
-                  'provider:physical_network': 'physnet4'}
+                  'provider:physical_network': 'physnet5'}
         network = self.create_network(manager=self.admin_manager,
                                       **kwargs)
         self.create_subnet(network, enable_dhcp=False,
@@ -390,3 +390,12 @@ class TestNuageHWVTEPActiveStandby(TestNuageHWVTEP):
                          len(self.plugin_network_client_admin.
                              list_switchport_bindings(
                                  bridge='br-standby')['switchport_bindings']))
+
+
+class TestNuageHWVTEPSrl(TestNuageHWVTEP):
+
+    physnet = 'physnet4'
+
+    @decorators.attr(type='smoke')
+    def test_nuage_hwvtep_os_managed_ipv4_with_vm(self):
+        self._test_hw_vtep(is_vsd_managed=False, is_ipv4=True, is_ipv6=False)

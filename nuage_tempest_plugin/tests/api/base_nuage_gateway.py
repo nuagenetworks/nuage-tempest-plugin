@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 #
+import random
 import time
 import uuid
 
@@ -41,10 +42,28 @@ class BaseNuageGatewayTest(NuageAdminNetworksTest):
         return personality not in n_constants.SW_GW_TYPES
 
     @classmethod
-    def create_gateway(cls, type):
+    def create_gnmi_profile(cls):
+        name = rand_name('tempest-gnmi')
+        gnmi_profile = cls.nuage_client.create_gnmi_profile(name)[0]
+        cls.addClassResourceCleanup(cls.nuage_client.delete_gnmi_profile,
+                                    gnmi_profile['ID'])
+        return gnmi_profile
+
+    @classmethod
+    def create_gateway_template(cls, personality):
+        name = rand_name('tempest-gw-templ')
+        gw_template = cls.nuage_client.create_gateway_template(
+            name, personality)[0]
+        cls.addClassResourceCleanup(cls.nuage_client.delete_gateway_template,
+                                    gw_template['ID'])
+        return gw_template
+
+    @classmethod
+    def create_gateway(cls, personality, **extra_params):
         name = rand_name('tempest-gw')
         gw = cls.nuage_client.create_gateway(
-            name, str(uuid.uuid4()), type, None)
+            name, str(uuid.uuid4()), personality, np_id=None,
+            extra_params=extra_params)
         return gw
 
     @classmethod
@@ -70,8 +89,27 @@ class BaseNuageGatewayTest(NuageAdminNetworksTest):
 
     @classmethod
     def create_test_gateway_topology(cls):
-        for personality in n_constants.GW_TYPES_UNDER_TEST:
-            gw = cls.create_gateway(personality)
+        if Topology.has_srl_support:
+            gw_types = (n_constants.GW_TYPES_UNDER_TEST +
+                        [n_constants.SRL_GW_TYPE])
+        else:
+            gw_types = n_constants.GW_TYPES_UNDER_TEST
+
+        for personality in gw_types:
+            if personality == n_constants.SRL_GW_TYPE:
+                # First create a dummy gNMI profile
+                gnmi_profile = cls.create_gnmi_profile()
+                # Create template
+                gw_template = cls.create_gateway_template(personality)
+                ip_address = '{}.{}.{}.{}'.format(random.randint(10, 20),
+                                                  random.randint(3, 254),
+                                                  random.randint(3, 254),
+                                                  random.randint(3, 254))
+                gw = cls.create_gateway(
+                    personality, associatedGNMIProfileID=gnmi_profile['ID'],
+                    templateID=gw_template['ID'], managementID=ip_address)
+            else:
+                gw = cls.create_gateway(personality)
             cls.gateways.append(gw)
 
         for gateway in cls.gateways:

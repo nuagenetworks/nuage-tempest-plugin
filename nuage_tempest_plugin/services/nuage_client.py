@@ -1067,6 +1067,34 @@ class NuageRestClient(object):
                                        filters, filter_values)
 
     # Gateway
+    def create_gnmi_profile(self, name):
+        res_path = self.build_resource_path(
+            resource=constants.GNMI_PROFILES)
+        gnmi_data = {
+            'name': name,
+            'password': 'password',
+            'userName': 'username'
+        }
+        return self.post(res_path, gnmi_data)
+
+    def delete_gnmi_profile(self, profile_id):
+        return self.delete_resource(constants.GNMI_PROFILES, profile_id,
+                                    responseChoice=True)
+
+    def create_gateway_template(self, name, personality):
+        data = {
+            'name': name,
+            'personality': personality
+        }
+
+        res_path = self.build_resource_path(
+            resource=constants.GATEWAY_TEMPLATES)
+        return self.post(res_path, data)
+
+    def delete_gateway_template(self, gw_templ_id):
+        return self.delete_resource(constants.GATEWAY_TEMPLATES, gw_templ_id,
+                                    responseChoice=True)
+
     def create_gateway(self, name, system_id, personality,
                        np_id=None, extra_params=None):
         data = {

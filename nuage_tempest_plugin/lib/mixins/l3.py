@@ -17,6 +17,9 @@ from tempest.lib.common.utils import data_utils
 from tempest.lib import exceptions
 
 from nuage_tempest_plugin.lib.mixins import base
+from nuage_tempest_plugin.lib.topology import Topology
+
+LOG = Topology.get_logger(__name__)
 
 
 class L3Mixin(base.BaseMixin):
@@ -126,6 +129,10 @@ class L3Mixin(base.BaseMixin):
         except exceptions.NotFound:
             if not ignore_not_found:
                 raise
+        except Exception:
+            # TODO(Tom) Circumventing VSD error here for SRL
+            LOG.error("Error when trying to do subnet detach!")
+            pass
 
     # ---------- Floatingips ----------
 
