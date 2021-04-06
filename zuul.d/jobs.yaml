@@ -629,7 +629,7 @@
 - job:
     name: networking-nuage-fwaas-v1
     parent: networking-nuage-base
-    branches: '.*(queens|rocky).*'
+    branches: '.*(queens|rocky|train).*'
     roles:
       - zuul: openstack/devstack
     required-projects:
