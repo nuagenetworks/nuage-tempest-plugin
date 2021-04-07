@@ -89,7 +89,7 @@ class BaseNuageGatewayTest(NuageAdminNetworksTest):
 
     @classmethod
     def create_test_gateway_topology(cls):
-        if Topology.has_srl_support:
+        if Topology.has_srl_support():
             gw_types = (n_constants.GW_TYPES_UNDER_TEST +
                         [n_constants.SRL_GW_TYPE])
         else:

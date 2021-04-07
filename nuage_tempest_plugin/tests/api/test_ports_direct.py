@@ -207,7 +207,7 @@ class PortsDirectTest(network_mixin.NetworkMixin, l3.L3Mixin):
 
     personality = 'NUAGE_210_WBX_48_S'
 
-    if Topology.from_nuage('20.10R4'):
+    if Topology.has_srl_support():
         scenarios = [
             ('WBX', {'personality': 'NUAGE_210_WBX_48_S'}),
             ('SRL', {'personality': 'SR_LINUX'}),
