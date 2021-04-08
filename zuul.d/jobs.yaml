@@ -264,8 +264,6 @@
         Q_ML2_PLUGIN_EXT_DRIVERS: nuage_subnet,nuage_port,port_security,nuage_network,qos
         EXTRA_SERVICE_PLUGIN_CLASSES: qos
         NUAGE_VSD_BASE_URI: /nuage/api/v7
-        # VRS-52632: Metadata agent not working in RHEL8/py3 env
-        FORCE_CONFIG_DRIVE: True
 
 - job:
     name: networking-nuage-base
@@ -279,8 +277,6 @@
       devstack_localrc:
         Q_ML2_PLUGIN_EXT_DRIVERS: nuage_subnet,nuage_port,port_security,nuage_network,qos
         EXTRA_SERVICE_PLUGIN_CLASSES: qos
-        # VRS-52632: Metadata agent not working in RHEL8/py3 env
-        FORCE_CONFIG_DRIVE: True
 
 - job:
     name: tempest-full
