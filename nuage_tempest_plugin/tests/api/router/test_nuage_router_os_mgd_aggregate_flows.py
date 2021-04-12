@@ -115,7 +115,7 @@ class TestNuageRouterOSMgdAggregateFlows(NuageBaseTest):
                 nuage_aggregate_flows if nuage_aggregate_flows else 'off',
                 router.get('nuage_aggregate_flows')))
 
-        router_get = self.get_router(router['id'])
+        router_get = self.get_router_by_id(router['id'])
         self.assertEqual(router['nuage_aggregate_flows'],
                          router_get.get('nuage_aggregate_flows'),
                          "nuage_aggregate_flows in show router should be "
@@ -224,7 +224,7 @@ class TestNuageRouterOSMgdAggregateFlows(NuageBaseTest):
             self.update_router,
             router,
             nuage_aggregate_flows=update_nuage_aggregate_flows)
-        router = self.get_router(router['id'])
+        router = self.get_router_by_id(router['id'])
         self.assertIsNotNone(router['external_gateway_info'])
 
         LOG.debug("Verified for updated nuage_aggregate_flows={}, "

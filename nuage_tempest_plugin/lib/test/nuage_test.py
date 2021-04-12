@@ -1146,7 +1146,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         router = body["router"]
         return router
 
-    def get_router(self, router_id, client=None, **kwargs):
+    def get_router_by_id(self, router_id, client=None, **kwargs):
         if not client:
             client = self.manager
         body = client.routers_client.show_router(router_id, **kwargs)

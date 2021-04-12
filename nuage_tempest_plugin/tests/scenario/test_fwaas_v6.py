@@ -343,7 +343,7 @@ class TestFWaaS(fwaas_mixins.FWaaSClientMixin, NuageBaseTest):
             confirm_blocked = self.assert_no_connectivity
 
         LOG.info('[{}] 1. Creating topology'.format(self.test_tag))
-        router = self._get_router()
+        router = self.get_router()
 
         (server2, server2_fixed_ip4,
          server2_fixed_ip6) = self._create_topology(
