@@ -812,7 +812,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
 
     @staticmethod
     def is_offload_capable(port):
-        return (port['binding:vnic_type'] == 'direct' and
+        return (port['binding:vnic_type'] in ['direct', 'virtio-forwarder'] and
                 'switchdev' in port['binding:profile'].get('capabilities', []))
 
     @staticmethod
