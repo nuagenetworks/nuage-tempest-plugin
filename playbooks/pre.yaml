@@ -1,4 +1,10 @@
+- hosts: localhost
+  roles:
+    - role: set-nuage-vsp-facts
+
 - hosts: all
+  roles:
+    - vsp-info
   tasks:
     - name: Uninstall tox
       become: yes
