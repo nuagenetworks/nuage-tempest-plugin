@@ -270,7 +270,7 @@
     parent: nuage-base
     description: Base job for nuage based job
     branches: ^(?!(stable|20.10|5.4|6.0)/(pike|queens|rocky|train|victoria)).*$
-    nodeset: openstack-single-node-centos
+    nodeset: openstack-single-node-centos-stream
     vars:
       vsp_release: '20.10'
       tempest_test_blacklist: "{{devstack_base_dir}}/nuage-tempest-plugin/tempest-blacklist.txt"
