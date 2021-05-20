@@ -145,9 +145,9 @@ class Topology(object):
     @classmethod
     def has_default_switchdev_port_profile(cls):
         """This condition is True for OVRS setups"""
-        return (CONF.network.port_vnic_type == 'direct' and
-                'switchdev' in CONF.network.port_profile.get('capabilities',
-                                                             []))
+        return (CONF.network.port_vnic_type in ['direct', 'virtio-forwarder']
+                and 'switchdev' in CONF.network.port_profile.get(
+                    'capabilities', []))
 
     @classmethod
     def has_single_stack_v6_support(cls):
