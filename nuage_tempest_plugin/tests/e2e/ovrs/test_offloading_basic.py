@@ -13,7 +13,9 @@
 #    under the License.
 import random
 import testscenarios
+import testtools
 
+from tempest.common import waiters
 from tempest.lib.common.utils import data_utils
 
 from nuage_tempest_plugin.lib.topology import Topology
@@ -260,6 +262,80 @@ class BasicOffloadingL3Test(E2eTestBase):
 
     def test_same_hv_virtio_virtio(self):
         super(BasicOffloadingL3Test, self)._test_same_hv_virtio_virtio()
+
+    @testtools.skipUnless(CONF.compute_feature_enabled.live_migration and
+                          CONF.compute_feature_enabled.
+                          block_migration_for_live_migration and
+                          CONF.compute_feature_enabled.
+                          live_migrate_back_and_forth,
+                          'Block Live migration not available')
+    def test_block_migration_back_and_forth(self):
+        if len(self.selected_hypervisors) < 2:
+            raise self.skipException('at least 2 hypervisors required')
+
+        hv = self.selected_hypervisors[0]['hypervisor_hostname']
+
+        from_port = self.create_port(**self.default_port_args[0])
+        to_port = self.create_port(**self.default_port_args[1])
+
+        self.assertTrue(self.is_offload_capable(from_port))
+        self.assertTrue(self.is_offload_capable(to_port))
+
+        to_server = self.create_tenant_server(
+            ports=[to_port],
+            availability_zone='nova:' + hv,
+            prepare_for_connectivity=True,
+            manager=self.admin_manager,
+            start_web_server=True,
+            name=data_utils.rand_name('test-server-offload'),
+            **self._get_server_extra_args())
+
+        from_server = self.create_tenant_server(
+            ports=[from_port],
+            availability_zone='nova:' + hv,
+            prepare_for_connectivity=True,
+            manager=self.admin_manager,
+            name=data_utils.rand_name('test-server-offload-fip'),
+            **self._get_server_extra_args())
+
+        self._offload_test(
+            from_server=from_server, from_port=from_port,
+            to_server=to_server, to_port=to_port,
+            destination_network=self.default_port_args[1]['network'])
+
+        # Migrate vm
+        target_hv = self.selected_hypervisors[1]['hypervisor_hostname']
+
+        self.admin_manager.servers_client.live_migrate_server(
+            to_server.id, host=target_hv, block_migration=True,
+            disk_over_commit=False)
+
+        waiters.wait_for_server_status(self.admin_manager.servers_client,
+                                       to_server.id, 'ACTIVE')
+        to_server.server_details = None
+        new_hv = to_server.get_hypervisor_hostname()
+        self.assertEqual(target_hv, new_hv, 'Server did not migrate')
+
+        self._offload_test(
+            from_server=from_server, from_port=from_port,
+            to_server=to_server, to_port=to_port,
+            destination_network=self.default_port_args[1]['network'])
+
+        # Migrate vm back
+        self.admin_manager.servers_client.live_migrate_server(
+            to_server.id, host=hv, block_migration=True,
+            disk_over_commit=False)
+
+        waiters.wait_for_server_status(self.admin_manager.servers_client,
+                                       to_server.id, 'ACTIVE')
+        to_server.server_details = None
+        new_hv = to_server.get_hypervisor_hostname()
+        self.assertEqual(hv, new_hv, 'Server did not migrate')
+
+        self._offload_test(
+            from_server=from_server, from_port=from_port,
+            to_server=to_server, to_port=to_port,
+            destination_network=self.default_port_args[1]['network'])
 
 
 class BasicOffloadingL2Test(BasicOffloadingL3Test):
