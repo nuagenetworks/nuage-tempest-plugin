@@ -329,7 +329,10 @@ class E2eTestBase(NuageBaseTest):
     def _validate_offloaded_flow(self, flows, is_vxlan_tunneled,
                                  is_offloading_expected, src_mac,
                                  dst_mac, is_originating_from_hv):
-        expected_flows = flows.src_mac(src_mac).dst_mac(dst_mac).no_arp()
+        # VRS-35478 Changes to diable ICMPv6 offloading, so added no_icmpv6()
+        # to exclude the icmpv6 flow in expected_flows
+        expected_flows = flows.src_mac(src_mac).dst_mac(dst_mac
+                                                        ).no_arp().no_icmpv6()
 
         if is_vxlan_tunneled:
             if is_originating_from_hv:

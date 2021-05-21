@@ -75,6 +75,11 @@ class FlowQuery(object):
         pass
 
     @abc.abstractmethod
+    def no_icmpv6(self):
+        """Flows must not be icmpv6"""
+        pass
+
+    @abc.abstractmethod
     def tcp(self):
         """Flows must be tcp"""
         pass
@@ -166,6 +171,13 @@ class OvrsFlowQuery(FlowQuery):
         """Flows must be icmp"""
 
         self._matches('.*icmp.*')
+        return self
+
+    @filter
+    def no_icmpv6(self):
+        """Flows must not be icmpv6"""
+
+        self._not_matches('.*icmpv6.*')
         return self
 
     @filter
