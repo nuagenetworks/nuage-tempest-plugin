@@ -78,10 +78,12 @@
         FLOATING_RANGE: "10.{{ nuage_fip_range[2] | int + 40 }}.{{ nuage_fip_range[3] }}.0/24"
         PUBLIC_NETWORK_GATEWAY: "10.{{ nuage_fip_range[2] | int + 40 }}.{{ nuage_fip_range[3] }}.1"
         Q_PLUGIN: ml2
+        Q_AGENT: openvswitch
         Q_USE_PROVIDERNET_FOR_PUBLIC: False
         Q_ML2_PLUGIN_EXT_DRIVERS: nuage_subnet,nuage_port,port_security,nuage_network
         Q_ML2_PLUGIN_TYPE_DRIVERS: vxlan,vlan,flat
         Q_ML2_PLUGIN_MECHANISM_DRIVERS: nuage,nuage_baremetal
+        Q_ML2_TENANT_NETWORK_TYPE: vxlan
         ML2_L3_PLUGIN: NuageL3
         PHYSICAL_NETWORK: physnet1,physnet2
         NUAGE_VSD_DEF_NETPART_NAME: "NuageCi-{{ 1000000 | random }}"
@@ -132,6 +134,9 @@
         s-object: false
         s-proxy: false
         horizon: false
+        ovn-controller: false
+        ovn-northd: false
+        q-ovn-metadata-agent: true
       tempest_plugins:
         - neutron-tempest-plugin
         - nuage-tempest-plugin
