@@ -249,12 +249,12 @@ class AvrsFlowQuery(FlowQuery):
     @filter
     def action_set_tunnel_vxlan(self):
         """Flows with action tunnel"""
-        return self
+        raise NotImplementedError
 
     @filter
     def vxlan(self):
         """Flows from vxlan tunnel"""
-        return self
+        raise NotImplementedError
 
     @filter
     def icmp(self):
@@ -262,6 +262,11 @@ class AvrsFlowQuery(FlowQuery):
         self.flows = [flow for flow in self.flows if 'ip' in flow['flow.key']
                       and flow['flow.key']['ip']['proto'] == 1]
         return self
+
+    @filter
+    def no_icmpv6(self):
+        """Flows must not be icmpv6"""
+        raise NotImplementedError
 
     @filter
     def tcp(self):
@@ -273,7 +278,7 @@ class AvrsFlowQuery(FlowQuery):
     @filter
     def wildcard_protocol(self):
         """Flow allows any protocol"""
-        return self
+        raise NotImplementedError
 
     @filter
     def ip_version(self, version):
@@ -294,14 +299,14 @@ class AvrsFlowQuery(FlowQuery):
     @filter
     def offload(self):
         """Flows must be offloaded"""
-        return self
+        raise NotImplementedError
 
     @filter
     def no_offload(self):
         """Flows must not be offloaded"""
-        return self
+        raise NotImplementedError
 
     @filter
     def no_arp(self):
         """No arp flows"""
-        return self
+        raise NotImplementedError
