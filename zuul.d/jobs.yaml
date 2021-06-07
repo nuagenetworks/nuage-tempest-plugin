@@ -259,22 +259,8 @@
 - job:
     name: networking-nuage-base
     parent: nuage-base
-    description: Base job for stable/victoria
-    branches: ^(stable/victoria)
-    nodeset: openstack-single-node-centos
-    vars:
-      vsp_release: '0.0'
-      tempest_test_blacklist: "{{devstack_base_dir}}/nuage-tempest-plugin/tempest-blacklist.txt"
-      devstack_localrc:
-        Q_ML2_PLUGIN_EXT_DRIVERS: nuage_subnet,nuage_port,port_security,nuage_network,qos
-        EXTRA_SERVICE_PLUGIN_CLASSES: qos
-        NUAGE_VSD_BASE_URI: /nuage/api/v7
-
-- job:
-    name: networking-nuage-base
-    parent: nuage-base
     description: Base job for nuage based job
-    branches: ^(?!(stable|20.10|5.4|6.0)/(pike|queens|rocky|train|victoria)).*$
+    branches: ^(?!(stable|20.10|5.4|6.0)/(pike|queens|rocky|train)).*$
     nodeset: openstack-single-node-centos-stream
     vars:
       vsp_release: '20.10'
