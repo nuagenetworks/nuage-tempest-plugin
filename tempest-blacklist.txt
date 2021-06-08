@@ -134,8 +134,8 @@ neutron_tempest_plugin\.scenario\.test_ipv6\.IPv6Test.test_ipv6_hotplug_slaac
 # OPENSTACK-2918
 neutron_tempest_plugin\.scenario\.test_security_groups\.NetworkSecGroupTest\.test_intra_sg_isolation
 
-# QOS needs some modifications to run in scenario
-neutron_tempest_plugin.scenario.test_qos.QoSTest
+# VRS can't handle ethernet segmentation VRS-35132
+neutron_tempest_plugin.scenario.test_qos.QoSTest.test_qos_basic_and_update
 
 # Nuage doesn't support attaching subnet to multiple routers
 neutron_tempest_plugin\.api\.test_routers_negative\.RoutersNegativePolicyTest\.test_add_interface_in_use
