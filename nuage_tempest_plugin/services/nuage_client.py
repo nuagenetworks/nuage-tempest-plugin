@@ -1361,8 +1361,14 @@ class NuageRestClient(object):
                                         perm[0]['ID'], True)
 
     def get_vlan_permission(self, parent, parent_id, permission_type):
-        return self.get_child_resource(
+        # gridinv - seems GET on /permissions now return both
+        # enterprise and group permissions. Unfortunately
+        # enterprisePermission is not filterable
+        perms = self.get_child_resource(
             parent, parent_id, permission_type)
+        if permission_type == constants.PERMIT_ACTION:
+            return [x for x in perms if not x.get('enterprisePermission')]
+        return perms
 
     def create_default_appdomain_template(self, name, extra_params=None,
                                           netpart_name=None):
