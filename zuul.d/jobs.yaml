@@ -260,10 +260,10 @@
     name: networking-nuage-base
     parent: nuage-base
     description: Base job for nuage based job
-    branches: ^(?!(stable|20.10|5.4|6.0)/(pike|queens|rocky|train)).*$
+    branches: ^(?!(stable|20.10|5.4|6.0)/(pike|queens|rocky|train)).*$  # everything beyond train
     nodeset: openstack-single-node-centos-stream
     vars:
-      vsp_release: '20.10'
+      vsp_release: "{{ '0.0' if zuul.branch == 'master' else '20.10' }}"
       tempest_test_blacklist: "{{devstack_base_dir}}/nuage-tempest-plugin/tempest-blacklist.txt"
       devstack_localrc:
         Q_ML2_PLUGIN_EXT_DRIVERS: nuage_subnet,nuage_port,port_security,nuage_network,qos
