@@ -16,6 +16,14 @@
       become: yes
       command: python3 -m pip install tox
 
+    # gridinv: 15.1.0 causes tempest install to fail
+    - name: bump virtualenv to 16.7.10
+      lineinfile:
+        path: /opt/stack/requirements/upper-constraints.txt
+        regexp: '^virtualenv==='
+        line: 'virtualenv===16.7.10'
+      when: zuul.branch | regex_search("^(5.4|6.0|stable)/queens$")
+
     - name: Make sure 'wheel' group exists
       become: yes
       group:
