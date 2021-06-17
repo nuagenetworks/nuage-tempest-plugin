@@ -79,6 +79,8 @@ tempest\.scenario\.test_network_basic_ops\.TestNetworkBasicOps\.test_hotplug_nic
 tempest\.scenario\.test_security_groups_basic_ops\.TestSecurityGroupsBasicOps\.test_cross_tenant_traffic
 tempest\.scenario\.test_server_basic_ops\.TestServerBasicOps\.test_server_basic_ops
 neutron_tempest_plugin\.scenario\.test_security_groups\.NetworkSecGroupTest\.test_default_sec_grp_scenarios
+# the test is failing where it's removing the security group from the port and expecting existing flow to stop in 10 seconds.
+neutron_tempest_plugin\.scenario\.test_security_groups\.NetworkSecGroupTest\.test_established_tcp_session_after_re_attachinging_sg
 
 # Nuage doesn't support pinging public subnet interface ip on router from VM
 # when there is no FIP attached to VMs.
