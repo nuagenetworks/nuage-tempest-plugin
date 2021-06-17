@@ -38,6 +38,13 @@ class NuageFloatingIPProprietaryQosTest(base_nuage_qos.NuageQosTestmixin,
     def resource_setup(cls):
         super(NuageFloatingIPProprietaryQosTest, cls).resource_setup()
 
+    @classmethod
+    def skip_checks(cls):
+        super(NuageFloatingIPProprietaryQosTest, cls).skip_checks()
+        if Topology.from_openstack('Wallaby'):
+            raise cls.skipException('VRS-54954: FIP rate limiting in VRS seems'
+                                    ' broken on CentOS 8 Stream')
+
     @testtools.skipIf(
         not CONF.nuage_feature_enabled.proprietary_fip_rate_limiting,
         'Support for fip rate limiting required')
