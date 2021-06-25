@@ -95,6 +95,7 @@
         USE_PYTHON3: True
         TEMPEST_CONCURRENCY: "{{ tempest_concurrency }}"
       devstack_plugins:
+        neutron: https://opendev.org/openstack/neutron.git
         nuage-openstack-neutron: https://github.com/nuagenetworks/nuage-openstack-neutron.git
         nuage-openstack-neutronclient: https://github.com/nuagenetworks/nuage-openstack-neutronclient.git
         neutron-tempest-plugin: https://opendev.org/openstack/neutron-tempest-plugin
