@@ -32,7 +32,7 @@ class FlowCaptureFailure(Exception):
 def retry_flow_capture(func):
     """Decorator to retry a method when FlowCaptureFailure occurs"""
     def function_wrapper(*args, **kwargs):
-        retry_limit = 5
+        retry_limit = 10
         for i in range(retry_limit):
             try:
                 return func(*args, **kwargs)
@@ -244,16 +244,17 @@ class E2eTestBase(NuageBaseTest):
                 to_server=to_server,
                 network_name=destination_network['name'],
                 ip_version=ip_version)
+            exclude_ips = ['169.254.169.254']
+            if not self.is_fip_offload_supported:
+                exclude_ips.extend([from_server.get_fip_ip(),
+                                    to_server.get_fip_ip()])
             offload_check_kwargs = dict(
                 from_hv=from_hv,
                 to_hv=to_hv,
                 from_port=from_port,
                 to_port=to_port,
                 ip_version=ip_version,
-                exclude_by_ip=([from_server.get_fip_ip(),
-                                to_server.get_fip_ip()]
-                               if not self.is_fip_offload_supported else [])
-            )
+                exclude_by_ip=exclude_ips)
             self._validate_tcp(connectivity_check_kwargs,
                                offload_check_kwargs)
             self._validate_icmp(connectivity_check_kwargs,

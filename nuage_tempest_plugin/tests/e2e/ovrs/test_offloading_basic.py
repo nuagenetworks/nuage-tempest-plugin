@@ -339,4 +339,11 @@ class BasicOffloadingL3Test(E2eTestBase):
 
 
 class BasicOffloadingL2Test(BasicOffloadingL3Test):
+    scenarios = testscenarios.scenarios.multiply_scenarios([
+        ('IPv4', {'ip_versions': E2eTestBase.IP_VERSIONS_V4}),
+        ('IPv6', {'ip_versions': E2eTestBase.IP_VERSIONS_V6}),
+        ('Dualstack', {'ip_versions': E2eTestBase.IP_VERSIONS_DUALSTACK})
+    ], [
+        ('Same subnet', {'is_same_subnet': True})
+    ])
     is_l3 = False
