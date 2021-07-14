@@ -19,6 +19,7 @@ from neutron_tempest_plugin import config
 from oslo_log import log
 from tempest.lib.common.utils import data_utils
 
+from nuage_tempest_plugin.lib.topology import Topology
 from nuage_tempest_plugin.lib.utils import data_utils as utils
 
 LOG = log.getLogger(__name__)
@@ -42,6 +43,12 @@ class NuageQosTestmixin(object):
     TOLERANCE_FACTOR_EGRESS = 0.20  # within 20 % of expected bw
     TOLERANCE_FACTOR_INGRESS = 0.50  # within 50 % of expected bw
     DEST_PORT = 1789
+
+    @classmethod
+    def skip_checks(cls):
+        super(NuageQosTestmixin, cls).skip_checks()
+        if Topology.before_nuage('20.10'):
+            raise cls.skipException('QOS test are only supported from 20.10')
 
     @staticmethod
     def kill_process(server, process):
