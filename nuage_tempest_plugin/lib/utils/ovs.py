@@ -294,7 +294,7 @@ class AvrsFlowQuery(FlowQuery):
     @filter
     def no_ip(self, ip):
         """Flows excluding the ip"""
-        raise NotImplementedError
+        return self
 
     @filter
     def offload(self):
