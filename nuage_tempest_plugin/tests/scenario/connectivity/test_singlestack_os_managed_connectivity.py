@@ -611,8 +611,7 @@ class Ipv6OsMgdL2ConnectivityTest(Ipv4OsMgdL2ConnectivityTest):
             msg = 'There is no single-stack v6 support in current release'
             raise cls.skipException(msg)
 
-    @testtools.skipIf(Topology.has_default_switchdev_port_profile(),
-                      reason='VRS-35478')
+    @decorators.attr(type='smoke')
     def test_icmp_connectivity_stateless_acl_os_managed_l2_neg(self):
         super(Ipv6OsMgdL2ConnectivityTest, self)\
             .test_icmp_connectivity_stateless_acl_os_managed_l2_neg()
