@@ -22,9 +22,8 @@ from nuage_tempest_plugin.lib.topology import Topology
 CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
 
-# Force cpu pinning and prefer closest NUMA but do not force it
-CPU_PINNING_ARGS = {'hw:cpu_policy': 'dedicated',
-                    'hw:pci_numa_affinity_policy': 'preferred'}
+# Allow to spin up instance across the numa node
+FLAVOR_PROPERTIES = {'hw:pci_numa_affinity_policy': 'preferred'}
 
 
 class NUMATest(NuageBaseTest):
@@ -108,7 +107,7 @@ class NUMATest(NuageBaseTest):
         self.addCleanup(self.flavor_client.delete_flavor, new_flavor['id'])
 
         self.flavor_client.set_flavor_extra_spec(
-            new_flavor['id'], **CPU_PINNING_ARGS)
+            new_flavor['id'], **FLAVOR_PROPERTIES)
 
         # launch VM's on the NUMA nodes and make sure they become active
         network = self.create_network()
