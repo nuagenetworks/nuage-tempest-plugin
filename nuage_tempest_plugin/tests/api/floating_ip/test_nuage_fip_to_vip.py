@@ -8,6 +8,7 @@ from tempest.lib import exceptions
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
+from nuage_tempest_plugin.lib.test.nuage_test import skip_because
 from nuage_tempest_plugin.lib.topology import Topology
 
 CONF = Topology.get_conf()
@@ -419,5 +420,73 @@ class NuageFipToVip(NuageBaseTest):
         nuage_vip = self.vsd.get_vport_vip(vport_id=AAP_port['id'],
                                            router_id=router['id'])
         self.assertIsNotNone(nuage_vip, "Not able to find VIP on VSD.")
+        self.assertIsNotNone(nuage_vip.associated_floating_ip_id,
+                             "Floating ip not associated with vip.")
+
+    @decorators.attr(type='smoke')
+    def test_fip_to_vip_subnet_detach(self):
+        # OPENSTACK-3008 / VSD-53322
+        n1 = self.create_network()
+        self.assertIsNotNone(n1, "Unable to create network")
+        s1 = self.create_subnet(n1)
+        self.assertIsNotNone(s1, "Unable to create subnet")
+        r1 = self.create_router(
+            external_network_id=self.ext_net_id)
+        self.assertIsNotNone(r1, "Unable to create r1")
+        self.router_attach(r1, s1)
+
+        # Create VIP_port
+        vip_port = self.create_port(network=n1, device_owner="nuage:vip")
+        self.assertIsNotNone(vip_port, "Unable to create vip port")
+
+        # Create Port with AAP of VIP Port
+        AAP_port = self.create_port(network=n1)
+        self.assertIsNotNone(AAP_port, "Unable to create port")
+
+        # Add Allowable_address_pair to port, this should result in the
+        # VIP creation on VSD.
+        aap_ip = vip_port['fixed_ips'][0]['ip_address']
+        aap_mac = AAP_port['mac_address']
+        self.update_port(port=AAP_port,
+                         allowed_address_pairs=[{"ip_address": aap_ip,
+                                                "mac_address": aap_mac}])
+
+        # Create floating ip and attach to vip port to create fip2vip
+        floating_ip = self.create_floatingip()
+        self.assertIsNotNone(floating_ip, "Unable to create floating ip")
+        self.update_floatingip(floatingip=floating_ip,
+                               port_id=vip_port['id'])
+
+        # Check VSD status
+        nuage_vip = self.vsd.get_vport_vip(vport_id=AAP_port['id'],
+                                           router_id=r1['id'])
+        self.assertIsNotNone(nuage_vip, "Not able to find VIP on VSD.")
+        self.assertIsNotNone(nuage_vip.associated_floating_ip_id,
+                             "Floating ip not associated with vip.")
+
+        # Delete floating ip
+        self.delete_floatingip(floating_ip['id'])
+
+        # Detach s1 from router
+        self.router_detach(r1, s1)
+
+        # Create new router (So new Domain)
+        r2 = self.create_router(
+            external_network_id=self.ext_net_id)
+        self.assertIsNotNone(r1, "Unable to create r2")
+
+        self.router_attach(r2, s1)
+
+        # Create floating ip and attach to vip port to create fip2vip
+        floating_ip = self.create_floatingip()
+        self.assertIsNotNone(floating_ip, "Unable to create floating ip")
+        self.update_floatingip(floatingip=floating_ip,
+                               port_id=vip_port['id'])
+
+        # Check VSD status
+        nuage_vip = self.vsd.get_vport_vip(vport_id=AAP_port['id'],
+                                           router_id=r2['id'])
+        self.assertIsNotNone(nuage_vip, "Not able to find VIP on VSD after "
+                                        "router detach.")
         self.assertIsNotNone(nuage_vip.associated_floating_ip_id,
                              "Floating ip not associated with vip.")
