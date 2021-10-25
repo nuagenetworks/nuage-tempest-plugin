@@ -35,7 +35,6 @@ from nuage_tempest_plugin.lib.utils import data_utils as utils
 from nuage_tempest_plugin.services.nuage_network_client \
     import NuageNetworkClientJSON
 
-
 CONF = Topology.get_conf()
 LOG = Topology.get_logger(__name__)
 
@@ -47,6 +46,7 @@ def skip_because(*args, **kwargs):
     @param bug: bug number causing the test to skip
     @param reason: (other) reason causing the test to skip
     """
+
     def decorator(f):
         @functools.wraps(f)
         def wrapper(self, *func_args, **func_kwargs):
@@ -61,7 +61,9 @@ def skip_because(*args, **kwargs):
                 raise testtools.TestCase.skipException(msg)
 
             return f(self, *func_args, **func_kwargs)
+
         return wrapper
+
     return decorator
 
 
@@ -85,6 +87,7 @@ def unstable_test(*args, **kwargs):
     :raises: testtools.TestCase.skipException if test actually fails,
         and ``bug`` is included
     """
+
     def decor(f):
         @functools.wraps(f)
         def inner(self, *func_args, **func_kwargs):
@@ -98,7 +101,9 @@ def unstable_test(*args, **kwargs):
                     raise testtools.TestCase.skipException(msg)
                 else:
                     raise e
+
         return inner
+
     return decor
 
 
@@ -116,7 +121,6 @@ def safe_repr(obj, short=False):
 
 
 class NuageBaseTest(scenario_manager.NetworkScenarioTest):
-
     """NuageBaseTest
 
     Base class for all test cases.
@@ -156,6 +160,21 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
         cls.plugin_network_client_admin = NuageNetworkClientJSON(
             cls.os_admin.auth_provider,
             **cls.os_admin.default_params)
+        # Set up additional client for QOS
+        try:
+            from tempest.lib.services.network import \
+                qos_limit_bandwidth_rules_client
+            cls.os_admin.qos_limit_bandwidth_rules_client = (
+                qos_limit_bandwidth_rules_client.QosLimitBandwidthRulesClient(
+                    cls.os_admin.auth_provider,
+                    CONF.network.catalog_type,
+                    CONF.network.region or CONF.identity.region,
+                    endpoint_type=CONF.network.endpoint_type,
+                    build_interval=CONF.network.build_interval,
+                    build_timeout=CONF.network.build_timeout,
+                    **cls.os_admin.default_params))
+        except (ImportError, AttributeError):
+            pass
 
     @classmethod
     def resource_setup(cls):
@@ -979,6 +998,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             self.addCleanup(test_utils.call_and_ignore_notfound_exc,
                             client.delete_security_group, secgroup['id'])
         return secgroup
+
     # -------------- copy of upstream but added cleanup support ---------------
 
     def create_security_group(self, manager=None, cleanup=True, **kwargs):
@@ -1739,7 +1759,7 @@ class NuageBaseTest(scenario_manager.NetworkScenarioTest):
             # that a new network will be created at which the FIP will be
             # applied; and as such overcome the limitation
             elif (first_v4_subnet['vsd_managed'] and
-                    self.enable_aggregate_flows_on_vsd_managed):
+                  self.enable_aggregate_flows_on_vsd_managed):
                 prepare = True
             elif self.nuage_aggregate_flows == 'route':
                 prepare = True
@@ -2488,7 +2508,6 @@ class NuageBaseOrchestrationTest(NuageBaseTest):
 
 # TODO(KRIS) NEED TO INTEGRATE BELOW CLASS WITH NUAGEBASETEST SOMEHOW
 class NuageAdminNetworksTest(base.BaseAdminNetworkTest):
-
     dhcp_agent_present = None
     ext_net_id = CONF.network.public_network_id
 

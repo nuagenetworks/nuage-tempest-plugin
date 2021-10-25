@@ -70,10 +70,33 @@ class BaseNuageQOSTest(NuageBaseTest):
                                         max_burst_kbps,
                                         direction='egress'):
         """Wrapper utility that returns a test QoS bandwidth limit rule."""
-        body = self.neutron_client.create_bandwidth_limit_rule(
-            policy_id=policy_id, max_kbps=max_kbps,
-            max_burst_kbps=max_burst_kbps, direction=direction)
+        try:
+            client = self.os_admin.qos_limit_bandwidth_rules_client
+            body = client.create_limit_bandwidth_rule(
+                qos_policy_id=policy_id, max_kbps=max_kbps,
+                max_burst_kbps=max_burst_kbps, direction=direction)
+        except AttributeError as e:
+            LOG.debug("Got error while trying to create bw rule: %s", e)
+            body = self.neutron_client.create_bandwidth_limit_rule(
+                policy_id=policy_id, max_kbps=max_kbps,
+                max_burst_kbps=max_burst_kbps, direction=direction)
         return body['bandwidth_limit_rule']
+
+    def update_qos_bandwidth_limit_rule(self, policy_id, rule_id, max_kbps,
+                                        max_burst_kbps):
+        """Wrapper utility that updates a test QoS bandwidth limit rule."""
+        try:
+            client = self.os_admin.qos_limit_bandwidth_rules_client
+            client.update_limit_bandwidth_rule(
+                policy_id, rule_id, max_kbps=max_kbps,
+                max_burst_kbps=max_burst_kbps)
+        except AttributeError as e:
+            LOG.debug("Got error while trying to create bw rule: %s", e)
+            self.neutron_client.update_bandwidth_limit_rule(
+                policy_id,
+                rule_id,
+                max_kbps=self.max_kbps * 3,
+                max_burst_kbps=self.max_burst_kbps * 3)
 
     def create_qos_dscp_mark_rule(self, policy_id, dscp_mark):
         body = self.neutron_client.create_dscp_marking_rule(
@@ -234,7 +257,7 @@ class RateLimitingNuageQosTest(BaseNuageQOSTest):
                         peak_burst_rate=self.max_burst_kbps)
 
         # Update policy
-        self.neutron_client.update_bandwidth_limit_rule(
+        self.update_qos_bandwidth_limit_rule(
             policy['id'],
             rule['id'],
             max_kbps=self.max_kbps * 3,
