@@ -249,8 +249,6 @@ class Ipv4OsMgdL2ConnectivityTest(Ipv4OsMgdL2ConnectivityBase):
         self.assert_ping(server1, server2, network)
 
     @decorators.attr(type='smoke')
-    @testtools.skipIf(not CONF.scenario.dhcp_client,
-                      reason='IP statically configured through cloud-init')
     def test_icmp_connectivity_l2_os_managed_no_dhcp(self):
         # Provision OpenStack network resources
         network, _ = self._create_resources(enable_dhcp=False)
@@ -271,13 +269,12 @@ class Ipv4OsMgdL2ConnectivityTest(Ipv4OsMgdL2ConnectivityBase):
         # Test connectivity between peer servers
         self.assert_ping(server1, server2, network)
 
-    @testtools.skipIf(not CONF.scenario.dhcp_client,
-                      reason='IP statically configured through cloud-init')
     def test_icmp_connectivity_l2_os_managed_no_dhcp_neg(self):
         # Provision OpenStack network resources
         network, _ = self._create_resources(enable_dhcp=False)
 
         # create open-ssh security group
+
         ssh_security_group = self.create_open_ssh_security_group()
 
         # Launch tenant servers in OpenStack networks
@@ -425,8 +422,6 @@ class Ipv4OsMgdL3ConnectivityTest(SingleStackOsMgdConnectivityTestBase):
 
     @testtools.skipIf(not Topology.has_full_dhcp_control_in_vsd(),
                       'L3 with no DHCP is supported from 6.0 onwards only')
-    @testtools.skipIf(not CONF.scenario.dhcp_client,
-                      reason='IP statically configured through cloud-init')
     def test_icmp_connectivity_l3_os_managed_no_dhcp(self):
         # Provision OpenStack network resources
         network, _ = self._create_resources(is_l3=True, enable_dhcp=False)
@@ -450,8 +445,6 @@ class Ipv4OsMgdL3ConnectivityTest(SingleStackOsMgdConnectivityTestBase):
 
     @testtools.skipIf(not Topology.has_full_dhcp_control_in_vsd(),
                       'L3 with no DHCP is supported from 6.0 onwards only')
-    @testtools.skipIf(not CONF.scenario.dhcp_client,
-                      reason='IP statically configured through cloud-init')
     def test_icmp_connectivity_l3_os_managed_no_dhcp_neg(self):
         # Provision OpenStack network resources
         network, _ = self._create_resources(is_l3=True, enable_dhcp=False)
