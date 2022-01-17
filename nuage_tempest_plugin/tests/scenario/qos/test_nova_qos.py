@@ -383,6 +383,9 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
     @testtools.skipIf(
         not CONF.nuage_feature_enabled.proprietary_fip_rate_limiting,
         'Support for fip rate limiting required')
+    @testtools.skipIf(
+        Topology.at_openstack('Wallaby'),
+        'Libvirt rate limit is not enforced on Wallaby - OPENSTACK-3041')
     @decorators.attr(type='smoke')
     def test_nova_qos_fip_rate_limiting(self):
         """test_nova_qos_fip_rate_limiting
@@ -460,6 +463,9 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
     @testtools.skipIf(
         not CONF.nuage_feature_enabled.proprietary_fip_rate_limiting,
         'Support for fip rate limiting required')
+    @testtools.skipIf(
+        Topology.at_openstack('Wallaby'),
+        'Libvirt rate limit is not enforced on Wallaby - OPENSTACK-3041')
     def test_nova_qos_fip_rate_limiting_reboot_vm(self):
         """Test QOS when using NOVA flavor, with nuage fip rate limiting
 
@@ -645,6 +651,9 @@ class NuageNovaQosTest(base_nuage_qos.NuageQosTestmixin,
     @testtools.skipIf(
         not CONF.nuage_feature_enabled.proprietary_fip_rate_limiting,
         'Support for fip rate limiting required')
+    @testtools.skipIf(
+        Topology.at_openstack('Wallaby'),
+        'Libvirt rate limit is not enforced on Wallaby - OPENSTACK-3041')
     def test_nova_qos_multinic(self):
         """test_nova_qos_multinic
 
