@@ -90,6 +90,7 @@ class AvrsOsManagedConnectivityTest(E2eTestBase):
 
         for hypervisor in self.selected_hypervisors:
             self.restart_avrs(hypervisor)
+        self.sleep(90, msg='Waiting for AVRS to be restarted!')
 
         # Test connectivity between peer servers again.
         self.assert_ping(server1, server2, network)
