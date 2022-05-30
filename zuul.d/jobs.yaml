@@ -242,6 +242,9 @@
     description: Base job for nuage based job on 6.0|stable/stein|train branch
     branches: ^(stable/train)
     nodeset: openstack-single-node-centos7
+    required-projects:
+    - name: openstack/neutron-tempest-plugin
+      override-checkout: 1.5.0
     vars:
       vsp_release: "{{ zuul.branch.split('/')[0] if 'stable' not in zuul.branch else '20.10' }}"
       devstack_localrc:
