@@ -1,11 +1,17 @@
 - project:
     check:
       jobs:
-        - openstack-tox-pep8
+        - tox-pep8:
+            nodeset: tox-ubuntu-focal
+            vars:
+              mirror_fqdn: "10.40.1.48"
         - networking-nuage-tempest-smoke
     gate:
       jobs:
-        - openstack-tox-pep8
+        - tox-pep8:
+            nodeset: tox-ubuntu-focal
+            vars:
+              mirror_fqdn: "10.40.1.48"
         - networking-nuage-tempest-smoke
     experimental:
       jobs:

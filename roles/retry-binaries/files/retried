@@ -1,0 +1,12 @@
+#!/bin/bash
+_CONN_RETRY_ATTEMPTS=5
+_CONN_RETRY_TMP=/tmp/conn_retry.log
+function _retried {
+    for _attempt in $(seq 1 $_CONN_RETRY_ATTEMPTS);do
+        if "$@"; then
+            _e=$?
+            break
+        fi
+    done
+    return $_e
+}

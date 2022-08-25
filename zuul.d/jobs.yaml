@@ -315,9 +315,18 @@
     parent: networking-nuage-base
     description: job used in gate testing smoke annotated tests
     branches: ^(?!(5.4|6.0))
+    override-checkout: stable/train
+    nodeset: openstack-single-node-centos7
+    required-projects: &required-projects-train
+      - name: openstack/tempest
+        override-checkout: train-last
+      - name: openstack/neutron-tempest-plugin
+        override-checkout: 1.5.0
     vars:
       devstack_localrc: &mpls-type-driver-devstack
         Q_ML2_PLUGIN_TYPE_DRIVERS: vxlan,vlan,flat,nuage_hybrid_mpls
+        PYTHON3_VERSION: 3.6
+        TEMPEST_BRANCH: train-last
       devstack_local_conf: &mpls-type-driver-tempest
         test-config:
           $TEMPEST_CONFIG:

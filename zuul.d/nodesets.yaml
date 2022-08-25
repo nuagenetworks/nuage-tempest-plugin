@@ -49,3 +49,9 @@
         nodes:
           - compute1
 
+- nodeset:
+    name: tox-ubuntu-focal
+    nodes:
+      - name: tox
+        label: ubuntu-focal
+

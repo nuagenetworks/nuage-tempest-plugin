@@ -1,0 +1,54 @@
+- name: Ensure retried file
+  become: yes
+  copy:
+    src: "retried"
+    dest: "/usr/bin/retried"
+    mode: '755'
+- name: Ensure native files
+  become: yes
+  copy:
+    src: "/usr/bin/{{ item }}"
+    dest: "/usr/bin/{{ item }}.native"
+    remote_src: yes
+    mode: '755'
+  failed_when: false
+  loop:
+    - wget
+    - curl
+    - git
+    - docker
+- name: Replace command with retried binary
+  become: yes
+  template:
+    dest: "/usr/bin/{{ item }}"
+    src: "command.j2"
+    mode: '755'
+  loop:
+    - wget
+    - curl
+- name: Replace docker with retried binary
+  become: yes
+  copy:
+    dest: "/usr/bin/docker"
+    mode: '755'
+    content: |
+      #!/bin/bash
+      . retried
+      if [[ $1 == 'pull' || $1 == 'build' ]];then
+          _retried docker.native "$@"
+      else
+          docker.native "$@"
+      fi
+- name: Replace git with retried binary
+  become: yes
+  copy:
+    dest: "/usr/bin/git"
+    mode: '755'
+    content: |
+      #!/bin/bash
+      . retried
+      if [[ $1 == 'clone' ]];then
+          _retried git.native "$@"
+      else
+          git.native "$@"
+      fi

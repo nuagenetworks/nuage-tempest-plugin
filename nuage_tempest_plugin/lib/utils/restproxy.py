@@ -130,7 +130,7 @@ class RESTProxyServer(object):
                                    data=resp_data,
                                    headers=dict(response.getheaders()))
 
-            except (socket.timeout, socket.error) as e:
+            except (socket.timeout, socket.error) as e:  # noqa
                 LOG.error(('ServerProxy: %(action)s failure, %(e)r'),
                           locals())
                 if conn:

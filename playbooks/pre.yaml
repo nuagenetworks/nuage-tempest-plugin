@@ -5,6 +5,7 @@
 - hosts: all
   roles:
     - vsp-info
+    - retry-binaries
   tasks:
     - name: Uninstall tox
       become: yes

@@ -490,7 +490,7 @@ class BaseVSDManagedPortAttributes(
         show_pg = self.show_nuage_policy_group(policy_group_id)
         for id in show_pg['ports'].split(","):
             if port_id in id:
-                    port_present = True
+                port_present = True
         return port_present
 
     def _cli_check_all_policy_groups_in_show_port(self, pg_id_list, show_port):

@@ -8,7 +8,6 @@ from tempest.lib import exceptions
 from tempest.test import decorators
 
 from nuage_tempest_plugin.lib.test.nuage_test import NuageBaseTest
-from nuage_tempest_plugin.lib.test.nuage_test import skip_because
 from nuage_tempest_plugin.lib.topology import Topology
 
 CONF = Topology.get_conf()

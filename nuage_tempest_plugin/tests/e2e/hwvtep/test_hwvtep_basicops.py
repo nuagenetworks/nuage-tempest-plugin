@@ -102,7 +102,7 @@ class HwvtepBasicOpsTest(NuageBaseTest):
         cidr4 = None
         cidr6 = None
         enable_dhcpv4 = False
-        enable_dhcpv6 = is_l3
+        enable_dhcpv6 = False
         gateway4 = None
         gateway6 = None
 
@@ -162,20 +162,10 @@ class HwvtepBasicOpsTest(NuageBaseTest):
 
             self.subnet = []
             for ip_type in ip_version:
-                if ip_type == 6 and is_l3:
-                    # IP address information obtained from Openstack Networking
-                    # (dnsmasq) using DHCPv6 stateful - Only L3 IPv6
-                    ipv6_address_mode = 'dhcpv6-stateful'
-                    self.subnet.append(create_vsd_managed_subnet(
-                        self.network, vsd_subnet, ip_version=ip_type,
-                        ipv6_address_mode=ipv6_address_mode,
-                        manager=self.admin_manager,
-                        dhcp_managed=True))
-                else:
-                    self.subnet.append(create_vsd_managed_subnet(
-                        self.network, vsd_subnet, ip_version=ip_type,
-                        manager=self.admin_manager,
-                        dhcp_managed=False))
+                self.subnet.append(create_vsd_managed_subnet(
+                    self.network, vsd_subnet, ip_version=ip_type,
+                    manager=self.admin_manager,
+                    dhcp_managed=False))
         else:
             self.subnet = []
             for ip_type in ip_version:
