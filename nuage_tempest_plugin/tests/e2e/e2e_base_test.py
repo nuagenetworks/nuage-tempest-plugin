@@ -196,7 +196,8 @@ class E2eTestBase(NuageBaseTest):
 
     def restart_avrs(self, hypervisor):
         return self.execute_on_hypervisor(hypervisor,
-                                          'sudo systemctl restart avrs')
+                                          "sudo nohup sh -c 'systemctl "
+                                          "restart avrs' > /dev/null &")
 
     def _validate_interfaces(self, from_port, to_port):
         pass
