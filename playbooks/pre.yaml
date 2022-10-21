@@ -7,15 +7,10 @@
     - vsp-info
     - retry-binaries
   tasks:
-    - name: Uninstall tox
+    - name: Uninstall py2 tox
+      command: python2 -m pip uninstall tox -y
       become: yes
-      pip:
-        name: tox
-        state: absent
-
-    - name: Install tox with pip3
-      become: yes
-      command: python3 -m pip install tox
+      failed_when: false
 
     # gridinv: 15.1.0 causes tempest install to fail
     - name: bump virtualenv to 16.7.10
@@ -43,14 +38,4 @@
     - name: Add tempest user to wheel group
       become: yes
       user: name=tempest groups=wheel append=yes state=present createhome=yes
-
-    - name: Workaround uwsgi 2.0.19
-      lineinfile:
-        path: /opt/stack/requirements/upper-constraints.txt
-        line: uwsgi===2.0.18
-
-    - name: Workaround bandit 1.6.3
-      lineinfile:
-        path: /opt/stack/requirements/upper-constraints.txt
-        line: bandit===1.6.2
   environment: '{{ proxy_env | default({}) }}'
