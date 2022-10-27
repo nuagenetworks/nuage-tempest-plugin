@@ -172,6 +172,7 @@
               available_type_drivers: flat,vlan,local,vxlan
               default_image_is_advanced: true
               ipv6_metadata: False
+              max_mtu: "{{ external_bridge_mtu }}"
 
 - job:
     name: networking-nuage-base
